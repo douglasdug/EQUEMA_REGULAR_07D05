@@ -116,29 +116,37 @@ class TempranoCreateView(APIView):
         tem_fech_fin = (tem_fech.replace(day=1) +
                         timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
-        # Guardar la información enviada en el método POST
+        tem_men1_dosi_bcgp = data.get('tem_men1_dosi_bcgp', 0) or 0
+        tem_men1_dosi_hbpr = data.get('tem_men1_dosi_hbpr', 0) or 0
+        tem_men1_dosi_bcgd = data.get('tem_men1_dosi_bcgd', 0) or 0
+
+        # Guardar la información enviada en el método POST Temprano
         temprano.objects.create(
             tem_fech=tem_fech,
-            tem_intr=data.get('tem_intr'),
-            tem_extr_mies_cnh=data.get('tem_extr_mies_cnh'),
-            tem_men1_dosi_bcgp=data.get('tem_men1_dosi_bcgp'),
-            tem_men1_dosi_hbpr=data.get('tem_men1_dosi_hbpr'),
-            tem_men1_dosi_bcgd=data.get('tem_men1_dosi_bcgd'),
+            tem_intr=data.get('tem_intr', 0) or 0,
+            tem_extr_mies_cnh=data.get('tem_extr_mies_cnh', 0) or 0,
+            tem_men1_dosi_bcgp=tem_men1_dosi_bcgp,
+            tem_men1_dosi_hbpr=tem_men1_dosi_hbpr,
+            tem_men1_dosi_bcgd=tem_men1_dosi_bcgd,
             tem_tota=tem_tota,
             eniUser_id=eni_user_id
         )
 
-        # Guardar la información enviada en el método POST
+        # Calcular des_bcg_dosapli sumando tem_men1_dosi_bcgp y tem_men1_dosi_bcgd
+        total_des_bcg_dosapli = tem_men1_dosi_bcgp + tem_men1_dosi_bcgd
+
+        # Guardar la información enviada en el método POST Desperdicio
         desperdicio.objects.create(
             des_fech=tem_fech,
-            des_bcg_dosapli=data.get('tem_men1_dosi_bcgp'),
-            des_bcg_pervacenfabi=data.get('0'),
-            des_bcg_pervacfrasnoabi=data.get('0'),
+            des_bcg_dosapli=total_des_bcg_dosapli,
+            des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
+            des_bcg_pervacfrasnoabi=data.get(
+                'des_bcg_pervacfrasnoabi', 0) or 0,
             des_tota=tem_tota,
             eniUser_id=eni_user_id
         )
 
-        # Filtrar y sumar columnas
+        # Filtrar y sumar columnas Temprano
         sum_data = temprano.objects.filter(
             eniUser_id=eni_user_id,
             tem_tota=False,
@@ -151,13 +159,32 @@ class TempranoCreateView(APIView):
             total_tem_men1_dosi_bcgd=Sum('tem_men1_dosi_bcgd')
         )
 
-        # Actualizar o crear una nueva fila
+        # Filtrar y sumar columnas Desperdicio
+        sum_data_des = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_tota=False,
+            des_fech__range=(tem_fech_inicio, tem_fech_fin)
+        ).aggregate(
+            total_des_bcg_dosapli=Sum('des_bcg_dosapli'),
+            total_des_bcg_pervacenfabi=Sum('des_bcg_pervacenfabi'),
+            total_des_bcg_pervacfrasnoabi=Sum('des_bcg_pervacfrasnoabi')
+        )
+
+        # Actualizar o crear una nueva fila Temprano
         existing_record = temprano.objects.filter(
             eniUser_id=eni_user_id,
             tem_fech__range=(tem_fech_inicio, tem_fech_fin),
             tem_tota=True
         ).first()
 
+        # Actualizar o crear una nueva fila Desperdicio
+        existing_record_des = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_fech__range=(tem_fech_inicio, tem_fech_fin),
+            des_tota=True
+        ).first()
+
+        # Temprano
         if existing_record:
             existing_record.tem_intr = sum_data['total_tem_intr']
             existing_record.tem_extr_mies_cnh = sum_data['total_tem_extr_mies_cnh']
@@ -174,6 +201,23 @@ class TempranoCreateView(APIView):
                 tem_men1_dosi_hbpr=sum_data['total_tem_men1_dosi_hbpr'],
                 tem_men1_dosi_bcgd=sum_data['total_tem_men1_dosi_bcgd'],
                 tem_tota=True,
+                eniUser_id=eni_user_id
+            )
+
+        # Desperdicio
+        if existing_record_des:
+            existing_record_des.des_bcg_dosapli = sum_data_des['total_des_bcg_dosapli']
+            existing_record_des.des_bcg_pervacenfabi = sum_data_des['total_des_bcg_pervacenfabi']
+            existing_record_des.des_bcg_pervacfrasnoabi = sum_data_des[
+                'total_des_bcg_pervacfrasnoabi']
+            existing_record_des.save()
+        else:
+            desperdicio.objects.create(
+                des_fech=tem_fech_fin,  # Último día del mes
+                des_bcg_dosapli=sum_data_des['total_des_bcg_dosapli'],
+                des_bcg_pervacenfabi=sum_data_des['total_des_bcg_pervacenfabi'],
+                des_bcg_pervacfrasnoabi=sum_data_des['total_des_bcg_pervacfrasnoabi'],
+                des_tota=True,
                 eniUser_id=eni_user_id
             )
 
@@ -239,18 +283,3 @@ class TardioCreateView(APIView):
             )
 
         return Response({"message": "Datos registrados correctamente."}, status=status.HTTP_201_CREATED)
-
-
-class DesperdicioCreateView(APIView):
-    def post(self, request, *args, **kwargs):
-        data = request.data
-        des_fech = parse_date(data.get('des_fech'))
-        eni_user_id = data.get('eniUser')
-        des_tota = data.get('des_tota', False)
-
-        # Verificar si la fecha ya existe para el usuario cuando des_tota es False
-        if not des_tota and desperdicio.objects.filter(eniUser_id=eni_user_id, des_fech=des_fech, des_tota=False).exists():
-            return Response(
-                {"error": "La fecha ya ha sido registrada."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
