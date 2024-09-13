@@ -59,6 +59,10 @@ class tardio(models.Model):
     tar_fech = models.DateField()
     tar_intr = models.IntegerField(blank=True)
     tar_extr_mies_cnh = models.IntegerField(blank=True)
+    tar_1ano_1rad_fipv = models.IntegerField(blank=True)
+    tar_1ano_1rad_hbpe = models.IntegerField(blank=True)
+    tar_1ano_1rad_dpt = models.IntegerField(blank=True)
+    tar_1ano_2dad_fipv = models.IntegerField(blank=True)
     tar_tota = models.BooleanField(default=False)
     eniUser = models.ForeignKey(
         eniUser, null=True, blank=True, on_delete=models.CASCADE)

@@ -132,20 +132,6 @@ class TempranoCreateView(APIView):
             eniUser_id=eni_user_id
         )
 
-        # Calcular des_bcg_dosapli sumando tem_men1_dosi_bcgp y tem_men1_dosi_bcgd
-        total_des_bcg_dosapli = tem_men1_dosi_bcgp + tem_men1_dosi_bcgd
-
-        # Guardar la información enviada en el método POST Desperdicio
-        desperdicio.objects.create(
-            des_fech=tem_fech,
-            des_bcg_dosapli=total_des_bcg_dosapli,
-            des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
-            des_bcg_pervacfrasnoabi=data.get(
-                'des_bcg_pervacfrasnoabi', 0) or 0,
-            des_tota=tem_tota,
-            eniUser_id=eni_user_id
-        )
-
         # Filtrar y sumar columnas Temprano
         sum_data = temprano.objects.filter(
             eniUser_id=eni_user_id,
@@ -159,29 +145,11 @@ class TempranoCreateView(APIView):
             total_tem_men1_dosi_bcgd=Sum('tem_men1_dosi_bcgd')
         )
 
-        # Filtrar y sumar columnas Desperdicio
-        sum_data_des = desperdicio.objects.filter(
-            eniUser_id=eni_user_id,
-            des_tota=False,
-            des_fech__range=(tem_fech_inicio, tem_fech_fin)
-        ).aggregate(
-            total_des_bcg_dosapli=Sum('des_bcg_dosapli'),
-            total_des_bcg_pervacenfabi=Sum('des_bcg_pervacenfabi'),
-            total_des_bcg_pervacfrasnoabi=Sum('des_bcg_pervacfrasnoabi')
-        )
-
         # Actualizar o crear una nueva fila Temprano
         existing_record = temprano.objects.filter(
             eniUser_id=eni_user_id,
             tem_fech__range=(tem_fech_inicio, tem_fech_fin),
             tem_tota=True
-        ).first()
-
-        # Actualizar o crear una nueva fila Desperdicio
-        existing_record_des = desperdicio.objects.filter(
-            eniUser_id=eni_user_id,
-            des_fech__range=(tem_fech_inicio, tem_fech_fin),
-            des_tota=True
         ).first()
 
         # Temprano
@@ -203,6 +171,38 @@ class TempranoCreateView(APIView):
                 tem_tota=True,
                 eniUser_id=eni_user_id
             )
+
+        # Calcular des_bcg_dosapli sumando tem_men1_dosi_bcgp y tem_men1_dosi_bcgd
+        total_des_bcg_dosapli = tem_men1_dosi_bcgp + tem_men1_dosi_bcgd
+
+        # Guardar la información enviada en el método POST Desperdicio
+        desperdicio.objects.create(
+            des_fech=tem_fech,
+            des_bcg_dosapli=total_des_bcg_dosapli,
+            des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
+            des_bcg_pervacfrasnoabi=data.get(
+                'des_bcg_pervacfrasnoabi', 0) or 0,
+            des_tota=tem_tota,
+            eniUser_id=eni_user_id
+        )
+
+        # Filtrar y sumar columnas Desperdicio
+        sum_data_des = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_tota=False,
+            des_fech__range=(tem_fech_inicio, tem_fech_fin)
+        ).aggregate(
+            total_des_bcg_dosapli=Sum('des_bcg_dosapli'),
+            total_des_bcg_pervacenfabi=Sum('des_bcg_pervacenfabi'),
+            total_des_bcg_pervacfrasnoabi=Sum('des_bcg_pervacfrasnoabi')
+        )
+
+        # Actualizar o crear una nueva fila Desperdicio
+        existing_record_des = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_fech__range=(tem_fech_inicio, tem_fech_fin),
+            des_tota=True
+        ).first()
 
         # Desperdicio
         if existing_record_des:
@@ -230,8 +230,8 @@ class TardioCreateView(APIView):
         tar_fech = parse_date(data.get('tar_fech'))
         eni_user_id = data.get('eniUser')
         tar_tota = data.get('tar_tota', False)
-# para
-        # Verificar si la fecha ya existe para el usuario cuando tem_tota es False
+
+        # Verificar si la fecha ya existe para el usuario cuando tar_tota es False
         if not tar_tota and tardio.objects.filter(eniUser_id=eni_user_id, tar_fech=tar_fech, tar_tota=False).exists():
             return Response(
                 {"error": "La fecha ya ha sido registrada."},
@@ -243,42 +243,113 @@ class TardioCreateView(APIView):
         tar_fech_fin = (tar_fech.replace(day=1) +
                         timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
-        # Guardar la información enviada en el método POST
+        tar_1ano_1rad_fipv = data.get('tar_1ano_1rad_fipv', 0) or 0
+        tar_1ano_1rad_hbpe = data.get('tar_1ano_1rad_hbpe', 0) or 0
+        tar_1ano_1rad_dpt = data.get('tar_1ano_1rad_dpt', 0) or 0
+        tar_1ano_2dad_fipv = data.get('tar_1ano_2dad_fipv', 0) or 0
+
+        # Guardar la información enviada en el método POST Tardio
         tardio.objects.create(
             tar_fech=tar_fech,
-            tar_intr=data.get('tar_intr'),
-            tar_extr_mies_cnh=data.get('tar_extr_mies_cnh'),
+            tar_intr=data.get('tar_intr', 0) or 0,
+            tar_extr_mies_cnh=data.get('tar_extr_mies_cnh', 0) or 0,
+            tar_1ano_1rad_fipv=tar_1ano_1rad_fipv,
+            tar_1ano_1rad_hbpe=tar_1ano_1rad_hbpe,
+            tar_1ano_1rad_dpt=tar_1ano_1rad_dpt,
+            tar_1ano_2dad_fipv=tar_1ano_2dad_fipv,
             tar_tota=tar_tota,
             eniUser_id=eni_user_id
         )
 
-        # Filtrar y sumar columnas
+        # Filtrar y sumar columnas Tardio
         sum_data = tardio.objects.filter(
             eniUser_id=eni_user_id,
             tar_tota=False,
             tar_fech__range=(tar_fech_inicio, tar_fech_fin)
         ).aggregate(
             total_tar_intr=Sum('tar_intr'),
-            total_tar_extr_mies_cnh=Sum('tar_extr_mies_cnh')
+            total_tar_extr_mies_cnh=Sum('tar_extr_mies_cnh'),
+            total_tar_1ano_1rad_fipv=Sum('tar_1ano_1rad_fipv'),
+            total_tar_1ano_1rad_hbpe=Sum('tar_1ano_1rad_hbpe'),
+            total_tar_1ano_1rad_dpt=Sum('tar_1ano_1rad_dpt'),
+            total_tar_1ano_2dad_fipv=Sum('tar_1ano_2dad_fipv')
         )
 
-        # Actualizar o crear una nueva fila
+        # Actualizar o crear una nueva fila Tarde
         existing_record = tardio.objects.filter(
             eniUser_id=eni_user_id,
             tar_fech__range=(tar_fech_inicio, tar_fech_fin),
             tar_tota=True
         ).first()
 
+        # Tardio
         if existing_record:
             existing_record.tar_intr = sum_data['total_tar_intr']
             existing_record.tar_extr_mies_cnh = sum_data['total_tar_extr_mies_cnh']
+            existing_record.tar_1ano_1rad_fipv = sum_data['total_tar_1ano_1rad_fipv']
+            existing_record.tar_1ano_1rad_hbpe = sum_data['total_tar_1ano_1rad_hbpe']
+            existing_record.tar_1ano_1rad_dpt = sum_data['total_tar_1ano_1rad_dpt']
+            existing_record.tar_1ano_2dad_fipv = sum_data['total_tar_1ano_2dad_fipv']
             existing_record.save()
         else:
             tardio.objects.create(
                 tar_fech=tar_fech_fin,  # Último día del mes
                 tar_intr=sum_data['total_tar_intr'],
                 tar_extr_mies_cnh=sum_data['total_tar_extr_mies_cnh'],
+                tar_1ano_1rad_fipv=sum_data['total_tar_1ano_1rad_fipv'],
+                tar_1ano_1rad_hbpe=sum_data['total_tar_1ano_1rad_hbpe'],
+                tar_1ano_1rad_dpt=sum_data['total_tar_1ano_1rad_dpt'],
+                tar_1ano_2dad_fipv=sum_data['total_tar_1ano_2dad_fipv'],
                 tar_tota=True,
+                eniUser_id=eni_user_id
+            )
+
+        # Calcular des_bcg_dosapli sumando tar_men1_dosi_bcgp y tar_men1_dosi_bcgd
+        total_des_bcg_dosapli = tar_1ano_1rad_fipv + tar_1ano_2dad_fipv
+
+        # Guardar la información enviada en el método POST Desperdicio
+        desperdicio.objects.create(
+            des_fech=tar_fech,
+            des_bcg_dosapli=total_des_bcg_dosapli,
+            des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
+            des_bcg_pervacfrasnoabi=data.get(
+                'des_bcg_pervacfrasnoabi', 0) or 0,
+            des_tota=tar_tota,
+            eniUser_id=eni_user_id
+        )
+
+        # Filtrar y sumar columnas Desperdicio
+        sum_data_des = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_tota=False,
+            des_fech__range=(tar_fech_inicio, tar_fech_fin)
+        ).aggregate(
+            total_des_bcg_dosapli=Sum('des_bcg_dosapli'),
+            total_des_bcg_pervacenfabi=Sum('des_bcg_pervacenfabi'),
+            total_des_bcg_pervacfrasnoabi=Sum('des_bcg_pervacfrasnoabi')
+        )
+
+        # Actualizar o crear una nueva fila Desperdicio
+        existing_record_des = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_fech__range=(tar_fech_inicio, tar_fech_fin),
+            des_tota=True
+        ).first()
+
+        # Desperdicio
+        if existing_record_des:
+            existing_record_des.des_bcg_dosapli = sum_data_des['total_des_bcg_dosapli']
+            existing_record_des.des_bcg_pervacenfabi = sum_data_des['total_des_bcg_pervacenfabi']
+            existing_record_des.des_bcg_pervacfrasnoabi = sum_data_des[
+                'total_des_bcg_pervacfrasnoabi']
+            existing_record_des.save()
+        else:
+            desperdicio.objects.create(
+                des_fech=tar_fech_fin,  # Último día del mes
+                des_bcg_dosapli=sum_data_des['total_des_bcg_dosapli'],
+                des_bcg_pervacenfabi=sum_data_des['total_des_bcg_pervacenfabi'],
+                des_bcg_pervacfrasnoabi=sum_data_des['total_des_bcg_pervacfrasnoabi'],
+                des_tota=True,
                 eniUser_id=eni_user_id
             )
 
