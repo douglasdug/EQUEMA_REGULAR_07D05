@@ -121,6 +121,9 @@ class TempranoCreateView(APIView):
             tem_fech=tem_fech,
             tem_intr=data.get('tem_intr'),
             tem_extr_mies_cnh=data.get('tem_extr_mies_cnh'),
+            tem_men1_dosi_bcgp=data.get('tem_men1_dosi_bcgp'),
+            tem_men1_dosi_hbpr=data.get('tem_men1_dosi_hbpr'),
+            tem_men1_dosi_bcgd=data.get('tem_men1_dosi_bcgd'),
             tem_tota=tem_tota,
             eniUser_id=eni_user_id
         )
@@ -132,7 +135,10 @@ class TempranoCreateView(APIView):
             tem_fech__range=(tem_fech_inicio, tem_fech_fin)
         ).aggregate(
             total_tem_intr=Sum('tem_intr'),
-            total_tem_extr_mies_cnh=Sum('tem_extr_mies_cnh')
+            total_tem_extr_mies_cnh=Sum('tem_extr_mies_cnh'),
+            total_tem_men1_dosi_bcgp=Sum('tem_men1_dosi_bcgp'),
+            total_tem_men1_dosi_hbpr=Sum('tem_men1_dosi_hbpr'),
+            total_tem_men1_dosi_bcgd=Sum('tem_men1_dosi_bcgd')
         )
 
         # Actualizar o crear una nueva fila
@@ -145,12 +151,18 @@ class TempranoCreateView(APIView):
         if existing_record:
             existing_record.tem_intr = sum_data['total_tem_intr']
             existing_record.tem_extr_mies_cnh = sum_data['total_tem_extr_mies_cnh']
+            existing_record.tem_men1_dosi_bcgp = sum_data['total_tem_men1_dosi_bcgp']
+            existing_record.tem_men1_dosi_hbpr = sum_data['total_tem_men1_dosi_hbpr']
+            existing_record.tem_men1_dosi_bcgd = sum_data['total_tem_men1_dosi_bcgd']
             existing_record.save()
         else:
             temprano.objects.create(
                 tem_fech=tem_fech_fin,  # Último día del mes
                 tem_intr=sum_data['total_tem_intr'],
                 tem_extr_mies_cnh=sum_data['total_tem_extr_mies_cnh'],
+                tem_men1_dosi_bcgp=sum_data['total_tem_men1_dosi_bcgp'],
+                tem_men1_dosi_hbpr=sum_data['total_tem_men1_dosi_hbpr'],
+                tem_men1_dosi_bcgd=sum_data['total_tem_men1_dosi_bcgd'],
                 tem_tota=True,
                 eniUser_id=eni_user_id
             )

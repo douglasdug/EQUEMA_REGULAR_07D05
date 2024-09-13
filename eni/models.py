@@ -39,6 +39,9 @@ class temprano(models.Model):
     tem_fech = models.DateField()
     tem_intr = models.IntegerField(blank=True)
     tem_extr_mies_cnh = models.IntegerField(blank=True)
+    tem_men1_dosi_bcgp = models.IntegerField(blank=True)
+    tem_men1_dosi_hbpr = models.IntegerField(blank=True)
+    tem_men1_dosi_bcgd = models.IntegerField(blank=True)
     tem_tota = models.BooleanField(default=False)
     eniUser = models.ForeignKey(
         eniUser, null=True, blank=True, on_delete=models.CASCADE)
@@ -67,3 +70,21 @@ class tardio(models.Model):
             tem_fech__year=year,
             tem_fech__month=month
         ).order_by('tar_fech')
+
+
+class desperdicio(models.Model):
+    des_fech = models.DateField()
+    des_bcg_dosapli = models.IntegerField(blank=True)
+    des_bcg_pervacenfabi = models.IntegerField(blank=True)
+    des_bcg_pervacfrasnoabi = models.IntegerField(blank=True)
+    des_tota = models.BooleanField(default=False)
+    eniUser = models.ForeignKey(
+        eniUser, null=True, blank=True, on_delete=models.CASCADE)
+
+    @classmethod
+    def get_by_month_and_user(cls, user_id, month, year):
+        return cls.objects.filter(
+            eniUser_id=user_id,
+            des_fech__year=year,
+            des_fech__month=month
+        ).order_by('des_fech')
