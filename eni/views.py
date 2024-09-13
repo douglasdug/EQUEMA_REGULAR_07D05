@@ -103,7 +103,7 @@ class TempranoCreateView(APIView):
         tem_fech = parse_date(data.get('tem_fech'))
         eni_user_id = data.get('eniUser')
         tem_tota = data.get('tem_tota', False)
-
+# para
         # Verificar si la fecha ya existe para el usuario cuando tem_tota es False
         if not tem_tota and temprano.objects.filter(eniUser_id=eni_user_id, tem_fech=tem_fech, tem_tota=False).exists():
             return Response(
