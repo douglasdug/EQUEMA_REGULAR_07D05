@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TempranoCreateView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TempranoCreateView, TardioCreateView
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework import routers
 
@@ -16,4 +16,5 @@ urlpatterns = [
     path('v1/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('v1/user/', UserInfoAPIView.as_view(), name='user-info'),
     path('v1/tempranocreate/', TempranoCreateView.as_view(), name='temprano-create'),
+    path('v1/tardiocreate/', TardioCreateView.as_view(), name='tardio-create'),
 ]

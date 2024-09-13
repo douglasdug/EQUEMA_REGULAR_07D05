@@ -50,3 +50,20 @@ class temprano(models.Model):
             tem_fech__year=year,
             tem_fech__month=month
         ).order_by('tem_fech')
+
+
+class tardio(models.Model):
+    tar_fech = models.DateField()
+    tar_intr = models.IntegerField(blank=True)
+    tar_extr_mies_cnh = models.IntegerField(blank=True)
+    tar_tota = models.BooleanField(default=False)
+    eniUser = models.ForeignKey(
+        eniUser, null=True, blank=True, on_delete=models.CASCADE)
+
+    @classmethod
+    def get_by_month_and_user(cls, user_id, month, year):
+        return cls.objects.filter(
+            eniUser_id=user_id,
+            tem_fech__year=year,
+            tem_fech__month=month
+        ).order_by('tar_fech')

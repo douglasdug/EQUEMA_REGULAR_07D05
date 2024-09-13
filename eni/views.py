@@ -5,7 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from .models import unidadSalud, temprano
+from .models import unidadSalud, temprano, tardio
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -152,6 +152,67 @@ class TempranoCreateView(APIView):
                 tem_intr=sum_data['total_tem_intr'],
                 tem_extr_mies_cnh=sum_data['total_tem_extr_mies_cnh'],
                 tem_tota=True,
+                eniUser_id=eni_user_id
+            )
+
+        return Response({"message": "Datos registrados correctamente."}, status=status.HTTP_201_CREATED)
+
+
+class TardioCreateView(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        tar_fech = parse_date(data.get('tar_fech'))
+        eni_user_id = data.get('eniUser')
+        tar_tota = data.get('tar_tota', False)
+# para
+        # Verificar si la fecha ya existe para el usuario cuando tem_tota es False
+        if not tar_tota and tardio.objects.filter(eniUser_id=eni_user_id, tar_fech=tar_fech, tar_tota=False).exists():
+            return Response(
+                {"error": "La fecha ya ha sido registrada."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Crear variables de control
+        tar_fech_inicio = tar_fech.replace(day=1)
+        tar_fech_fin = (tar_fech.replace(day=1) +
+                        timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+        # Guardar la información enviada en el método POST
+        tardio.objects.create(
+            tar_fech=tar_fech,
+            tar_intr=data.get('tar_intr'),
+            tar_extr_mies_cnh=data.get('tar_extr_mies_cnh'),
+            tar_tota=tar_tota,
+            eniUser_id=eni_user_id
+        )
+
+        # Filtrar y sumar columnas
+        sum_data = tardio.objects.filter(
+            eniUser_id=eni_user_id,
+            tar_tota=False,
+            tar_fech__range=(tar_fech_inicio, tar_fech_fin)
+        ).aggregate(
+            total_tar_intr=Sum('tar_intr'),
+            total_tar_extr_mies_cnh=Sum('tar_extr_mies_cnh')
+        )
+
+        # Actualizar o crear una nueva fila
+        existing_record = tardio.objects.filter(
+            eniUser_id=eni_user_id,
+            tar_fech__range=(tar_fech_inicio, tar_fech_fin),
+            tar_tota=True
+        ).first()
+
+        if existing_record:
+            existing_record.tar_intr = sum_data['total_tar_intr']
+            existing_record.tar_extr_mies_cnh = sum_data['total_tar_extr_mies_cnh']
+            existing_record.save()
+        else:
+            tardio.objects.create(
+                tar_fech=tar_fech_fin,  # Último día del mes
+                tar_intr=sum_data['total_tar_intr'],
+                tar_extr_mies_cnh=sum_data['total_tar_extr_mies_cnh'],
+                tar_tota=True,
                 eniUser_id=eni_user_id
             )
 
