@@ -5,7 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from .models import unidadSalud, temprano, tardio
+from .models import unidadSalud, temprano, tardio, desperdicio
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -103,7 +103,7 @@ class TempranoCreateView(APIView):
         tem_fech = parse_date(data.get('tem_fech'))
         eni_user_id = data.get('eniUser')
         tem_tota = data.get('tem_tota', False)
-# para
+
         # Verificar si la fecha ya existe para el usuario cuando tem_tota es False
         if not tem_tota and temprano.objects.filter(eniUser_id=eni_user_id, tem_fech=tem_fech, tem_tota=False).exists():
             return Response(
@@ -125,6 +125,16 @@ class TempranoCreateView(APIView):
             tem_men1_dosi_hbpr=data.get('tem_men1_dosi_hbpr'),
             tem_men1_dosi_bcgd=data.get('tem_men1_dosi_bcgd'),
             tem_tota=tem_tota,
+            eniUser_id=eni_user_id
+        )
+
+        # Guardar la información enviada en el método POST
+        desperdicio.objects.create(
+            des_fech=tem_fech,
+            des_bcg_dosapli=data.get('tem_men1_dosi_bcgp'),
+            des_bcg_pervacenfabi=data.get('0'),
+            des_bcg_pervacfrasnoabi=data.get('0'),
+            des_tota=tem_tota,
             eniUser_id=eni_user_id
         )
 
@@ -229,3 +239,18 @@ class TardioCreateView(APIView):
             )
 
         return Response({"message": "Datos registrados correctamente."}, status=status.HTTP_201_CREATED)
+
+
+class DesperdicioCreateView(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        des_fech = parse_date(data.get('des_fech'))
+        eni_user_id = data.get('eniUser')
+        des_tota = data.get('des_tota', False)
+
+        # Verificar si la fecha ya existe para el usuario cuando des_tota es False
+        if not des_tota and desperdicio.objects.filter(eniUser_id=eni_user_id, des_fech=des_fech, des_tota=False).exists():
+            return Response(
+                {"error": "La fecha ya ha sido registrada."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
