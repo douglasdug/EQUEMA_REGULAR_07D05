@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from .models import unidadSalud, temprano, tardio, desperdicio
 
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from django.db.models import Sum
 from django.utils.dateparse import parse_date
@@ -106,6 +107,13 @@ class TempranoCreateView(APIView):
         tem_fech = parse_date(data.get('tem_fech'))
         eni_user_id = data.get('eniUser')
         tem_tota = data.get('tem_tota', False)
+        tem_intr = int(data.get('tem_intr', 0))
+        tem_extr_mies_cnh = int(data.get('tem_extr_mies_cnh', 0))
+        tem_men1_dosi_bcgp = int(data.get('tem_men1_dosi_bcgp', 0))
+        tem_men1_dosi_hbpr = int(data.get('tem_men1_dosi_hbpr', 0))
+        tem_men1_dosi_bcgd = int(data.get('tem_men1_dosi_bcgd', 0))
+        des_bcg_pervacenfabi = int(data.get('des_bcg_pervacenfabi', 0))
+        des_bcg_pervacfrasnoabi = int(data.get('des_bcg_pervacfrasnoabi', 0))
 
         # Verificar si la fecha ya existe para el usuario cuando tem_tota es False
         if not tem_tota and temprano.objects.filter(eniUser_id=eni_user_id, tem_fech=tem_fech, tem_tota=False).exists():
@@ -119,15 +127,11 @@ class TempranoCreateView(APIView):
         tem_fech_fin = (tem_fech.replace(day=1) +
                         timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
-        tem_men1_dosi_bcgp = data.get('tem_men1_dosi_bcgp', 0) or 0
-        tem_men1_dosi_hbpr = data.get('tem_men1_dosi_hbpr', 0) or 0
-        tem_men1_dosi_bcgd = data.get('tem_men1_dosi_bcgd', 0) or 0
-
         # Guardar la información enviada en el método POST Temprano
         temprano.objects.create(
             tem_fech=tem_fech,
-            tem_intr=data.get('tem_intr', 0) or 0,
-            tem_extr_mies_cnh=data.get('tem_extr_mies_cnh', 0) or 0,
+            tem_intr=tem_intr,
+            tem_extr_mies_cnh=tem_extr_mies_cnh,
             tem_men1_dosi_bcgp=tem_men1_dosi_bcgp,
             tem_men1_dosi_hbpr=tem_men1_dosi_hbpr,
             tem_men1_dosi_bcgd=tem_men1_dosi_bcgd,
@@ -187,10 +191,8 @@ class TempranoCreateView(APIView):
         if existing_record:
             # Si existe, actualizar el registro sumando los valores actuales
             existing_record.des_bcg_dosapli += total_des_bcg_dosapli
-            existing_record.des_bcg_pervacenfabi += data.get(
-                'des_bcg_pervacenfabi', 0) or 0
-            existing_record.des_bcg_pervacfrasnoabi += data.get(
-                'des_bcg_pervacfrasnoabi', 0) or 0
+            existing_record.des_bcg_pervacenfabi += des_bcg_pervacenfabi
+            existing_record.des_bcg_pervacfrasnoabi += des_bcg_pervacfrasnoabi
             existing_record.des_tota += tem_tota
             existing_record.save()
         else:
@@ -198,9 +200,8 @@ class TempranoCreateView(APIView):
             desperdicio.objects.create(
                 des_fech=tem_fech,
                 des_bcg_dosapli=total_des_bcg_dosapli,
-                des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
-                des_bcg_pervacfrasnoabi=data.get(
-                    'des_bcg_pervacfrasnoabi', 0) or 0,
+                des_bcg_pervacenfabi=des_bcg_pervacenfabi,
+                des_bcg_pervacfrasnoabi=des_bcg_pervacfrasnoabi,
                 des_tota=tem_tota,
                 eniUser_id=eni_user_id
             )
@@ -249,6 +250,14 @@ class TardioCreateView(APIView):
         tar_fech = parse_date(data.get('tar_fech'))
         eni_user_id = data.get('eniUser')
         tar_tota = data.get('tar_tota', False)
+        tar_intr = int(data.get('tar_intr', 0))
+        tar_extr_mies_cnh = int(data.get('tar_extr_mies_cnh', 0))
+        tar_1ano_1rad_fipv = int(data.get('tar_1ano_1rad_fipv', 0))
+        tar_1ano_1rad_hbpe = int(data.get('tar_1ano_1rad_hbpe', 0))
+        tar_1ano_1rad_dpt = int(data.get('tar_1ano_1rad_dpt', 0))
+        tar_1ano_2dad_fipv = int(data.get('tar_1ano_2dad_fipv', 0))
+        des_bcg_pervacenfabi = int(data.get('des_bcg_pervacenfabi', 0))
+        des_bcg_pervacfrasnoabi = int(data.get('des_bcg_pervacfrasnoabi', 0))
 
         # Verificar si la fecha ya existe para el usuario cuando tar_tota es False
         if not tar_tota and tardio.objects.filter(eniUser_id=eni_user_id, tar_fech=tar_fech, tar_tota=False).exists():
@@ -262,16 +271,11 @@ class TardioCreateView(APIView):
         tar_fech_fin = (tar_fech.replace(day=1) +
                         timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
-        tar_1ano_1rad_fipv = data.get('tar_1ano_1rad_fipv', 0) or 0
-        tar_1ano_1rad_hbpe = data.get('tar_1ano_1rad_hbpe', 0) or 0
-        tar_1ano_1rad_dpt = data.get('tar_1ano_1rad_dpt', 0) or 0
-        tar_1ano_2dad_fipv = data.get('tar_1ano_2dad_fipv', 0) or 0
-
         # Guardar la información enviada en el método POST Tardio
         tardio.objects.create(
             tar_fech=tar_fech,
-            tar_intr=data.get('tar_intr', 0) or 0,
-            tar_extr_mies_cnh=data.get('tar_extr_mies_cnh', 0) or 0,
+            tar_intr=tar_intr,
+            tar_extr_mies_cnh=tar_extr_mies_cnh,
             tar_1ano_1rad_fipv=tar_1ano_1rad_fipv,
             tar_1ano_1rad_hbpe=tar_1ano_1rad_hbpe,
             tar_1ano_1rad_dpt=tar_1ano_1rad_dpt,
@@ -335,10 +339,8 @@ class TardioCreateView(APIView):
         if existing_record:
             # Si existe, actualizar el registro sumando los valores actuales
             existing_record.des_bcg_dosapli += total_des_bcg_dosapli
-            existing_record.des_bcg_pervacenfabi += data.get(
-                'des_bcg_pervacenfabi', 0) or 0
-            existing_record.des_bcg_pervacfrasnoabi += data.get(
-                'des_bcg_pervacfrasnoabi', 0) or 0
+            existing_record.des_bcg_pervacenfabi += des_bcg_pervacenfabi
+            existing_record.des_bcg_pervacfrasnoabi += des_bcg_pervacfrasnoabi
             existing_record.des_tota += tar_tota
             existing_record.save()
         else:
@@ -346,9 +348,8 @@ class TardioCreateView(APIView):
             desperdicio.objects.create(
                 des_fech=tar_fech,
                 des_bcg_dosapli=total_des_bcg_dosapli,
-                des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
-                des_bcg_pervacfrasnoabi=data.get(
-                    'des_bcg_pervacfrasnoabi', 0) or 0,
+                des_bcg_pervacenfabi=des_bcg_pervacenfabi,
+                des_bcg_pervacfrasnoabi=des_bcg_pervacfrasnoabi,
                 des_tota=tar_tota,
                 eniUser_id=eni_user_id
             )
