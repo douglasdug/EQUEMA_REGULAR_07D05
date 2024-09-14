@@ -8,8 +8,6 @@ from rest_framework.response import Response
 from .models import unidadSalud, temprano, tardio, desperdicio
 
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
 from django.db.models import Sum
 from django.utils.dateparse import parse_date
 from datetime import datetime, timedelta
@@ -177,19 +175,35 @@ class TempranoCreateView(APIView):
                 eniUser_id=eni_user_id
             )
 
+        # Filtrar en la tabla desperdicio para verificar si ya existe un registro con la misma fecha
+        existing_record = desperdicio.objects.filter(
+            des_fech=tem_fech,
+            eniUser_id=eni_user_id
+        ).first()
+
         # Calcular des_bcg_dosapli sumando tem_men1_dosi_bcgp y tem_men1_dosi_bcgd
         total_des_bcg_dosapli = tem_men1_dosi_bcgp + tem_men1_dosi_bcgd
 
-        # Guardar la información enviada en el método POST Desperdicio
-        desperdicio.objects.create(
-            des_fech=tem_fech,
-            des_bcg_dosapli=total_des_bcg_dosapli,
-            des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
-            des_bcg_pervacfrasnoabi=data.get(
-                'des_bcg_pervacfrasnoabi', 0) or 0,
-            des_tota=tem_tota,
-            eniUser_id=eni_user_id
-        )
+        if existing_record:
+            # Si existe, actualizar el registro sumando los valores actuales
+            existing_record.des_bcg_dosapli += total_des_bcg_dosapli
+            existing_record.des_bcg_pervacenfabi += data.get(
+                'des_bcg_pervacenfabi', 0) or 0
+            existing_record.des_bcg_pervacfrasnoabi += data.get(
+                'des_bcg_pervacfrasnoabi', 0) or 0
+            existing_record.des_tota += tem_tota
+            existing_record.save()
+        else:
+            # Si no existe, crear un nuevo registro con los valores proporcionados
+            desperdicio.objects.create(
+                des_fech=tem_fech,
+                des_bcg_dosapli=total_des_bcg_dosapli,
+                des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
+                des_bcg_pervacfrasnoabi=data.get(
+                    'des_bcg_pervacfrasnoabi', 0) or 0,
+                des_tota=tem_tota,
+                eniUser_id=eni_user_id
+            )
 
         # Filtrar y sumar columnas Desperdicio
         sum_data_des = desperdicio.objects.filter(
@@ -309,19 +323,35 @@ class TardioCreateView(APIView):
                 eniUser_id=eni_user_id
             )
 
-        # Calcular des_bcg_dosapli sumando tar_men1_dosi_bcgp y tar_men1_dosi_bcgd
+        # Filtrar en la tabla desperdicio para verificar si ya existe un registro con la misma fecha
+        existing_record = desperdicio.objects.filter(
+            des_fech=tar_fech,
+            eniUser_id=eni_user_id
+        ).first()
+
+        # Calcular des_bcg_dosapli sumando tar_1ano_1rad_fipv y tar_1ano_2dad_fipv
         total_des_bcg_dosapli = tar_1ano_1rad_fipv + tar_1ano_2dad_fipv
 
-        # Guardar la información enviada en el método POST Desperdicio
-        desperdicio.objects.create(
-            des_fech=tar_fech,
-            des_bcg_dosapli=total_des_bcg_dosapli,
-            des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
-            des_bcg_pervacfrasnoabi=data.get(
-                'des_bcg_pervacfrasnoabi', 0) or 0,
-            des_tota=tar_tota,
-            eniUser_id=eni_user_id
-        )
+        if existing_record:
+            # Si existe, actualizar el registro sumando los valores actuales
+            existing_record.des_bcg_dosapli += total_des_bcg_dosapli
+            existing_record.des_bcg_pervacenfabi += data.get(
+                'des_bcg_pervacenfabi', 0) or 0
+            existing_record.des_bcg_pervacfrasnoabi += data.get(
+                'des_bcg_pervacfrasnoabi', 0) or 0
+            existing_record.des_tota += tar_tota
+            existing_record.save()
+        else:
+            # Si no existe, crear un nuevo registro con los valores proporcionados
+            desperdicio.objects.create(
+                des_fech=tar_fech,
+                des_bcg_dosapli=total_des_bcg_dosapli,
+                des_bcg_pervacenfabi=data.get('des_bcg_pervacenfabi', 0) or 0,
+                des_bcg_pervacfrasnoabi=data.get(
+                    'des_bcg_pervacfrasnoabi', 0) or 0,
+                des_tota=tar_tota,
+                eniUser_id=eni_user_id
+            )
 
         # Filtrar y sumar columnas Desperdicio
         sum_data_des = desperdicio.objects.filter(
