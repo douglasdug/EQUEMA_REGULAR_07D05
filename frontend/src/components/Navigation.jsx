@@ -139,6 +139,17 @@ export function Navigation() {
                 Crear Temprano
               </li>
             </NavLink>
+            <NavLink
+              to="/createTardio/"
+              style={({ isActive }) => ({
+                color: isActive ? "rgb(107, 33, 168)" : "#000",
+                textDecoration: "none",
+              })}
+            >
+              <li className="mr-5 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
+                Crear Tardio
+              </li>
+            </NavLink>
           </ul>
         </div>
       </div>

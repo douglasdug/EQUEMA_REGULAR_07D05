@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { tempranoCreateApi } from "../api/temprano.api.js";
+import { tardioCreateApi } from "../api/tardio.api.js";
 import { toast } from "react-hot-toast";
 
-const CreateTemprano = () => {
+const CreateTardio = () => {
   const [formData, setFormData] = useState({
-    tem_fech: "",
-    tem_intr: "",
-    tem_extr_mies_cnh: "",
-    tem_men1_dosi_bcgp: "",
-    tem_men1_dosi_hbpr: "",
-    tem_men1_dosi_bcgd: "",
+    tar_fech: "",
+    tar_intr: "",
+    tar_extr_mies_cnh: "",
+    tar_1ano_1rad_fipv: "",
+    tar_1ano_1rad_hbpe: "",
+    tar_1ano_1rad_dpt: "",
+    tar_1ano_2dad_fipv: "",
     des_bcg_pervacenfabi: "",
     des_bcg_pervacfrasnoabi: "",
     eniUser: "",
@@ -27,7 +28,7 @@ const CreateTemprano = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await tempranoCreateApi(formData);
+      const response = await tardioCreateApi(formData);
       console.log("Success:", response.data);
       // Si response.data es un objeto, convierte el mensaje en una cadena de texto
       const successMessage = response.data.message || "Operación exitosa";
@@ -44,7 +45,7 @@ const CreateTemprano = () => {
 
   return (
     <div className="max-w-md mx-auto mt-10">
-      <h1 className="text-2xl font-bold mb-5">Crear Temprano</h1>
+      <h1 className="text-2xl font-bold mb-5">Crear Tardio</h1>
       {error && <p className="text-red-500 mb-5">{error}</p>}
       <form
         onSubmit={handleSubmit}
@@ -52,14 +53,15 @@ const CreateTemprano = () => {
       >
         {Object.keys(formData).map((key) => {
           let inputType = "text";
-          if (key === "tem_fech") {
+          if (key === "tar_fech") {
             inputType = "date";
           } else if (
-            key === "tem_intr" ||
-            key === "tem_extr_mies_cnh" ||
-            key === "tem_men1_dosi_bcgp" ||
-            key === "tem_men1_dosi_hbpr" ||
-            key === "tem_men1_dosi_bcgd" ||
+            key === "tar_intr" ||
+            key === "tar_extr_mies_cnh" ||
+            key === "tar_1ano_1rad_fipv" ||
+            key === "tar_1ano_1rad_hbpe" ||
+            key === "tar_1ano_1rad_dpt" ||
+            key === "tar_1ano_2dad_fipv" ||
             key === "des_bcg_pervacenfabi" ||
             key === "des_bcg_pervacfrasnoabi" ||
             key === "eniUser"
@@ -96,4 +98,4 @@ const CreateTemprano = () => {
   );
 };
 
-export default CreateTemprano;
+export default CreateTardio;

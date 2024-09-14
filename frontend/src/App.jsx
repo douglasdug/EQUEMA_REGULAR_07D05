@@ -7,6 +7,7 @@ import Temprano from "./pages/Temprano.jsx";
 import Tardio from "./pages/Tardio.jsx";
 import Desperdicio from "./pages/Desperdicio.jsx";
 import CreateTemprano from "./pages/CreateTemprano.jsx";
+import CreateTardio from "./pages/CreateTardio.jsx";
 import { Navigation } from "./components/Navigation.jsx";
 import { Toaster } from "react-hot-toast";
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/tardio/" element={<Tardio />} />
           <Route path="/desperdicio/" element={<Desperdicio />} />
           <Route path="/createTemprano/" element={<CreateTemprano />} />
+          <Route path="/createTardio/" element={<CreateTardio />} />
         </Routes>
         <Toaster />
       </div>
