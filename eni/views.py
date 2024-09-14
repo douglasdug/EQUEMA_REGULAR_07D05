@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import status, permissions, viewsets
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer
+from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from .models import unidadSalud, temprano, tardio, desperdicio
@@ -94,6 +94,33 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
                 tem_fech__year=year, tem_fech__month=month)
 
         return queryset.order_by('tem_fech')
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+
+class TardioRegistrationAPIView(viewsets.ModelViewSet):
+    serializer_class = TardioRegistrationSerializer
+    queryset = tardio.objects.all()
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        user_id = self.request.query_params.get('user_id', None)
+        month = self.request.query_params.get('month', None)
+        year = self.request.query_params.get('year', None)
+
+        queryset = self.queryset
+
+        if user_id is not None:
+            queryset = queryset.filter(eniUser=user_id)
+
+        if month is not None and year is not None:
+            queryset = queryset.filter(
+                tar_fech__year=year, tar_fech__month=month)
+
+        return queryset.order_by('tar_fech')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

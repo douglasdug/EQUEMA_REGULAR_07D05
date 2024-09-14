@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TempranoCreateView, TardioCreateView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, TempranoCreateView, TardioCreateView
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework import routers
 
@@ -7,6 +7,7 @@ from rest_framework import routers
 router = routers.DefaultRouter()
 router.register(r'unidadsalud', UnidadSaludRegistrationAPIView, 'unidadsalud')
 router.register(r'temprano', TempranoRegistrationAPIView, 'temprano')
+router.register(r'tardio', TardioRegistrationAPIView, 'tardio')
 
 urlpatterns = [
     path('v1/', include(router.urls)),

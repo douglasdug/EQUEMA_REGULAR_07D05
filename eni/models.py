@@ -70,8 +70,8 @@ class tardio(models.Model):
     def get_by_month_and_user(cls, user_id, month, year):
         return cls.objects.filter(
             eniUser_id=user_id,
-            tem_fech__year=year,
-            tem_fech__month=month
+            tar_fech__year=year,
+            tar_fech__month=month
         ).order_by('tar_fech')
 
 
