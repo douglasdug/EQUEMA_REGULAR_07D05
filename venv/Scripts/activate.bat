@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\admin\Documents\SALUD_07D05\APLICACIONES CRUD\EQUEMA_REGULAR_07D05-1\venv
+set VIRTUAL_ENV=C:\Users\LENOVO\Documents\MSP 07D05\APLICACIONES CRUD\EQUEMA_REGULAR_07D05\venv
 
 if not defined PROMPT set PROMPT=$P$G
 
