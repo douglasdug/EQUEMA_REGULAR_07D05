@@ -414,3 +414,56 @@ class desperdicio(models.Model):
             des_fech__year=year,
             des_fech__month=month
         ).order_by('des_fech')
+
+
+class registroVacunador(models.Model):
+    vac_reg_ano_mes_dia_apli = models.DateField()
+    vac_reg_punt_vacu = models.CharField(max_length=40, blank=True)
+    vac_reg_unic_esta = models.CharField(max_length=8, blank=True)
+    vac_reg_nomb_esta_salu = models.CharField(max_length=40, blank=True)
+    vac_reg_zona = models.CharField(max_length=8, blank=True)
+    vac_reg_dist = models.CharField(max_length=8, blank=True)
+    vac_reg_prov = models.CharField(max_length=20, blank=True)
+    vac_reg_cant = models.CharField(max_length=30, blank=True)
+    vac_reg_apel = models.CharField(max_length=40, blank=True)
+    vac_reg_nomb = models.CharField(max_length=40, blank=True)
+    vac_reg_tipo_iden = models.CharField(max_length=30, blank=True)
+    vac_reg_nume_iden = models.CharField(max_length=20, blank=True)
+    vac_reg_sexo = models.CharField(max_length=10, blank=True)
+    vac_reg_ano_mes_dia_naci = models.DateField()
+    vac_reg_naci = models.CharField(max_length=30, blank=True)
+    vac_reg_etni = models.CharField(max_length=20, blank=True)
+    vac_reg_naci_etni = models.CharField(max_length=30, blank=True)
+    vac_reg_pueb = models.CharField(max_length=30, blank=True)
+    vac_reg_resi_prov = models.CharField(max_length=20, blank=True)
+    vac_reg_resi_cant = models.CharField(max_length=30, blank=True)
+    vac_reg_resi_parr = models.CharField(max_length=40, blank=True)
+    vac_reg_teld_cont = models.CharField(max_length=15, blank=True)
+    vac_reg_corr_elec = models.CharField(max_length=40, blank=True)
+    vac_reg_grup_ries = models.CharField(max_length=40, blank=True)
+    vac_reg_fase_vacu = models.IntegerField(blank=True)
+    vac_reg_esta_vacu = models.CharField(max_length=15, blank=True)
+    vac_reg_tipo_esqu = models.CharField(max_length=30, blank=True)
+    vac_reg_vacu = models.CharField(max_length=40, blank=True)
+    vac_reg_lote_vacu = models.CharField(max_length=20, blank=True)
+    vac_reg_dosi_apli = models.IntegerField(blank=True)
+    vac_reg_paci_agen = models.CharField(max_length=8, blank=True)
+    vac_reg_nomb_vacu = models.CharField(max_length=40, blank=True)
+    vac_reg_iden_vacu = models.CharField(max_length=20, blank=True)
+    vac_reg_nomb_prof_regi = models.CharField(max_length=40, blank=True)
+    vac_reg_reci_dosi_prev_exte = models.CharField(max_length=8, blank=True)
+    vac_reg_nomb_dosi_exte = models.CharField(max_length=40, blank=True)
+    vac_reg_fech_anio_mes_dia_dosi_exte = models.DateField()
+    vac_reg_pais_dosi_exte = models.CharField(max_length=30, blank=True)
+    vac_reg_lote_dosi_exte = models.CharField(max_length=20, blank=True)
+
+    eniUser = models.ForeignKey(
+        eniUser, null=True, blank=True, on_delete=models.CASCADE)
+
+    @classmethod
+    def get_by_month_and_user(cls, user_id, month, year):
+        return cls.objects.filter(
+            eniUser_id=user_id,
+            vac_reg_fech__year=year,
+            vac_reg_fech__month=month
+        ).order_by('vac_reg_ano_mes_dia_apli')

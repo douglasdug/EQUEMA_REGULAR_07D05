@@ -52,7 +52,7 @@ export function Navigation() {
               </li>
             </NavLink>
             <NavLink
-              to="/login"
+              to="/login/"
               style={({ isActive }) => ({
                 color: isActive ? "rgb(107, 33, 168)" : "#000",
                 textDecoration: "none",
@@ -63,7 +63,7 @@ export function Navigation() {
               </li>
             </NavLink>
             <NavLink
-              to="/Register"
+              to="/Register/"
               style={({ isActive }) => ({
                 color: isActive ? "rgb(107, 33, 168)" : "#000",
                 textDecoration: "none",
@@ -91,7 +91,7 @@ export function Navigation() {
                 <div className="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
                   <ul>
                     <NavLink
-                      to="/temprano/"
+                      to="/createtemprano/"
                       style={({ isActive }) => ({
                         color: isActive ? "rgb(107, 33, 168)" : "#000",
                         textDecoration: "none",
@@ -102,7 +102,7 @@ export function Navigation() {
                       </li>
                     </NavLink>
                     <NavLink
-                      to="/tardio/"
+                      to="/createtardio/"
                       style={({ isActive }) => ({
                         color: isActive ? "rgb(107, 33, 168)" : "#000",
                         textDecoration: "none",
@@ -113,7 +113,7 @@ export function Navigation() {
                       </li>
                     </NavLink>
                     <NavLink
-                      to="/desperdicio/"
+                      to="/createdesperdicio/"
                       style={({ isActive }) => ({
                         color: isActive ? "rgb(107, 33, 168)" : "#000",
                         textDecoration: "none",
@@ -127,29 +127,6 @@ export function Navigation() {
                 </div>
               )}
             </div>
-
-            <NavLink
-              to="/createTemprano/"
-              style={({ isActive }) => ({
-                color: isActive ? "rgb(107, 33, 168)" : "#000",
-                textDecoration: "none",
-              })}
-            >
-              <li className="mr-5 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
-                Crear Temprano
-              </li>
-            </NavLink>
-            <NavLink
-              to="/createTardio/"
-              style={({ isActive }) => ({
-                color: isActive ? "rgb(107, 33, 168)" : "#000",
-                textDecoration: "none",
-              })}
-            >
-              <li className="mr-5 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
-                Crear Tardio
-              </li>
-            </NavLink>
           </ul>
         </div>
       </div>
