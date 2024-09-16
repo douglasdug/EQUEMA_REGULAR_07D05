@@ -3364,6 +3364,6 @@ class DesperdicioCreateView(APIView):
                 des_vacvphcam_pervacfrasnoabi=sum_data_des['total_des_vacvphcam_pervacfrasnoabi'],
                 des_tota=True,
                 eniUser_id=eni_user_id
-            )
+            )            
 
         return Response({"message": "Datos registrados correctamente."}, status=status.HTTP_201_CREATED)
