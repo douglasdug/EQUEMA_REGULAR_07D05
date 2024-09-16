@@ -4,7 +4,7 @@ import React from "react";
 export default function Home() {
   return (
     <div>
-      <h1>Home</h1>
+      <h1>Home Eni</h1>
       <div className="relative overflow-x-auto">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
