@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TempranoCreateView, TardioCreateView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, TempranoCreateView, TardioCreateView, DesperdicioCreateView, DesperdicioRegistrationAPIView
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework import routers
 
@@ -7,6 +7,8 @@ from rest_framework import routers
 router = routers.DefaultRouter()
 router.register(r'unidadsalud', UnidadSaludRegistrationAPIView, 'unidadsalud')
 router.register(r'temprano', TempranoRegistrationAPIView, 'temprano')
+router.register(r'tardio', TardioRegistrationAPIView, 'tardio')
+router.register(r'desperdicio', DesperdicioRegistrationAPIView, 'desperdicio')
 
 urlpatterns = [
     path('v1/', include(router.urls)),
@@ -17,4 +19,6 @@ urlpatterns = [
     path('v1/user/', UserInfoAPIView.as_view(), name='user-info'),
     path('v1/tempranocreate/', TempranoCreateView.as_view(), name='temprano-create'),
     path('v1/tardiocreate/', TardioCreateView.as_view(), name='tardio-create'),
+    path('v1/desperdiciocreate/', DesperdicioCreateView.as_view(),
+         name='desperdicio-create'),
 ]

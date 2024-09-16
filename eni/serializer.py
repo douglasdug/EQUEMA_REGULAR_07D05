@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import eniUser, unidadSalud, temprano
+from .models import eniUser, unidadSalud, temprano, tardio, desperdicio
 from django.contrib.auth import authenticate
 
 
@@ -57,4 +57,22 @@ class TempranoRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = temprano
+        fields = '__all__'
+
+
+class TardioRegistrationSerializer(serializers.ModelSerializer):
+    tar_fech = serializers.DateField(
+        format="%d/%m/%Y", input_formats=['%d/%m/%Y', 'iso-8601'])
+
+    class Meta:
+        model = tardio
+        fields = '__all__'
+
+
+class DesperdicioRegistrationSerializer(serializers.ModelSerializer):
+    des_fech = serializers.DateField(
+        format="%d/%m/%Y", input_formats=['%d/%m/%Y', 'iso-8601'])
+
+    class Meta:
+        model = desperdicio
         fields = '__all__'

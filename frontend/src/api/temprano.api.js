@@ -11,3 +11,6 @@ export const deleteTemprano = (id) => tempranoApi.delete(`/${id}/`);
 export const updateTemprano = (id, temprano) =>
   tempranoApi.put(`/${id}/`, temprano);
 export const getTemprano = (id) => tempranoApi.get(`/${id}/`);
+
+export const tempranoCreateApi = (temprano) =>
+  axios.post("http://localhost:8000/api/v1/tempranocreate/", temprano);
