@@ -2,10 +2,10 @@ from django.shortcuts import render
 from rest_framework import status, permissions, viewsets
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer
+from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from .models import unidadSalud, temprano, tardio, desperdicio
+from .models import unidadSalud, temprano, tardio, desperdicio, registroVacunado
 
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
@@ -148,6 +148,33 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
                 des_fech__year=year, des_fech__month=month)
 
         return queryset.order_by('des_fech')
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+
+class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
+    serializer_class = RegistroVacunadoRegistrationSerializer
+    queryset = registroVacunado.objects.all()
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        user_id = self.request.query_params.get('user_id', None)
+        month = self.request.query_params.get('month', None)
+        year = self.request.query_params.get('year', None)
+
+        queryset = self.queryset
+
+        if user_id is not None:
+            queryset = queryset.filter(eniUser=user_id)
+
+        if month is not None and year is not None:
+            queryset = queryset.filter(
+                var_reg_fech__year=year, var_reg_fech__month=month)
+
+        return queryset.order_by('vac_reg_ano_apli', 'vac_reg_mes_apli', 'vac_reg_dia_apli')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -3364,6 +3391,6 @@ class DesperdicioCreateView(APIView):
                 des_vacvphcam_pervacfrasnoabi=sum_data_des['total_des_vacvphcam_pervacfrasnoabi'],
                 des_tota=True,
                 eniUser_id=eni_user_id
-            )            
+            )
 
         return Response({"message": "Datos registrados correctamente."}, status=status.HTTP_201_CREATED)

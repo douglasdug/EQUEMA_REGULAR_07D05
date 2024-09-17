@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import eniUser, unidadSalud, temprano, tardio, desperdicio
+from .models import eniUser, unidadSalud, temprano, tardio, desperdicio, registroVacunado
 from django.contrib.auth import authenticate
 
 
@@ -75,4 +75,13 @@ class DesperdicioRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = desperdicio
+        fields = '__all__'
+
+
+class RegistroVacunadoRegistrationSerializer(serializers.ModelSerializer):
+    des_fech = serializers.DateField(
+        format="%d/%m/%Y", input_formats=['%d/%m/%Y', 'iso-8601'])
+
+    class Meta:
+        model = registroVacunado
         fields = '__all__'

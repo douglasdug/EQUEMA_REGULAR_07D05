@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { getUser } from "../api/usuario.api.js";
 
-export default function UsuarioLogout() {
+const UsuarioLogout = () => {
   const [username, setUsername] = useState("");
-  const [isLoggedIn, setLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const checkLoggedInUser = async () => {
@@ -12,14 +12,14 @@ export default function UsuarioLogout() {
         const token = localStorage.getItem("accessToken");
         if (token) {
           const response = await getUser(token);
-          setLoggedIn(true);
+          setIsLoggedIn(true);
           setUsername(response.data.username);
         } else {
-          setLoggedIn(false);
+          setIsLoggedIn(false);
           setUsername("");
         }
       } catch (error) {
-        setLoggedIn(false);
+        setIsLoggedIn(false);
         setUsername("");
       }
     };
@@ -28,7 +28,7 @@ export default function UsuarioLogout() {
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
-    setLoggedIn(false);
+    setIsLoggedIn(false);
     setUsername("");
   };
 
@@ -36,17 +36,23 @@ export default function UsuarioLogout() {
     <div>
       {isLoggedIn ? (
         <>
-          <h2>Hola, {username}. Gracias por logearte!</h2>
+          <p>Bienvenido, {username}. Gracias por logearte!</p>
           <button
             onClick={handleLogout}
-            className="bg-indigo-500 p-3 rounded-lg block w-full mt-3"
+            className="inline-block rounded-lg bg-blue-500 px-5 py-3 text-sm font-medium text-white"
           >
             Logout
           </button>
         </>
       ) : (
-        <h2>Please Login</h2>
+        <button
+          onClick={() => (window.location.href = "/login/")}
+          className="inline-block rounded-lg bg-blue-500 px-5 py-3 text-sm font-medium text-white"
+        >
+          Login
+        </button>
       )}
     </div>
   );
-}
+};
+export default UsuarioLogout;

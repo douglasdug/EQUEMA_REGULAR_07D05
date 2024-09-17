@@ -63,8 +63,8 @@ export default function Login() {
         {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
         <h1 className="text-2xl font-bold sm:text-3xl">Login</h1>
         <p className="mt-4 text-gray-700">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Et libero
-          nulla eaque error neque ipsa culpa autem, at itaque nostrum!
+          ¡La contraseña debe tener de 8 a 15 caracteres y tener una combinación
+          entre Mayúsculas, Minúsculas y números!
         </p>
         <div className="md:w-8/12 lg:ml-6 lg:w-5/12">
           <form action="/" className="mx-auto mb-0 mt-8 max-w-md space-y-4">
