@@ -79,7 +79,7 @@ class DesperdicioRegistrationSerializer(serializers.ModelSerializer):
 
 
 class RegistroVacunadoRegistrationSerializer(serializers.ModelSerializer):
-    des_fech = serializers.DateField(
+    vac_reg_ano_mes_dia_apli = serializers.DateField(
         format="%d/%m/%Y", input_formats=['%d/%m/%Y', 'iso-8601'])
 
     class Meta:

@@ -174,12 +174,14 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 var_reg_fech__year=year, var_reg_fech__month=month)
 
-        return queryset.order_by('vac_reg_ano_apli', 'vac_reg_mes_apli', 'vac_reg_dia_apli')
+        return queryset.order_by('vac_reg_ano_mes_dia_apli')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class TempranoCreateView(APIView):
