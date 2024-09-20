@@ -187,15 +187,27 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
         des_fech = registro_data['vac_reg_ano_mes_dia_apli']
         eni_user_id = registro_data['eniUser'].id
 
-        # Crear o actualizar registro de desperdicio
-        desperdicio_obj, created = desperdicio.objects.get_or_create(
-            des_fech=des_fech,
-            defaults={'des_vacmod_dosapli': 1,
-                      'eniUser_id': eni_user_id, 'des_tota': False}
-        )
-        if not created:
-            desperdicio_obj.des_vacmod_dosapli = F(
-                'des_vacmod_dosapli') + 1
+        # Verificar si la fecha es el último día del mes
+        ultimo_dia_mes = (des_fech.replace(
+            day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+        # Crear o actualizar registro de desperdicio solo si la fecha no es duplicada o es el último día del mes
+        if des_fech == ultimo_dia_mes or not desperdicio.objects.filter(des_fech=des_fech, des_tota=False).exists():
+            desperdicio_obj, created = desperdicio.objects.get_or_create(
+                des_fech=des_fech,
+                des_tota=False,
+                defaults={'des_vacmod_dosapli': 1, 'eniUser_id': eni_user_id}
+            )
+            if not created:
+                desperdicio_obj.des_vacmod_dosapli = F(
+                    'des_vacmod_dosapli') + 1
+                desperdicio_obj.eniUser_id = eni_user_id
+                desperdicio_obj.save()
+        else:
+            # Manejar el caso donde la fecha no es el último día del mes y ya existe un registro
+            desperdicio_obj = desperdicio.objects.filter(
+                des_fech=des_fech, des_tota=False).first()
+            desperdicio_obj.des_vacmod_dosapli = F('des_vacmod_dosapli') + 1
             desperdicio_obj.eniUser_id = eni_user_id
             desperdicio_obj.save()
 
@@ -211,7 +223,7 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
             des_fech__range=(des_fech_inicio, des_fech_fin)
         ).aggregate(total_des_vacmod_dosapli=Sum('des_vacmod_dosapli'))['total_des_vacmod_dosapli'] or 0
 
-        # Crear o actualizar registro de desperdicio total del mes
+        # Crear o actualizar registro de desperdicio total
         desperdicio_total, created = desperdicio.objects.get_or_create(
             des_fech=des_fech_fin,
             des_tota=True,
@@ -220,7 +232,7 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
         )
         if not created:
             desperdicio_total.des_vacmod_dosapli = total_vacmod_dosapli
-            desperdicio_total.save()
+            desperdicio_total.save(update_fields=['des_vacmod_dosapli'])
 
         headers = self.get_success_headers(serializer.data)
         return Response({"message": "Datos registrados correctamente!.", "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)

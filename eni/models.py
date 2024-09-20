@@ -1,14 +1,8 @@
-from django.db import models, IntegrityError
+from django.db import models
 from django.contrib.auth.models import AbstractUser
-
-from django.utils.timezone import now
-from datetime import datetime, timedelta
-from django.core.exceptions import ValidationError
 
 
 # Create your models here.
-
-
 class eniUser(AbstractUser):
     email = models.EmailField(unique=True)
     fun_sex = models.CharField(max_length=10, blank=True)
@@ -21,9 +15,8 @@ class eniUser(AbstractUser):
     def __str__(self) -> str:
         return self.nombre_completo()
 
+
 # Crea la tabla de Unidad de Salud
-
-
 class unidadSalud(models.Model):
     uni_zona = models.CharField(max_length=10, blank=True)
     uni_dist = models.CharField(max_length=8, blank=True)
@@ -137,6 +130,8 @@ class temprano(models.Model):
             tem_fech__year=year,
             tem_fech__month=month
         ).order_by('tem_fech')
+
+# Crea la tabla de Esquema Regular Tardio
 
 
 class tardio(models.Model):
@@ -330,6 +325,8 @@ class tardio(models.Model):
             tar_fech__month=month
         ).order_by('tar_fech')
 
+# Crea la tabla de Esquema Regular Desperdicio
+
 
 class desperdicio(models.Model):
     des_fech = models.DateField()
@@ -420,26 +417,7 @@ class desperdicio(models.Model):
             tar_fech__month=month
         ).order_by('des_fech')
 
-    '''def save(self, *args, **kwargs):
-        # Calcular el primer y último día del mes basado en des_fech
-        if self.des_fech:
-            self.des_primer_dia_mes = self.des_fech.replace(day=1)
-            # Asegura que estamos en el próximo mes
-            next_month = self.des_fech.replace(day=28) + timedelta(days=4)
-            self.des_ultimo_dia_mes = next_month - \
-                timedelta(days=next_month.day)
-
-        # Lógica para crear la fila total
-        if self.des_tota:
-            # Aquí puedes implementar la lógica para calcular el total de todas las columnas
-            total_des_vacmod_dosapli = desperdicio.objects.aggregate(
-                total=models.Sum('des_vacmod_dosapli'))['total']
-            total_des_vacvphcam_pervacfrasnoabi = desperdicio.objects.aggregate(
-                total=models.Sum('des_vacvphcam_pervacfrasnoabi'))['total']
-            self.des_vacmod_dosapli = total_des_vacmod_dosapli
-            self.des_vacvphcam_pervacfrasnoabi = total_des_vacvphcam_pervacfrasnoabi
-
-        super(desperdicio, self).save(*args, **kwargs)'''
+# Crea la tabla de Campaña de Vacunación Registro Paciente
 
 
 class registroVacunado(models.Model):
@@ -484,3 +462,11 @@ class registroVacunado(models.Model):
     vac_reg_lote_dosi_exte = models.CharField(max_length=20, blank=True)
     eniUser = models.ForeignKey(
         'eniUser', null=True, blank=True, on_delete=models.CASCADE)
+
+    @classmethod
+    def get_by_month_and_user(cls, user_id, month, year):
+        return cls.objects.filter(
+            eniUser_id=user_id,
+            vac_reg_fech__year=year,
+            vac_reg_fech__month=month
+        ).order_by('vac_reg_ano_mes_dia_apli')
