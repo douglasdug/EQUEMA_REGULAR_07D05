@@ -9,9 +9,10 @@ from .models import unidadSalud, temprano, tardio, desperdicio, registroVacunado
 
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
-from django.db.models import Sum
+from django.db.models import F, Sum
 from django.utils.dateparse import parse_date
 from datetime import datetime, timedelta
+
 
 # Create your views here.
 
@@ -180,8 +181,59 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+
+        # Guardar en desperdicio
+        registro_data = serializer.validated_data
+        des_fech = registro_data['vac_reg_ano_mes_dia_apli']
+        # Suponiendo que este campo está en el serializer
+        eni_user_id = registro_data['eniUser'].id
+
+        # Crear o actualizar registro de desperdicio
+        desperdicio_obj, created = desperdicio.objects.get_or_create(
+            des_fech=des_fech,
+            defaults={'des_vacmod_dosapli': 1,
+                      'eniUser_id': eni_user_id, 'des_tota': False}
+        )
+        if not created:
+            desperdicio_obj.des_vacmod_dosapli = F(
+                'des_vacmod_dosapli') + 1
+            # Actualizar el id de eniUser si es necesario
+            desperdicio_obj.eniUser_id = eni_user_id
+            desperdicio_obj.save()
+
+        # Crear variables de control
+        des_fech_inicio = des_fech.replace(day=1)
+        des_fech_fin = (des_fech.replace(day=1) +
+                        timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+        # Obtener el total de des_vacmod_dosapli excluyendo las filas donde des_tota es True
+        total_vacmod_dosapli = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_tota=False,
+            des_fech__range=(des_fech_inicio, des_fech_fin)
+        ).aggregate(total_des_vacmod_dosapli=Sum('des_vacmod_dosapli'))['total_des_vacmod_dosapli'] or 0
+
+        # Crear o actualizar registro de desperdicio total del mes
+        desperdicio_total, created = desperdicio.objects.get_or_create(
+            des_fech=des_fech_fin,
+            des_tota=True,
+            defaults={'des_vacmod_dosapli': total_vacmod_dosapli,
+                      'eniUser_id': eni_user_id}
+        )
+        if not created:
+            print("Dato 4: "+str(desperdicio_total.des_vacmod_dosapli))
+            desperdicio_total.des_vacmod_dosapli = total_vacmod_dosapli
+            print("Dato 5: "+str(desperdicio_total.des_vacmod_dosapli))
+            # desperdicio_total.save(update_fields=['des_vacmod_dosapli'])
+            desperdicio_total.save()
+
+        print("Dato 2: "+str(total_vacmod_dosapli))
+        if not created:
+            print("ID de la segunda fila creada: " + str(desperdicio_total.id))
+        print("Dato 3: "+str(desperdicio_total.des_vacmod_dosapli))
+
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({"message": "Datos registrados correctamente!.", "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class TempranoCreateView(APIView):

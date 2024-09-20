@@ -410,302 +410,36 @@ class desperdicio(models.Model):
     des_vacvphcam_pervacfrasnoabi = models.IntegerField(default=0)
     des_tota = models.BooleanField(default=False)
     eniUser = models.ForeignKey(
-        eniUser, null=True, blank=True, on_delete=models.CASCADE)
+        'eniUser', null=True, blank=True, on_delete=models.CASCADE)
 
     @classmethod
     def get_by_month_and_user(cls, user_id, month, year):
         return cls.objects.filter(
             eniUser_id=user_id,
-            des_fech__year=year,
-            des_fech__month=month
+            tar_fech__year=year,
+            tar_fech__month=month
         ).order_by('des_fech')
 
-    def clean(self):
-        # Verificar si hay fechas repetidas
-        if desperdicio.objects.filter(des_fech=self.des_fech).exists() and not self.des_tota:
-            raise ValidationError(
-                'La fecha des_fech no puede repetirse a menos que des_tota sea True.')
+    '''def save(self, *args, **kwargs):
+        # Calcular el primer y último día del mes basado en des_fech
+        if self.des_fech:
+            self.des_primer_dia_mes = self.des_fech.replace(day=1)
+            # Asegura que estamos en el próximo mes
+            next_month = self.des_fech.replace(day=28) + timedelta(days=4)
+            self.des_ultimo_dia_mes = next_month - \
+                timedelta(days=next_month.day)
 
-    def save(self, *args, **kwargs):
-        self.clean()  # Llamar a la validación personalizada
-        super(desperdicio, self).save(*args, **kwargs)
+        # Lógica para crear la fila total
+        if self.des_tota:
+            # Aquí puedes implementar la lógica para calcular el total de todas las columnas
+            total_des_vacmod_dosapli = desperdicio.objects.aggregate(
+                total=models.Sum('des_vacmod_dosapli'))['total']
+            total_des_vacvphcam_pervacfrasnoabi = desperdicio.objects.aggregate(
+                total=models.Sum('des_vacvphcam_pervacfrasnoabi'))['total']
+            self.des_vacmod_dosapli = total_des_vacmod_dosapli
+            self.des_vacvphcam_pervacfrasnoabi = total_des_vacvphcam_pervacfrasnoabi
 
-    @classmethod
-    def actualizar_desperdicio(cls, fecha, eniUser_id):
-        # Obtener el primer y último día del mes
-        primer_dia_mes = fecha.replace(day=1)
-        ultimo_dia_mes = (fecha.replace(day=28) +
-                          timedelta(days=4)).replace(day=1) - timedelta(days=1)
-
-        # Crear o actualizar el registro del día específico
-        desperdicio, created = cls.objects.get_or_create(des_fech=fecha, eniUser_id=eniUser_id, defaults={
-            'des_bcg_dosapli': 0,
-            'des_bcg_pervacenfabi': 0,
-            'des_bcg_pervacfrasnoabi': 0,
-            'des_hbpe_dosapli': 0,
-            'des_hbpe_pervacenfabi': 0,
-            'des_hbpe_pervacfrasnoabi': 0,
-            'des_rota_dosapli': 0,
-            'des_rota_pervacenfabi': 0,
-            'des_rota_pervacfrasnoabi': 0,
-            'des_pent_dosapli': 0,
-            'des_pent_pervacenfabi': 0,
-            'des_pent_pervacfrasnoabi': 0,
-            'des_fipv_dosapli': 0,
-            'des_fipv_pervacenfabi': 0,
-            'des_fipv_pervacfrasnoabi': 0,
-            'des_anti_dosapli': 0,
-            'des_anti_pervacenfabi': 0,
-            'des_anti_pervacfrasnoabi': 0,
-            'des_neum_dosapli': 0,
-            'des_neum_pervacenfabi': 0,
-            'des_neum_pervacfrasnoabi': 0,
-            'des_sr_dosapli': 0,
-            'des_sr_pervacenfabi': 0,
-            'des_sr_pervacfrasnoabi': 0,
-            'des_srp_dosapli': 0,
-            'des_srp_pervacenfabi': 0,
-            'des_srp_pervacfrasnoabi': 0,
-            'des_vari_dosapli': 0,
-            'des_vari_pervacenfabi': 0,
-            'des_vari_pervacfrasnoabi': 0,
-            'des_fieb_dosapli': 0,
-            'des_fieb_pervacenfabi': 0,
-            'des_fieb_pervacfrasnoabi': 0,
-            'des_dift_dosapli': 0,
-            'des_dift_pervacenfabi': 0,
-            'des_dift_pervacfrasnoabi': 0,
-            'des_hpv_dosapli': 0,
-            'des_hpv_pervacenfabi': 0,
-            'des_hpv_pervacfrasnoabi': 0,
-            'des_dtad_dosapli': 0,
-            'des_dtad_pervacenfabi': 0,
-            'des_dtad_pervacfrasnoabi': 0,
-            'des_hepa_dosapli': 0,
-            'des_hepa_pervacenfabi': 0,
-            'des_hepa_pervacfrasnoabi': 0,
-            'des_inmant_dosapli': 0,
-            'des_inmant_pervacenfabi': 0,
-            'des_inmant_pervacfrasnoabi': 0,
-            'des_inmanthepb_dosapli': 0,
-            'des_inmanthepb_pervacenfabi': 0,
-            'des_inmanthepb_pervacfrasnoabi': 0,
-            'des_inmantrra_dosapli': 0,
-            'des_inmantrra_pervacenfabi': 0,
-            'des_inmantrra_pervacfrasnoabi': 0,
-            'des_infped_dosapli': 0,
-            'des_infped_pervacenfabi': 0,
-            'des_infped_pervacfrasnoabi': 0,
-            'des_infadu_dosapli': 0,
-            'des_infadu_pervacenfabi': 0,
-            'des_infadu_pervacfrasnoabi': 0,
-            'des_viru_dosapli': 0,
-            'des_viru_pervacenfabi': 0,
-            'des_viru_pervacfrasnoabi': 0,
-            'des_vacsin_dosapli': 0,
-            'des_vacsin_pervacenfabi': 0,
-            'des_vacsin_pervacfrasnoabi': 0,
-            'des_vacpfi_dosapli': 0,
-            'des_vacpfi_pervacenfabi': 0,
-            'des_vacpfi_pervacfrasnoabi': 0,
-            'des_vacmod_dosapli': 0,
-            'des_vacmod_pervacenfabi': 0,
-            'des_vacmod_pervacfrasnoabi': 0,
-            'des_vacvphcam_dosapli': 0,
-            'des_vacvphcam_pervacenfabi': 0,
-            'des_vacvphcam_pervacfrasnoabi': 0,
-            'des_tota': False
-        })
-        desperdicio.des_vacmod_dosapli += 1
-        desperdicio.save()
-
-        # Crear o actualizar el registro del último día del mes
-        try:
-            desperdicio_mes, created = cls.objects.get_or_create(
-                des_fech=ultimo_dia_mes,
-                eniUser_id=eniUser_id,
-                defaults={
-                    'des_bcg_dosapli': 0,
-                    'des_bcg_pervacenfabi': 0,
-                    'des_bcg_pervacfrasnoabi': 0,
-                    'des_hbpe_dosapli': 0,
-                    'des_hbpe_pervacenfabi': 0,
-                    'des_hbpe_pervacfrasnoabi': 0,
-                    'des_rota_dosapli': 0,
-                    'des_rota_pervacenfabi': 0,
-                    'des_rota_pervacfrasnoabi': 0,
-                    'des_pent_dosapli': 0,
-                    'des_pent_pervacenfabi': 0,
-                    'des_pent_pervacfrasnoabi': 0,
-                    'des_fipv_dosapli': 0,
-                    'des_fipv_pervacenfabi': 0,
-                    'des_fipv_pervacfrasnoabi': 0,
-                    'des_anti_dosapli': 0,
-                    'des_anti_pervacenfabi': 0,
-                    'des_anti_pervacfrasnoabi': 0,
-                    'des_neum_dosapli': 0,
-                    'des_neum_pervacenfabi': 0,
-                    'des_neum_pervacfrasnoabi': 0,
-                    'des_sr_dosapli': 0,
-                    'des_sr_pervacenfabi': 0,
-                    'des_sr_pervacfrasnoabi': 0,
-                    'des_srp_dosapli': 0,
-                    'des_srp_pervacenfabi': 0,
-                    'des_srp_pervacfrasnoabi': 0,
-                    'des_vari_dosapli': 0,
-                    'des_vari_pervacenfabi': 0,
-                    'des_vari_pervacfrasnoabi': 0,
-                    'des_fieb_dosapli': 0,
-                    'des_fieb_pervacenfabi': 0,
-                    'des_fieb_pervacfrasnoabi': 0,
-                    'des_dift_dosapli': 0,
-                    'des_dift_pervacenfabi': 0,
-                    'des_dift_pervacfrasnoabi': 0,
-                    'des_hpv_dosapli': 0,
-                    'des_hpv_pervacenfabi': 0,
-                    'des_hpv_pervacfrasnoabi': 0,
-                    'des_dtad_dosapli': 0,
-                    'des_dtad_pervacenfabi': 0,
-                    'des_dtad_pervacfrasnoabi': 0,
-                    'des_hepa_dosapli': 0,
-                    'des_hepa_pervacenfabi': 0,
-                    'des_hepa_pervacfrasnoabi': 0,
-                    'des_inmant_dosapli': 0,
-                    'des_inmant_pervacenfabi': 0,
-                    'des_inmant_pervacfrasnoabi': 0,
-                    'des_inmanthepb_dosapli': 0,
-                    'des_inmanthepb_pervacenfabi': 0,
-                    'des_inmanthepb_pervacfrasnoabi': 0,
-                    'des_inmantrra_dosapli': 0,
-                    'des_inmantrra_pervacenfabi': 0,
-                    'des_inmantrra_pervacfrasnoabi': 0,
-                    'des_infped_dosapli': 0,
-                    'des_infped_pervacenfabi': 0,
-                    'des_infped_pervacfrasnoabi': 0,
-                    'des_infadu_dosapli': 0,
-                    'des_infadu_pervacenfabi': 0,
-                    'des_infadu_pervacfrasnoabi': 0,
-                    'des_viru_dosapli': 0,
-                    'des_viru_pervacenfabi': 0,
-                    'des_viru_pervacfrasnoabi': 0,
-                    'des_vacsin_dosapli': 0,
-                    'des_vacsin_pervacenfabi': 0,
-                    'des_vacsin_pervacfrasnoabi': 0,
-                    'des_vacpfi_dosapli': 0,
-                    'des_vacpfi_pervacenfabi': 0,
-                    'des_vacpfi_pervacfrasnoabi': 0,
-                    'des_vacmod_dosapli': 0,
-                    'des_vacmod_pervacenfabi': 0,
-                    'des_vacmod_pervacfrasnoabi': 0,
-                    'des_vacvphcam_dosapli': 0,
-                    'des_vacvphcam_pervacenfabi': 0,
-                    'des_vacvphcam_pervacfrasnoabi': 0,
-                    'des_tota': True
-                }
-            )
-        except IntegrityError:
-            desperdicio_mes = cls.objects.get(
-                des_fech=ultimo_dia_mes, eniUser_id=eniUser_id, des_tota=True)
-
-        # Obtener la suma de todas las columnas de desperdicio
-        suma_campos = cls.objects.filter(
-            des_fech__range=(primer_dia_mes, ultimo_dia_mes),
-            eniUser_id=eniUser_id, des_tota=False
-        ).aggregate(
-            des_bcg_dosapli=models.Sum('des_bcg_dosapli'),
-            des_bcg_pervacenfabi=models.Sum('des_bcg_pervacenfabi'),
-            des_bcg_pervacfrasnoabi=models.Sum('des_bcg_pervacfrasnoabi'),
-            des_hbpe_dosapli=models.Sum('des_hbpe_dosapli'),
-            des_hbpe_pervacenfabi=models.Sum('des_hbpe_pervacenfabi'),
-            des_hbpe_pervacfrasnoabi=models.Sum('des_hbpe_pervacfrasnoabi'),
-            des_rota_dosapli=models.Sum('des_rota_dosapli'),
-            des_rota_pervacenfabi=models.Sum('des_rota_pervacenfabi'),
-            des_rota_pervacfrasnoabi=models.Sum('des_rota_pervacfrasnoabi'),
-            des_pent_dosapli=models.Sum('des_pent_dosapli'),
-            des_pent_pervacenfabi=models.Sum('des_pent_pervacenfabi'),
-            des_pent_pervacfrasnoabi=models.Sum('des_pent_pervacfrasnoabi'),
-            des_fipv_dosapli=models.Sum('des_fipv_dosapli'),
-            des_fipv_pervacenfabi=models.Sum('des_fipv_pervacenfabi'),
-            des_fipv_pervacfrasnoabi=models.Sum('des_fipv_pervacfrasnoabi'),
-            des_anti_dosapli=models.Sum('des_anti_dosapli'),
-            des_anti_pervacenfabi=models.Sum('des_anti_pervacenfabi'),
-            des_anti_pervacfrasnoabi=models.Sum('des_anti_pervacfrasnoabi'),
-            des_neum_dosapli=models.Sum('des_neum_dosapli'),
-            des_neum_pervacenfabi=models.Sum('des_neum_pervacenfabi'),
-            des_neum_pervacfrasnoabi=models.Sum('des_neum_pervacfrasnoabi'),
-            des_sr_dosapli=models.Sum('des_sr_dosapli'),
-            des_sr_pervacenfabi=models.Sum('des_sr_pervacenfabi'),
-            des_sr_pervacfrasnoabi=models.Sum('des_sr_pervacfrasnoabi'),
-            des_srp_dosapli=models.Sum('des_srp_dosapli'),
-            des_srp_pervacenfabi=models.Sum('des_srp_pervacenfabi'),
-            des_srp_pervacfrasnoabi=models.Sum('des_srp_pervacfrasnoabi'),
-            des_vari_dosapli=models.Sum('des_vari_dosapli'),
-            des_vari_pervacenfabi=models.Sum('des_vari_pervacenfabi'),
-            des_vari_pervacfrasnoabi=models.Sum('des_vari_pervacfrasnoabi'),
-            des_fieb_dosapli=models.Sum('des_fieb_dosapli'),
-            des_fieb_pervacenfabi=models.Sum('des_fieb_pervacenfabi'),
-            des_fieb_pervacfrasnoabi=models.Sum('des_fieb_pervacfrasnoabi'),
-            des_dift_dosapli=models.Sum('des_dift_dosapli'),
-            des_dift_pervacenfabi=models.Sum('des_dift_pervacenfabi'),
-            des_dift_pervacfrasnoabi=models.Sum('des_dift_pervacfrasnoabi'),
-            des_hpv_dosapli=models.Sum('des_hpv_dosapli'),
-            des_hpv_pervacenfabi=models.Sum('des_hpv_pervacenfabi'),
-            des_hpv_pervacfrasnoabi=models.Sum('des_hpv_pervacfrasnoabi'),
-            des_dtad_dosapli=models.Sum('des_dtad_dosapli'),
-            des_dtad_pervacenfabi=models.Sum('des_dtad_pervacenfabi'),
-            des_dtad_pervacfrasnoabi=models.Sum('des_dtad_pervacfrasnoabi'),
-            des_hepa_dosapli=models.Sum('des_hepa_dosapli'),
-            des_hepa_pervacenfabi=models.Sum('des_hepa_pervacenfabi'),
-            des_hepa_pervacfrasnoabi=models.Sum('des_hepa_pervacfrasnoabi'),
-            des_inmant_dosapli=models.Sum('des_inmant_dosapli'),
-            des_inmant_pervacenfabi=models.Sum('des_inmant_pervacenfabi'),
-            des_inmant_pervacfrasnoabi=models.Sum(
-                'des_inmant_pervacfrasnoabi'),
-            des_inmanthepb_dosapli=models.Sum('des_inmanthepb_dosapli'),
-            des_inmanthepb_pervacenfabi=models.Sum(
-                'des_inmanthepb_pervacenfabi'),
-            des_inmanthepb_pervacfrasnoabi=models.Sum(
-                'des_inmanthepb_pervacfrasnoabi'),
-            des_inmantrra_dosapli=models.Sum('des_inmantrra_dosapli'),
-            des_inmantrra_pervacenfabi=models.Sum(
-                'des_inmantrra_pervacenfabi'),
-            des_inmantrra_pervacfrasnoabi=models.Sum(
-                'des_inmantrra_pervacfrasnoabi'),
-            des_infped_dosapli=models.Sum('des_infped_dosapli'),
-            des_infped_pervacenfabi=models.Sum('des_infped_pervacenfabi'),
-            des_infped_pervacfrasnoabi=models.Sum(
-                'des_infped_pervacfrasnoabi'),
-            des_infadu_dosapli=models.Sum('des_infadu_dosapli'),
-            des_infadu_pervacenfabi=models.Sum('des_infadu_pervacenfabi'),
-            des_infadu_pervacfrasnoabi=models.Sum(
-                'des_infadu_pervacfrasnoabi'),
-            des_viru_dosapli=models.Sum('des_viru_dosapli'),
-            des_viru_pervacenfabi=models.Sum('des_viru_pervacenfabi'),
-            des_viru_pervacfrasnoabi=models.Sum('des_viru_pervacfrasnoabi'),
-            des_vacsin_dosapli=models.Sum('des_vacsin_dosapli'),
-            des_vacsin_pervacenfabi=models.Sum('des_vacsin_pervacenfabi'),
-            des_vacsin_pervacfrasnoabi=models.Sum(
-                'des_vacsin_pervacfrasnoabi'),
-            des_vacpfi_dosapli=models.Sum('des_vacpfi_dosapli'),
-            des_vacpfi_pervacenfabi=models.Sum('des_vacpfi_pervacenfabi'),
-            des_vacpfi_pervacfrasnoabi=models.Sum(
-                'des_vacpfi_pervacfrasnoabi'),
-            des_vacmod_dosapli=models.Sum('des_vacmod_dosapli'),
-            des_vacmod_pervacenfabi=models.Sum('des_vacmod_pervacenfabi'),
-            des_vacmod_pervacfrasnoabi=models.Sum(
-                'des_vacmod_pervacfrasnoabi'),
-            des_vacvphcam_dosapli=models.Sum('des_vacvphcam_dosapli'),
-            des_vacvphcam_pervacenfabi=models.Sum(
-                'des_vacvphcam_pervacenfabi'),
-            des_vacvphcam_pervacfrasnoabi=models.Sum(
-                'des_vacvphcam_pervacfrasnoabi')
-        )
-
-        # Actualizar los campos del registro del último día del mes
-        for campo, valor in suma_campos.items():
-            setattr(desperdicio_mes, campo, valor or 0)
-
-        desperdicio_mes.save()
+        super(desperdicio, self).save(*args, **kwargs)'''
 
 
 class registroVacunado(models.Model):
@@ -745,21 +479,8 @@ class registroVacunado(models.Model):
     vac_reg_nomb_prof_regi = models.CharField(max_length=40, blank=True)
     vac_reg_reci_dosi_prev_exte = models.CharField(max_length=8, blank=True)
     vac_reg_nomb_dosi_exte = models.CharField(max_length=40, blank=True)
-    vac_reg_fech_anio_mes_dia_dosi_exte = models.IntegerField(blank=True)
+    vac_reg_fech_anio_mes_dia_dosi_exte = models.DateField()
     vac_reg_pais_dosi_exte = models.CharField(max_length=30, blank=True)
     vac_reg_lote_dosi_exte = models.CharField(max_length=20, blank=True)
     eniUser = models.ForeignKey(
-        eniUser, null=True, blank=True, on_delete=models.CASCADE)
-
-    @classmethod
-    def get_by_month_and_user(cls, user_id, month, year):
-        return cls.objects.filter(
-            eniUser_id=user_id,
-            vac_reg_fech__year=year,
-            vac_reg_fech__month=month
-        ).order_by('vac_reg_ano_mes_dia_apli')
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        desperdicio.actualizar_desperdicio(
-            self.vac_reg_ano_mes_dia_apli, self.eniUser_id)
+        'eniUser', null=True, blank=True, on_delete=models.CASCADE)
