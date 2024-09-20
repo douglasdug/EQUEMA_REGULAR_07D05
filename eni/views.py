@@ -185,7 +185,6 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
         # Guardar en desperdicio
         registro_data = serializer.validated_data
         des_fech = registro_data['vac_reg_ano_mes_dia_apli']
-        # Suponiendo que este campo está en el serializer
         eni_user_id = registro_data['eniUser'].id
 
         # Crear o actualizar registro de desperdicio
@@ -197,7 +196,6 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
         if not created:
             desperdicio_obj.des_vacmod_dosapli = F(
                 'des_vacmod_dosapli') + 1
-            # Actualizar el id de eniUser si es necesario
             desperdicio_obj.eniUser_id = eni_user_id
             desperdicio_obj.save()
 
@@ -221,16 +219,8 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
                       'eniUser_id': eni_user_id}
         )
         if not created:
-            print("Dato 4: "+str(desperdicio_total.des_vacmod_dosapli))
             desperdicio_total.des_vacmod_dosapli = total_vacmod_dosapli
-            print("Dato 5: "+str(desperdicio_total.des_vacmod_dosapli))
-            # desperdicio_total.save(update_fields=['des_vacmod_dosapli'])
             desperdicio_total.save()
-
-        print("Dato 2: "+str(total_vacmod_dosapli))
-        if not created:
-            print("ID de la segunda fila creada: " + str(desperdicio_total.id))
-        print("Dato 3: "+str(desperdicio_total.des_vacmod_dosapli))
 
         headers = self.get_success_headers(serializer.data)
         return Response({"message": "Datos registrados correctamente!.", "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)
