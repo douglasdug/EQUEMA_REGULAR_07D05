@@ -35,15 +35,17 @@ const UsuarioLogout = () => {
   return (
     <div>
       {isLoggedIn ? (
-        <>
-          <p>Bienvenido, {username}. Gracias por logearte!</p>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <p style={{ marginRight: "10px" }}>
+            Bienvenido, {username}. Gracias por logearte!
+          </p>
           <button
             onClick={handleLogout}
             className="inline-block rounded-lg bg-blue-500 px-5 py-3 text-sm font-medium text-white"
           >
             Logout
           </button>
-        </>
+        </div>
       ) : (
         <button
           onClick={() => (window.location.href = "/login/")}
@@ -55,4 +57,5 @@ const UsuarioLogout = () => {
     </div>
   );
 };
+
 export default UsuarioLogout;

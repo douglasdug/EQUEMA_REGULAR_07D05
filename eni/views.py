@@ -94,7 +94,7 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 tem_fech__year=year, tem_fech__month=month)
 
-        return queryset.order_by('tem_fech')
+        return queryset.order_by('tem_fech', 'tem_tota')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -148,7 +148,7 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 des_fech__year=year, des_fech__month=month)
 
-        return queryset.order_by('des_fech')
+        return queryset.order_by('des_fech', 'des_tota')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -173,7 +173,7 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
 
         if month is not None and year is not None:
             queryset = queryset.filter(
-                var_reg_fech__year=year, var_reg_fech__month=month)
+                vac_reg_ano_mes_dia_apli__year=year, vac_reg_ano_mes_dia_apli__month=month)
 
         return queryset.order_by('vac_reg_ano_mes_dia_apli')
 

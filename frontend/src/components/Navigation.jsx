@@ -3,30 +3,57 @@ import { NavLink } from "react-router-dom";
 import UsuarioLogout from "../components/UsuarioLogout.jsx";
 
 export function Navigation() {
-  const [nav, setNav] = useState(false);
-  const [isDropdownVisible, setDropdownVisible] = useState(false);
+  const [state, setState] = useState({
+    nav: false,
+    isDropdownVisible: false,
+  });
 
   const handleMouseEnter = () => {
-    setDropdownVisible(true);
+    setState((prevState) => ({ ...prevState, isDropdownVisible: true }));
   };
 
   const handleMouseLeave = () => {
-    setDropdownVisible(false);
+    setState((prevState) => ({ ...prevState, isDropdownVisible: false }));
   };
+
+  const toggleNav = () => {
+    setState((prevState) => ({ ...prevState, nav: !prevState.nav }));
+  };
+
+  const linkStyle = ({ isActive }) => ({
+    color: isActive ? "rgb(107, 33, 168)" : "#000",
+    textDecoration: "none",
+  });
+
+  const navLinks = [
+    { to: "/", label: "Home" },
+    { to: "/Register/", label: "Register" },
+  ];
+
+  const dropdownLinks = [
+    { to: "/createtemprano/", label: "Temprano" },
+    { to: "/createtardio/", label: "Tardio" },
+    { to: "/createdesperdicio/", label: "Desperdicio" },
+    { to: "/createRegistroVacunado/", label: "Registro Vacunado" },
+  ];
+
+  const mobileLinks = [
+    ...navLinks,
+    { to: "/login/", label: "Login" },
+    { to: "/feedback/", label: "Feedback" },
+    { to: "/contact/", label: "Contact" },
+  ];
 
   return (
     <div className="container">
-      <header className="bg-gray-300 p-5 mb-4 rounded-2xl sticky top-0">
+      <header className="bg-gray-300 p-5 mb-4 rounded-2xl fixed top-0 w-full z-50">
         <div className="flex">
           <a href="/">
             <h1 className="my-auto font-bold text-[22px] lg:text-3xl pr-2 mr-2 border-r-2 border-purple-500 lg:pr-5 lg:mr-5">
               ENIapp
             </h1>
           </a>
-          <button
-            className="my-auto mr-2 lg:hidden"
-            onClick={() => setNav(!nav)}
-          >
+          <button className="my-auto mr-2 lg:hidden" onClick={toggleNav}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -44,29 +71,13 @@ export function Navigation() {
           </button>
           <div className="my-auto">
             <ul className="hidden lg:flex uppercase font-bold">
-              <NavLink
-                to="/"
-                style={({ isActive }) => ({
-                  color: isActive ? "rgb(107, 33, 168)" : "#000",
-                  textDecoration: "none",
-                })}
-              >
-                <li className="mr-10 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
-                  Home
-                </li>
-              </NavLink>
-              <NavLink
-                to="/Register/"
-                style={({ isActive }) => ({
-                  color: isActive ? "rgb(107, 33, 168)" : "#000",
-                  textDecoration: "none",
-                })}
-              >
-                <li className="mr-10 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
-                  Register
-                </li>
-              </NavLink>
-              {/* Botón del menú desplegable */}
+              {navLinks.map((link) => (
+                <NavLink key={link.to} to={link.to} style={linkStyle}>
+                  <li className="mr-10 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
+                    {link.label}
+                  </li>
+                </NavLink>
+              ))}
               <div
                 className="menu relative"
                 onMouseEnter={handleMouseEnter}
@@ -79,43 +90,16 @@ export function Navigation() {
                     </li>
                   </NavLink>
                 </ul>
-                {/* <DropdownMenu /> */}
-                {isDropdownVisible && (
+                {state.isDropdownVisible && (
                   <div className="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
                     <ul>
-                      <NavLink
-                        to="/createtemprano/"
-                        style={({ isActive }) => ({
-                          color: isActive ? "rgb(107, 33, 168)" : "#000",
-                          textDecoration: "none",
-                        })}
-                      >
-                        <li className="mr-10 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
-                          Temprano
-                        </li>
-                      </NavLink>
-                      <NavLink
-                        to="/createtardio/"
-                        style={({ isActive }) => ({
-                          color: isActive ? "rgb(107, 33, 168)" : "#000",
-                          textDecoration: "none",
-                        })}
-                      >
-                        <li className="mr-10 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
-                          Tardio
-                        </li>
-                      </NavLink>
-                      <NavLink
-                        to="/createdesperdicio/"
-                        style={({ isActive }) => ({
-                          color: isActive ? "rgb(107, 33, 168)" : "#000",
-                          textDecoration: "none",
-                        })}
-                      >
-                        <li className="mr-10 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
-                          Desperdicio
-                        </li>
-                      </NavLink>
+                      {dropdownLinks.map((link) => (
+                        <NavLink key={link.to} to={link.to} style={linkStyle}>
+                          <li className="mr-1 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
+                            {link.label}
+                          </li>
+                        </NavLink>
+                      ))}
                     </ul>
                   </div>
                 )}
@@ -126,68 +110,21 @@ export function Navigation() {
             <UsuarioLogout />
           </div>
         </div>
-        {/* Menu desplegable en móviles */}
-        {nav && (
+        {state.nav && (
           <div
             id="menu"
             className="menu mt-5 p-5 bg-white border-2 border-purple-500 rounded-2xl uppercase"
-            onClick={() => setNav(!nav)}
+            onClick={toggleNav}
           >
-            <ul className="font-bold ">
-              <NavLink
-                to="/"
-                style={({ isActive }) => ({
-                  color: isActive ? "rgb(107, 33, 168)" : "#000",
-                  textDecoration: "none",
-                })}
-              >
-                <li className="mb-2 hover:text-purple-500">Home</li>
-              </NavLink>
-              <NavLink
-                to="/login/"
-                style={({ isActive }) => ({
-                  color: isActive ? "rgb(107, 33, 168)" : "#000",
-                  textDecoration: "none",
-                })}
-              >
-                <li className="mb-2 hover:text-purple-500">Login</li>
-              </NavLink>
-              <NavLink
-                to="/register/"
-                style={({ isActive }) => ({
-                  color: isActive ? "rgb(107, 33, 168)" : "#000",
-                  textDecoration: "none",
-                })}
-              >
-                <li className="mb-2 hover:text-purple-500">Register</li>
-              </NavLink>
-              <NavLink
-                to="/feedback/"
-                style={({ isActive }) => ({
-                  color: isActive ? "rgb(107, 33, 168)" : "#000",
-                  textDecoration: "none",
-                })}
-              >
-                <li className="mb-2 hover:text-purple-500">Feedback</li>
-              </NavLink>
-              <NavLink
-                to="/contact/"
-                style={({ isActive }) => ({
-                  color: isActive ? "rgb(107, 33, 168)" : "#000",
-                  textDecoration: "none",
-                })}
-              >
-                <li className="hover:text-purple-500">Contact</li>
-              </NavLink>
+            <ul className="font-bold">
+              {mobileLinks.map((link) => (
+                <NavLink key={link.to} to={link.to} style={linkStyle}>
+                  <li className="mb-2 hover:text-purple-500">{link.label}</li>
+                </NavLink>
+              ))}
             </ul>
           </div>
         )}
-        <div className="flex">
-          <button
-            className="my-auto mr-2 lg:hidden"
-            onClick={() => setNav(!nav)}
-          ></button>
-        </div>
       </header>
     </div>
   );

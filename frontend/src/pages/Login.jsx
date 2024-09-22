@@ -40,7 +40,7 @@ export default function Login() {
       toast.success("Loguiado con exito!", {
         position: "bottom-right",
       });
-      navigate("/home/");
+      window.location.href = "/home/";
     } catch (error) {
       console.log("Error durante el Login!", error.response?.data);
       if (error.response && error.response.data) {

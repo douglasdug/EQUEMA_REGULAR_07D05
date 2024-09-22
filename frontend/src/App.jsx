@@ -6,6 +6,7 @@ import Login from "./pages/Login.jsx";
 import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
+import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
 import { Navigation } from "./components/Navigation.jsx";
 import { Toaster } from "react-hot-toast";
 
@@ -14,15 +15,21 @@ function App() {
     <BrowserRouter>
       <div className="container mx-auto">
         <Navigation />
-        <Routes>
-          <Route path="/" element={<Navigate to="/home/" />} />
-          <Route path="/home/" element={<Home />} />
-          <Route path="/login/" element={<Login />} />
-          <Route path="/register/" element={<Register />} />
-          <Route path="/createTemprano/" element={<CreateTemprano />} />
-          <Route path="/createTardio/" element={<CreateTardio />} />
-          <Route path="/createDesperdicio/" element={<CreateDesperdicio />} />
-        </Routes>
+        <div className="mt-24">
+          <Routes>
+            <Route path="/" element={<Navigate to="/home/" />} />
+            <Route path="/home/" element={<Home />} />
+            <Route path="/login/" element={<Login />} />
+            <Route path="/register/" element={<Register />} />
+            <Route path="/createTemprano/" element={<CreateTemprano />} />
+            <Route path="/createTardio/" element={<CreateTardio />} />
+            <Route path="/createDesperdicio/" element={<CreateDesperdicio />} />
+            <Route
+              path="/createRegistroVacunado/"
+              element={<CreateRegistroVacunado />}
+            />
+          </Routes>
+        </div>
         <Toaster />
       </div>
     </BrowserRouter>
