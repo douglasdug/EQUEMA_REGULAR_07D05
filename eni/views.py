@@ -13,6 +13,10 @@ from django.db.models import F, Sum
 from django.utils.dateparse import parse_date
 from datetime import datetime, timedelta
 
+from django.http import HttpResponse
+import csv
+from rest_framework.decorators import action
+
 
 # Create your views here.
 
@@ -58,6 +62,9 @@ class UserLogoutAPIView(GenericAPIView):
             token.blacklist()
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
+            pass  # or handle the exception
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            pass
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -236,6 +243,77 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
 
         headers = self.get_success_headers(serializer.data)
         return Response({"message": "Datos registrados correctamente!.", "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=False, methods=['get'], url_path='descargar_csv')
+    def get_descargar_csv(self, request, *args, **kwargs):
+        # Obtener las fechas de inicio y fin de los parámetros de la solicitud
+        fecha_inicio = request.query_params.get('fecha_inicio')
+        fecha_fin = request.query_params.get('fecha_fin')
+        eniuser_id = request.query_params.get('eniUser_id')
+
+        if not fecha_inicio or not fecha_fin:
+            return Response({"error": "Los parámetros 'fecha_inicio' y 'fecha_fin' son requeridos."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        except ValueError:
+            return Response({"error": "Formato de fecha inválido. Use 'YYYY-MM-DD'."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            # Crear la respuesta HTTP con el tipo de contenido CSV
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="registro_vacunado.csv"'
+
+            writer = csv.writer(response)
+
+            # Escribir los encabezados del CSV
+            writer.writerow(['Año aplicacion', 'Mes aplicacion', 'Día aplicacion', 'Punto vacunacion',
+                            'Unicódigo establecimiento', 'Nombre establecimiento de salud', 'Zona', 'Distrito',
+                             'Provincia', 'Canton', 'Apellidos', 'Nombres',
+                             'Tipo identificación', 'Número de identificación', 'Sexo', 'Año nacimiento',
+                             'Mes nacimiento', 'Dia nacimiento', 'Nacionalidad', 'Etnia',
+                             'Nacionalidad étnica', 'Pueblo', 'Residencia provincia', 'Residencia cantón',
+                             'Residencia parroquia', 'Tel. de contacto', 'Correo electronico', 'Grupo de riesgo',
+                             'Fase vacuna', 'Estado vacunación', 'Tipo esquema', 'Vacuna',
+                             'Lote vacuna', 'Dosis aplicada', 'Paciente agendado', 'Nombre vacunador',
+                             'Identificación vacunador', 'Nombre del profesional que registra', 'Recibió dosis previa exterior', 'Nombre dosis exterior ',
+                             'Fecha anio dosis exterior', 'Fecha mes dosis exterior', 'Fecha dia dosis exterior', 'Pais dosis exterior',
+                             'Lote dosis exterior',
+                             ])
+
+            # Obtener los registros de registroVacunado dentro del rango de fechas
+            registros = registroVacunado.objects.filter(
+                vac_reg_ano_mes_dia_apli__range=(fecha_inicio, fecha_fin), eniUser_id=eniuser_id)
+
+            # Escribir los datos de cada registro en el CSV
+            for registro in registros:
+                ano_aplicacion = registro.vac_reg_ano_mes_dia_apli.year
+                mes_aplicacion = registro.vac_reg_ano_mes_dia_apli.month
+                dia_aplicacion = registro.vac_reg_ano_mes_dia_apli.day
+
+                ano_nacimiento = registro.vac_reg_ano_mes_dia_naci.year
+                mes_nacimiento = registro.vac_reg_ano_mes_dia_naci.month
+                dia_nacimiento = registro.vac_reg_ano_mes_dia_naci.day
+
+                fecha_anio_dosis_exterior = registro.vac_reg_fech_anio_mes_dia_dosi_exte.year
+                fecha_mes_dosis_exterior = registro.vac_reg_fech_anio_mes_dia_dosi_exte.month
+                fecha_dia_dosis_exterior = registro.vac_reg_fech_anio_mes_dia_dosi_exte.day
+
+                writer.writerow([ano_aplicacion, mes_aplicacion, dia_aplicacion, registro.vac_reg_punt_vacu, registro.vac_reg_unic_esta, registro.vac_reg_nomb_esta_salu,
+                                registro.vac_reg_zona, registro.vac_reg_dist, registro.vac_reg_prov, registro.vac_reg_cant,
+                                registro.vac_reg_apel, registro.vac_reg_nomb, registro.vac_reg_tipo_iden, registro.vac_reg_nume_iden,
+                                registro.vac_reg_sexo, ano_nacimiento, mes_nacimiento, dia_nacimiento, registro.vac_reg_naci, registro.vac_reg_etni,
+                                registro.vac_reg_naci_etni, registro.vac_reg_pueb, registro.vac_reg_resi_prov, registro.vac_reg_resi_cant,
+                                registro.vac_reg_resi_parr, registro.vac_reg_teld_cont, registro.vac_reg_corr_elec, registro.vac_reg_grup_ries,
+                                registro.vac_reg_fase_vacu, registro.vac_reg_esta_vacu, registro.vac_reg_tipo_esqu, registro.vac_reg_vacu,
+                                registro.vac_reg_lote_vacu, registro.vac_reg_dosi_apli, registro.vac_reg_paci_agen, registro.vac_reg_nomb_vacu,
+                                registro.vac_reg_iden_vacu, registro.vac_reg_nomb_prof_regi, registro.vac_reg_reci_dosi_prev_exte, registro.vac_reg_nomb_dosi_exte,
+                                fecha_anio_dosis_exterior, fecha_mes_dosis_exterior, fecha_dia_dosis_exterior, registro.vac_reg_pais_dosi_exte, registro.vac_reg_lote_dosi_exte
+                                 ])
+            response['message'] = "Descarga de archivo iniciado!"
+            return response
+        except Exception as e:
+            return Response({"error": "Se produjo un error al procesar la solicitud: {}".format(str(e))}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TempranoCreateView(APIView):

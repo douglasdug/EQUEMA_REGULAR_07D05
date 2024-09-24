@@ -23,5 +23,4 @@ urlpatterns = [
     path('v1/tardiocreate/', TardioCreateView.as_view(), name='tardio-create'),
     path('v1/desperdiciocreate/', DesperdicioCreateView.as_view(),
          name='desperdicio-create'),
-
 ]

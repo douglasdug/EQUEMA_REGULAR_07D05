@@ -448,10 +448,10 @@ class registroVacunado(models.Model):
     eniUser = models.ForeignKey(
         'eniUser', null=True, blank=True, on_delete=models.CASCADE)
 
-    @classmethod
+    '''@classmethod
     def get_by_month_and_user(cls, user_id, month, year):
         return cls.objects.filter(
             eniUser_id=user_id,
             vac_reg_fech__year=year,
             vac_reg_fech__month=month
-        ).order_by('vac_reg_ano_mes_dia_apli')
+        ).order_by('vac_reg_ano_mes_dia_apli')'''

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+//import axios from "axios";
 import { registroVacunadoCreateApi } from "../api/conexion.api.js";
+//import { getDescargarCsvRegistroVacunado } from "../api/conexion.api.js";
 import { RegistroVacunadoList } from "../components/RegistroVacunadoList.jsx";
 import { toast } from "react-hot-toast";
 
@@ -152,6 +154,52 @@ const CreateRegistroVacunado = () => {
       });
     }
   };
+
+  // const fecha_inicio = "2024-09-01";
+  // const fecha_fin = "2024-09-30";
+  // const eniUser_id = 1;
+
+  // const descargarCsvSubmit = async (e) => {
+  //   e.preventDefault();
+  //   console.log(fecha_inicio, fecha_fin, eniUser_id);
+  //   try {
+  //     const response = await getDescargarCsvRegistroVacunado(
+  //       fecha_inicio,
+  //       fecha_fin,
+  //       eniUser_id
+  //     );
+  //     descargarCsvSuccess(response);
+  //   } catch (error) {
+  //     descargarCsvError(error);
+  //   }
+  // };
+
+  // const descargarCsvSuccess = (response) => {
+  //   const successMessage = response.data.message || "Operación exitosa";
+  //   toast.success(successMessage, { position: "bottom-right" });
+  //   // Uso de navigate en lugar de window.location.href
+  //   navigate("/createRegistroVacunado/");
+  // };
+
+  // const descargarCsvError = (error) => {
+  //   let errorMessage = "Hubo un error en la operación";
+
+  //   if (error.response) {
+  //     errorMessage =
+  //       error.response.data?.error ||
+  //       error.response.data?.message ||
+  //       "Error del servidor";
+  //     setError(errorMessage);
+  //   } else if (error.request) {
+  //     errorMessage = "No se recibió respuesta del servidor";
+  //     setError(errorMessage);
+  //   } else {
+  //     errorMessage = "Error desconocido";
+  //     setError(errorMessage);
+  //   }
+
+  //   toast.error(errorMessage, { position: "bottom-right" });
+  // };
 
   const handleButtonClick = (e) => {
     if (isButtonDisabled) {
@@ -616,7 +664,7 @@ const CreateRegistroVacunado = () => {
       "VALLE HERMOSO",
       "LA VICTORIA (RURAL)",
       "LA LIBERTAD",
-      "EL PARAISO",
+      "EL PARAISO 2",
       "SAN ISIDRO",
     ],
     vac_reg_grup_ries: [
@@ -782,7 +830,7 @@ const CreateRegistroVacunado = () => {
                         name={key}
                         value={formData[key]}
                         onChange={handleChange}
-                        placeholder="Informacion es requerida"
+                        placeholder="Información es requerida"
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                         min="0"
                       />
@@ -793,18 +841,20 @@ const CreateRegistroVacunado = () => {
             </div>
           ))}
           <div className="flex flex-col items-center">
-            <button onClick={handleButtonClick}>
-              <div
-                type="submit"
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                disabled={isButtonDisabled}
-              >
-                Crear
-              </div>
+            <button
+              type="submit"
+              className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+                isButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={isButtonDisabled}
+              onClick={handleButtonClick}
+            >
+              Crear
             </button>
           </div>
         </form>
       </div>
+
       <div className="mt-5">
         <RegistroVacunadoList />
       </div>
