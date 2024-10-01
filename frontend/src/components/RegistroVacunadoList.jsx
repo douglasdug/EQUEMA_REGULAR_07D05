@@ -86,15 +86,18 @@ export function RegistroVacunadoList() {
 
   return (
     <div className="container">
-      <div className="mt-5">
+      <div className="max-w-max m-auto mt-5">
+        <h2 className="text-center text-2xl font-bold mb-5">
+          Descargar archivo CSV de Registro de Vacunados.
+        </h2>
         <form className="bg-white p-6 rounded-lg shadow-md">
-          <div className="flex flex-col items-center">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center" key="txtDescargarCsv">
               <label
                 className="block text-gray-700 text-sm font-bold mb-2"
                 htmlFor="fecha_inicio"
               >
-                Fecha de inicio
+                Fecha de inicio:
               </label>
               <input
                 type="date"
@@ -108,7 +111,7 @@ export function RegistroVacunadoList() {
                 className="block text-gray-700 text-sm font-bold mb-2"
                 htmlFor="fecha_fin"
               >
-                Fecha de fin
+                Fecha de fin:
               </label>
               <input
                 type="date"
@@ -127,33 +130,36 @@ export function RegistroVacunadoList() {
               Descargar
             </button>
           </div>
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center">
-                <label
-                  className="block text-gray-700 text-sm font-bold mr-2"
-                  htmlFor="getAllBuscarTabla"
-                >
-                  Fecha (MM/YYYY):
-                </label>
-                <input
-                  type="text"
-                  id="getAllBuscarTabla"
-                  name="getAllBuscarTabla"
-                  value={fechaBuscar}
-                  onChange={handleDateChangeBuscarGetAll}
-                  placeholder="MM/YYYY"
-                  className="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-                {errorBuscar && <p style={{ color: "red" }}>{errorBuscar}</p>}
-              </div>
-              <button
-                onClick={buscarFechaTabla}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        </form>
+        <h2 className="text-center text-2xl font-bold mb-5">
+          Buscar en tabla de Registro de Vacunados.
+        </h2>
+        <form className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center" key="txtBuscarTabla">
+              <label
+                className="block text-gray-700 text-sm font-bold mr-2"
+                htmlFor="getAllBuscarTabla"
               >
-                Buscar
-              </button>
+                Fecha (MM/YYYY):
+              </label>
+              <input
+                type="text"
+                id="getAllBuscarTabla"
+                name="getAllBuscarTabla"
+                value={fechaBuscar}
+                onChange={handleDateChangeBuscarGetAll}
+                placeholder="MM/YYYY"
+                className="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              />
+              {errorBuscar && <p style={{ color: "red" }}>{errorBuscar}</p>}
             </div>
+            <button
+              onClick={buscarFechaTabla}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Buscar
+            </button>
           </div>
         </form>
       </div>

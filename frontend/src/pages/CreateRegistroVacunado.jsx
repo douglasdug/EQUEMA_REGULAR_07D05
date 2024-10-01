@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-//import axios from "axios";
 import { registroVacunadoCreateApi } from "../api/conexion.api.js";
 //import { getDescargarCsvRegistroVacunado } from "../api/conexion.api.js";
 import { RegistroVacunadoList } from "../components/RegistroVacunadoList.jsx";
+import { RegistroAdmision } from "../components/RegistroAdmision.jsx";
+import { AllList } from "../components/listaAdmision.jsx";
 import { toast } from "react-hot-toast";
 
 const CreateRegistroVacunado = () => {
@@ -752,6 +753,43 @@ const CreateRegistroVacunado = () => {
 
   return (
     <div className="container">
+      <div className="max-w-max m-auto mt-5">
+        <h2 className="text-center text-2xl font-bold mb-5">
+          Registrar Vacunado
+        </h2>
+        <form className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center" key="txtBuscarVacunado">
+              <label
+                className="block text-gray-700 text-sm font-bold mb-2"
+                htmlFor="txtBuscarVacunado"
+              >
+                Buscar vacunado:
+              </label>
+              <input
+                type="text"
+                id="txtBuscarVacunado"
+                name="txtBuscarVacunado"
+                //value=""
+                onChange={handleChange}
+                placeholder="Buscar por cédula"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              />
+              <div></div>
+            </div>
+            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+              Buscar paciente
+            </button>
+          </div>
+        </form>
+      </div>
+      <div className="mt-5">
+        <h1>Provincias</h1>
+        <AllList />
+      </div>
+      <div className="mt-5">
+        <RegistroAdmision />
+      </div>
       <div className="max-w-max m-auto mt-5">
         <h1 className="text-center text-2xl font-bold mb-5">
           Crear Registro de Vacunado
