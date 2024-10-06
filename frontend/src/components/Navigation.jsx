@@ -28,6 +28,7 @@ export function Navigation() {
   const navLinks = [
     { to: "/", label: "Home" },
     { to: "/Register/", label: "Register" },
+    { to: "/createUsuario/", label: "Administrar Usuario" },
   ];
 
   const dropdownLinks = [
