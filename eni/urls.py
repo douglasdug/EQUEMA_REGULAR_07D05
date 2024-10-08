@@ -1,7 +1,8 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, TempranoCreateView, TardioCreateView, DesperdicioCreateView, DesperdicioRegistrationAPIView, RegistroVacunadoRegistrationAPIView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, RegistroVacunadoRegistrationAPIView
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework import routers
+from .report import reporteTempranoPDF
 
 # Api de vesiones
 router = routers.DefaultRouter()
@@ -19,8 +20,5 @@ urlpatterns = [
     path('v1/logout/', UserLogoutAPIView.as_view(), name='logout-user'),
     path('v1/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('v1/user/', UserInfoAPIView.as_view(), name='user-info'),
-    path('v1/tempranocreate/', TempranoCreateView.as_view(), name='temprano-create'),
-    path('v1/tardiocreate/', TardioCreateView.as_view(), name='tardio-create'),
-    path('v1/desperdiciocreate/', DesperdicioCreateView.as_view(),
-         name='desperdicio-create'),
+    path('v1/reporte/pdf/', reporteTempranoPDF, name='reporte-temprano-pdf'),
 ]
