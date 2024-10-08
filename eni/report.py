@@ -64,13 +64,13 @@ def reporteTempranoPDF(request):
             'Fecha', 'Intramural', 'CNH', 'CIBV', 'E. General Básica', 'Bachillerato', 'VISITAS DOMICILIARIAS', 'ATENCIÓN COMUNITARIA', 'OTROS', 'Hombre', 'Mujer',
             'Pertenece al establecimiento de salud', 'No pertenece al establecimiento de salud', 'Ecuatoriana', 'Colombiano', 'Peruano', 'Cubano', 'Venezolano',
             'Otros', 'Indigena', 'Afro ecuatoriano/ Afro descendiente', 'Negro/a', 'Mulato/a', 'Montubio/a', 'Mestizo/a', 'Blanco/a', 'Otro',
-            'BCG primeras 24 horas de nacido', 'HB primeras 24 horas de nacido', '*BCG desde el 2do  día de nacido hasta los 364 días (Tardía)',
+            'BCG primeras 24 horas de nacido', 'HB primeras 24 horas de nacido', '*BCG desde el 2do día de nacido hasta los 364 días (Tardía)',
             'Rotavirus', 'fIPV', 'Neumococo', 'Pentavalente', 'Rotavirus', 'fIPV', 'Neumococo', 'Pentavalente',
             'bOPV', 'Neumococo', 'Pentavalente', 'SRP', 'FA', 'Varicela', 'SRP', 'bOPV', 'DPT', 'bOPV', 'DPT', 'HPV', 'HPV', 'HPV', 'dT adulto',
         ]
 
         headers_2 = [
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N', 'M', 'O', 'P', 'Q', 'R', 'S', 'T', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC',
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA',
             '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26',
         ]
 
@@ -159,7 +159,7 @@ def reporteTempranoPDF(request):
             ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
         ]))
         elements.append(table)
-        elements.append(Spacer(1, 6))  # Añadir espacio
+        elements.append(Spacer(1, 12))  # Añadir espacio
 
         # Añadir párrafo descriptivo
         body_text_style = styles['BodyText']
