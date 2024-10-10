@@ -5,21 +5,10 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.graphics.shapes import Drawing, String
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfgen import canvas
+from PyPDF2 import PdfReader, PdfWriter
 from .models import temprano
-import json
-
-
-# Función para crear texto rotado dentro de una celda
-
-
-def rotar_texto(text, width, height, font_size=8):
-    drawing = Drawing(width, height)
-    drawing.rotate(90)
-    drawing.add(String(-10, -11, text, fontSize=font_size))
-    return drawing
+import io
 
 
 @csrf_exempt
@@ -34,18 +23,23 @@ def reporteTempranoPDF(request):
 
         # Configurar márgenes de 3 mm
         margin = 3 * mm
-        doc = SimpleDocTemplate(response, pagesize=landscape(
-            A4), leftMargin=margin, rightMargin=margin, topMargin=margin, bottomMargin=margin)
+        buffer = io.BytesIO()
+
+        # Crear el PDF temporal con ReportLab (contenido dinámico)
+        temp_buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            temp_buffer, pagesize=landscape(A4), leftMargin=margin, rightMargin=margin, topMargin=margin, bottomMargin=margin
+        )
         elements = []
 
         # Estilos
-        styles = getSampleStyleSheet()
+        # styles = getSampleStyleSheet()
 
         # Añadir título
-        title_style = styles['Title']
-        title_style.alignment = 1  # Alinea el Tilo
-        elements.append(Paragraph("Reporte Mensual de Temprano", title_style))
-        elements.append(Spacer(1, 12))  # Añadir espacio
+        # title_style = styles['Title']
+        # title_style.alignment = 1  # Alinea el Tilo
+        # elements.append(Paragraph("Reporte Mensual de Temprano", title_style))
+        # elements.append(Spacer(1, 12))  # Añadir espacio
 
         # Diccionario para convertir el nombre del mes al español
         meses_espanol = {
@@ -53,34 +47,13 @@ def reporteTempranoPDF(request):
             7: "JULIO", 8: "AGOSTO", 9: "SEPTIEMBRE", 10: "OCTUBRE", 11: "NOVIEMBRE", 12: "DICIEMBRE"
         }
         # Obtener el mes actual y convertirlo a letras en mayúscula
-        # mes_actual = 1
         nombre_mes = meses_espanol.get(mes_actual, "MES DESCONOCIDO")
-        # user_id = 1
+        # Obtener los datos de 'temprano' del mes y usuario
         datos_temprano = temprano.objects.filter(
             tem_fech__month=mes_actual, eniUser_id=user_id).order_by('tem_fech', 'tem_tota')
 
-        # Crear tabla de datos con rotación en encabezado
-        headers_1 = [
-            'Fecha', 'Intramural', 'CNH', 'CIBV', 'E. General Básica', 'Bachillerato', 'VISITAS DOMICILIARIAS', 'ATENCIÓN COMUNITARIA', 'OTROS', 'Hombre', 'Mujer',
-            'Pertenece al establecimiento de salud', 'No pertenece al establecimiento de salud', 'Ecuatoriana', 'Colombiano', 'Peruano', 'Cubano', 'Venezolano',
-            'Otros', 'Indigena', 'Afro ecuatoriano/ Afro descendiente', 'Negro/a', 'Mulato/a', 'Montubio/a', 'Mestizo/a', 'Blanco/a', 'Otro',
-            'BCG primeras 24 horas de nacido', 'HB primeras 24 horas de nacido', '*BCG desde el 2do día de nacido hasta los 364 días (Tardía)',
-            'Rotavirus', 'fIPV', 'Neumococo', 'Pentavalente', 'Rotavirus', 'fIPV', 'Neumococo', 'Pentavalente',
-            'bOPV', 'Neumococo', 'Pentavalente', 'SRP', 'FA', 'Varicela', 'SRP', 'bOPV', 'DPT', 'bOPV', 'DPT', 'HPV', 'HPV', 'HPV', 'dT adulto',
-        ]
-
-        headers_2 = [
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA',
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26',
-        ]
-
-        # Aquí ajustamos el tamaño del ancho y alto de las celdas para rotar el texto
-        rotated_headers_1 = [
-            rotar_texto(header, width=20, height=80, font_size=6) for header in headers_1
-        ]
-
-        data = [rotated_headers_1, headers_2]  # Encabezado de la tabla
-
+        # Estructurar los datos en una tabla
+        data = []
         # Crea un diccionario con los datos por dia
         datos_por_dia = {
             dato.tem_fech.day: dato for dato in datos_temprano if not dato.tem_tota
@@ -102,15 +75,13 @@ def reporteTempranoPDF(request):
                 ])
             else:
                 # Si no hay datos los días son cero
-                data.append([
-                    dia, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-                ])
+                data.append([dia] + [0] * 52)
 
         # Añadir la fila con tem_tota al final
         for dato in datos_temprano:
             if dato.tem_tota:
                 data.append([
-                    "Total", dato.tem_intr, dato.tem_extr_mies_cnh, dato.tem_extr_mies_cibv, dato.tem_extr_mine_egen, dato.tem_extr_mine_bach, dato.tem_extr_visi, dato.tem_extr_aten, dato.tem_otro,
+                    "", dato.tem_intr, dato.tem_extr_mies_cnh, dato.tem_extr_mies_cibv, dato.tem_extr_mine_egen, dato.tem_extr_mine_bach, dato.tem_extr_visi, dato.tem_extr_aten, dato.tem_otro,
                     dato.tem_sexo_homb, dato.tem_sexo_muje, dato.tem_luga_pert, dato.tem_luga_nope, dato.tem_naci_ecua, dato.tem_naci_colo, dato.tem_naci_peru, dato.tem_naci_cuba,
                     dato.tem_naci_vene, dato.tem_naci_otro, dato.tem_auto_indi, dato.tem_auto_afro, dato.tem_auto_negr, dato.tem_auto_mula, dato.tem_auto_mont, dato.tem_auto_mest,
                     dato.tem_auto_blan, dato.tem_auto_otro,
@@ -123,53 +94,71 @@ def reporteTempranoPDF(request):
 
         # Ajustar el ancho de cada columna de la tabla
         num_columns = len(data[0])
-        page_width = landscape(A4)[0] - 2 * margin
+        page_width = landscape(A4)[0] - 3 * margin
         col_width = page_width / num_columns
+        col_widths = [5.4 * mm] * 27 + [col_width] * (num_columns - 26)
 
         # Ajustar la altura de cada fila de la tabla
-        header_height = 100  # Altura del encabezado
-        row_height = 11  # Altura de las filas de datos
+        row_height = 11.6  # Altura de las filas de datos
         footer_height = 20  # Altura de la fila final
 
         # Crear la lista de alturas de las filas
-        row_heights = [header_height] + [row_height] * \
-            (len(data) - 2) + [footer_height]
+        row_heights = [row_height] * (len(data) - 1) + [footer_height]
 
         table = Table(
-            data, colWidths=[col_width] * num_columns, rowHeights=row_heights
+            data, colWidths=col_widths, rowHeights=row_heights
         )
 
         table.setStyle(TableStyle([
-            ('BACKGROUND', (1, 0), (-1, 0), colors.grey),  # Fondo para encabezado
-            # Fondo para el segundo encabezado
-            ('BACKGROUND', (0, 1), (-1, 1), colors.lightgrey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Texto en blanco
+            # ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Fondo para encabezado
+            # ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Texto en blanco
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Centrar texto
             # Centrar texto verticalmente
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             # Negrita en encabezado
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            # ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             # Tamaño de texto para las filas de datos
-            ('FONTSIZE', (0, 1), (-1, -1), 6),
+            ('FONTSIZE', (0, 0), (-1, -1), 6),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 6),  # Espaciado en encabezado
-            # Color de fondo para el cuerpo
-            # ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Líneas de tabla
+            # ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Líneas de tabla
             # Negrita en la última fila
             ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
         ]))
+
+        # Añadir espacio antes de la tabla para ajustar su posición
+        elements.append(Spacer(1, 106))
+
+        # Añadir la tabla a los elementos
         elements.append(table)
-        elements.append(Spacer(1, 12))  # Añadir espacio
-
-        # Añadir párrafo descriptivo
-        body_text_style = styles['BodyText']
-        body_text_style.alignment = 0  # Alinear a la izquierda
-        elements.append(Paragraph(
-            f"Este reporte muestra los datos del modelo Temprano para el mes de {nombre_mes}.", body_text_style))
-
-        # Construir el PDF
+        # Construir el documento PDF temporal
         doc.build(elements)
 
+        # Abrir la plantilla con PyPDF2
+        template_pdf_path = "eni/plantillasPDF/tempranoPlantilla.pdf"
+        with open(template_pdf_path, "rb") as template_file:
+            template_reader = PdfReader(template_file)
+            # Suponemos una página de plantilla
+            template_page = template_reader.pages[0]
+
+            # Cargar el PDF generado dinámicamente
+            temp_buffer.seek(0)
+            temp_reader = PdfReader(temp_buffer)
+            temp_page = temp_reader.pages[0]
+
+            # Combinar la página de la plantilla con la página generada
+            template_page.merge_page(temp_page)
+
+            # Crear el escritor de PDF final
+            output_writer = PdfWriter()
+            output_writer.add_page(template_page)
+
+            # Escribir el PDF final en el buffer de salida
+            output_buffer = io.BytesIO()
+            output_writer.write(output_buffer)
+            output_buffer.seek(0)
+
+            # Enviar el PDF como respuesta
+            response.write(output_buffer.read())
         return response
     else:
         return HttpResponse(status=405)  # Método no permitido
