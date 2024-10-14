@@ -27,23 +27,19 @@ export function Navigation() {
 
   const navLinks = [
     { to: "/", label: "Home" },
-    { to: "/Register/", label: "Register" },
-    { to: "/createUsuario/", label: "Administrar Usuario" },
+    { to: "/register/", label: "Registro" },
+    { to: "/create-usuario/", label: "Administrar Usuario" },
+    { to: "/contact/", label: "Contact" },
   ];
 
   const dropdownLinks = [
-    { to: "/createtemprano/", label: "Temprano" },
-    { to: "/createtardio/", label: "Tardio" },
-    { to: "/createdesperdicio/", label: "Desperdicio" },
-    { to: "/createRegistroVacunado/", label: "Registro Vacunado" },
+    { to: "/create-temprano/", label: "Temprano" },
+    { to: "/create-tardio/", label: "Tardio" },
+    { to: "/create-desperdicio/", label: "Desperdicio" },
+    { to: "/create-registro-vacunado/", label: "Registro Vacunado" },
   ];
 
-  const mobileLinks = [
-    ...navLinks,
-    { to: "/login/", label: "Login" },
-    { to: "/feedback/", label: "Feedback" },
-    { to: "/contact/", label: "Contact" },
-  ];
+  const mobileLinks = [...navLinks];
 
   return (
     <div className="container">
@@ -123,6 +119,32 @@ export function Navigation() {
                   <li className="mb-2 hover:text-purple-500">{link.label}</li>
                 </NavLink>
               ))}
+              <div
+                className="menu relative"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
+                <ul>
+                  <NavLink>
+                    <li className="align-baseline mr-10 px-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded focus:outline-none">
+                      Esquema Regula
+                    </li>
+                  </NavLink>
+                </ul>
+                {state.isDropdownVisible && (
+                  <div className="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                    <ul>
+                      {dropdownLinks.map((link) => (
+                        <NavLink key={link.to} to={link.to} style={linkStyle}>
+                          <li className="mr-1 p-1 border-2 border-transparent hover:text-black hover:border-purple-500 hover:bg-white rounded">
+                            {link.label}
+                          </li>
+                        </NavLink>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </ul>
           </div>
         )}

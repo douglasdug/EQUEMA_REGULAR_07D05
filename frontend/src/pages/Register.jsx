@@ -5,10 +5,11 @@ import { registerUser } from "../api/usuario.api.js";
 
 export default function Register() {
   const [formData, setFormData] = useState({
+    fun_tipo_iden: "",
     username: "",
     first_name: "",
     last_name: "",
-    email: "",
+    fun_email: "",
     password1: "",
     password2: "",
     fun_sex: "",
@@ -59,6 +60,20 @@ export default function Register() {
       {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
       <h2>Register:</h2>
       <form onSubmit={handleSubmit}>
+        <label
+          htmlFor="fun_tipo_iden"
+          className="block text-gray-700 text-sm font-bold mb-2"
+        >
+          Tipo de Identificacion:
+        </label>
+        <input
+          type="text"
+          name="fun_tipo_iden"
+          value={formData.fun_tipo_iden}
+          onChange={handleChange}
+          placeholder="Cédula de identidad"
+          className="bg-zinc-200 p-1 rounded-lg block w-full mb-1"
+        />
         <label
           htmlFor="username"
           className="block text-gray-700 text-sm font-bold mb-2"
@@ -116,15 +131,15 @@ export default function Register() {
           className="bg-zinc-200 p-1 rounded-lg block w-full mb-1"
         />
         <label
-          htmlFor="email"
+          htmlFor="fun_email"
           className="block text-gray-700 text-sm font-bold mb-2"
         >
           Correo electrónico:
         </label>
         <input
           type="email"
-          name="email"
-          value={formData.email}
+          name="fun_email"
+          value={formData.fun_email}
           onChange={handleChange}
           placeholder="Correo electrónico"
           className="bg-zinc-200 p-1 rounded-lg block w-full mb-1"

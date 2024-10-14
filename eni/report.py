@@ -6,65 +6,39 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.graphics.shapes import Drawing, String
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import inch
-from reportlab.pdfgen.canvas import Canvas
-from reportlab.platypus import Image
-from reportlab.lib.utils import ImageReader
-from io import BytesIO
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import Frame
 
 from .models import temprano
 
 
-# Función para crear texto rotado dentro de una celda
-def rotar_texto(header, width=2, height=66, font_size=5):
+# Función genérica para crear texto dentro de una celda
+def crear_texto(header, width, height, font_size, rotation=0):
     drawing = Drawing(width, height)
-    drawing.rotate(90)
+    drawing.rotate(rotation)
     lines = header.split('\n')
     y = 0
     for line in lines:
         drawing.add(String(0, y, line, fontSize=font_size))
         y -= font_size  # Ajusta el espaciado entre líneas según sea necesario
     return drawing
+
+# Funciones específicas utilizando la función genérica
+
+
+def rotar_texto(header, width=2, height=66, font_size=5):
+    return crear_texto(header, width, height, font_size, rotation=90)
 
 
 def texto_ajustado(header, width=26, height=-2, font_size=4):
-    drawing = Drawing(width, height)
-    drawing.rotate(0)
-    lines = header.split('\n')
-    y = 0
-    for line in lines:
-        drawing.add(String(0, y, line, fontSize=font_size))
-        y -= font_size  # Ajusta el espaciado entre líneas según sea necesario
-    return drawing
+    return crear_texto(header, width, height, font_size)
 
 
 def texto_ajustado2(header, width=13, height=0, font_size=4):
-    drawing = Drawing(width, height)
-    drawing.rotate(0)
-    lines = header.split('\n')
-    y = 0
-    for line in lines:
-        drawing.add(String(0, y, line, fontSize=font_size))
-        y -= font_size  # Ajusta el espaciado entre líneas según sea necesario
-    return drawing
+    return crear_texto(header, width, height, font_size)
 
 
 def texto_ajustado_tabla2(header, width=20, height=0, font_size=5):
-    drawing = Drawing(width, height)
-    drawing.rotate(0)
-    lines = header.split('\n')
-    y = 0
-    for line in lines:
-        drawing.add(String(0, y, line, fontSize=font_size))
-        y -= font_size  # Ajusta el espaciado entre líneas según sea necesario
-    return drawing
+    return crear_texto(header, width, height, font_size)
 
 
 @csrf_exempt
@@ -109,75 +83,139 @@ def reporteTempranoPDF(request):
         datos_temprano = temprano.objects.filter(
             tem_fech__month=mes_actual, eniUser_id=user_id).order_by('tem_fech', 'tem_tota')
 
+        # Función para crear y estilizar la primera tabla
+        def crear_tabla1(data1, col_widths1, row_heights1):
+            table = Table(
+                data1, colWidths=col_widths1, rowHeights=row_heights1
+            )
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 3), colors.lightgrey),
+                # Unir filas
+                # ('SPAN', (0, 0), (0, 3)),
+                # ('SPAN', (1, 0), (1, 2)),
+                # ('SPAN', (6, 1), (6, 2)),
+                # ('SPAN', (7, 1), (7, 2)),
+                # ('SPAN', (8, 0), (8, 2)),
+                # ('SPAN', (11, 1), (11, 2)),
+                # ('SPAN', (12, 1), (12, 2)),
+                # ('SPAN', (13, 1), (13, 2)),
+                # ('SPAN', (14, 1), (14, 2)),
+                # ('SPAN', (15, 1), (15, 2)),
+                # ('SPAN', (16, 1), (16, 2)),
+                # ('SPAN', (17, 1), (17, 2)),
+                # ('SPAN', (18, 1), (18, 2)),
+                # ('SPAN', (19, 1), (19, 2)),
+                # ('SPAN', (20, 1), (20, 2)),
+                # ('SPAN', (21, 1), (21, 2)),
+                # ('SPAN', (22, 1), (22, 2)),
+                # ('SPAN', (23, 1), (23, 2)),
+                # ('SPAN', (24, 1), (24, 2)),
+                # ('SPAN', (25, 1), (25, 2)),
+                # ('SPAN', (26, 1), (26, 2)),
+                # Unir columnas
+                ('SPAN', (2, 0), (7, 0)),
+                ('SPAN', (9, 0), (10, 1)),
+                ('SPAN', (11, 0), (12, 0)),
+                ('SPAN', (13, 0), (18, 0)),
+                ('SPAN', (19, 0), (26, 0)),
+                ('SPAN', (27, 0), (40, 0)),
+                ('SPAN', (41, 0), (46, 0)),
+                ('SPAN', (47, 0), (48, 0)),
+                ('SPAN', (49, 0), (50, 0)),
+                ('SPAN', (2, 1), (3, 1)),
+                ('SPAN', (4, 1), (5, 1)),
+                ('SPAN', (27, 1), (29, 1)),
+                ('SPAN', (30, 1), (33, 1)),
+                ('SPAN', (34, 1), (37, 1)),
+                ('SPAN', (38, 1), (40, 1)),
+                ('SPAN', (42, 1), (43, 1)),
+                ('SPAN', (45, 1), (46, 1)),
+                ('SPAN', (47, 1), (48, 1)),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('FONTNAME', (0, 0), (-1, 1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 3),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ]))
+            return table
+
+        # Función para crear y estilizar la segunda tabla
+        def crear_tabla2(data2, col_widths2, row_heights2):
+            table = Table(
+                data2, colWidths=col_widths2, rowHeights=row_heights2
+            )
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 1), colors.whitesmoke),
+                # Unir columnas
+                ('SPAN', (1, 0), (16, 0)),
+                ('SPAN', (17, 0), (33, 0)),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('FONTNAME', (0, 0), (-1, 1), 'Times-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 5),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('FONTNAME', (0, -1), (-1, -1), 'Times-Bold'),
+            ]))
+            return table
+
+        # Función para ajustar encabezados
+
+        def ajustar_encabezados(headers, columnas_a_ajustar, ajuste_func):
+            return [ajuste_func(header) if i in columnas_a_ajustar else header for i, header in enumerate(headers)]
+
+        # Función para formatear ceros
+
+        def format_cero(value, cero_style):
+            return Paragraph(str(value), cero_style) if value == 0 else value
+
+        # Datos de encabezados
         headers_1 = [
             '', '', 'Extramural', '', '', '', '', '', '', 'Sexo', '', 'LUGAR DE\nRESIDENCIA\nHABITULA', '', 'Nacionalidad', '', '', '', '', '', 'Autoidentificación étnica', '', '', '', '', '', '', '',
-            'Menor de un año  / (0 a 11 meses)', '', '', '', '', '', '', '', '', '', '', '', '', '', '12 a 23 meses', '', '', '', '', '', '5 años', '', '    9 AÑOS\n     (NIÑAS)', '', '     10 Años\n     (NIÑAS)', '           15\n          años',
+            'Menor de un año  / (0 a 11 meses)', '', '', '', '', '', '', '', '', '', '', '', '', '', '12 a 23 meses', '', '', '', '', '', '5 años', '', '    9 AÑOS\n     (NIÑAS)', '', '     10 Años\n     (NIÑAS)', '           15\n          años'
         ]
-
         headers_2 = [
-            '', '', 'MIES', '', 'MINEDUC', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            'Dosis única', '', '', '1ra Dosis', '', '', '', '2da Dosis', '', '', '', '3ra Dosis', '', '', '1ra\nDosis', 'Dosis única', '', '2da\nDosis', '4ta Dosis', '', '5ta Dosis', '', '1ra\nDosis', '2da\nDosis', '2da\nDosis', 'Tercer\nRefuerzo',
+            '', '', 'MIES', '', 'MINEDUC', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Dosis única', '', '', '1ra Dosis', '', '', '',
+            '2da Dosis', '', '', '', '3ra Dosis', '', '', '1ra\nDosis', 'Dosis única', '', '2da\nDosis', '4ta Dosis', '', '5ta Dosis', '', '1ra\nDosis', '2da\nDosis', '2da\nDosis', 'Tercer\nRefuerzo'
         ]
-
         headers_3 = [
-            'Dia', 'Intramural', 'CNH', 'CIBV', 'E. General Básica', 'Bachillerato', 'VISITAS DOMICILIARIAS', 'ATENCIÓN COMUNITARIA', 'OTROS', 'Hombre', 'Mujer',
-            'Pertenece al establecimiento de salud', 'No pertenece al establecimiento de salud', 'Ecuatoriana', 'Colombiano', 'Peruano', 'Cubano', 'Venezolano',
-            'Otros', 'Indigena', 'Afro ecuatoriano/\nAfro descendiente', 'Negro/a', 'Mulato/a', 'Montubio/a', 'Mestizo/a', 'Blanco/a', 'Otro',
-            'BCG primeras\n24 horas de nacido', 'HB primeras\n24 horas de nacido', '*BCG desde el 2do día de\nnacido hasta los 364 días (Tardía)',
-            'Rotavirus', 'fIPV', 'Neumococo', 'Pentavalente', 'Rotavirus', 'fIPV', 'Neumococo', 'Pentavalente',
-            'bOPV', 'Neumococo', 'Pentavalente', 'SRP', 'FA', 'Varicela', 'SRP', 'bOPV', 'DPT', 'bOPV', 'DPT', 'HPV', 'HPV', 'HPV', 'dT adulto',
+            'Dia', 'Intramural', 'CNH', 'CIBV', 'E. General Básica', 'Bachillerato', 'VISITAS DOMICILIARIAS', 'ATENCIÓN COMUNITARIA', 'OTROS', 'Hombre', 'Mujer', 'Pertenece al establecimiento de salud', 'No pertenece al establecimiento de salud', 'Ecuatoriana', 'Colombiano', 'Peruano', 'Cubano', 'Venezolano', 'Otros', 'Indigena', 'Afro ecuatoriano/\nAfro descendiente', 'Negro/a', 'Mulato/a', 'Montubio/a',
+            'Mestizo/a', 'Blanco/a', 'Otro', 'BCG primeras\n24 horas de nacido', 'HB primeras\n24 horas de nacido', '*BCG desde el 2do día de\nnacido hasta los 364 días (Tardía)', 'Rotavirus', 'fIPV', 'Neumococo', 'Pentavalente', 'Rotavirus', 'fIPV', 'Neumococo', 'Pentavalente', 'bOPV', 'Neumococo', 'Pentavalente', 'SRP', 'FA', 'Varicela', 'SRP', 'bOPV', 'DPT', 'bOPV', 'DPT', 'HPV', 'HPV', 'HPV', 'dT adulto'
         ]
-
         headers_4 = [
             '', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26',
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26'
         ]
 
-        # Índices de las columnas que deseas rotar
+        # Índices de las columnas que deseas ajustar
         columnas_a_ajustar1 = [11, 49, 51, 52]
+        columnas_a_ajustar2 = [41, 42, 44, 49, 50, 51, 52]
 
-        # Aplicar rotar_texto solo a las columnas especificadas
-        ajustar_headers_1 = [
-            texto_ajustado(header) if i in columnas_a_ajustar1 else header
-            for i, header in enumerate(headers_1)
-        ]
-
-        # Índices de las columnas que deseas rotar
-        columnas_a_ajustar2 = [
-            41, 42, 44, 49, 50, 51, 52
-        ]
-
-        # Aplicar rotar_texto solo a las columnas especificadas
-        ajustar_headers_2 = [
-            texto_ajustado2(header) if i in columnas_a_ajustar2 else header
-            for i, header in enumerate(headers_2)
-        ]
-
-        # Aquí ajustamos el tamaño del ancho y alto de las celdas para rotar el texto
+        # Ajustar encabezados
+        ajustar_headers_1 = ajustar_encabezados(
+            headers_1, columnas_a_ajustar1, texto_ajustado)
+        ajustar_headers_2 = ajustar_encabezados(
+            headers_2, columnas_a_ajustar2, texto_ajustado2)
         rotated_headers_3 = [rotar_texto(header) for header in headers_3]
 
         # Encabezado de la tabla
-        data = [ajustar_headers_1, ajustar_headers_2,
-                rotated_headers_3, headers_4]
+        data1 = [
+            ajustar_headers_1, ajustar_headers_2, rotated_headers_3, headers_4
+        ]
 
-        # Crea un diccionario con los datos por dia
+        # Crear un diccionario con los datos por día
         datos_por_dia = {
-            dato.tem_fech.day: dato for dato in datos_temprano if not dato.tem_tota
-        }
+            dato.tem_fech.day: dato for dato in datos_temprano if not dato.tem_tota}
 
         # Definir un estilo para las celdas que contienen ceros
         cero_style = ParagraphStyle(
-            name='ZeroStyle',
-            fontSize=4,  # Tamaño de la fuente más pequeño para ceros
-            leading=4,   # Espaciado entre líneas más unido
-            alignment=1  # Centrar el texto
-        )
+            name='ZeroStyle', fontSize=4, leading=4, alignment=1)
 
-        # Función para aplicar el estilo de cero
-        def format_cero(value):
-            return Paragraph(str(value), cero_style) if value == 0 else value
-
-        # Asegura que la tabla tenga 31 filas (días del mes)
+        # Asegurar que la tabla tenga 31 filas (días del mes)
         for dia in range(1, 32):
             if dia in datos_por_dia:
                 dato = datos_por_dia[dia]
@@ -192,15 +230,19 @@ def reporteTempranoPDF(request):
                     dato.tem_5ano_5tad_dpt, dato.tem_9ano_1rad_hpv, dato.tem_9ano_2dad_hpv, dato.tem_10an_2dad_hpv, dato.tem_15an_terc_dtad
                 ]
                 # Aplicar format_cero a cada valor
-                data.append([format_cero(valor) for valor in valores])
+                data1.append(
+                    [format_cero(valor, cero_style) for valor in valores]
+                )
             else:
                 # Si no hay datos los días son cero
-                data.append([dia] + [format_cero(0) for _ in range(52)])
+                data1.append(
+                    [dia] + [format_cero(0, cero_style) for _ in range(52)]
+                )
 
         # Añadir la fila con tem_tota al final
         for dato in datos_temprano:
             if dato.tem_tota:
-                data.append([
+                data1.append([
                     "Total", dato.tem_intr, dato.tem_extr_mies_cnh, dato.tem_extr_mies_cibv, dato.tem_extr_mine_egen, dato.tem_extr_mine_bach, dato.tem_extr_visi, dato.tem_extr_aten, dato.tem_otro,
                     dato.tem_sexo_homb, dato.tem_sexo_muje, dato.tem_luga_pert, dato.tem_luga_nope, dato.tem_naci_ecua, dato.tem_naci_colo, dato.tem_naci_peru, dato.tem_naci_cuba,
                     dato.tem_naci_vene, dato.tem_naci_otro, dato.tem_auto_indi, dato.tem_auto_afro, dato.tem_auto_negr, dato.tem_auto_mula, dato.tem_auto_mont, dato.tem_auto_mest,
@@ -213,9 +255,9 @@ def reporteTempranoPDF(request):
                 break
 
         # Ajustar el ancho de cada columna de la tabla
-        num_columns = len(data[0])
-        page_width = landscape(A4)[0] - 2 * margin
-        col_width = page_width / num_columns
+        num_columns1 = len(data1[0])
+        page_width1 = landscape(A4)[0] - 2 * margin
+        col_width1 = page_width1 / num_columns1
 
         # Ajustar la altura de cada fila de la tabla
         header_height_1 = 20  # Altura del encabezado
@@ -225,100 +267,29 @@ def reporteTempranoPDF(request):
         footer_height = 18  # Altura de la fila final
 
         # Crear la lista de alturas de las filas
-        row_heights = [header_height_1, header_height_2, header_height_3] + [row_height] * \
-            (len(data) - 4) + [footer_height]
+        row_heights1 = [header_height_1, header_height_2, header_height_3] + \
+            [row_height] * (len(data1) - 4) + [footer_height]
 
-        table = Table(
-            data, colWidths=[col_width] * num_columns, rowHeights=row_heights
-        )
-
-        table.setStyle(TableStyle([
-            # Fondo Primer encabezado
-            ('BACKGROUND', (0, 0), (-1, 0), colors.white),
-            # Fondo Segundo encabezado
-            ('BACKGROUND', (0, 1), (-1, 1), colors.white),
-            # Fondo Tercer encabezado
-            ('BACKGROUND', (0, 2), (-1, 2), colors.white),
-            # Fondo Cuarto encabezado
-            ('BACKGROUND', (0, 3), (-1, 3), colors.white),
-            # Unir filas
-            # ('SPAN', (0, 0), (0, 3)),
-            # ('SPAN', (1, 0), (1, 2)),
-            # ('SPAN', (6, 1), (6, 2)),
-            # ('SPAN', (7, 1), (7, 2)),
-            # ('SPAN', (8, 0), (8, 2)),
-            # ('SPAN', (11, 1), (11, 2)),
-            # ('SPAN', (12, 1), (12, 2)),
-            # ('SPAN', (13, 1), (13, 2)),
-            # ('SPAN', (14, 1), (14, 2)),
-            # ('SPAN', (15, 1), (15, 2)),
-            # ('SPAN', (16, 1), (16, 2)),
-            # ('SPAN', (17, 1), (17, 2)),
-            # ('SPAN', (18, 1), (18, 2)),
-            # ('SPAN', (19, 1), (19, 2)),
-            # ('SPAN', (20, 1), (20, 2)),
-            # ('SPAN', (21, 1), (21, 2)),
-            # ('SPAN', (22, 1), (22, 2)),
-            # ('SPAN', (23, 1), (23, 2)),
-            # ('SPAN', (24, 1), (24, 2)),
-            # ('SPAN', (25, 1), (25, 2)),
-            # ('SPAN', (26, 1), (26, 2)),
-            # Unir columnas
-            ('SPAN', (2, 0), (7, 0)),
-            ('SPAN', (9, 0), (10, 1)),
-            ('SPAN', (11, 0), (12, 0)),
-            ('SPAN', (13, 0), (18, 0)),
-            ('SPAN', (19, 0), (26, 0)),
-            ('SPAN', (27, 0), (40, 0)),
-            ('SPAN', (41, 0), (46, 0)),
-            ('SPAN', (47, 0), (48, 0)),
-            ('SPAN', (49, 0), (50, 0)),
-            ('SPAN', (2, 1), (3, 1)),
-            ('SPAN', (4, 1), (5, 1)),
-            ('SPAN', (27, 1), (29, 1)),
-            ('SPAN', (30, 1), (33, 1)),
-            ('SPAN', (34, 1), (37, 1)),
-            ('SPAN', (38, 1), (40, 1)),
-            ('SPAN', (42, 1), (43, 1)),
-            ('SPAN', (45, 1), (46, 1)),
-            ('SPAN', (47, 1), (48, 1)),
-            # Rotar texto en headers_3
-            # ('TEXTANGLE', (0, 4), (-1, 4), 90),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),  # Texto en blanco
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Centrar texto
-            # Centrar texto verticalmente
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            # Negrita en encabezado
-            ('FONTNAME', (0, 0), (-1, 1), 'Helvetica-Bold'),
-            # Tamaño de texto para las filas de datos
-            ('FONTSIZE', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 3),  # Espaciado en encabezado
-            # Color de fondo para el cuerpo
-            # ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),  # Líneas de tabla
-            # Negrita en la última fila
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ]))
-
-        # Añadir la tabla como fondo
-        elements.append(table)
+        # Crear y estilizar la primera tabla
+        table1 = crear_tabla1(data1, col_width1, row_heights1)
+        elements.append(table1)
         elements.append(Spacer(1, 3))  # Añadir espacio
 
+        # Datos de encabezados para la segunda tabla
         headers_1_1 = [
-            '', 'NACIONALIDAD ETNICA (Llenar solo en caso en el que se autoidentifique como INDIGENA)', '', '',	'', '', '', '', '', '', '', '', '', '', '', '', '',
-            'PUEBLOS (Llenar solo en caso de que se autoidentifique con etnia INDIGENA que tenga nacionalidad etnica KICHWA)', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+            '', 'NACIONALIDAD ETNICA (Llenar solo en caso en el que se autoidentifique como INDIGENA)', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+            'PUEBLOS (Llenar solo en caso de que se autoidentifique con etnia INDIGENA que tenga nacionalidad etnica KICHWA)', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
         ]
-
         headers_1_2 = [
-            '', 'Achuar', 'Andoa', 'Awa', 'Chachi',	'Cofan', 'Epera', 'Huancavilca', 'Kichwa', 'Manta', 'Secoya', 'Shiwiar', 'Shuar', 'Siona', 'Tsáchila', 'Waorani', 'Zapara',
-            'Chibuleo', 'Kañari', 'Karanki', 'Kayambi', 'Kichwa\nAmazónico', 'Kisapincha', 'Kitukara', 'Natabuela', 'Otavalo', 'Paltas', 'Panzaleo', 'Pastos', 'Puruha', 'Salasaka', 'Saraguro', 'Tomabela', 'Waramka',
+            '', 'Achuar', 'Andoa', 'Awa', 'Chachi', 'Cofan', 'Epera', 'Huancavilca', 'Kichwa', 'Manta', 'Secoya', 'Shiwiar', 'Shuar', 'Siona', 'Tsáchila', 'Waorani', 'Zapara', 'Chibuleo',
+            'Kañari', 'Karanki', 'Kayambi', 'Kichwa\nAmazónico', 'Kisapincha', 'Kitukara', 'Natabuela', 'Otavalo', 'Paltas', 'Panzaleo', 'Pastos', 'Puruha', 'Salasaka', 'Saraguro', 'Tomabela', 'Waramka'
         ]
 
-        # Aquí ajustamos el tamaño del ancho y alto de las celdas para rotar el texto
+        # Ajustar encabezados de la segunda tabla
         rotated_headers_1_2 = [texto_ajustado_tabla2(
             header) for header in headers_1_2]
 
-        # Encabezado de la tabla
+        # Encabezado de la segunda tabla
         data2 = [headers_1_1, rotated_headers_1_2]
 
         # Añadir la fila con tem_tota al final
@@ -330,50 +301,23 @@ def reporteTempranoPDF(request):
                 ])
                 break
 
-        # Ajustar el ancho de cada columna de la tabla
+        # Ajustar el ancho de cada columna de la segunda tabla
         num_columns2 = len(data2[0])
         page_width2 = landscape(A4)[0] - 2 * margin
         col_width2 = page_width2 / num_columns2
 
-        # Ajustar la altura de cada fila de la tabla
-        header_height_1_1 = 10  # Altura del encabezado
+        # Ajustar la altura de cada fila de la segunda tabla
+        header_height_1_1 = 14  # Altura del encabezado
         header_height_1_2 = 20
         row_height1 = 8  # Altura de las filas de datos
         footer_height1 = 12  # Altura de la fila final
 
         # Crear la lista de alturas de las filas
-        row_heights2 = [header_height_1_1, header_height_1_2] + [row_height1] * \
-            (len(data2) - 4) + [footer_height1]
+        row_heights2 = [header_height_1_1, header_height_1_2] + \
+            [row_height1] * (len(data2) - 4) + [footer_height1]
 
-        table2 = Table(
-            data2, colWidths=[col_width2] * num_columns2, rowHeights=row_heights2
-        )
-
-        table2.setStyle(TableStyle([
-            # Fondo Primer encabezado
-            ('BACKGROUND', (0, 0), (-1, 0), colors.white),
-            # Fondo Segundo encabezado
-            ('BACKGROUND', (0, 1), (-1, 1), colors.white),
-            # Unir columnas
-            ('SPAN', (1, 0), (16, 0)),
-            ('SPAN', (17, 0), (33, 0)),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),  # Texto en blanco
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Centrar texto
-            # Centrar texto verticalmente
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            # Negrita en encabezado
-            ('FONTNAME', (0, 0), (-1, 1), 'Helvetica-Bold'),
-            # Tamaño de texto para las filas de datos
-            ('FONTSIZE', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 3),  # Espaciado en encabezado
-            # Color de fondo para el cuerpo
-            # ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),  # Líneas de tabla
-            # Negrita en la última fila
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ]))
-
-        # Añadir la tabla como fondo
+        # Crear y estilizar la segunda tabla
+        table2 = crear_tabla2(data2, [col_width2] * num_columns2, row_heights2)
         elements.append(table2)
         elements.append(Spacer(1, 1))  # Añadir espacio
 

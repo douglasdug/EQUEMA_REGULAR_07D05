@@ -4,9 +4,11 @@ from django.contrib.auth.models import AbstractUser
 
 # Create your models here.
 class eniUser(AbstractUser):
-    email = models.EmailField(unique=True)
+    fun_tipo_iden = models.CharField(max_length=30, blank=True)
+    fun_titu = models.CharField(max_length=40, blank=True)
+    fun_email = models.EmailField(unique=True)
     fun_sex = models.CharField(max_length=10, blank=True)
-    USERNAME_FIELD = "email"
+    USERNAME_FIELD = "fun_email"
     REQUIRED_FIELDS = ["username"]
 
     def nombre_completo(self):

@@ -22,14 +22,17 @@ function App() {
             <Route path="/home/" element={<Home />} />
             <Route path="/login/" element={<Login />} />
             <Route path="/register/" element={<Register />} />
-            <Route path="/createTemprano/" element={<CreateTemprano />} />
-            <Route path="/createTardio/" element={<CreateTardio />} />
-            <Route path="/createDesperdicio/" element={<CreateDesperdicio />} />
+            <Route path="/create-temprano/" element={<CreateTemprano />} />
+            <Route path="/create-tardio/" element={<CreateTardio />} />
             <Route
-              path="/createRegistroVacunado/"
+              path="/create-desperdicio/"
+              element={<CreateDesperdicio />}
+            />
+            <Route
+              path="/create-registro-vacunado/"
               element={<CreateRegistroVacunado />}
             />
-            <Route path="/createUsuario/" element={<CreateUsuario />} />
+            <Route path="/create-usuario/" element={<CreateUsuario />} />
           </Routes>
         </div>
         <Toaster />

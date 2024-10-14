@@ -2,11 +2,14 @@ from rest_framework import serializers
 from .models import eniUser, unidadSalud, temprano, tardio, desperdicio, registroVacunado
 from django.contrib.auth import authenticate
 
+DATE_FORMAT = "%d/%m/%Y"
+
 
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = eniUser
-        fields = ("id", "username", "email", "first_name", "last_name",)
+        fields = ("id", "fun_titu", "username",
+                  "fun_email", "first_name", "last_name",)
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -15,8 +18,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = eniUser
-        fields = ("id", "username", "first_name", "last_name",
-                  "fun_sex", "email", "password1", "password2")
+        fields = (
+            "id", "fun_tipo_iden", "username", "first_name", "last_name", "fun_sex", "fun_email", "password1", "password2"
+        )
         extra_kwargs = {"password": {"write_only": True}}
 
     def validate(self, attrs):
@@ -35,14 +39,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class UserLoginSerializer(serializers.Serializer):
-    email = serializers.CharField()
+    fun_email = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
         user = authenticate(**data)
         if user and user.is_active:
             return user
-        raise serializers.ValidationError("Incorrecto al crear el Usuario!")
+        raise serializers.ValidationError("Usuario o Clave es incorrecto!.")
 
 
 class UnidadSaludRegistrationSerializer(serializers.ModelSerializer):
@@ -53,7 +57,7 @@ class UnidadSaludRegistrationSerializer(serializers.ModelSerializer):
 
 class TempranoRegistrationSerializer(serializers.ModelSerializer):
     tem_fech = serializers.DateField(
-        format="%d/%m/%Y", input_formats=['%d/%m/%Y', 'iso-8601'])
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
     class Meta:
         model = temprano
@@ -62,7 +66,7 @@ class TempranoRegistrationSerializer(serializers.ModelSerializer):
 
 class TardioRegistrationSerializer(serializers.ModelSerializer):
     tar_fech = serializers.DateField(
-        format="%d/%m/%Y", input_formats=['%d/%m/%Y', 'iso-8601'])
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
     class Meta:
         model = tardio
@@ -71,7 +75,7 @@ class TardioRegistrationSerializer(serializers.ModelSerializer):
 
 class DesperdicioRegistrationSerializer(serializers.ModelSerializer):
     des_fech = serializers.DateField(
-        format="%d/%m/%Y", input_formats=['%d/%m/%Y', 'iso-8601'])
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
     class Meta:
         model = desperdicio
@@ -80,7 +84,7 @@ class DesperdicioRegistrationSerializer(serializers.ModelSerializer):
 
 class RegistroVacunadoRegistrationSerializer(serializers.ModelSerializer):
     vac_reg_ano_mes_dia_apli = serializers.DateField(
-        format="%d/%m/%Y", input_formats=['%d/%m/%Y', 'iso-8601'])
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
     class Meta:
         model = registroVacunado

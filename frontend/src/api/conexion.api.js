@@ -1,5 +1,18 @@
 import axios from "axios";
 
+const login = axios.create({
+  baseURL: "http://localhost:8000/api/v1/login",
+});
+
+//export const datosLogin = (formData) => login.post("/", formData);
+export const datosLogin = async (formData) => {
+  const response = await login.post("/", formData);
+  const { access, refresh } = response.data.tokens;
+  localStorage.setItem("accessToken", access);
+  localStorage.setItem("refreshToken", refresh);
+  return response.data;
+};
+
 const registroVacunadoApi = axios.create({
   baseURL: "http://localhost:8000/api/v1/registrovacunado",
 });

@@ -1,15 +1,13 @@
 import React, { useState } from "react";
-import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { datosLogin } from "../api/conexion.api.js";
 import { toast } from "react-hot-toast";
 
 export default function Login() {
   const [formData, setFormData] = useState({
-    email: "",
+    fun_email: "",
     password: "",
   });
-
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -20,7 +18,7 @@ export default function Login() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [error, setError] = useState(null);
+  const [error] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,28 +27,25 @@ export default function Login() {
     }
     setIsLoading(true);
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/v1/login/",
-        formData
-      );
+      const response = await datosLogin(formData);
       console.log("Success!", response.data);
       setSuccessMessage("Login con exito!");
-      localStorage.setItem("accessToken", response.data.tokens.access);
-      localStorage.setItem("refreshToken", response.data.tokens.refresh);
-      toast.success("Loguiado con exito!", {
+      toast.success("Login con exito!", {
         position: "bottom-right",
       });
       window.location.href = "/home/";
     } catch (error) {
       console.log("Error durante el Login!", error.response?.data);
+      let errorMessage = "Error durante el Login!";
       if (error.response && error.response.data) {
         Object.keys(error.response.data).forEach((field) => {
-          const errorMessage = error.response.data[field];
-          if (errorMessage && errorMessage.length > 0) {
-            setError(errorMessage[0]);
+          const fieldErrorMessage = error.response.data[field];
+          if (fieldErrorMessage && fieldErrorMessage.length > 0) {
+            errorMessage = fieldErrorMessage[0];
           }
         });
       }
+      toast.error(errorMessage, { position: "bottom-right" });
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +65,7 @@ export default function Login() {
           <form action="/" className="mx-auto mb-0 mt-8 max-w-md space-y-4">
             <div>
               <label
-                htmlFor="email"
+                htmlFor="fun_email"
                 className="mb-2 block font-medium text-gray-900 text-left"
               >
                 Email:
@@ -78,8 +73,8 @@ export default function Login() {
               <div className="relative">
                 <input
                   type="email"
-                  name="email"
-                  value={formData.email}
+                  name="fun_email"
+                  value={formData.fun_email}
                   onChange={handleChange}
                   placeholder="Correo electronico"
                   className="w-full rounded-lg border-gray-200 p-4 pe-12 text-sm shadow-sm"

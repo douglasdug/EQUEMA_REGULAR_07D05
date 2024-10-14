@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import status, permissions, viewsets
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -7,17 +6,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from .models import unidadSalud, temprano, tardio, desperdicio, registroVacunado
 
-from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
 from django.db.models import F, Sum
 from django.utils.dateparse import parse_date
 from datetime import datetime, timedelta
-from django.db import models
 
 from django.http import HttpResponse
 import csv
 from rest_framework.decorators import action
-from django.core.exceptions import ValidationError
 
 
 # Create your views here.
@@ -64,10 +59,7 @@ class UserLogoutAPIView(GenericAPIView):
             token.blacklist()
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
-            pass  # or handle the exception
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            pass
-            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserInfoAPIView(RetrieveAPIView):
@@ -82,6 +74,10 @@ class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = UnidadSaludRegistrationSerializer
     queryset = unidadSalud.objects.all()
     permission_classes = [permissions.AllowAny]
+
+
+Error_Fecha_Registrada = "La fecha ya ha sido registrada desea Actualizar la información!."
+Dato_Registro_Correcto = "Datos registrados correctamente!."
 
 
 class TempranoRegistrationAPIView(viewsets.ModelViewSet):
@@ -112,7 +108,7 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
 
         # Verificar si ya existe un registro con las mismas variables
         if temprano.objects.filter(eniUser_id=eni_user_id, tem_fech=tem_fech, tem_tota=False).exists():
-            return Response({"error": "La fecha ya ha sido registrada desea Actualizar la información!."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": Error_Fecha_Registrada}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -951,7 +947,7 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
                 eniUser_id=eni_user_id
             )
 
-        return Response({"message": "Datos registrados correctamente!."}, status=status.HTTP_201_CREATED)
+        return Response({"message": Dato_Registro_Correcto}, status=status.HTTP_201_CREATED)
 
 
 class TardioRegistrationAPIView(viewsets.ModelViewSet):
@@ -982,7 +978,7 @@ class TardioRegistrationAPIView(viewsets.ModelViewSet):
 
         # Verificar si ya existe un registro con las mismas variables
         if tardio.objects.filter(eniUser_id=eni_user_id, tar_fech=tar_fech, tar_tota=False).exists():
-            return Response({"error": "La fecha ya ha sido registrada desea Actualizar la información!."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": Error_Fecha_Registrada}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -2109,7 +2105,7 @@ class TardioRegistrationAPIView(viewsets.ModelViewSet):
                 eniUser_id=eni_user_id
             )
 
-        return Response({"message": "Datos registrados correctamente!."}, status=status.HTTP_201_CREATED)
+        return Response({"message": Dato_Registro_Correcto}, status=status.HTTP_201_CREATED)
 
 
 class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
@@ -2140,7 +2136,7 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
 
         # Verificar si ya existe un registro con las mismas variables
         if desperdicio.objects.filter(eniUser_id=eni_user_id, des_fech=des_fech, des_tota=False).exists():
-            return Response({"error": "La fecha ya ha sido registrada desea Actualizar la información!."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": Error_Fecha_Registrada}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -2422,7 +2418,7 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
                 des_vacvphcam_pervacfrasnoabi=sum_totals_des['des_vacvphcam_pervacfrasnoabi'] or 0
             )
 
-        return Response({"message": "Datos registrados correctamente!."}, status=status.HTTP_201_CREATED)
+        return Response({"message": Dato_Registro_Correcto}, status=status.HTTP_201_CREATED)
 
 
 class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
@@ -2496,15 +2492,15 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
         desperdicio_total, created = desperdicio.objects.get_or_create(
             des_fech=des_fech_fin,
             des_tota=True,
-            defaults={'des_vacmod_dosapli': total_vacmod_dosapli,
-                      'eniUser_id': eni_user_id}
+            defaults={
+                'des_vacmod_dosapli': total_vacmod_dosapli, 'eniUser_id': eni_user_id}
         )
         if not created:
             desperdicio_total.des_vacmod_dosapli = total_vacmod_dosapli
             desperdicio_total.save(update_fields=['des_vacmod_dosapli'])
 
         headers = self.get_success_headers(serializer.data)
-        return Response({"message": "Datos registrados correctamente!.", "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({"message": Dato_Registro_Correcto, "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)
 
     @ action(detail=False, methods=['get'], url_path='descargar_csv')
     def get_descargar_csv(self, request, *args, **kwargs):
@@ -2529,19 +2525,14 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
             writer = csv.writer(response)
 
             # Escribir los encabezados del CSV
-            writer.writerow(['Año aplicacion', 'Mes aplicacion', 'Día aplicacion', 'Punto vacunacion',
-                            'Unicódigo establecimiento', 'Nombre establecimiento de salud', 'Zona', 'Distrito',
-                             'Provincia', 'Canton', 'Apellidos', 'Nombres',
-                             'Tipo identificación', 'Número de identificación', 'Sexo', 'Año nacimiento',
-                             'Mes nacimiento', 'Dia nacimiento', 'Nacionalidad', 'Etnia',
-                             'Nacionalidad étnica', 'Pueblo', 'Residencia provincia', 'Residencia cantón',
-                             'Residencia parroquia', 'Tel. de contacto', 'Correo electronico', 'Grupo de riesgo',
-                             'Fase vacuna', 'Estado vacunación', 'Tipo esquema', 'Vacuna',
-                             'Lote vacuna', 'Dosis aplicada', 'Paciente agendado', 'Nombre vacunador',
-                             'Identificación vacunador', 'Nombre del profesional que registra', 'Recibió dosis previa exterior', 'Nombre dosis exterior ',
-                             'Fecha anio dosis exterior', 'Fecha mes dosis exterior', 'Fecha dia dosis exterior', 'Pais dosis exterior',
-                             'Lote dosis exterior',
-                             ])
+            writer.writerow([
+                'Año aplicacion', 'Mes aplicacion', 'Día aplicacion', 'Punto vacunacion', 'Unicódigo establecimiento', 'Nombre establecimiento de salud', 'Zona', 'Distrito',
+                'Provincia', 'Canton', 'Apellidos', 'Nombres', 'Tipo identificación', 'Número de identificación', 'Sexo', 'Año nacimiento',
+                'Mes nacimiento', 'Dia nacimiento', 'Nacionalidad', 'Etnia', 'Nacionalidad étnica', 'Pueblo', 'Residencia provincia', 'Residencia cantón',
+                'Residencia parroquia', 'Tel. de contacto', 'Correo electronico', 'Grupo de riesgo', 'Fase vacuna', 'Estado vacunación', 'Tipo esquema', 'Vacuna',
+                'Lote vacuna', 'Dosis aplicada', 'Paciente agendado', 'Nombre vacunador', 'Identificación vacunador', 'Nombre del profesional que registra', 'Recibió dosis previa exterior', 'Nombre dosis exterior ',
+                'Fecha anio dosis exterior', 'Fecha mes dosis exterior', 'Fecha dia dosis exterior', 'Pais dosis exterior', 'Lote dosis exterior',
+            ])
 
             # Obtener los registros de registroVacunado dentro del rango de fechas
             registros = registroVacunado.objects.filter(
@@ -2561,17 +2552,18 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
                 fecha_mes_dosis_exterior = registro.vac_reg_fech_anio_mes_dia_dosi_exte.month
                 fecha_dia_dosis_exterior = registro.vac_reg_fech_anio_mes_dia_dosi_exte.day
 
-                writer.writerow([ano_aplicacion, mes_aplicacion, dia_aplicacion, registro.vac_reg_punt_vacu, registro.vac_reg_unic_esta, registro.vac_reg_nomb_esta_salu,
-                                registro.vac_reg_zona, registro.vac_reg_dist, registro.vac_reg_prov, registro.vac_reg_cant,
-                                registro.vac_reg_apel, registro.vac_reg_nomb, registro.vac_reg_tipo_iden, registro.vac_reg_nume_iden,
-                                registro.vac_reg_sexo, ano_nacimiento, mes_nacimiento, dia_nacimiento, registro.vac_reg_naci, registro.vac_reg_etni,
-                                registro.vac_reg_naci_etni, registro.vac_reg_pueb, registro.vac_reg_resi_prov, registro.vac_reg_resi_cant,
-                                registro.vac_reg_resi_parr, registro.vac_reg_teld_cont, registro.vac_reg_corr_elec, registro.vac_reg_grup_ries,
-                                registro.vac_reg_fase_vacu, registro.vac_reg_esta_vacu, registro.vac_reg_tipo_esqu, registro.vac_reg_vacu,
-                                registro.vac_reg_lote_vacu, registro.vac_reg_dosi_apli, registro.vac_reg_paci_agen, registro.vac_reg_nomb_vacu,
-                                registro.vac_reg_iden_vacu, registro.vac_reg_nomb_prof_regi, registro.vac_reg_reci_dosi_prev_exte, registro.vac_reg_nomb_dosi_exte,
-                                fecha_anio_dosis_exterior, fecha_mes_dosis_exterior, fecha_dia_dosis_exterior, registro.vac_reg_pais_dosi_exte, registro.vac_reg_lote_dosi_exte
-                                 ])
+                writer.writerow([
+                    ano_aplicacion, mes_aplicacion, dia_aplicacion, registro.vac_reg_punt_vacu, registro.vac_reg_unic_esta, registro.vac_reg_nomb_esta_salu,
+                    registro.vac_reg_zona, registro.vac_reg_dist, registro.vac_reg_prov, registro.vac_reg_cant,
+                    registro.vac_reg_apel, registro.vac_reg_nomb, registro.vac_reg_tipo_iden, registro.vac_reg_nume_iden,
+                    registro.vac_reg_sexo, ano_nacimiento, mes_nacimiento, dia_nacimiento, registro.vac_reg_naci, registro.vac_reg_etni,
+                    registro.vac_reg_naci_etni, registro.vac_reg_pueb, registro.vac_reg_resi_prov, registro.vac_reg_resi_cant,
+                    registro.vac_reg_resi_parr, registro.vac_reg_teld_cont, registro.vac_reg_corr_elec, registro.vac_reg_grup_ries,
+                    registro.vac_reg_fase_vacu, registro.vac_reg_esta_vacu, registro.vac_reg_tipo_esqu, registro.vac_reg_vacu,
+                    registro.vac_reg_lote_vacu, registro.vac_reg_dosi_apli, registro.vac_reg_paci_agen, registro.vac_reg_nomb_vacu,
+                    registro.vac_reg_iden_vacu, registro.vac_reg_nomb_prof_regi, registro.vac_reg_reci_dosi_prev_exte, registro.vac_reg_nomb_dosi_exte,
+                    fecha_anio_dosis_exterior, fecha_mes_dosis_exterior, fecha_dia_dosis_exterior, registro.vac_reg_pais_dosi_exte, registro.vac_reg_lote_dosi_exte
+                ])
             response['message'] = "Descarga de archivo iniciado!"
             return response
         except Exception as e:

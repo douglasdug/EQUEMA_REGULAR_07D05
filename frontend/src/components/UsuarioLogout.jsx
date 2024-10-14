@@ -3,7 +3,9 @@ import React, { useState, useEffect } from "react";
 import { getUser } from "../api/usuario.api.js";
 
 const UsuarioLogout = () => {
-  const [username, setUsername] = useState("");
+  const [fun_titu, setFun_titu] = useState("");
+  const [first_name, setFirst_name] = useState("");
+  const [last_name, setLast_name] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -13,14 +15,20 @@ const UsuarioLogout = () => {
         if (token) {
           const response = await getUser(token);
           setIsLoggedIn(true);
-          setUsername(response.data.username);
+          setFun_titu(response.data.fun_titu);
+          setFirst_name(response.data.first_name);
+          setLast_name(response.data.last_name);
         } else {
           setIsLoggedIn(false);
-          setUsername("");
+          setFun_titu("");
+          setFirst_name("");
+          setLast_name("");
         }
       } catch (error) {
         setIsLoggedIn(false);
-        setUsername("");
+        setFun_titu("");
+        setFirst_name("");
+        setLast_name("");
       }
     };
     checkLoggedInUser();
@@ -29,7 +37,9 @@ const UsuarioLogout = () => {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     setIsLoggedIn(false);
-    setUsername("");
+    setFun_titu("");
+    setFirst_name("");
+    setLast_name("");
   };
 
   return (
@@ -37,7 +47,7 @@ const UsuarioLogout = () => {
       {isLoggedIn ? (
         <div style={{ display: "flex", alignItems: "center" }}>
           <p style={{ marginRight: "10px" }}>
-            Bienvenido, {username}. Gracias por logearte!
+            Bienvenido, {fun_titu}. {first_name} {last_name}!
           </p>
           <button
             onClick={handleLogout}
