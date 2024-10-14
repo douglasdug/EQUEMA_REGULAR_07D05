@@ -5004,3 +5004,34 @@ export const listaDinamicaAdmision = {
     ],
   },
 };
+
+export const listaRegistro = {
+  fun_tipo_iden: [
+    "NO IDENTIFICADO",
+    "CÉDULA DE IDENTIDAD",
+    "PASAPORTE",
+    "VISA",
+    "CARNÉT DE REFUGIADO",
+  ],
+  fun_sex: ["HOMBRE", "MUJER"],
+  fun_titu: [
+    "BIOQUÍMICO MÉDICO/A",
+    "DOCTOR/A",
+    "DOCTOR/A - (RURAL)",
+    "ESPECIALISTA",
+    "LICENCIADO EN ENFERMERÍA",
+    "LICENCIADO EN ENFERMERÍA - (RURAL)",
+    "MÉDICO GENERAL/A",
+    "MÉDICO GENERAL/A - (RURAL)",
+    "OBSTETRICIA",
+    "OBSTETRICIA - (RURAL)",
+    "ODONTÓLOGO/A",
+    "ODONTÓLOGO/A - (RURAL)",
+    "PSICÓLOGO CLÍNICO/A",
+    "PSICÓLOGO CLÍNICO/A - (RURAL)",
+    "OTROS/A",
+    "SEÑOR",
+    "SEÑORA",
+    "SEÑORITA",
+  ],
+};

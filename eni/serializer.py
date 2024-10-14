@@ -19,7 +19,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = eniUser
         fields = (
-            "id", "fun_tipo_iden", "username", "first_name", "last_name", "fun_sex", "fun_email", "password1", "password2"
+            "id", "fun_tipo_iden", "username", "first_name", "last_name", "fun_sex", "fun_email", "fun_titu", "password1", "password2"
         )
         extra_kwargs = {"password": {"write_only": True}}
 

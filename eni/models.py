@@ -11,11 +11,11 @@ class eniUser(AbstractUser):
     USERNAME_FIELD = "fun_email"
     REQUIRED_FIELDS = ["username"]
 
-    def nombre_completo(self):
-        return self.first_name + " " + self.last_name
+    # def nombre_completo(self):
+    #     return self.first_name + " " + self.last_name
 
-    def __str__(self) -> str:
-        return self.nombre_completo()
+    # def __str__(self) -> str:
+    #     return self.nombre_completo()
 
 
 # Crea la tabla de Unidad de Salud
