@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import eniUser, unidadSalud, temprano
+from .models import eniUser, unidad_salud, temprano
 from .forms import CustomUserChangeForm, CustomUserCreationFrom
 from django.contrib.auth.admin import UserAdmin
 
@@ -14,6 +14,6 @@ class CustomAdminUser(UserAdmin):
     model = eniUser
 
 
-admin.site.register(unidadSalud)
+admin.site.register(unidad_salud)
 
 admin.site.register(temprano)

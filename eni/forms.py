@@ -5,10 +5,10 @@ from .models import eniUser
 class CustomUserCreationFrom(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = eniUser
-        fields = ("fun_email",)
+        fields = ("email",)
 
 
 class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = eniUser
-        fields = ("fun_email",)
+        fields = ("email",)

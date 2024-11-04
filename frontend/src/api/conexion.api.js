@@ -2,81 +2,124 @@ import axios from "axios";
 
 const API_URL = "http://localhost:8000/api/v1";
 
-export const getUser = async (token) => {
-  const config = {
+// Función para obtener los encabezados de autenticación
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("accessToken");
+  return {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   };
-  return await axios.get(`${API_URL}/user/`, config);
+};
+
+// Registro de Usuario
+export const getUser = async (token) => {
+  try {
+    const response = await axios.get(`${API_URL}/user/`, getAuthHeaders());
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data.code === "token_not_valid") {
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (refreshToken) {
+        const newAccessToken = await refreshAccessToken(refreshToken);
+        if (newAccessToken) {
+          localStorage.setItem("accessToken", newAccessToken);
+          const retryResponse = await axios.get(
+            `${API_URL}/user/`,
+            getAuthHeaders()
+          );
+          return retryResponse.data;
+        }
+      }
+    }
+    throw error;
+  }
+};
+
+const refreshAccessToken = async (refreshToken) => {
+  try {
+    const response = await axios.post(`${API_URL}/token/refresh/`, {
+      refresh: refreshToken,
+    });
+    return response.data.access;
+  } catch (error) {
+    console.error(
+      "Error refreshing access token:",
+      error.response ? error.response.data : error.message
+    );
+    return null;
+  }
 };
 
 export const logoutUser = async (accessToken, refreshToken) => {
+  if (!accessToken || !refreshToken) {
+    throw new Error("Access token and refresh token are required");
+  }
+
   const config = {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
   };
-  return await axios.post(
-    `${API_URL}/logout/`,
-    { refresh: refreshToken },
-    config
-  );
+
+  try {
+    const response = await axios.post(
+      `${API_URL}/logout/`,
+      { refresh: refreshToken },
+      config
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error logging out user:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
 };
 
 export const registerUser = async (formData) => {
-  const response = await axios.post(
-    "http://localhost:8000/api/v1/register/",
-    formData
-  );
-  return response.data;
+  try {
+    const response = await axios.post(`${API_URL}/register/`, formData);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error registering user:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
 };
 
-const login = axios.create({
-  baseURL: "http://localhost:8000/api/v1/login",
-});
-
-//export const datosLogin = (formData) => login.post("/", formData);
-export const datosLogin = async (formData) => {
-  const response = await login.post("/", formData);
+export const loginUser = async (formData) => {
+  const response = await axios.post(`${API_URL}/login/`, formData);
   const { access, refresh } = response.data.tokens;
   localStorage.setItem("accessToken", access);
   localStorage.setItem("refreshToken", refresh);
   return response.data;
 };
 
-const registroVacunadoApi = axios.create({
-  baseURL: "http://localhost:8000/api/v1/registrovacunado",
-});
-
-// // Interceptor para añadir el token de autenticación a todas las solicitudes
-// registroVacunadoApi.interceptors.request.use(
-//   (config) => {
-//     const token =
-//       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI3MTEwNTY1LCJpYXQiOjE3MjcxMTAyNjUsImp0aSI6ImYxNTdkMzBhZDdmZTQwZjBhNmU3MTcxZDZhOTIxNjdiIiwidXNlcl9pZCI6MX0.1QiZ8YPGefDXSnuHpDZ8Yfnz7NROftntY58YJB5gSBw"; // Reemplaza esto con la forma en que obtienes tu token
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-//     return config;
-//   },
-//   (error) => {
-//     return Promise.reject(error);
-//   }
-// );
-
-const user_id = 1;
-//const month = 9;
-//const year = 2024;
+export const identificacionUsuario = async (fun_tipo_iden, username) => {
+  const response = await axios.get(
+    `${API_URL}/admision-datos/buscar-usuario/`,
+    { params: { tipo: fun_tipo_iden, identificacion: username } }
+  );
+  return response.data;
+};
 
 const eniUser_id = 1;
 
 export const getAllRegistroVacunado = (month, year) =>
-  registroVacunadoApi.get(`/?user_id=${user_id}&month=${month}&year=${year}`);
+  axios.get(
+    `${API_URL}/registro-vacunado/?user_id=${eniUser_id}&month=${month}&year=${year}`,
+    getAuthHeaders()
+  );
 
 export const registroVacunadoCreateApi = (formData) =>
-  registroVacunadoApi.post("/", formData);
+  axios.post(`${API_URL}/registro-vacunado/`, formData, getAuthHeaders());
 
 export const getDescargarCsvRegistroVacunado = (fecha_inicio, fecha_fin) =>
-  registroVacunadoApi.get(
-    `/descargar_csv/?fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}&eniUser_id=${eniUser_id}`
+  axios.get(
+    `${API_URL}/registro-vacunado/descargar-csv/?fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}&eniUser_id=${eniUser_id}`,
+    getAuthHeaders()
   );

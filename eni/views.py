@@ -1,15 +1,14 @@
 from rest_framework import status, permissions, viewsets
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from .models import unidadSalud, temprano, tardio, desperdicio, registroVacunado
+from .models import unidad_salud, temprano, tardio, desperdicio, admision_datos, registro_vacunado
+from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, AdmisionDatosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 
 from django.db.models import F, Sum
 from django.utils.dateparse import parse_date
 from datetime import datetime, timedelta
-
 from django.http import HttpResponse
 import csv
 from rest_framework.decorators import action
@@ -40,7 +39,7 @@ class UserLoginAPIView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data
+        user = serializer.validated_data['user']
         serializer = CustomUserSerializer(user)
         token = RefreshToken.for_user(user)
         data = serializer.data
@@ -72,7 +71,7 @@ class UserInfoAPIView(RetrieveAPIView):
 
 class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = UnidadSaludRegistrationSerializer
-    queryset = unidadSalud.objects.all()
+    queryset = unidad_salud.objects.all()
     permission_classes = [permissions.AllowAny]
 
 
@@ -2421,9 +2420,56 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
         return Response({"message": Dato_Registro_Correcto}, status=status.HTTP_201_CREATED)
 
 
+class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
+    serializer_class = AdmisionDatosRegistrationSerializer
+    queryset = admision_datos.objects.all()
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        user_id = self.request.query_params.get('user_id', None)
+        month = self.request.query_params.get('month', None)
+        year = self.request.query_params.get('year', None)
+
+        queryset = self.queryset
+
+        if user_id is not None:
+            queryset = queryset.filter(eniUser=user_id)
+
+        if month is not None and year is not None:
+            queryset = queryset.filter(
+                adm_dato_fech__year=year, adm_dato_fech__month=month)
+
+        return queryset.order_by('adm_dato_fech')
+
+    def create_admision_datos(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+    @action(detail=False, methods=['get'], url_path='buscar-usuario')
+    def buscar_usuario(self, request):
+        tipo = request.query_params.get('tipo')
+        identificacion = request.query_params.get('identificacion')
+        if not tipo or not identificacion:
+            return Response({"error": "El parámetro identificacion es requerido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_data = admision_datos.objects.get(
+                adm_dato_pers_tipo_iden=tipo, adm_dato_pers_nume_iden=identificacion
+            )
+            data = {
+                "adm_dato_pers_apel": user_data.adm_dato_pers_apel,
+                "adm_dato_pers_nomb": user_data.adm_dato_pers_nomb,
+                "adm_dato_pers_sexo": user_data.adm_dato_pers_sexo,
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        except admision_datos.DoesNotExist:
+            return Response({"error": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+
 class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = RegistroVacunadoRegistrationSerializer
-    queryset = registroVacunado.objects.all()
+    queryset = registro_vacunado.objects.all()
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
@@ -2502,7 +2548,7 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response({"message": Dato_Registro_Correcto, "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)
 
-    @ action(detail=False, methods=['get'], url_path='descargar_csv')
+    @ action(detail=False, methods=['get'], url_path='descargar-csv')
     def get_descargar_csv(self, request, *args, **kwargs):
         # Obtener las fechas de inicio y fin de los parámetros de la solicitud
         fecha_inicio = request.query_params.get('fecha_inicio')
@@ -2535,7 +2581,7 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
             ])
 
             # Obtener los registros de registroVacunado dentro del rango de fechas
-            registros = registroVacunado.objects.filter(
+            registros = registro_vacunado.objects.filter(
                 vac_reg_ano_mes_dia_apli__range=(fecha_inicio, fecha_fin), eniUser_id=eniuser_id)
 
             # Escribir los datos de cada registro en el CSV

@@ -1,6 +1,5 @@
-// src/components/UsuarioLogout.jsx
 import React, { useState, useEffect } from "react";
-import { getUser } from "../api/usuario.api.js";
+import { getUser } from "../api/conexion.api.js";
 
 const UsuarioLogout = () => {
   const [fun_titu, setFun_titu] = useState("");
@@ -15,9 +14,9 @@ const UsuarioLogout = () => {
         if (token) {
           const response = await getUser(token);
           setIsLoggedIn(true);
-          setFun_titu(response.data.fun_titu);
-          setFirst_name(response.data.first_name);
-          setLast_name(response.data.last_name);
+          setFun_titu(response.fun_titu);
+          setFirst_name(response.first_name);
+          setLast_name(response.last_name);
         } else {
           setIsLoggedIn(false);
           setFun_titu("");
@@ -25,6 +24,10 @@ const UsuarioLogout = () => {
           setLast_name("");
         }
       } catch (error) {
+        console.error(
+          "Error fetching user:",
+          error.response ? error.response.data : error.message
+        );
         setIsLoggedIn(false);
         setFun_titu("");
         setFirst_name("");
@@ -36,6 +39,7 @@ const UsuarioLogout = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     setIsLoggedIn(false);
     setFun_titu("");
     setFirst_name("");

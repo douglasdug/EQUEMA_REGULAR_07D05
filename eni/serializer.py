@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import eniUser, unidadSalud, temprano, tardio, desperdicio, registroVacunado
+from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, admision_datos, registro_vacunado
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 
 DATE_FORMAT = "%d/%m/%Y"
 
@@ -8,8 +9,9 @@ DATE_FORMAT = "%d/%m/%Y"
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = eniUser
-        fields = ("id", "fun_titu", "username",
-                  "fun_email", "first_name", "last_name",)
+        fields = (
+            "id", "username", "first_name", "last_name", "email", "fun_titu",
+        )
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -19,39 +21,56 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = eniUser
         fields = (
-            "id", "fun_tipo_iden", "username", "first_name", "last_name", "fun_sex", "fun_email", "fun_titu", "password1", "password2"
+            "id", "fun_tipo_iden", "username", "first_name", "last_name", "fun_sex", "email", "fun_titu", "password1", "password2", "fun_esta"
         )
         extra_kwargs = {"password": {"write_only": True}}
 
     def validate(self, attrs):
         if attrs['password1'] != attrs['password2']:
-            raise serializers.ValidationError("Password no es correcto!")
-        password = attrs.get("password1", "")
-        if len(password) < 8:
             raise serializers.ValidationError(
-                "Password tiene que tener mas de 8 caracteres!")
+                "Clave 1 y Clave 2 no son iguales!")
+
+        password = attrs.get("password1")
+        validate_password(password)
+
         return attrs
 
     def create(self, validated_data):
         password = validated_data.pop("password1")
         validated_data.pop("password2")
-        return eniUser.objects.create_user(password=password, **validated_data)
+        user = eniUser.objects.create_user(password=password, **validated_data)
+        return user
 
 
 class UserLoginSerializer(serializers.Serializer):
-    fun_email = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+    username = serializers.CharField()
+    password = serializers.CharField(
+        style={'input_type': 'password'}, trim_whitespace=False)
 
     def validate(self, data):
-        user = authenticate(**data)
-        if user and user.is_active:
-            return user
-        raise serializers.ValidationError("Usuario o Clave es incorrecto!.")
+        username = data.get('username')
+        password = data.get('password')
+
+        if username and password:
+            user = authenticate(request=self.context.get(
+                'request'), username=username, password=password)
+            if not user:
+                raise serializers.ValidationError(
+                    'No se puede iniciar sesión con las credenciales proporcionadas!.', code='authorization')
+            if user.fun_esta != 1:
+                raise serializers.ValidationError(
+                    'Su cuenta aún no ha sido activada. Por favor, contacte al administrador para completar el proceso de activación!', code='authorization')
+        else:
+            raise serializers.ValidationError(
+                'Debe incluir "username" y "password"!', code='authorization')
+
+        data['user'] = user
+        return data
 
 
 class UnidadSaludRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = unidadSalud
+        model = unidad_salud
         fields = '__all__'
 
 
@@ -82,10 +101,19 @@ class DesperdicioRegistrationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
+    adm_dato_fech = serializers.DateField(
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+
+    class Meta:
+        model = admision_datos
+        fields = '__all__'
+
+
 class RegistroVacunadoRegistrationSerializer(serializers.ModelSerializer):
     vac_reg_ano_mes_dia_apli = serializers.DateField(
         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
     class Meta:
-        model = registroVacunado
+        model = registro_vacunado
         fields = '__all__'

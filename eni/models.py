@@ -1,15 +1,47 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 
+
+class EniUserManager(BaseUserManager):
+    def create_user(self, username, password=None, **extra_fields):
+        """
+        Create and return a regular user with a username and password.
+        """
+        if not username:
+            raise ValueError('The Username field must be set')
+        user = self.model(username=username, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username, password=None, **extra_fields):
+        """
+        Create and return a superuser with a username and password.
+        """
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(username, password, **extra_fields)
 
 # Create your models here.
+
+
 class eniUser(AbstractUser):
+    username = models.CharField(max_length=20, unique=True)
+    email = models.EmailField(max_length=70, blank=True, null=True)
     fun_tipo_iden = models.CharField(max_length=30, blank=True)
-    fun_titu = models.CharField(max_length=40, blank=True)
-    fun_email = models.EmailField(unique=True)
     fun_sex = models.CharField(max_length=10, blank=True)
-    USERNAME_FIELD = "fun_email"
-    REQUIRED_FIELDS = ["username"]
+    fun_titu = models.CharField(max_length=40, blank=True)
+    fun_esta = models.IntegerField(default=0)
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = []
+
+    objects = EniUserManager()
 
     # def nombre_completo(self):
     #     return self.first_name + " " + self.last_name
@@ -19,7 +51,7 @@ class eniUser(AbstractUser):
 
 
 # Crea la tabla de Unidad de Salud
-class unidadSalud(models.Model):
+class unidad_salud(models.Model):
     uni_zona = models.CharField(max_length=10, blank=True)
     uni_dist = models.CharField(max_length=8, blank=True)
     uni_prov = models.CharField(max_length=20, blank=True)
@@ -407,7 +439,60 @@ class desperdicio(models.Model):
 # Crea la tabla de Campaña de Vacunación Registro Paciente
 
 
-class registroVacunado(models.Model):
+class admision_datos(models.Model):
+    adm_dato_fech = models.DateField(auto_now_add=True)
+    adm_dato_fech_actu = models.DateField(auto_now=True)
+    adm_dato_pers_tipo_iden = models.CharField(max_length=30, blank=True)
+    adm_dato_pers_nume_iden = models.CharField(
+        max_length=20, blank=True, unique=True)
+    adm_dato_pers_apel = models.CharField(max_length=40, blank=True)
+    adm_dato_pers_nomb = models.CharField(max_length=40, blank=True)
+    adm_dato_pers_esta_civi = models.CharField(max_length=20, blank=True)
+    adm_dato_pers_sexo = models.CharField(max_length=15, blank=True)
+    adm_dato_pers_tele = models.CharField(max_length=15, blank=True)
+    adm_dato_pers_celu = models.CharField(max_length=15, blank=True)
+    adm_dato_pers_corr_elec = models.CharField(max_length=30, blank=True)
+    adm_dato_naci_naci = models.CharField(max_length=30, blank=True)
+    adm_dato_naci_luga_naci = models.CharField(max_length=40, blank=True)
+    adm_dato_naci_prov = models.CharField(max_length=30, blank=True)
+    adm_dato_naci_cant = models.CharField(max_length=30, blank=True)
+    adm_dato_naci_parr = models.CharField(max_length=40, blank=True)
+    adm_dato_naci_fech_naci = models.DateField()
+    adm_dato_resi_pais_resi = models.CharField(max_length=30, blank=True)
+    adm_dato_resi_prov = models.CharField(max_length=20, blank=True)
+    adm_dato_resi_cant = models.CharField(max_length=30, blank=True)
+    adm_dato_resi_parr = models.CharField(max_length=40, blank=True)
+    adm_dato_resi_call_prin = models.CharField(max_length=40, blank=True)
+    adm_dato_resi_nume = models.CharField(max_length=10, blank=True)
+    adm_dato_resi_call_secu = models.CharField(max_length=30, blank=True)
+    adm_dato_resi_barr = models.CharField(max_length=40, blank=True)
+    adm_dato_resi_refe_resi = models.CharField(max_length=40, blank=True)
+    adm_dato_adic_auto_etni = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_naci_etni = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_pueb_kich = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_nive_educ = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_esta_nive_educ = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_tipo_empr_trab = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_ocup_prin = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_segu_salu_prin = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_segu_salu_secu = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_tipo_bono_reci = models.CharField(max_length=30, blank=True)
+    adm_dato_adic_tien_disc = models.CharField(max_length=30, blank=True)
+    adm_dato_repr_tipo_iden = models.CharField(max_length=30, blank=True)
+    adm_dato_repr_nume_iden = models.CharField(max_length=20, blank=True)
+    adm_dato_repr_naci = models.CharField(max_length=30, blank=True)
+    adm_dato_repr_apel = models.CharField(max_length=40, blank=True)
+    adm_dato_repr_nomb = models.CharField(max_length=40, blank=True)
+    adm_dato_repr_reci_bono = models.CharField(max_length=30, blank=True)
+    adm_dato_repr_pare = models.CharField(max_length=30, blank=True)
+    adm_dato_repr_nume_tele = models.CharField(max_length=15, blank=True)
+    adm_dato_cont_enca_nece_llam = models.CharField(max_length=30, blank=True)
+    adm_dato_cont_pare = models.CharField(max_length=30, blank=True)
+    adm_dato_cont_tele = models.CharField(max_length=15, blank=True)
+    adm_dato_cont_dire = models.CharField(max_length=40, blank=True)
+
+
+class registro_vacunado(models.Model):
     vac_reg_ano_mes_dia_apli = models.DateField()
     vac_reg_punt_vacu = models.CharField(max_length=40, blank=True)
     vac_reg_unic_esta = models.CharField(max_length=8, blank=True)
@@ -449,11 +534,3 @@ class registroVacunado(models.Model):
     vac_reg_lote_dosi_exte = models.CharField(max_length=20, blank=True)
     eniUser = models.ForeignKey(
         'eniUser', null=True, blank=True, on_delete=models.CASCADE)
-
-    '''@classmethod
-    def get_by_month_and_user(cls, user_id, month, year):
-        return cls.objects.filter(
-            eniUser_id=user_id,
-            vac_reg_fech__year=year,
-            vac_reg_fech__month=month
-        ).order_by('vac_reg_ano_mes_dia_apli')'''
