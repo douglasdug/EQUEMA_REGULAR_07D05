@@ -4,6 +4,7 @@ import Home from "./pages/Home.jsx";
 import Register from "./pages/Register.jsx";
 import Login from "./pages/Login.jsx";
 import AvisoUser from "./pages/AvisoUser.jsx";
+import AdminUser from "./pages/AdminUser.jsx";
 import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
@@ -24,6 +25,7 @@ function App() {
             <Route path="/login/" element={<Login />} />
             <Route path="/register/" element={<Register />} />
             <Route path="/aviso-user/" element={<AvisoUser />} />
+            <Route path="/admin-user/" element={<AdminUser />} />
             <Route path="/create-temprano/" element={<CreateTemprano />} />
             <Route path="/create-tardio/" element={<CreateTardio />} />
             <Route

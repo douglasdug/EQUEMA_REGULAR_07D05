@@ -3,8 +3,8 @@ from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from .models import unidad_salud, temprano, tardio, desperdicio, admision_datos, registro_vacunado
-from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, AdmisionDatosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
+from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, admision_datos, registro_vacunado
+from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, AdmisionDatosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 
 from django.db.models import F, Sum
 from django.utils.dateparse import parse_date
@@ -67,6 +67,99 @@ class UserInfoAPIView(RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class EniUserRegistrationAPIView(viewsets.ModelViewSet):
+    serializer_class = EniUserRegistrationSerializer
+    queryset = eniUser.objects.all()
+    permission_classes = [permissions.AllowAny]
+
+    def get_users(self, request):
+        users = eniUser.get_all_users()
+        serializer = EniUserRegistrationSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Buscar en la matriz y registrar en eni_unidad_salud
+        uni_unic = request.data.get('uni_unic')
+        unidad_salud_data = self.get_unidad_salud_data(uni_unic)
+        if unidad_salud_data:
+            unidad_salud.objects.create(
+                eniUser=user,
+                uni_zona=unidad_salud_data['uni_zona'],
+                uni_dist=unidad_salud_data['uni_dist'],
+                uni_prov=unidad_salud_data['uni_prov'],
+                uni_cant=unidad_salud_data['uni_cant'],
+                uni_parr=unidad_salud_data['uni_parr'],
+                uni_unic=unidad_salud_data['uni_unic'],
+                uni_unid=unidad_salud_data['uni_unid'],
+                uni_tipo=unidad_salud_data['uni_tipo'],
+                uni_nive=unidad_salud_data['uni_nive']
+            )
+
+        token = RefreshToken.for_user(user)
+        data = serializer.data
+        data["tokens"] = {
+            "refresh": str(token),
+            "access": str(token.access_token)
+        }
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    def get_unidad_salud_data(self, uni_unic):
+        matriz = [
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05", "uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "ARENILLAS",
+                "uni_unic": "000541", "uni_unid": "SAN VICENTE", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05", "uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "ARENILLAS",
+                "uni_unic": "000542", "uni_unid": "SAN ISIDRO URBANO", "uni_tipo": "CENTRO DE SALUD TIPO B", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05", "uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "ARENILLAS",
+                "uni_unic": "000543", "uni_unid": "CAÑAS", "uni_tipo": "PUESTO DE SALUD", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05", "uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "LA CUCA",
+                "uni_unic": "000544", "uni_unid": "LA CUCA", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "CARCABON",
+                "uni_unic": "000545", "uni_unid": "CARCABON", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "CHACRAS",
+                "uni_unic": "000546",	"uni_unid": "CHACRAS", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "PALMALES",
+                "uni_unic": "000547", "uni_unid": "PALMALES", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "PALMALES",
+                "uni_unic": "000548", "uni_unid": "MANABI DE EL ORO", "uni_tipo": "PUESTO DE SALUD", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "LAS LAJAS", "uni_parr": "EL PARAISO",
+                "uni_unic": "000549", "uni_unid": "EL PARAISO", "uni_tipo": "PUESTO DE SALUD", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "LAS LAJAS", "uni_parr": "LA LIBERTAD",
+                "uni_unic": "000550", "uni_unid": "LA LIBERTAD", "uni_tipo": "PUESTO DE SALUD", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "LAS LAJAS",
+                "uni_parr": "LA VICTORIA (URBANO)", "uni_unic": "000551", "uni_unid": "LAS LAJAS", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "LAS LAJAS", "uni_parr": "VALLE HERMOSO",
+                "uni_unic": "000552", "uni_unid": "VALLE HERMOSO", "uni_tipo": "PUESTO DE SALUD", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "LAS LAJAS", "uni_parr": "SAN ISIDRO",
+                "uni_unic": "000553", "uni_unid": "SAN ISIDRO RURAL", "uni_tipo": "PUESTO DE SALUD", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "HUAQUILLAS", "uni_parr": "ECUADOR",
+                "uni_unic": "000554", "uni_unid": "18 DE NOVIEMBRE", "uni_tipo": "CENTRO DE SALUD TIPO B", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "HUAQUILLAS", "uni_parr": "MILTON REYES",
+                "uni_unic": "000555", "uni_unid": "LA PAZ", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "HUAQUILLAS", "uni_parr": "HUALTACO",
+                "uni_unic": "000556", "uni_unid": "HUALTACO", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "ARENILLAS",
+                "uni_unic": "000591", "uni_unid": "HOSPITAL BASICO ARENILLAS", "uni_tipo": "HOSPITAL BASICO", "uni_nive": "NIVEL 2"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "HUAQUILLAS", "uni_parr": "UNION LOJANA",
+                "uni_unic": "000592", "uni_unid": "HOSPITAL BASICO HUAQUILLAS", "uni_tipo": "HOSPITAL BASICO", "uni_nive": "NIVEL 2"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "ARENILLAS",
+                "uni_unic": "002763", "uni_unid": "EL JOBO SAN VICENTE", "uni_tipo": "PUESTO DE SALUD", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "HUAQUILLAS", "uni_parr": "UNION LOJANA",
+                "uni_unic": "002879", "uni_unid": "CENTRO DE SALUD DE HUAQUILLAS", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05", "uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "ARENILLAS",
+                "uni_unic": "002900", "uni_unid": "CENTRO DE SALUD DE ARENILLAS", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
+            {"uni_zona": "ZONA 7", "uni_dist": "07D05", "uni_prov": "EL ORO", "uni_cant": "HUAQUILLAS", "uni_parr": "UNION LOJANA",
+                "uni_unic": "050748", "uni_unid": "PUESTO DE VIGILANCIA HUAQUILLAS", "uni_tipo": "PUESTO DE SALUD", "uni_nive": "NIVEL 1"},
+        ]
+        for unidad in matriz:
+            if unidad['uni_unic'] == uni_unic:
+                return unidad
+        return None
 
 
 class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):

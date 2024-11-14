@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, AdmisionDatosRegistrationAPIView, RegistroVacunadoRegistrationAPIView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, AdmisionDatosRegistrationAPIView, RegistroVacunadoRegistrationAPIView
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework import routers
 from .report import reporteTempranoPDF
@@ -9,6 +9,7 @@ router = routers.DefaultRouter()
 router.register(
     r'unidad-salud', UnidadSaludRegistrationAPIView, 'unidad-salud'
 )
+router.register(r'eni-user', EniUserRegistrationAPIView, 'eni-user')
 router.register(r'temprano', TempranoRegistrationAPIView, 'temprano')
 router.register(r'tardio', TardioRegistrationAPIView, 'tardio')
 router.register(r'desperdicio', DesperdicioRegistrationAPIView, 'desperdicio')

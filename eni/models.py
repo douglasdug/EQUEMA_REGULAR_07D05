@@ -38,10 +38,15 @@ class eniUser(AbstractUser):
     fun_sex = models.CharField(max_length=10, blank=True)
     fun_titu = models.CharField(max_length=40, blank=True)
     fun_esta = models.IntegerField(default=0)
+    fun_admi_rol = models.IntegerField(blank=True, null=True)
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
 
     objects = EniUserManager()
+
+    @classmethod
+    def get_all_users(cls):
+        return cls.objects.all()
 
     # def nombre_completo(self):
     #     return self.first_name + " " + self.last_name
@@ -52,15 +57,15 @@ class eniUser(AbstractUser):
 
 # Crea la tabla de Unidad de Salud
 class unidad_salud(models.Model):
-    uni_zona = models.CharField(max_length=10, blank=True)
-    uni_dist = models.CharField(max_length=8, blank=True)
-    uni_prov = models.CharField(max_length=20, blank=True)
-    uni_cant = models.CharField(max_length=30, blank=True)
-    uni_parr = models.CharField(max_length=40, blank=True)
+    uni_zona = models.CharField(max_length=10, blank=True, null=True)
+    uni_dist = models.CharField(max_length=8, blank=True, null=True)
+    uni_prov = models.CharField(max_length=20, blank=True, null=True)
+    uni_cant = models.CharField(max_length=30, blank=True, null=True)
+    uni_parr = models.CharField(max_length=40, blank=True, null=True)
     uni_unic = models.CharField(max_length=8, blank=True)
     uni_unid = models.CharField(max_length=40, blank=True)
-    uni_tipo = models.CharField(max_length=30, blank=True)
-    uni_nive = models.CharField(max_length=8, blank=True)
+    uni_tipo = models.CharField(max_length=30, blank=True, null=True)
+    uni_nive = models.CharField(max_length=8, blank=True, null=True)
     eniUser = models.ForeignKey(
         eniUser, null=True, blank=True, on_delete=models.CASCADE)
 

@@ -80,7 +80,7 @@ export const logoutUser = async (accessToken, refreshToken) => {
 
 export const registerUser = async (formData) => {
   try {
-    const response = await axios.post(`${API_URL}/register/`, formData);
+    const response = await axios.post(`${API_URL}/eni-user/`, formData);
     return response.data;
   } catch (error) {
     console.error(
@@ -123,3 +123,5 @@ export const getDescargarCsvRegistroVacunado = (fecha_inicio, fecha_fin) =>
     `${API_URL}/registro-vacunado/descargar-csv/?fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}&eniUser_id=${eniUser_id}`,
     getAuthHeaders()
   );
+
+export const getAllEniUsers = () => axios.get(`${API_URL}/eni-user/`);

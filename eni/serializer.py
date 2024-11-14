@@ -68,6 +68,35 @@ class UserLoginSerializer(serializers.Serializer):
         return data
 
 
+class EniUserRegistrationSerializer(serializers.ModelSerializer):
+    password1 = serializers.CharField(write_only=True)
+    password2 = serializers.CharField(write_only=True)
+    password = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = eniUser
+        fields = (
+            "id", "fun_tipo_iden", "username", "last_name", "first_name", "fun_sex", "email", "fun_titu", "password1", "password2", "password", "fun_admi_rol", "fun_esta"
+        )
+        extra_kwargs = {"password": {"write_only": True}}
+
+    def validate(self, attrs):
+        if attrs['password1'] != attrs['password2']:
+            raise serializers.ValidationError(
+                "Clave 1 y Clave 2 no son iguales!")
+
+        password = attrs.get("password1")
+        validate_password(password)
+
+        return attrs
+
+    def create(self, validated_data):
+        password = validated_data.pop("password1")
+        validated_data.pop("password2")
+        user = eniUser.objects.create_user(password=password, **validated_data)
+        return user
+
+
 class UnidadSaludRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = unidad_salud

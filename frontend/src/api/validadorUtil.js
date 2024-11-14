@@ -1,10 +1,4 @@
-export const validarDato = (
-  e,
-  formData,
-  setFormData,
-  setIsButtonDisabled,
-  requiredFields
-) => {
+export const validarDato = (e, formData, setFormData) => {
   const { name, value } = e.target;
   let isValid = true;
   let formattedValue = value;
@@ -28,17 +22,17 @@ export const validarDato = (
     });
   }
 
-  setIsButtonDisabled(
-    !requiredFields.every((field) => {
-      const val = field === name ? formattedValue : formData[field];
-      if (typeof val === "string") {
-        return val.trim() !== "";
-      } else if (typeof val === "number") {
-        return val > 0;
-      } else if (val instanceof Date) {
-        return !isNaN(val.getTime());
-      }
-      return true;
-    })
-  );
+  // setIsButtonDisabled(
+  //   !requiredFields.every((field) => {
+  //     const val = field === name ? formattedValue : formData[field];
+  //     if (typeof val === "string") {
+  //       return val.trim() !== "";
+  //     } else if (typeof val === "number") {
+  //       return val > 0;
+  //     } else if (val instanceof Date) {
+  //       return !isNaN(val.getTime());
+  //     }
+  //     return true;
+  //   })
+  // );
 };
