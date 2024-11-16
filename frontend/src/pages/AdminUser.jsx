@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 import { registerUser, identificacionUsuario } from "../api/conexion.api.js";
 import { listaRegistro } from "../components/AllList.jsx";
 import { validarDato } from "../api/validadorUtil.js";
@@ -17,7 +18,7 @@ const AdminUser = () => {
     password1: "",
     password2: "",
     fun_admi_rol: "",
-    uni_unic: "",
+    uni_unic: [],
     fun_esta: "",
   });
 
@@ -39,7 +40,6 @@ const AdminUser = () => {
     uni_unic: true,
     fun_esta: true,
   };
-
   const initialBotonEstado = {
     btnBuscar: true,
     btnLimpiar: false,
@@ -139,9 +139,11 @@ const AdminUser = () => {
         first_name: data.adm_dato_pers_apel,
         last_name: data.adm_dato_pers_nomb,
         fun_sex: data.adm_dato_pers_sexo,
+        email: data.adm_dato_pers_corr_elec,
       }));
       setVariableEstado((prevState) => ({
         ...prevState,
+        username: true,
         first_name: true,
         last_name: true,
         fun_sex: false,
@@ -153,16 +155,49 @@ const AdminUser = () => {
         uni_unic: false,
         fun_esta: false,
       }));
+      setBotonEstado((prevState) => ({
+        btnBuscar: true,
+      }));
       toast.success("Datos encontrados y actualizados.", {
         position: "bottom-right",
       });
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.[Object.keys(error.response.data)[0]]?.[0] ||
-        "Error al buscar el usuario!";
-      console.error("Error en handleSearch:", error);
-      toast.error(errorMessage, { position: "bottom-right" });
+      let errorMessage = "Hubo un error en la operación";
+      if (error.response) {
+        if (error.response.data && error.response.data.error) {
+          setError(error.response.data.error);
+          errorMessage = error.response.data.error;
+        } else if (error.response.data && error.response.data.message) {
+          setError(error.response.data.message);
+          errorMessage = error.response.data.message;
+        } else {
+          setError("Error del servidor");
+        }
+      } else if (error.request) {
+        setError("No se recibió respuesta del servidor");
+      } else {
+        setError("Error desconocido");
+      }
+      setVariableEstado((prevState) => ({
+        ...prevState,
+        username: true,
+        first_name: false,
+        last_name: false,
+        fun_sex: false,
+        email: false,
+        fun_titu: false,
+        password1: false,
+        password2: false,
+        fun_admi_rol: false,
+        uni_unic: false,
+        fun_esta: false,
+      }));
+      setBotonEstado((prevState) => ({
+        btnBuscar: true,
+      }));
+      toast.error(errorMessage, {
+        position: "bottom-right",
+      });
     }
   };
 
@@ -187,7 +222,7 @@ const AdminUser = () => {
           password1: "",
           password2: "",
           fun_admi_rol: "",
-          uni_unic: "",
+          uni_unic: [],
           fun_esta: "",
         });
         setVariableEstado(initialVariableEstado);
@@ -199,6 +234,14 @@ const AdminUser = () => {
         btnBuscar: !value,
       }));
     }
+    checkFormValidity();
+  };
+
+  const handleSelectChange = (selectedOptions) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      uni_unic: selectedOptions,
+    }));
     checkFormValidity();
   };
 
@@ -222,7 +265,7 @@ const AdminUser = () => {
       password1: "",
       password2: "",
       fun_admi_rol: "",
-      uni_unic: "",
+      uni_unic: [],
       fun_esta: "",
     });
     setVariableEstado(initialVariableEstado);
@@ -250,18 +293,35 @@ const AdminUser = () => {
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2"
               key={group.join("-")}
             >
-              {group.map((key) => (
-                <div className="mb-2" key={key}>
-                  <label
-                    className="block text-gray-700 text-sm font-bold mb-2"
-                    htmlFor={key}
-                  >
-                    {labelMap[key]}
-                    {requiredFields.includes(key) && (
-                      <span className="text-red-500"> *</span>
-                    )}
-                  </label>
-                  {listaRegistro[key] ? (
+              {group.map((key) => {
+                let inputType;
+                if (key === "password1" || key === "password2") {
+                  inputType = "password";
+                } else if (key === "email") {
+                  inputType = "email";
+                } else {
+                  inputType = "text";
+                }
+                let inputElement;
+                if (key === "uni_unic") {
+                  inputElement = (
+                    <Select
+                      id={key}
+                      name={key}
+                      value={formData[key]}
+                      onChange={handleSelectChange}
+                      options={listaRegistro[key]}
+                      isMulti
+                      className={`shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline ${
+                        variableEstado[key]
+                          ? "bg-gray-200 text-gray-700"
+                          : "bg-white text-gray-700"
+                      }`}
+                      isDisabled={variableEstado[key]}
+                    />
+                  );
+                } else if (listaRegistro[key]) {
+                  inputElement = (
                     <select
                       id={key}
                       name={key}
@@ -281,16 +341,12 @@ const AdminUser = () => {
                         </option>
                       ))}
                     </select>
-                  ) : (
+                  );
+                } else {
+                  inputElement = (
                     <div className="flex">
                       <input
-                        type={
-                          key === "password1" || key === "password2"
-                            ? "password"
-                            : key === "email"
-                            ? "email"
-                            : "text"
-                        }
+                        type={inputType}
                         id={key}
                         name={key}
                         value={formData[key]}
@@ -332,9 +388,23 @@ const AdminUser = () => {
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  );
+                }
+                return (
+                  <div className="mb-2" key={key}>
+                    <label
+                      className="block text-gray-700 text-sm font-bold mb-2"
+                      htmlFor={key}
+                    >
+                      {labelMap[key]}
+                      {requiredFields.includes(key) && (
+                        <span className="text-red-500"> *</span>
+                      )}
+                    </label>
+                    {inputElement}
+                  </div>
+                );
+              })}
             </div>
           ))}
           <div className="flex flex-col items-center">

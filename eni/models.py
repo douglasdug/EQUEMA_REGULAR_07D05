@@ -33,12 +33,12 @@ class EniUserManager(BaseUserManager):
 
 class eniUser(AbstractUser):
     username = models.CharField(max_length=20, unique=True)
-    email = models.EmailField(max_length=70, blank=True, null=True)
+    email = models.EmailField(max_length=70, blank=True)
     fun_tipo_iden = models.CharField(max_length=30, blank=True)
     fun_sex = models.CharField(max_length=10, blank=True)
     fun_titu = models.CharField(max_length=40, blank=True)
     fun_esta = models.IntegerField(default=0)
-    fun_admi_rol = models.IntegerField(blank=True, null=True)
+    fun_admi_rol = models.IntegerField(blank=True)
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
 
@@ -57,15 +57,15 @@ class eniUser(AbstractUser):
 
 # Crea la tabla de Unidad de Salud
 class unidad_salud(models.Model):
-    uni_zona = models.CharField(max_length=10, blank=True, null=True)
-    uni_dist = models.CharField(max_length=8, blank=True, null=True)
-    uni_prov = models.CharField(max_length=20, blank=True, null=True)
-    uni_cant = models.CharField(max_length=30, blank=True, null=True)
-    uni_parr = models.CharField(max_length=40, blank=True, null=True)
+    uni_zona = models.CharField(max_length=10, blank=True)
+    uni_dist = models.CharField(max_length=8, blank=True)
+    uni_prov = models.CharField(max_length=20, blank=True)
+    uni_cant = models.CharField(max_length=30, blank=True)
+    uni_parr = models.CharField(max_length=40, blank=True)
     uni_unic = models.CharField(max_length=8, blank=True)
     uni_unid = models.CharField(max_length=40, blank=True)
-    uni_tipo = models.CharField(max_length=30, blank=True, null=True)
-    uni_nive = models.CharField(max_length=8, blank=True, null=True)
+    uni_tipo = models.CharField(max_length=30, blank=True)
+    uni_nive = models.CharField(max_length=8, blank=True)
     eniUser = models.ForeignKey(
         eniUser, null=True, blank=True, on_delete=models.CASCADE)
 
@@ -462,7 +462,7 @@ class admision_datos(models.Model):
     adm_dato_naci_prov = models.CharField(max_length=30, blank=True)
     adm_dato_naci_cant = models.CharField(max_length=30, blank=True)
     adm_dato_naci_parr = models.CharField(max_length=40, blank=True)
-    adm_dato_naci_fech_naci = models.DateField()
+    adm_dato_naci_fech_naci = models.DateField(blank=True, null=True)
     adm_dato_resi_pais_resi = models.CharField(max_length=30, blank=True)
     adm_dato_resi_prov = models.CharField(max_length=20, blank=True)
     adm_dato_resi_cant = models.CharField(max_length=30, blank=True)

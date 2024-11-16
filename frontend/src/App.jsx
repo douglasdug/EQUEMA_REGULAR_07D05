@@ -9,7 +9,6 @@ import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
-import CreateUsuario from "./pages/CreateUsuario.jsx";
 import { Navigation } from "./components/Navigation.jsx";
 import { Toaster } from "react-hot-toast";
 
@@ -36,7 +35,6 @@ function App() {
               path="/create-registro-vacunado/"
               element={<CreateRegistroVacunado />}
             />
-            <Route path="/create-usuario/" element={<CreateUsuario />} />
           </Routes>
         </div>
         <Toaster />

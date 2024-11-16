@@ -29,7 +29,6 @@ export function Navigation() {
     { to: "/", label: "Home" },
     { to: "/register/", label: "Registro" },
     { to: "/admin-user/", label: "Administrador" },
-    { to: "/create-usuario/", label: "Administrar Usuario" },
     { to: "/contact/", label: "Contact" },
   ];
 

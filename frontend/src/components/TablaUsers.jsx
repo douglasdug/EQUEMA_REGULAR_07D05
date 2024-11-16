@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { getAllEniUsers } from "../api/conexion.api.js";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
   const [eniUsers, setEniUsers] = useState([]);
@@ -33,47 +34,55 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
   const handleEdit = (id) => {
     const user = eniUsers.find((user) => user.id === id);
     if (user) {
-      let funAdmiRol = 0;
-      if (user.fun_admi_rol === 1) {
-        funAdmiRol = 1;
-      } else if (user.fun_admi_rol === 2) {
-        funAdmiRol = 2;
-      } else if (user.fun_admi_rol === 3) {
-        funAdmiRol = 3;
-      }
-      setFormData({
-        fun_tipo_iden: user.fun_tipo_iden || "",
-        username: user.username || "",
-        first_name: user.first_name || "",
-        last_name: user.last_name || "",
-        fun_sex: user.fun_sex || "",
-        email: user.email || "",
-        fun_titu: user.fun_titu || "",
-        password1: user.password || "",
-        password2: user.password || "",
-        fun_admi_rol: funAdmiRol,
-        uni_unic: user.uni_unic || "",
-        fun_esta: user.fun_esta === 1 ? 1 : 0,
-      });
-      setVariableEstado({
-        fun_tipo_iden: true,
-        username: true,
-        first_name: true,
-        last_name: true,
-        fun_sex: false,
-        email: false,
-        fun_titu: false,
-        password1: true,
-        password2: true,
-        fun_admi_rol: true,
-        uni_unic: true,
-        fun_esta: false,
-      });
-      setBotonEstado({
-        btnBuscar: true,
-      });
+      const funAdmiRol = getFunAdmiRol(user.fun_admi_rol);
+      setFormData(getFormData(user, funAdmiRol));
+      setVariableEstado(getVariableEstado());
+      setBotonEstado({ btnBuscar: true });
     }
   };
+
+  const getFunAdmiRol = (fun_admi_rol) => {
+    switch (fun_admi_rol) {
+      case 1:
+        return 1;
+      case 2:
+        return 2;
+      case 3:
+        return 3;
+      default:
+        return 0;
+    }
+  };
+
+  const getFormData = (user, funAdmiRol) => ({
+    fun_tipo_iden: user.fun_tipo_iden || "",
+    username: user.username || "",
+    first_name: user.first_name || "",
+    last_name: user.last_name || "",
+    fun_sex: user.fun_sex || "",
+    email: user.email || "",
+    fun_titu: user.fun_titu || "",
+    password1: user.password || "",
+    password2: user.password || "",
+    fun_admi_rol: funAdmiRol,
+    uni_unic: user.uni_unic || "",
+    fun_esta: user.fun_esta === 1 ? 1 : 0,
+  });
+
+  const getVariableEstado = () => ({
+    fun_tipo_iden: true,
+    username: true,
+    first_name: true,
+    last_name: true,
+    fun_sex: false,
+    email: false,
+    fun_titu: false,
+    password1: true,
+    password2: true,
+    fun_admi_rol: true,
+    uni_unic: true,
+    fun_esta: false,
+  });
 
   return (
     <div className="flex flex-col">
@@ -116,14 +125,14 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
                         onClick={() => handleEdit(registro.id)}
                         tabIndex={0}
                       >
-                        <img src="/path/to/edit-icon.png" alt="Edit" />
+                        <FaEdit />
                       </button>
                       <button
                         className="cursor-pointer"
                         onClick={() => handleEdit(registro.id)}
                         tabIndex={0}
                       >
-                        <img src="/path/to/delete-icon.png" alt="Delete" />
+                        <FaTrash />
                       </button>
                     </td>
                     {Object.keys(registro)

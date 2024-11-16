@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from django.http import HttpResponse
 import csv
 from rest_framework.decorators import action
+from datetime import datetime
 
 
 # Create your views here.
@@ -84,22 +85,37 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
+        # Guardar en admision_datos
+        admision_datos.objects.create(
+            adm_dato_fech=datetime.now(),
+            adm_dato_pers_tipo_iden=request.data.get('fun_tipo_iden'),
+            adm_dato_pers_nume_iden=request.data.get('username'),
+            adm_dato_pers_apel=request.data.get('last_name'),
+            adm_dato_pers_nomb=request.data.get('first_name'),
+            adm_dato_pers_sexo=request.data.get('fun_sex'),
+            adm_dato_pers_corr_elec=request.data.get('email')
+        )
+
         # Buscar en la matriz y registrar en eni_unidad_salud
-        uni_unic = request.data.get('uni_unic')
-        unidad_salud_data = self.get_unidad_salud_data(uni_unic)
-        if unidad_salud_data:
-            unidad_salud.objects.create(
-                eniUser=user,
-                uni_zona=unidad_salud_data['uni_zona'],
-                uni_dist=unidad_salud_data['uni_dist'],
-                uni_prov=unidad_salud_data['uni_prov'],
-                uni_cant=unidad_salud_data['uni_cant'],
-                uni_parr=unidad_salud_data['uni_parr'],
-                uni_unic=unidad_salud_data['uni_unic'],
-                uni_unid=unidad_salud_data['uni_unid'],
-                uni_tipo=unidad_salud_data['uni_tipo'],
-                uni_nive=unidad_salud_data['uni_nive']
-            )
+        uni_unic_list = request.data.get('uni_unic')
+        if isinstance(uni_unic_list, list) and len(uni_unic_list) > 0:
+            for uni_unic_item in uni_unic_list:
+                uni_unic = uni_unic_item.get('value')
+                unidad_salud_data = self.get_unidad_salud_data(uni_unic)
+                # Registro de depuración
+                if unidad_salud_data:
+                    unidad_salud.objects.create(
+                        eniUser=user,
+                        uni_zona=unidad_salud_data['uni_zona'],
+                        uni_dist=unidad_salud_data['uni_dist'],
+                        uni_prov=unidad_salud_data['uni_prov'],
+                        uni_cant=unidad_salud_data['uni_cant'],
+                        uni_parr=unidad_salud_data['uni_parr'],
+                        uni_unic=unidad_salud_data['uni_unic'],
+                        uni_unid=unidad_salud_data['uni_unid'],
+                        uni_tipo=unidad_salud_data['uni_tipo'],
+                        uni_nive=unidad_salud_data['uni_nive']
+                    )
 
         token = RefreshToken.for_user(user)
         data = serializer.data
@@ -2554,6 +2570,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 "adm_dato_pers_apel": user_data.adm_dato_pers_apel,
                 "adm_dato_pers_nomb": user_data.adm_dato_pers_nomb,
                 "adm_dato_pers_sexo": user_data.adm_dato_pers_sexo,
+                "adm_dato_pers_corr_elec": user_data.adm_dato_pers_corr_elec,
             }
             return Response(data, status=status.HTTP_200_OK)
         except admision_datos.DoesNotExist:
