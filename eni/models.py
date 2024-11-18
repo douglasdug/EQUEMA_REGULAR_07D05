@@ -67,7 +67,8 @@ class unidad_salud(models.Model):
     uni_tipo = models.CharField(max_length=30, blank=True)
     uni_nive = models.CharField(max_length=8, blank=True)
     eniUser = models.ForeignKey(
-        eniUser, null=True, blank=True, on_delete=models.CASCADE)
+        eniUser, null=True, blank=True, on_delete=models.CASCADE, related_name='unidades_salud'
+    )
 
 
 # Crea la tabla de Esquema Regular Temprano

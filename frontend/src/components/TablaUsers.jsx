@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { getAllEniUsers } from "../api/conexion.api.js";
+import { listaUnidadesSalud } from "./AllList.jsx";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
 const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
@@ -38,6 +39,7 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
       setFormData(getFormData(user, funAdmiRol));
       setVariableEstado(getVariableEstado());
       setBotonEstado({ btnBuscar: true });
+      console.log("uni_unic value:", user.uni_unic);
     }
   };
 
@@ -64,8 +66,13 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
     fun_titu: user.fun_titu || "",
     password1: user.password || "",
     password2: user.password || "",
-    fun_admi_rol: funAdmiRol,
-    uni_unic: user.uni_unic || "",
+    fun_admi_rol: funAdmiRol || "",
+    uni_unic: Array.isArray(user.uni_unic)
+      ? user.uni_unic.map((item) => ({
+          value: item,
+          label: `${listaUnidadesSalud[item] || item}`.trim(),
+        }))
+      : [],
     fun_esta: user.fun_esta === 1 ? 1 : 0,
   });
 
@@ -79,8 +86,8 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
     fun_titu: false,
     password1: true,
     password2: true,
-    fun_admi_rol: true,
-    uni_unic: true,
+    fun_admi_rol: false,
+    uni_unic: false,
     fun_esta: false,
   });
 
@@ -106,6 +113,7 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
                     "Clave",
                     "Rol de usuario",
                     "Activar cuenta",
+                    "Unidad de Salud",
                   ].map((header) => (
                     <th
                       key={header}
@@ -142,7 +150,7 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
                         switch (key) {
                           case "fun_esta":
                             cellContent =
-                              registro[key] === 1 ? "ACTIVO" : "INACTIVO";
+                              ["INACTIVO", "ACTIVO"][registro[key]] || "";
                             break;
                           case "password":
                             cellContent = (
@@ -158,6 +166,17 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
                               ["", "ADMINISTRADOR", "VACUNADOR", "MEDICO"][
                                 registro[key]
                               ] || "";
+                            break;
+                          case "uni_unic":
+                            cellContent = (
+                              <ul>
+                                {registro[key].map((item, index) => (
+                                  <li key={index}>
+                                    {listaUnidadesSalud[item] || item}
+                                  </li>
+                                ))}
+                              </ul>
+                            );
                             break;
                           default:
                             cellContent = registro[key];

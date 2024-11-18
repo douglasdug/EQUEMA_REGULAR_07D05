@@ -72,12 +72,12 @@ class UserInfoAPIView(RetrieveAPIView):
 
 class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = EniUserRegistrationSerializer
-    queryset = eniUser.objects.all()
+    queryset = eniUser.objects.prefetch_related('unidades_salud').all()
     permission_classes = [permissions.AllowAny]
 
-    def get_users(self, request):
-        users = eniUser.get_all_users()
-        serializer = EniUserRegistrationSerializer(users, many=True)
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):

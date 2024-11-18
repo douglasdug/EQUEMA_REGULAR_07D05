@@ -72,11 +72,12 @@ class EniUserRegistrationSerializer(serializers.ModelSerializer):
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
     password = serializers.CharField(read_only=True)
+    uni_unic = serializers.SerializerMethodField()
 
     class Meta:
         model = eniUser
         fields = (
-            "id", "fun_tipo_iden", "username", "last_name", "first_name", "fun_sex", "email", "fun_titu", "password1", "password2", "password", "fun_admi_rol", "fun_esta"
+            "id", "fun_tipo_iden", "username", "last_name", "first_name", "fun_sex", "email", "fun_titu", "password1", "password2", "password", "fun_admi_rol", "fun_esta", "uni_unic"
         )
         extra_kwargs = {"password": {"write_only": True}}
 
@@ -89,6 +90,10 @@ class EniUserRegistrationSerializer(serializers.ModelSerializer):
         validate_password(password)
 
         return attrs
+
+    def get_uni_unic(self, obj):
+        # Obtiene una lista de 'uni_unic' de todas las 'unidades_salud' relacionadas
+        return [unidad.uni_unic for unidad in obj.unidades_salud.all()]
 
     def create(self, validated_data):
         password = validated_data.pop("password1")
