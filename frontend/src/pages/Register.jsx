@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { registerUser, identificacionUsuario } from "../api/conexion.api.js";
+import { registerUser, buscarUsuarioAdmision } from "../api/conexion.api.js";
 import { listaRegistro } from "../components/AllList.jsx";
 import { validarDato } from "../api/validadorUtil.js";
 import { toast } from "react-hot-toast";
@@ -122,7 +122,7 @@ const Register = () => {
     }
 
     try {
-      const data = await identificacionUsuario(
+      const data = await buscarUsuarioAdmision(
         formData.fun_tipo_iden,
         username
       );

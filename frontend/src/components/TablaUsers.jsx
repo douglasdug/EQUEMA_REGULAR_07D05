@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { getAllEniUsers } from "../api/conexion.api.js";
+import { getAllEniUsers, deleteUser } from "../api/conexion.api.js";
 import { listaUnidadesSalud } from "./AllList.jsx";
+import { toast } from "react-hot-toast";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
-const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
+const TablaUsers = ({
+  setFormData,
+  setVariableEstado,
+  setBotonEstado,
+  setIsEditing,
+  setIsLoading,
+  setSuccessMessage,
+  setError,
+}) => {
   const [eniUsers, setEniUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
@@ -13,7 +22,6 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
     const loadEniUsers = async () => {
       try {
         const { data } = await getAllEniUsers();
-        console.log(data); // Verifica que data es un array
         setEniUsers(Array.isArray(data) ? data : []);
       } catch (error) {
         setError(error.message);
@@ -22,7 +30,7 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
     };
 
     loadEniUsers();
-  }, []);
+  }, [setError]);
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -39,8 +47,61 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
       setFormData(getFormData(user, funAdmiRol));
       setVariableEstado(getVariableEstado());
       setBotonEstado({ btnBuscar: true });
-      console.log("uni_unic value:", user.uni_unic);
+      setIsEditing(true);
     }
+  };
+
+  const handleDelete = async (id) => {
+    const user = eniUsers.find((user) => user.id === id);
+    if (user) {
+      if (!confirmDelete(user)) return;
+
+      setIsLoading(true);
+      try {
+        await deleteUserAndUpdateState(user.username, id);
+      } catch (error) {
+        handleDeleteError(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const confirmDelete = (user) => {
+    return window.confirm(
+      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${user.username}\nNombres: ${user.last_name} ${user.first_name}`
+    );
+  };
+
+  const deleteUserAndUpdateState = async (username, id) => {
+    const response = await deleteUser(username);
+    setSuccessMessage("Registro eliminado con éxito!");
+    const message = response.message || "Registro eliminado con éxito!";
+    toast.success(message, {
+      position: "bottom-right",
+    });
+    // Actualiza la lista de usuarios después de la eliminación
+    setEniUsers(eniUsers.filter((u) => u.id !== id));
+  };
+
+  const handleDeleteError = (error) => {
+    let errorMessage = "Hubo un error en la operación";
+    if (error.response) {
+      if (error.response.data && error.response.data.error) {
+        setError(error.response.data.error);
+        errorMessage = error.response.data.error;
+      } else if (error.response.data && error.response.data.message) {
+        setError(error.response.data.message);
+        errorMessage = error.response.data.message;
+      } else {
+        setError("Error del servidor");
+      }
+    } else if (error.request) {
+      setError("No se recibió respuesta del servidor");
+    } else {
+      setError("Error desconocido");
+    }
+    toast.error(errorMessage, { position: "bottom-right" });
   };
 
   const getFunAdmiRol = (fun_admi_rol) => {
@@ -137,7 +198,7 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
                       </button>
                       <button
                         className="cursor-pointer"
-                        onClick={() => handleEdit(registro.id)}
+                        onClick={() => handleDelete(registro.id)}
                         tabIndex={0}
                       >
                         <FaTrash />
@@ -171,7 +232,7 @@ const TablaUsers = ({ setFormData, setVariableEstado, setBotonEstado }) => {
                             cellContent = (
                               <ul>
                                 {registro[key].map((item, index) => (
-                                  <li key={index}>
+                                  <li key={item}>
                                     {listaUnidadesSalud[item] || item}
                                   </li>
                                 ))}
@@ -225,6 +286,10 @@ TablaUsers.propTypes = {
   setFormData: PropTypes.func.isRequired,
   setVariableEstado: PropTypes.func.isRequired,
   setBotonEstado: PropTypes.func.isRequired,
+  setIsEditing: PropTypes.func.isRequired,
+  setIsLoading: PropTypes.func.isRequired,
+  setSuccessMessage: PropTypes.func.isRequired,
+  setError: PropTypes.func.isRequired,
 };
 
 export default TablaUsers;

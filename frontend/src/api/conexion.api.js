@@ -12,7 +12,7 @@ const getAuthHeaders = () => {
   };
 };
 
-// Registro de Usuario
+// Funciones para los Usuarios
 export const getUser = async (token) => {
   try {
     const response = await axios.get(`${API_URL}/user/`, getAuthHeaders());
@@ -91,6 +91,38 @@ export const registerUser = async (formData) => {
   }
 };
 
+export const updateUser = async (formData) => {
+  try {
+    const response = await axios.patch(
+      `${API_URL}/eni-user/actualizar-usuario/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating user:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const deleteUser = async (username) => {
+  try {
+    const response = await axios.delete(
+      `${API_URL}/eni-user/eliminar-usuario/`,
+      { data: { username } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error deleting user:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
 export const loginUser = async (formData) => {
   const response = await axios.post(`${API_URL}/login/`, formData);
   const { access, refresh } = response.data.tokens;
@@ -99,14 +131,22 @@ export const loginUser = async (formData) => {
   return response.data;
 };
 
-export const identificacionUsuario = async (fun_tipo_iden, username) => {
-  const response = await axios.get(
-    `${API_URL}/admision-datos/buscar-usuario/`,
-    { params: { tipo: fun_tipo_iden, identificacion: username } }
-  );
-  return response.data;
+export const buscarUsuarioEni = async (tipo, identificacion) => {
+  try {
+    const response = await axios.get(`${API_URL}/eni-user/buscar-usuario/`, {
+      params: { tipo, identificacion },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching user admission data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
 };
 
+//Funciones para los registros de vacunación
 const eniUser_id = 1;
 
 export const getAllRegistroVacunado = (month, year) =>
@@ -125,3 +165,22 @@ export const getDescargarCsvRegistroVacunado = (fecha_inicio, fecha_fin) =>
   );
 
 export const getAllEniUsers = () => axios.get(`${API_URL}/eni-user/`);
+
+//Funciones para la Admisión de usuario
+export const buscarUsuarioAdmision = async (tipo, identificacion) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/admision-datos/buscar-usuario/`,
+      {
+        params: { tipo, identificacion },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching user admission data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};

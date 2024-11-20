@@ -76,9 +76,54 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        queryset = self.get_queryset().order_by('last_name')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='buscar-usuario')
+    def buscar_usuario(self, request):
+        tipo = request.query_params.get('tipo')
+        identificacion = request.query_params.get('identificacion')
+        if not tipo or not identificacion:
+            return Response({"error": "El parámetro identificacion es requerido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Primera búsqueda en eniUser
+        try:
+            user_data = eniUser.objects.get(
+                fun_tipo_iden=tipo, username=identificacion)
+            # Asumiendo que hay una relación con unidades_salud
+            unidades_salud = user_data.unidades_salud.all()
+            uni_unic = [
+                unidad.uni_unic for unidad in unidades_salud] if unidades_salud else []
+            data = {
+                "last_name": user_data.last_name,
+                "first_name": user_data.first_name,
+                "fun_sex": user_data.fun_sex,
+                "email": user_data.email,
+                "fun_titu": user_data.fun_titu,
+                "password": user_data.password,
+                "fun_admi_rol": user_data.fun_admi_rol,
+                "fun_esta": user_data.fun_esta,
+                "uni_unic": uni_unic,
+            }
+            return Response({"message": "El usuario está registrado en el sistema!", "data": data}, status=status.HTTP_200_OK)
+        except eniUser.DoesNotExist:
+            pass
+
+        # Segunda búsqueda en admision_datos
+        try:
+            user_data = admision_datos.objects.get(
+                adm_dato_pers_tipo_iden=tipo, adm_dato_pers_nume_iden=identificacion
+            )
+            data = {
+                "adm_dato_pers_apel": user_data.adm_dato_pers_apel,
+                "adm_dato_pers_nomb": user_data.adm_dato_pers_nomb,
+                "adm_dato_pers_sexo": user_data.adm_dato_pers_sexo,
+                "adm_dato_pers_corr_elec": user_data.adm_dato_pers_corr_elec,
+            }
+            return Response({"message": "El usuario está registrado en el sistema!", "data": data}, status=status.HTTP_200_OK)
+        except admision_datos.DoesNotExist:
+            return Response({"error": "Usuario no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -114,7 +159,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                         uni_unic=unidad_salud_data['uni_unic'],
                         uni_unid=unidad_salud_data['uni_unid'],
                         uni_tipo=unidad_salud_data['uni_tipo'],
-                        uni_nive=unidad_salud_data['uni_nive']
+                        uni_nive=unidad_salud_data['uni_nive'],
                     )
 
         token = RefreshToken.for_user(user)
@@ -123,7 +168,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
             "refresh": str(token),
             "access": str(token.access_token)
         }
-        return Response(data, status=status.HTTP_201_CREATED)
+        return Response({"message": "El usuario fue creado exitosamente!", "data": data}, status=status.HTTP_201_CREATED)
 
     def get_unidad_salud_data(self, uni_unic):
         matriz = [
@@ -176,6 +221,62 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
             if unidad['uni_unic'] == uni_unic:
                 return unidad
         return None
+
+    @action(detail=False, methods=['patch'], url_path='actualizar-usuario')
+    def update_by_username(self, request):
+        username = request.data.get('username')
+        if not username:
+            return Response({"error": "El parámetro de identificacion es requerido!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = eniUser.objects.get(username=username)
+        except eniUser.DoesNotExist:
+            return Response({"error": "Usuario no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # Actualizar unidades de salud
+        uni_unic_list = request.data.get('uni_unic')
+        if isinstance(uni_unic_list, list) and len(uni_unic_list) > 0:
+            user.unidades_salud.clear()  # Limpiar unidades de salud existentes
+            for uni_unic_item in uni_unic_list:
+                uni_unic = uni_unic_item.get('value')
+                unidad_salud_data = self.get_unidad_salud_data(uni_unic)
+                if unidad_salud_data:
+                    # Verificar si la unidad de salud ya existe
+                    unidad_salud_instance, _ = unidad_salud.objects.get_or_create(
+                        uni_unic=unidad_salud_data['uni_unic'],
+                        defaults={
+                            'uni_zona': unidad_salud_data['uni_zona'],
+                            'uni_dist': unidad_salud_data['uni_dist'],
+                            'uni_prov': unidad_salud_data['uni_prov'],
+                            'uni_cant': unidad_salud_data['uni_cant'],
+                            'uni_parr': unidad_salud_data['uni_parr'],
+                            'uni_unid': unidad_salud_data['uni_unid'],
+                            'uni_tipo': unidad_salud_data['uni_tipo'],
+                            'uni_nive': unidad_salud_data['uni_nive'],
+                        }
+                    )
+                    # Asociar la unidad de salud existente o nueva con el usuario
+                    user.unidades_salud.add(unidad_salud_instance)
+
+        return Response({"message": "El usuario se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'], url_path='eliminar-usuario')
+    def delete_by_username(self, request):
+        username = request.data.get('username')
+        if not username:
+            return Response({"error": "El parámetro de identificacion es requerido!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = eniUser.objects.get(username=username)
+        except eniUser.DoesNotExist:
+            return Response({"error": "Usuario no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+
+        user.delete()
+        return Response({"message": "Usuario eliminado exitosamente!"}, status=status.HTTP_204_NO_CONTENT)
 
 
 class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
@@ -2572,7 +2673,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 "adm_dato_pers_sexo": user_data.adm_dato_pers_sexo,
                 "adm_dato_pers_corr_elec": user_data.adm_dato_pers_corr_elec,
             }
-            return Response(data, status=status.HTTP_200_OK)
+            return Response({"message": "El usuario está registrado en el sistema!", "data": data}, status=status.HTTP_200_OK)
         except admision_datos.DoesNotExist:
             return Response({"error": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
