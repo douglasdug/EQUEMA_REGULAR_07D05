@@ -6,58 +6,38 @@ import {
   deleteUser,
   buscarUsuarioEni,
 } from "../api/conexion.api.js";
-import { listaRegistro, listaUnidadesSalud } from "../components/AllList.jsx";
-import { validarDato } from "../api/validadorUtil.js";
+import { listaSelectUser, listaUnidadesSalud } from "../components/AllList.jsx";
+import {
+  validarDato,
+  validarEmail,
+  validarIdentificacion,
+} from "../api/validadorUtil.js";
+import {
+  CustomSelect,
+  inputStyle,
+  selectStyles,
+  buttonStylePrimario,
+  buttonStyleSecundario,
+  buttonStyleEliminar,
+} from "../components/EstilosCustom.jsx";
 import TablaUsers from "../components/TablaUsers.jsx";
 import { toast } from "react-hot-toast";
 
-const CustomSelect = ({
-  options,
-  value,
-  onChange,
-  name,
-  disabled,
-  variableEstado,
-}) => {
-  return (
-    <div className="relative inline-block w-full">
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className={`block appearance-none w-full border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline ${
-          disabled
-            ? "bg-gray-200 text-gray-700 cursor-no-drop"
-            : "bg-white text-gray-700 cursor-pointer"
-        }`}
-      >
-        <option value="" disabled>
-          Seleccione una opción
-        </option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-        <svg
-          className="fill-current h-4 w-4"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-        >
-          <line x1="0" y1="0" x2="0" y2="20" stroke="gray" strokeWidth="2" />
-          <path
-            d="M5 8l5 6 5-6H5z"
-            fill="gray"
-            stroke="black"
-            strokeWidth="0.5"
-          />
-        </svg>
-      </div>
-    </div>
-  );
+const getInputTypeAndAutoComplete = (key) => {
+  switch (key) {
+    case "password1":
+      return { inputType: "password", autoCompleteValue: "new-password" };
+    case "password2":
+      return { inputType: "password", autoCompleteValue: "current-password" };
+    case "email":
+      return { inputType: "email", autoCompleteValue: "email" };
+    case "username":
+    case "first_name":
+    case "last_name":
+      return { inputType: "text", autoCompleteValue: "off" };
+    default:
+      return { inputType: "text", autoCompleteValue: "off" };
+  }
 };
 
 const AdminUser = () => {
@@ -76,10 +56,10 @@ const AdminUser = () => {
     fun_esta: "",
   });
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [isEditing, setIsEditing] = useState(false); // Nuevo estado para determinar si estamos editando
+  const [isEditing, setIsEditing] = useState(false);
 
   const initialVariableEstado = {
     fun_tipo_iden: false,
@@ -122,6 +102,13 @@ const AdminUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
+    validarEmail(formData.email, setError);
+    if (error.email) {
+      toast.error("Por favor, corrija los errores antes de enviar.", {
+        position: "bottom-right",
+      });
+      return;
+    }
     setIsLoading(true);
     try {
       let response;
@@ -145,18 +132,37 @@ const AdminUser = () => {
       let errorMessage = "Hubo un error en la operación";
       if (error.response) {
         if (error.response.data && error.response.data.error) {
-          setError(error.response.data.error);
-          errorMessage = error.response.data.error;
+          setError((prevError) => ({
+            ...prevError,
+            email:
+              error.response.data.error.email ||
+              "Error en el correo electrónico",
+          }));
+          errorMessage = error.response.data.error.email || errorMessage;
         } else if (error.response.data && error.response.data.message) {
-          setError(error.response.data.message);
-          errorMessage = error.response.data.message;
+          setError((prevError) => ({
+            ...prevError,
+            email:
+              error.response.data.message.email ||
+              "Error en el correo electrónico",
+          }));
+          errorMessage = error.response.data.message.email || errorMessage;
         } else {
-          setError("Error del servidor");
+          setError((prevError) => ({
+            ...prevError,
+            email: "Error del servidor",
+          }));
         }
       } else if (error.request) {
-        setError("No se recibió respuesta del servidor");
+        setError((prevError) => ({
+          ...prevError,
+          email: "No se recibió respuesta del servidor",
+        }));
       } else {
-        setError("Error desconocido");
+        setError((prevError) => ({
+          ...prevError,
+          email: "Error desconocido",
+        }));
       }
       toast.error(errorMessage, { position: "bottom-right" });
     } finally {
@@ -225,7 +231,7 @@ const AdminUser = () => {
     password1: "Clave",
     password2: "Confirmar Clave",
     fun_admi_rol: "Rol del Funcionario",
-    uni_unic: "Unicodigo",
+    uni_unic: "Unidad de Salud",
     fun_esta: "Activar la cuenta",
   };
 
@@ -237,14 +243,16 @@ const AdminUser = () => {
   }
 
   const handleSearch = async () => {
-    const username = formData.username;
+    const { fun_tipo_iden, username } = formData;
     if (!username) {
       toast.error("Por favor, ingrese una identificación.", {
         position: "bottom-right",
       });
       return;
     }
-
+    if (!validarIdentificacion(fun_tipo_iden, username)) {
+      return;
+    }
     try {
       const response = await buscarUsuarioEni(formData.fun_tipo_iden, username);
       if (!response)
@@ -271,6 +279,7 @@ const AdminUser = () => {
       }));
       setVariableEstado((prevState) => ({
         ...prevState,
+        fun_tipo_iden: true,
         username: true,
         first_name: true,
         last_name: true,
@@ -286,7 +295,7 @@ const AdminUser = () => {
       setBotonEstado((prevState) => ({
         btnBuscar: true,
       }));
-      setIsEditing(true); // Cambia a modo edición
+      setIsEditing(true);
       toast.success(message, {
         position: "bottom-right",
       });
@@ -295,21 +304,22 @@ const AdminUser = () => {
       let errorMessage = "Hubo un error en la operación";
       if (error.response) {
         if (error.response.data && error.response.data.error) {
-          setError(error.response.data.error);
+          setError({ general: error.response.data.error });
           errorMessage = error.response.data.error;
         } else if (error.response.data && error.response.data.message) {
-          setError(error.response.data.message);
+          setError({ general: error.response.data.message });
           errorMessage = error.response.data.message;
         } else {
-          setError("Error del servidor");
+          setError({ general: "Error del servidor" });
         }
       } else if (error.request) {
-        setError("No se recibió respuesta del servidor");
+        setError({ general: "No se recibió respuesta del servidor" });
       } else {
-        setError("Error desconocido");
+        setError({ general: "Error desconocido" });
       }
       setVariableEstado((prevState) => ({
         ...prevState,
+        fun_tipo_iden: true,
         username: true,
         first_name: false,
         last_name: false,
@@ -343,7 +353,7 @@ const AdminUser = () => {
       }));
       if (!value) {
         setFormData({
-          fun_tipo_iden: "",
+          fun_tipo_iden: value,
           username: "",
           first_name: "",
           last_name: "",
@@ -405,9 +415,11 @@ const AdminUser = () => {
       uni_unic: [],
       fun_esta: "",
     });
+    setError({});
+    setSuccessMessage(null);
     setVariableEstado(initialVariableEstado);
     setBotonEstado(initialBotonEstado);
-    setIsEditing(false); // Restablece el modo edición
+    setIsEditing(false);
   };
 
   useEffect(() => {
@@ -419,7 +431,9 @@ const AdminUser = () => {
   return (
     <div className="container">
       <div className="max-w-max m-auto mt-5">
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {Object.values(error).length > 0 && (
+          <p style={{ color: "red" }}>{Object.values(error).join(", ")}</p>
+        )}
         {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
         <h1 className="text-center text-2xl font-bold mb-5">
           Administrador de Usuarios
@@ -434,41 +448,47 @@ const AdminUser = () => {
               key={group.join("-")}
             >
               {group.map((key) => {
-                let inputType;
-                if (key === "password1" || key === "password2") {
-                  inputType = "password";
-                } else if (key === "email") {
-                  inputType = "email";
-                } else {
-                  inputType = "text";
-                }
+                const { inputType, autoCompleteValue } =
+                  getInputTypeAndAutoComplete(key);
                 let inputElement;
                 if (key === "uni_unic") {
                   inputElement = (
                     <Select
-                      id={key}
+                      inputId={key}
                       name={key}
                       value={formData[key]}
                       onChange={handleSelectChange}
-                      options={listaRegistro[key]}
-                      placeholder="Seleccione una opción"
+                      options={Object.keys(listaUnidadesSalud).map((item) => ({
+                        value: item,
+                        label: listaUnidadesSalud[item],
+                      }))}
                       isMulti
-                      className={`shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline ${
-                        variableEstado[key]
-                          ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                          : "bg-white text-gray-700 cursor-pointer"
-                      }`}
+                      placeholder="Seleccione una o varias opciones"
+                      styles={{
+                        ...selectStyles,
+                        control: (provided, state) => ({
+                          ...selectStyles.control(provided, state),
+                          borderWidth: "1px",
+                          borderColor: "black",
+                          cursor: variableEstado[key]
+                            ? "not-allowed"
+                            : "pointer",
+                          backgroundColor: variableEstado[key]
+                            ? "lightgray"
+                            : "white",
+                        }),
+                      }}
                       isDisabled={variableEstado[key]}
                     />
                   );
-                } else if (listaRegistro[key]) {
+                } else if (listaSelectUser[key]) {
                   inputElement = (
                     <CustomSelect
                       id={key}
                       name={key}
                       value={formData[key]}
                       onChange={handleChange}
-                      options={listaRegistro[key]}
+                      options={listaSelectUser[key]}
                       disabled={variableEstado[key]}
                       variableEstado={variableEstado}
                     />
@@ -483,13 +503,14 @@ const AdminUser = () => {
                         value={formData[key]}
                         onChange={handleChange}
                         placeholder="Información es requerida"
-                        className={`shadow appearance-none border border-gray-500 rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline ${
+                        className={`${inputStyle} ${
                           variableEstado[key]
                             ? "bg-gray-200 text-gray-700 cursor-no-drop"
                             : "bg-white text-gray-700 cursor-pointer"
                         }`}
                         min="0"
                         disabled={variableEstado[key]}
+                        autoComplete={autoCompleteValue}
                       />
                       {key === "username" && (
                         <div className="flex">
@@ -497,7 +518,7 @@ const AdminUser = () => {
                             type="button"
                             id="btnBuscar"
                             name="btnBuscar"
-                            className={`ml-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-black ${
+                            className={`${buttonStylePrimario} ${
                               botonEstado.btnBuscar
                                 ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
                                 : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
@@ -511,7 +532,7 @@ const AdminUser = () => {
                             type="button"
                             id="btnLimpiar"
                             name="btnLimpiar"
-                            className="bg-blue-500 hover:bg-blue-700 text-white ml-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            className={buttonStyleSecundario}
                             onClick={limpiarVariables}
                           >
                             Limpiar
@@ -533,6 +554,11 @@ const AdminUser = () => {
                       )}
                     </label>
                     {inputElement}
+                    {error[key] && (
+                      <p className="text-red-500 text-xs italic">
+                        {error[key]}
+                      </p>
+                    )}
                   </div>
                 );
               })}
@@ -543,7 +569,7 @@ const AdminUser = () => {
               type="submit"
               id="btnRegistrar"
               name="btnRegistrar"
-              className={`ml-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-black ${
+              className={`${buttonStylePrimario} ${
                 botonEstado.btnRegistrar
                   ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
                   : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
@@ -558,7 +584,7 @@ const AdminUser = () => {
                 type="button"
                 id="btnEliminar"
                 name="btnEliminar"
-                className="bg-red-500 hover:bg-red-700 text-white ml-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline cursor-pointer"
+                className={buttonStyleEliminar}
                 onClick={handleDelete}
               >
                 Eliminar registro

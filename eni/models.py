@@ -33,12 +33,12 @@ class EniUserManager(BaseUserManager):
 
 class eniUser(AbstractUser):
     username = models.CharField(max_length=20, unique=True)
-    email = models.EmailField(max_length=70, blank=True)
+    email = models.EmailField(max_length=40, blank=True)
     fun_tipo_iden = models.CharField(max_length=30, blank=True)
     fun_sex = models.CharField(max_length=10, blank=True)
     fun_titu = models.CharField(max_length=40, blank=True)
     fun_esta = models.IntegerField(default=0)
-    fun_admi_rol = models.IntegerField(blank=True)
+    fun_admi_rol = models.IntegerField(default=0)
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
 
@@ -457,7 +457,7 @@ class admision_datos(models.Model):
     adm_dato_pers_sexo = models.CharField(max_length=15, blank=True)
     adm_dato_pers_tele = models.CharField(max_length=15, blank=True)
     adm_dato_pers_celu = models.CharField(max_length=15, blank=True)
-    adm_dato_pers_corr_elec = models.CharField(max_length=30, blank=True)
+    adm_dato_pers_corr_elec = models.EmailField(max_length=40, blank=True)
     adm_dato_naci_naci = models.CharField(max_length=30, blank=True)
     adm_dato_naci_luga_naci = models.CharField(max_length=40, blank=True)
     adm_dato_naci_prov = models.CharField(max_length=30, blank=True)

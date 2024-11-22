@@ -27,7 +27,7 @@ export function Navigation() {
 
   const navLinks = [
     { to: "/", label: "Home" },
-    { to: "/register/", label: "Registro" },
+    { to: "/register-user/", label: "Registro" },
     { to: "/admin-user/", label: "Administrador" },
     { to: "/contact/", label: "Contact" },
   ];

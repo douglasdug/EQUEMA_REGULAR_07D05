@@ -5005,7 +5005,7 @@ export const listaDinamicaAdmision = {
   },
 };
 
-export const listaRegistro = {
+export const listaSelectUser = {
   fun_tipo_iden: [
     { value: "NO IDENTIFICADO", label: "01 NO IDENTIFICADO" },
     { value: "CÉDULA DE IDENTIDAD", label: "02 CÉDULA DE IDENTIDAD" },
@@ -5047,6 +5047,7 @@ export const listaRegistro = {
     { value: "1", label: "01 ADMINISTRADOR" },
     { value: "2", label: "02 VACUNADOR" },
     { value: "3", label: "03 MEDICO" },
+    { value: "4", label: "04 VACUNADOR Y MEDICO" },
   ],
   uni_unic: [
     { value: "000541", label: "000541 SAN VICENTE" },

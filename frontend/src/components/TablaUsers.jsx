@@ -112,6 +112,8 @@ const TablaUsers = ({
         return 2;
       case 3:
         return 3;
+      case 4:
+        return 4;
       default:
         return 0;
     }
@@ -216,6 +218,8 @@ const TablaUsers = ({
                           case "password":
                             cellContent = (
                               <input
+                                id={registro[key]}
+                                name={registro[key]}
                                 type="password"
                                 value={registro[key]}
                                 readOnly
@@ -224,9 +228,13 @@ const TablaUsers = ({
                             break;
                           case "fun_admi_rol":
                             cellContent =
-                              ["", "ADMINISTRADOR", "VACUNADOR", "MEDICO"][
-                                registro[key]
-                              ] || "";
+                              [
+                                "",
+                                "ADMINISTRADOR",
+                                "VACUNADOR",
+                                "MEDICO",
+                                "VACUNADOR Y MEDICO",
+                              ][registro[key]] || "";
                             break;
                           case "uni_unic":
                             cellContent = (

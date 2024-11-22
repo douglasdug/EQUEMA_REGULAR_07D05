@@ -138,11 +138,12 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
             adm_dato_pers_apel=request.data.get('last_name'),
             adm_dato_pers_nomb=request.data.get('first_name'),
             adm_dato_pers_sexo=request.data.get('fun_sex'),
-            adm_dato_pers_corr_elec=request.data.get('email')
+            adm_dato_pers_corr_elec=request.data.get('email') or ''
         )
 
         # Buscar en la matriz y registrar en eni_unidad_salud
         uni_unic_list = request.data.get('uni_unic')
+        print("Unic " + str(uni_unic_list))
         if isinstance(uni_unic_list, list) and len(uni_unic_list) > 0:
             for uni_unic_item in uni_unic_list:
                 uni_unic = uni_unic_item.get('value')
@@ -161,6 +162,23 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                         uni_tipo=unidad_salud_data['uni_tipo'],
                         uni_nive=unidad_salud_data['uni_nive'],
                     )
+
+        elif isinstance(uni_unic_list, str):
+            uni_unic = uni_unic_list
+            unidad_salud_data = self.get_unidad_salud_data(uni_unic)
+            if unidad_salud_data:
+                unidad_salud.objects.create(
+                    eniUser=user,
+                    uni_zona=unidad_salud_data['uni_zona'],
+                    uni_dist=unidad_salud_data['uni_dist'],
+                    uni_prov=unidad_salud_data['uni_prov'],
+                    uni_cant=unidad_salud_data['uni_cant'],
+                    uni_parr=unidad_salud_data['uni_parr'],
+                    uni_unic=unidad_salud_data['uni_unic'],
+                    uni_unid=unidad_salud_data['uni_unid'],
+                    uni_tipo=unidad_salud_data['uni_tipo'],
+                    uni_nive=unidad_salud_data['uni_nive'],
+                )
 
         token = RefreshToken.for_user(user)
         data = serializer.data

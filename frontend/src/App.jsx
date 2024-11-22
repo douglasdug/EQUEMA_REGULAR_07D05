@@ -1,7 +1,9 @@
 import "./App.css";
+import "./index.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Navigation } from "./components/Navigation.jsx";
 import Home from "./pages/Home.jsx";
-import Register from "./pages/Register.jsx";
+import RegisterUser from "./pages/RegisterUser.jsx";
 import Login from "./pages/Login.jsx";
 import AvisoUser from "./pages/AvisoUser.jsx";
 import AdminUser from "./pages/AdminUser.jsx";
@@ -9,7 +11,6 @@ import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
-import { Navigation } from "./components/Navigation.jsx";
 import { Toaster } from "react-hot-toast";
 
 function App() {
@@ -22,7 +23,7 @@ function App() {
             <Route path="/" element={<Navigate to="/home/" />} />
             <Route path="/home/" element={<Home />} />
             <Route path="/login/" element={<Login />} />
-            <Route path="/register/" element={<Register />} />
+            <Route path="/register-user/" element={<RegisterUser />} />
             <Route path="/aviso-user/" element={<AvisoUser />} />
             <Route path="/admin-user/" element={<AdminUser />} />
             <Route path="/create-temprano/" element={<CreateTemprano />} />
