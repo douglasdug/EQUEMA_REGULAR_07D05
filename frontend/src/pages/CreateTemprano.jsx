@@ -1,11 +1,26 @@
-import React, { useState } from "react";
-import { tempranoCreateApi } from "../api/temprano.api.js";
-import { TempranoList } from "../components/TempranoList";
+import React, { useState, useEffect } from "react";
+import { registerTemprano } from "../api/conexion.api.js";
+import { validarDato, validarRegistro } from "../api/validadorUtil.js";
+import {
+  inputStyle,
+  buttonStylePrimario,
+  buttonStyleSecundario,
+  buttonStyleEliminar,
+} from "../components/EstilosCustom.jsx";
+import TablaTemprano from "../components/TablaTemprano.jsx";
 import { toast } from "react-hot-toast";
+
+const getInputType = (key) => {
+  if (key === "tem_fech") {
+    return { inputType: "date" };
+  } else {
+    return { inputType: "number" };
+  }
+};
 
 const CreateTemprano = () => {
   const [formData, setFormData] = useState({
-    tem_fech: "",
+    tem_fech: new Date().toISOString().slice(0, 10),
     tem_intr: 0,
     tem_extr_mies_cnh: 0,
     tem_extr_mies_cibv: 0,
@@ -93,117 +108,485 @@ const CreateTemprano = () => {
     tem_15an_terc_dtad: 0,
     eniUser: 1,
   });
-  const [error, setError] = useState("");
-  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+
+  const [error, setError] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const initialBotonEstado = {
+    btnBuscar: true,
+    btnLimpiar: false,
+    btnRegistrar: false,
+  };
+
+  const [botonEstado, setBotonEstado] = useState(initialBotonEstado);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const resValidarRegistro = validarRegistro(formData, setError);
+    if (isLoading) return;
+    setIsLoading(true);
+    let errorMessage = "Hubo un error en la operación";
+    try {
+      if (resValidarRegistro.success) {
+        await registerTemprano(formData);
+        setSuccessMessage(resValidarRegistro.message);
+        toast.success(resValidarRegistro.message, {
+          position: "bottom-right",
+        });
+        window.location.reload("/create-temprano/");
+        // Otros procesos necesarios al guardar
+      } else {
+        // Hubo un error en la validación
+        setError(resValidarRegistro.error);
+        toast.error(resValidarRegistro.error, {
+          position: "bottom-right",
+        });
+      }
+    } catch (error) {
+      const getErrorMessage = (error) => {
+        if (error.response?.data) {
+          const data = error.response.data;
+          if (typeof data === "object") {
+            const firstKey = Object.keys(data)[0];
+            const firstError = data[firstKey];
+            if (Array.isArray(firstError) && firstError.length > 0) {
+              return firstError[0];
+            } else if (typeof firstError === "string") {
+              return firstError;
+            } else if (data.message) {
+              return data.message;
+            } else if (data.error) {
+              return data.error;
+            }
+          } else if (typeof data === "string") {
+            return data;
+          }
+        } else if (error.request) {
+          return "No se recibió respuesta del servidor";
+        } else if (error.message) {
+          return error.message;
+        }
+        return "Error desconocido";
+      };
+      errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      toast.error(errorMessage, { position: "bottom-right" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const labelMap = {
+    tem_fech: "Fecha",
+    tem_intr: "Intramural",
+    tem_extr_mies_cnh: "CNH",
+    tem_extr_mies_cibv: "CIBV",
+    tem_extr_mine_egen: "E. General Básica",
+    tem_extr_mine_bach: "Bachillerato",
+    tem_extr_visi: "VISITAS DOMICILIARIAS",
+    tem_extr_aten: "ATENCIÓN COMUNITARIA",
+    tem_otro: "OTROS",
+    tem_sexo_homb: "Hombre",
+    tem_sexo_muje: "Mujer",
+    tem_luga_pert: "Pertenece al establecimiento de salud",
+    tem_luga_nope: "No pertenece al establecimiento de salud",
+    tem_naci_ecua: "Ecuatoriana",
+    tem_naci_colo: "Colombiano",
+    tem_naci_peru: "Peruano",
+    tem_naci_cuba: "Cubano",
+    tem_naci_vene: "Venezolano",
+    tem_naci_otro: "Otros",
+    tem_auto_indi: "Indigena",
+    tem_auto_afro: "Afro ecuatoriano/ Afro descendiente",
+    tem_auto_negr: "Negro/a",
+    tem_auto_mula: "Mulato/a",
+    tem_auto_mont: "Montubio/a",
+    tem_auto_mest: "Mestizo/a",
+    tem_auto_blan: "Blanco/a",
+    tem_auto_otro: "Otro",
+    tem_naci_achu: "Achuar",
+    tem_naci_ando: "Andoa",
+    tem_naci_awa: "Awa",
+    tem_naci_chac: "Chachi",
+    tem_naci_cofa: "Cofan",
+    tem_naci_eper: "Epera",
+    tem_naci_huan: "Huancavilca",
+    tem_naci_kich: "Kichwa",
+    tem_naci_mant: "Manta",
+    tem_naci_seco: "Secoya",
+    tem_naci_shiw: "Shiwiar",
+    tem_naci_shua: "Shuar",
+    tem_naci_sion: "Siona",
+    tem_naci_tsac: "Tsáchila",
+    tem_naci_waor: "Waorani",
+    tem_naci_zapa: "Zapara",
+    tem_pueb_chib: "Chibuleo",
+    tem_pueb_kana: "Kañari",
+    tem_pueb_kara: "Karanki",
+    tem_pueb_kaya: "Kayambi",
+    tem_pueb_kich: "Kichwa Amazónico",
+    tem_pueb_kisa: "Kisapincha",
+    tem_pueb_kitu: "Kitukara",
+    tem_pueb_nata: "Natabuela",
+    tem_pueb_otav: "Otavalo",
+    tem_pueb_palt: "Paltas",
+    tem_pueb_panz: "Panzaleo",
+    tem_pueb_past: "Pastos",
+    tem_pueb_puru: "Puruha",
+    tem_pueb_sala: "Salasaka",
+    tem_pueb_sara: "Saraguro",
+    tem_pueb_toma: "Tomabela",
+    tem_pueb_wara: "Waramka",
+    tem_men1_dosi_bcgp: "BCG primeras 24 horas de nacido",
+    tem_men1_dosi_hbpr: "HB primeras 24 horas de nacido",
+    tem_men1_dosi_bcgd:
+      "*BCG desde el 2do  día de nacido hasta los 364 días (Tardía)",
+    tem_men1_1rad_rota: "Rotavirus",
+    tem_men1_1rad_fipv: "fIPV",
+    tem_men1_1rad_neum: "Neumococo",
+    tem_men1_1rad_pent: "Pentavalente",
+    tem_men1_2dad_rota: "Rotavirus",
+    tem_men1_2dad_fipv: "fIPV",
+    tem_men1_2dad_neum: "Neumococo",
+    tem_men1_2dad_pent: "Pentavalente",
+    tem_men1_3rad_bopv: "bOPV",
+    tem_men1_3rad_neum: "Neumococo",
+    tem_men1_3rad_pent: "Pentavalente",
+    tem_12a23m_1rad_srp: "SRP",
+    tem_12a23m_dosi_fa: "FA",
+    tem_12a23m_dosi_vari: "Varicela",
+    tem_12a23m_2dad_srp: "SRP",
+    tem_12a23m_4tad_bopv: "bOPV",
+    tem_12a23m_4tad_dpt: "DPT",
+    tem_5ano_5tad_bopv: "bOPV",
+    tem_5ano_5tad_dpt: "DPT",
+    tem_9ano_1rad_hpv: "HPV",
+    tem_9ano_2dad_hpv: "HPV",
+    tem_10an_2dad_hpv: "HPV",
+    tem_15an_terc_dtad: "dT adulto",
+    eniUser: "Id eniUser",
+  };
+
+  const keys = Object.keys(formData);
+  const [showAutoIndi, setShowAutoIndi] = useState(false);
+  const [showNaciKich, setShowNaciKich] = useState(false);
 
   const handleChange = (e) => {
+    validarDato(e, formData, setFormData);
     const { name, value } = e.target;
     if (value >= 0 || name === "tem_fech") {
       setFormData({
         ...formData,
         [name]: value,
       });
-      setIsButtonDisabled(
-        !formData.tem_fech ||
-          !Object.values({ ...formData, [name]: value }).some((val) => val > 0)
-      );
+    }
+    if (name === "tem_auto_indi") {
+      setShowAutoIndi(value >= 1);
+    }
+    if (name === "tem_naci_kich") {
+      setShowNaciKich(value >= 1);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await tempranoCreateApi(formData);
-      console.log("Success:", response.data);
-      const successMessage = response.data.message || "Operación exitosa";
-      toast.success(successMessage, {
-        position: "bottom-right",
-      });
-    } catch (error) {
-      let errorMessage = "Hubo un error en la operación";
+  const checkFormValidity = () => {};
 
-      if (error.response) {
-        if (error.response.data && error.response.data.error) {
-          setError(error.response.data.error);
-          errorMessage = error.response.data.error;
-        } else if (error.response.data && error.response.data.message) {
-          setError(error.response.data.message);
-          errorMessage = error.response.data.message;
-        } else {
-          setError("Error del servidor");
-        }
-      } else if (error.request) {
-        setError("No se recibió respuesta del servidor");
-      } else {
-        setError("Error desconocido");
-      }
-
-      toast.error(errorMessage, {
-        position: "bottom-right",
-      });
-    }
+  const limpiarVariables = () => {
+    setFormData({
+      tem_fech: new Date().toISOString().slice(0, 10),
+      tem_intr: 0,
+      tem_extr_mies_cnh: 0,
+      tem_extr_mies_cibv: 0,
+      tem_extr_mine_egen: 0,
+      tem_extr_mine_bach: 0,
+      tem_extr_visi: 0,
+      tem_extr_aten: 0,
+      tem_otro: 0,
+      tem_sexo_homb: 0,
+      tem_sexo_muje: 0,
+      tem_luga_pert: 0,
+      tem_luga_nope: 0,
+      tem_naci_ecua: 0,
+      tem_naci_colo: 0,
+      tem_naci_peru: 0,
+      tem_naci_cuba: 0,
+      tem_naci_vene: 0,
+      tem_naci_otro: 0,
+      tem_auto_indi: 0,
+      tem_auto_afro: 0,
+      tem_auto_negr: 0,
+      tem_auto_mula: 0,
+      tem_auto_mont: 0,
+      tem_auto_mest: 0,
+      tem_auto_blan: 0,
+      tem_auto_otro: 0,
+      tem_naci_achu: 0,
+      tem_naci_ando: 0,
+      tem_naci_awa: 0,
+      tem_naci_chac: 0,
+      tem_naci_cofa: 0,
+      tem_naci_eper: 0,
+      tem_naci_huan: 0,
+      tem_naci_kich: 0,
+      tem_naci_mant: 0,
+      tem_naci_seco: 0,
+      tem_naci_shiw: 0,
+      tem_naci_shua: 0,
+      tem_naci_sion: 0,
+      tem_naci_tsac: 0,
+      tem_naci_waor: 0,
+      tem_naci_zapa: 0,
+      tem_pueb_chib: 0,
+      tem_pueb_kana: 0,
+      tem_pueb_kara: 0,
+      tem_pueb_kaya: 0,
+      tem_pueb_kich: 0,
+      tem_pueb_kisa: 0,
+      tem_pueb_kitu: 0,
+      tem_pueb_nata: 0,
+      tem_pueb_otav: 0,
+      tem_pueb_palt: 0,
+      tem_pueb_panz: 0,
+      tem_pueb_past: 0,
+      tem_pueb_puru: 0,
+      tem_pueb_sala: 0,
+      tem_pueb_sara: 0,
+      tem_pueb_toma: 0,
+      tem_pueb_wara: 0,
+      tem_men1_dosi_bcgp: 0,
+      tem_men1_dosi_hbpr: 0,
+      tem_men1_dosi_bcgd: 0,
+      tem_men1_1rad_rota: 0,
+      tem_men1_1rad_fipv: 0,
+      tem_men1_1rad_neum: 0,
+      tem_men1_1rad_pent: 0,
+      tem_men1_2dad_rota: 0,
+      tem_men1_2dad_fipv: 0,
+      tem_men1_2dad_neum: 0,
+      tem_men1_2dad_pent: 0,
+      tem_men1_3rad_bopv: 0,
+      tem_men1_3rad_neum: 0,
+      tem_men1_3rad_pent: 0,
+      tem_12a23m_1rad_srp: 0,
+      tem_12a23m_dosi_fa: 0,
+      tem_12a23m_dosi_vari: 0,
+      tem_12a23m_2dad_srp: 0,
+      tem_12a23m_4tad_bopv: 0,
+      tem_12a23m_4tad_dpt: 0,
+      tem_5ano_5tad_bopv: 0,
+      tem_5ano_5tad_dpt: 0,
+      tem_9ano_1rad_hpv: 0,
+      tem_9ano_2dad_hpv: 0,
+      tem_10an_2dad_hpv: 0,
+      tem_15an_terc_dtad: 0,
+      eniUser: 1,
+    });
+    setError({});
+    setSuccessMessage(null);
+    setBotonEstado(initialBotonEstado);
+    setIsEditing(false);
   };
 
-  const handleButtonClick = (e) => {
-    if (isButtonDisabled) {
-      e.preventDefault();
-      toast.error("Todos los campos tienen que estar llenos!", {
-        position: "bottom-right",
-      });
-    }
-  };
+  useEffect(() => {
+    checkFormValidity();
+    document.getElementById("tem_fech").setAttribute("max", tem_fech);
+  }, [formData]);
+
+  const buttonText = isEditing ? "Actualizar Registro" : "Registrar";
 
   return (
     <div className="container">
-      <div className="max-w-md mx-auto mt-10">
-        <h1 className="text-2xl font-bold mb-5">Crear Temprano</h1>
-        {error && <p className="text-red-500 mb-5">{error}</p>}
+      <div className="max-w-max m-auto mt-5">
+        <h1 className="text-center text-2xl font-bold mb-1">Crear Temprano</h1>
+        {error && (
+          <p style={{ color: "red" }}>
+            {Object.keys(error).length > 0 ? JSON.stringify(error) : ""}
+          </p>
+        )}
+        {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
         <form
           onSubmit={handleSubmit}
-          className="bg-white p-6 rounded-lg shadow-md"
+          className="bg-white p-1 rounded-lg shadow-md"
         >
-          {Object.keys(formData).map((key) => {
-            if (key === "eniUser") return null; // Excluir el campo eniUser
-            let inputType = "text";
-            if (key === "tem_fech") {
-              inputType = "date";
-            } else {
-              inputType = "number";
-            }
-            return (
-              <div className="mb-4" key={key}>
-                <label
-                  className="block text-gray-700 text-sm font-bold mb-2"
-                  htmlFor={key}
-                >
-                  {key.replace(/_/g, " ")}
-                </label>
-                <input
-                  type={inputType}
-                  id={key}
-                  name={key}
-                  value={formData[key]}
-                  onChange={handleChange}
-                  placeholder="Ingrese un número"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  min="0"
-                />
-              </div>
-            );
-          })}
-          <button onClick={handleButtonClick}>
-            <div
+          <div className="relative overflow-x-auto px-1 py-4">
+            <table className="table-fixed w-full text-sm text-left rtl:text-right text-black dark:text-black">
+              <thead className="text-xs bg-gray-50 dark:bg-gray-100">
+                <tr>
+                  {keys.map((key, index) => {
+                    const isAutoIndi = [
+                      "tem_naci_achu",
+                      "tem_naci_ando",
+                      "tem_naci_awa",
+                      "tem_naci_chac",
+                      "tem_naci_cofa",
+                      "tem_naci_eper",
+                      "tem_naci_huan",
+                      "tem_naci_kich",
+                      "tem_naci_mant",
+                      "tem_naci_seco",
+                      "tem_naci_shiw",
+                      "tem_naci_shua",
+                      "tem_naci_sion",
+                      "tem_naci_tsac",
+                      "tem_naci_waor",
+                      "tem_naci_zapa",
+                    ].includes(key);
+                    const isNaciKich = [
+                      "tem_pueb_chib",
+                      "tem_pueb_kana",
+                      "tem_pueb_kara",
+                      "tem_pueb_kaya",
+                      "tem_pueb_kich",
+                      "tem_pueb_kisa",
+                      "tem_pueb_kitu",
+                      "tem_pueb_nata",
+                      "tem_pueb_otav",
+                      "tem_pueb_palt",
+                      "tem_pueb_panz",
+                      "tem_pueb_past",
+                      "tem_pueb_puru",
+                      "tem_pueb_sala",
+                      "tem_pueb_sara",
+                      "tem_pueb_toma",
+                      "tem_pueb_wara",
+                    ].includes(key);
+                    if (isAutoIndi && !showAutoIndi) {
+                      return null; // No renderizar este th si no debe ser visible
+                    }
+                    if (isNaciKich && !showNaciKich) {
+                      return null; // No renderizar este th si no debe ser visible
+                    }
+                    return (
+                      <th
+                        key={key}
+                        className={`border ${
+                          index === 0 ? "w-36 px-8 py-2" : "w-20 px-0 py-2"
+                        }`}
+                      >
+                        <div className="transform -rotate-90 h-24 flex justify-start items-center">
+                          {labelMap[key]}
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {keys.map((key) => {
+                    const { inputType } = getInputType(key);
+                    const isAutoIndi = [
+                      "tem_naci_achu",
+                      "tem_naci_ando",
+                      "tem_naci_awa",
+                      "tem_naci_chac",
+                      "tem_naci_cofa",
+                      "tem_naci_eper",
+                      "tem_naci_huan",
+                      "tem_naci_kich",
+                      "tem_naci_mant",
+                      "tem_naci_seco",
+                      "tem_naci_shiw",
+                      "tem_naci_shua",
+                      "tem_naci_sion",
+                      "tem_naci_tsac",
+                      "tem_naci_waor",
+                      "tem_naci_zapa",
+                    ].includes(key);
+                    const isNaciKich = [
+                      "tem_pueb_chib",
+                      "tem_pueb_kana",
+                      "tem_pueb_kara",
+                      "tem_pueb_kaya",
+                      "tem_pueb_kich",
+                      "tem_pueb_kisa",
+                      "tem_pueb_kitu",
+                      "tem_pueb_nata",
+                      "tem_pueb_otav",
+                      "tem_pueb_palt",
+                      "tem_pueb_panz",
+                      "tem_pueb_past",
+                      "tem_pueb_puru",
+                      "tem_pueb_sala",
+                      "tem_pueb_sara",
+                      "tem_pueb_toma",
+                      "tem_pueb_wara",
+                    ].includes(key);
+                    if (isAutoIndi && !showAutoIndi) {
+                      return null; // No renderizar este input si no debe ser visible
+                    }
+                    if (isNaciKich && !showNaciKich) {
+                      return null; // No renderizar este th si no debe ser visible
+                    }
+                    return (
+                      <td key={key} className="border px-0 py-0">
+                        <input
+                          type={inputType}
+                          id={key}
+                          name={key}
+                          value={formData[key]}
+                          onChange={handleChange}
+                          placeholder="Información es requerida"
+                          className={`${inputStyle}`}
+                          min="0"
+                          max=""
+                          required
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="flex items-center justify-center mt-4">
+            <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              disabled={isButtonDisabled}
+              id="btnRegistrar"
+              name="btnRegistrar"
+              className={`${buttonStylePrimario} ${
+                botonEstado.btnRegistrar
+                  ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+              }`}
+              disabled={botonEstado.btnRegistrar}
+              onClick={handleSubmit}
             >
-              Crear
-            </div>
-          </button>
+              {buttonText}
+            </button>
+            <button
+              type="button"
+              id="btnLimpiar"
+              name="btnLimpiar"
+              className={buttonStyleSecundario}
+              onClick={limpiarVariables}
+            >
+              Limpiar
+            </button>
+            {isEditing && (
+              <button
+                type="button"
+                id="btnEliminar"
+                name="btnEliminar"
+                className={buttonStyleEliminar}
+                onClick={handleDelete}
+              >
+                Eliminar registro
+              </button>
+            )}
+          </div>
         </form>
       </div>
       <div className="mt-5">
-        <TempranoList />
+        <TablaTemprano
+          setFormData={setFormData}
+          setBotonEstado={setBotonEstado}
+          setIsEditing={setIsEditing}
+          setIsLoading={setIsLoading}
+          setSuccessMessage={setSuccessMessage}
+          setError={setError}
+        />
       </div>
     </div>
   );

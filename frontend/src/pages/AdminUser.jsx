@@ -130,40 +130,33 @@ const AdminUser = () => {
       window.location.reload("/admin-user/");
     } catch (error) {
       let errorMessage = "Hubo un error en la operación";
-      if (error.response) {
-        if (error.response.data && error.response.data.error) {
-          setError((prevError) => ({
-            ...prevError,
-            email:
-              error.response.data.error.email ||
-              "Error en el correo electrónico",
-          }));
-          errorMessage = error.response.data.error.email || errorMessage;
-        } else if (error.response.data && error.response.data.message) {
-          setError((prevError) => ({
-            ...prevError,
-            email:
-              error.response.data.message.email ||
-              "Error en el correo electrónico",
-          }));
-          errorMessage = error.response.data.message.email || errorMessage;
-        } else {
-          setError((prevError) => ({
-            ...prevError,
-            email: "Error del servidor",
-          }));
+      const getErrorMessage = (error) => {
+        if (error.response && error.response.data) {
+          const data = error.response.data;
+          if (typeof data === "object") {
+            const firstKey = Object.keys(data)[0];
+            const firstError = data[firstKey];
+            if (Array.isArray(firstError) && firstError.length > 0) {
+              return firstError[0];
+            } else if (typeof firstError === "string") {
+              return firstError;
+            } else if (data.message) {
+              return data.message;
+            } else if (data.error) {
+              return data.error;
+            }
+          } else if (typeof data === "string") {
+            return data;
+          }
+        } else if (error.request) {
+          return "No se recibió respuesta del servidor";
+        } else if (error.message) {
+          return error.message;
         }
-      } else if (error.request) {
-        setError((prevError) => ({
-          ...prevError,
-          email: "No se recibió respuesta del servidor",
-        }));
-      } else {
-        setError((prevError) => ({
-          ...prevError,
-          email: "Error desconocido",
-        }));
-      }
+        return "Error desconocido";
+      };
+      errorMessage = getErrorMessage(error);
+      setError(errorMessage);
       toast.error(errorMessage, { position: "bottom-right" });
     } finally {
       setIsLoading(false);
@@ -431,13 +424,15 @@ const AdminUser = () => {
   return (
     <div className="container">
       <div className="max-w-max m-auto mt-5">
-        {Object.values(error).length > 0 && (
-          <p style={{ color: "red" }}>{Object.values(error).join(", ")}</p>
-        )}
-        {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
         <h1 className="text-center text-2xl font-bold mb-5">
           Administrador de Usuarios
         </h1>
+        {error && (
+          <p style={{ color: "red" }}>
+            {Object.keys(error).length > 0 ? JSON.stringify(error) : ""}
+          </p>
+        )}
+        {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
         <form
           onSubmit={handleSubmit}
           className="bg-white p-6 rounded-lg shadow-md"
@@ -593,15 +588,17 @@ const AdminUser = () => {
           </div>
         </form>
       </div>
-      <TablaUsers
-        setFormData={setFormData}
-        setVariableEstado={setVariableEstado}
-        setBotonEstado={setBotonEstado}
-        setIsEditing={setIsEditing}
-        setIsLoading={setIsLoading}
-        setSuccessMessage={setSuccessMessage}
-        setError={setError}
-      />
+      <div className="mt-5">
+        <TablaUsers
+          setFormData={setFormData}
+          setVariableEstado={setVariableEstado}
+          setBotonEstado={setBotonEstado}
+          setIsEditing={setIsEditing}
+          setIsLoading={setIsLoading}
+          setSuccessMessage={setSuccessMessage}
+          setError={setError}
+        />
+      </div>
     </div>
   );
 };

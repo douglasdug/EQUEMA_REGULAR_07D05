@@ -21,9 +21,6 @@ const getInputTypeAndAutoComplete = (key) => {
   } else if (["username", "first_name", "last_name"].includes(key)) {
     inputType = "text";
     autoCompleteValue = "off";
-  } else {
-    inputType = "text";
-    autoCompleteValue = "off";
   }
 
   return { inputType, autoCompleteValue };

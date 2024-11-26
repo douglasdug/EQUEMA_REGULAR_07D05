@@ -21,14 +21,12 @@ const TablaUsers = ({
   useEffect(() => {
     const loadEniUsers = async () => {
       try {
-        const { data } = await getAllEniUsers();
+        const data = await getAllEniUsers();
         setEniUsers(Array.isArray(data) ? data : []);
       } catch (error) {
         setError(error.message);
-        console.error("Error al cargar los registros:", error);
       }
     };
-
     loadEniUsers();
   }, [setError]);
 

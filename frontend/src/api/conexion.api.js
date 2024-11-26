@@ -78,6 +78,14 @@ export const logoutUser = async (accessToken, refreshToken) => {
   }
 };
 
+export const loginUser = async (formData) => {
+  const response = await axios.post(`${API_URL}/login/`, formData);
+  const { access, refresh } = response.data.tokens;
+  localStorage.setItem("accessToken", access);
+  localStorage.setItem("refreshToken", refresh);
+  return response.data;
+};
+
 export const registerUser = async (formData) => {
   try {
     const response = await axios.post(`${API_URL}/eni-user/`, formData);
@@ -123,14 +131,6 @@ export const deleteUser = async (username) => {
   }
 };
 
-export const loginUser = async (formData) => {
-  const response = await axios.post(`${API_URL}/login/`, formData);
-  const { access, refresh } = response.data.tokens;
-  localStorage.setItem("accessToken", access);
-  localStorage.setItem("refreshToken", refresh);
-  return response.data;
-};
-
 export const buscarUsuarioEni = async (tipo, identificacion) => {
   try {
     const response = await axios.get(`${API_URL}/eni-user/buscar-usuario/`, {
@@ -164,7 +164,18 @@ export const getDescargarCsvRegistroVacunado = (fecha_inicio, fecha_fin) =>
     getAuthHeaders()
   );
 
-export const getAllEniUsers = () => axios.get(`${API_URL}/eni-user/`);
+export const getAllEniUsers = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/eni-user/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching all eni users:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
 
 //Funciones para la Admisión de usuario
 export const buscarUsuarioAdmision = async (tipo, identificacion) => {
@@ -179,6 +190,72 @@ export const buscarUsuarioAdmision = async (tipo, identificacion) => {
   } catch (error) {
     console.error(
       "Error fetching user admission data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+//Funciones de Temprano
+export const getMesTemprano = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/temprano/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const registerTemprano = async (formData) => {
+  try {
+    const response = await axios.post(`${API_URL}/temprano/`, formData);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error creating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const updateTemprano = async (id, formData) => {
+  try {
+    const response = await axios.put(`${API_URL}/temprano/${id}/`, formData);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const deleteTemprano = async (id) => {
+  try {
+    const response = await axios.delete(`${API_URL}/temprano/${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error deleting early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const getTemprano = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/temprano/${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
       error.response ? error.response.data : error.message
     );
     throw error;
