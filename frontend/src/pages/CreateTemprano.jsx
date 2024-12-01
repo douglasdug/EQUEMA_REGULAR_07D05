@@ -19,8 +19,12 @@ const getInputType = (key) => {
 };
 
 const CreateTemprano = () => {
+  const storedUserId = localStorage.getItem("userId") || "";
+  const dateActual = new Date().toISOString().slice(0, 10);
+  const [yearTem, monthTem] = dateActual.split("-");
+
   const [formData, setFormData] = useState({
-    tem_fech: new Date().toISOString().slice(0, 10),
+    tem_fech: dateActual,
     tem_intr: 0,
     tem_extr_mies_cnh: 0,
     tem_extr_mies_cibv: 0,
@@ -106,7 +110,6 @@ const CreateTemprano = () => {
     tem_9ano_2dad_hpv: 0,
     tem_10an_2dad_hpv: 0,
     tem_15an_terc_dtad: 0,
-    eniUser: 1,
   });
 
   const [error, setError] = useState({});
@@ -114,23 +117,35 @@ const CreateTemprano = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  const initialBotonEstado = {
+  const [botonEstado, setBotonEstado] = useState({
     btnBuscar: true,
     btnLimpiar: false,
-    btnRegistrar: false,
-  };
-
-  const [botonEstado, setBotonEstado] = useState(initialBotonEstado);
+    btnRegistrarTem: true,
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const resValidarRegistro = validarRegistro(formData, setError);
+    const resValidarRegistro = validarRegistro(
+      formData,
+      setError,
+      setBotonEstado
+    );
+    setBotonEstado((prevState) => ({
+      btnRegistrarTem: false,
+    }));
     if (isLoading) return;
     setIsLoading(true);
+    setError({});
     let errorMessage = "Hubo un error en la operación";
+    if (!storedUserId) {
+      setError({ eniUser: "El usuario no está autenticado." });
+      return;
+    }
+
+    // Lógica para enviar los datos al servidor
     try {
       if (resValidarRegistro.success) {
-        await registerTemprano(formData);
+        await registerTemprano({ ...formData, eniUser: storedUserId });
         setSuccessMessage(resValidarRegistro.message);
         toast.success(resValidarRegistro.message, {
           position: "bottom-right",
@@ -266,7 +281,6 @@ const CreateTemprano = () => {
     tem_9ano_2dad_hpv: "HPV",
     tem_10an_2dad_hpv: "HPV",
     tem_15an_terc_dtad: "dT adulto",
-    eniUser: "Id eniUser",
   };
 
   const keys = Object.keys(formData);
@@ -290,11 +304,9 @@ const CreateTemprano = () => {
     }
   };
 
-  const checkFormValidity = () => {};
-
   const limpiarVariables = () => {
     setFormData({
-      tem_fech: new Date().toISOString().slice(0, 10),
+      tem_fech: dateActual,
       tem_intr: 0,
       tem_extr_mies_cnh: 0,
       tem_extr_mies_cibv: 0,
@@ -380,18 +392,18 @@ const CreateTemprano = () => {
       tem_9ano_2dad_hpv: 0,
       tem_10an_2dad_hpv: 0,
       tem_15an_terc_dtad: 0,
-      eniUser: 1,
     });
     setError({});
     setSuccessMessage(null);
-    setBotonEstado(initialBotonEstado);
+    setBotonEstado({
+      btnBuscar: true,
+      btnLimpiar: false,
+      btnRegistrarTem: false,
+    });
     setIsEditing(false);
   };
 
-  useEffect(() => {
-    checkFormValidity();
-    document.getElementById("tem_fech").setAttribute("max", tem_fech);
-  }, [formData]);
+  useEffect(() => {}, []);
 
   const buttonText = isEditing ? "Actualizar Registro" : "Registrar";
 
@@ -543,14 +555,14 @@ const CreateTemprano = () => {
           <div className="flex items-center justify-center mt-4">
             <button
               type="submit"
-              id="btnRegistrar"
-              name="btnRegistrar"
+              id="btnRegistrarTem"
+              name="btnRegistrarTem"
               className={`${buttonStylePrimario} ${
-                botonEstado.btnRegistrar
+                botonEstado.btnRegistrarTem
                   ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
                   : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
               }`}
-              disabled={botonEstado.btnRegistrar}
+              disabled={botonEstado.btnRegistrarTem}
               onClick={handleSubmit}
             >
               {buttonText}
@@ -581,6 +593,9 @@ const CreateTemprano = () => {
       <div className="mt-5">
         <TablaTemprano
           setFormData={setFormData}
+          storedUserId={parseInt(storedUserId)}
+          yearTem={parseInt(yearTem)}
+          monthTem={parseInt(monthTem)}
           setBotonEstado={setBotonEstado}
           setIsEditing={setIsEditing}
           setIsLoading={setIsLoading}

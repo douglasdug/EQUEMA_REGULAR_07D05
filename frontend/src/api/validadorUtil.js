@@ -453,7 +453,6 @@ export const validarRegistro = (formData) => {
               ]),
               Number(formData.tem_15an_terc_dtad),
             ];
-            console.log(vacunasArray);
             if (
               vacunasArray[0] <= vacunasArray[1] &&
               vacunasArray[0] >= vacunasArray[2] &&
@@ -470,6 +469,8 @@ export const validarRegistro = (formData) => {
               vacunasArray[0] >= vacunasArray[13] &&
               vacunasArray[0] >= vacunasArray[14]
             ) {
+              let btnRegistrarTem = true;
+              setBotonEstado(btnRegistrarTem);
               // Registro válido
               return { success: true, message: mensajesError.messRegVac };
             } else {

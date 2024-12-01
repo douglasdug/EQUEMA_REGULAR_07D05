@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { getMesTemprano, deleteTemprano } from "../api/conexion.api.js";
-import { toast } from "react-hot-toast";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import {
+  inputStyle,
+  buttonStylePrimario,
+  buttonStyleSecundario,
+  buttonStyleEliminar,
+} from "../components/EstilosCustom.jsx";
+import { toast } from "react-hot-toast";
 
 const TablaTemprano = ({
   setFormData,
-  setVariableEstado,
+  storedUserId,
+  yearTem,
+  monthTem,
   setBotonEstado,
   setIsEditing,
   setIsLoading,
@@ -17,10 +25,15 @@ const TablaTemprano = ({
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
+  const [selectedMonthYear, setSelectedMonthYear] = useState(() => {
+    const formattedMonth = monthTem.toString().padStart(2, "0");
+    return `${yearTem}-${formattedMonth}`;
+  });
+
   useEffect(() => {
     const loadTemprano = async () => {
       try {
-        const data = await getMesTemprano();
+        const data = await getMesTemprano(storedUserId, monthTem, yearTem);
         setEniUsers(Array.isArray(data) ? data : []);
       } catch (error) {
         setError(error.message);
@@ -37,12 +50,68 @@ const TablaTemprano = ({
 
   const totalPages = Math.ceil(eniUsers.length / rowsPerPage);
 
+  const handleSearch = async () => {
+    if (selectedMonthYear) {
+      const [yearTem, monthTem] = selectedMonthYear.split("-");
+      try {
+        console.log("yearTem", yearTem, "monthTem", monthTem);
+        //const data = await getMesTemprano(storedUserId, monthTem, yearTem);
+        setEniUsers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const [isValid, setIsValid] = useState(false);
+
+  const handleInputChange = (e) => {
+    let value = e.target.value;
+
+    // Eliminar cualquier carácter que no sea número o guion
+    value = value.replace(/[^\d]/g, "");
+
+    // Insertar el guion después de cuatro dígitos (año)
+    if (value.length > 3 && value[4] !== "-") {
+      value = value.slice(0, 4) + "-" + value.slice(4);
+    }
+
+    // Limitar el tamaño máximo a 7 caracteres (AAAA-MM)
+    if (value.length > 7) {
+      value = value.slice(0, 7);
+    }
+
+    // Validar el año
+    const anio = value.slice(0, 4);
+    if (anio.length === 4) {
+      const anioNum = parseInt(anio, 10);
+      const anioActual = new Date().getFullYear();
+      if (anioNum < 1900 || anioNum > anioActual) {
+        // Año inválido
+        return;
+      }
+    }
+
+    // Validar el mes
+    const mes = value.slice(5);
+    if (mes.length === 2) {
+      const mesNum = parseInt(mes, 10);
+      if (mesNum < 1 || mesNum > 12) {
+        // Mes inválido
+        return;
+      }
+    }
+
+    setSelectedMonthYear(value);
+    const regex = /^\d{4}-(0[1-9]|1[0-2])$/;
+    setIsValid(regex.test(value));
+  };
+
   const handleEdit = (id) => {
     const user = eniUsers.find((user) => user.id === id);
     if (user) {
       const funAdmiRol = getFunAdmiRol(user.fun_admi_rol);
       setFormData(getFormData(user, funAdmiRol));
-      setVariableEstado(getVariableEstado());
       setBotonEstado({ btnBuscar: true });
       setIsEditing(true);
     }
@@ -84,10 +153,10 @@ const TablaTemprano = ({
   const handleDeleteError = (error) => {
     let errorMessage = "Hubo un error en la operación";
     if (error.response) {
-      if (error.response.data && error.response.data.error) {
+      if (error.response?.data?.error) {
         setError(error.response.data.error);
         errorMessage = error.response.data.error;
-      } else if (error.response.data && error.response.data.message) {
+      } else if (error.response?.data?.message) {
         setError(error.response.data.message);
         errorMessage = error.response.data.message;
       } else {
@@ -136,205 +205,221 @@ const TablaTemprano = ({
     fun_esta: user.fun_esta === 1 ? 1 : 0,
   });
 
-  const getVariableEstado = () => ({
-    fun_tipo_iden: true,
-    username: true,
-    first_name: true,
-    last_name: true,
-    fun_sex: false,
-    email: false,
-    fun_titu: false,
-    password1: true,
-    password2: true,
-    fun_admi_rol: false,
-    uni_unic: false,
-    fun_esta: false,
-  });
-
   return (
-    <div className="flex flex-col">
-      <div className="overflow-x-auto">
-        <div className="inline-block min-w-full py-2">
-          <div className="overflow-hidden">
-            <table className="min-w-full text-xs text-left text-gray-100 dark:text-gray-800">
-              <thead className="text-center text-gray-100 bg-gray-50 dark:bg-gray-100 dark:text-gray-100 tracking-tighter border-2">
-                <tr>
-                  {[
-                    "Acciones",
-                    "Fecha de registro",
-                    "Intramural ",
-                    "Extramural MIES CNH",
-                    "Extramural MIES CIBV",
-                    "Extramural MINEDUC E. General Básica",
-                    "Extramural MINEDUC Bachillerato",
-                    "Extramural VISITAS DOMICILIARIAS ",
-                    "Extramural ATENCIÓN COMUNITARIA ",
-                    "OTROS ",
-                    "Sexo Hombre",
-                    "Sexo Mujer",
-                    "LUGAR DE RESIDENCIA HABITULA Pertenece al establecimiento de salud ",
-                    "LUGAR DE RESIDENCIA HABITULA No pertenece al establecimiento de salud ",
-                    "Nacionalidad Ecuatoriana ",
-                    "Nacionalidad Colombiano ",
-                    "Nacionalidad Peruano ",
-                    "Nacionalidad Cubano ",
-                    "Nacionalidad Venezolano ",
-                    "Nacionalidad Otros ",
-                    "Autoidentificación étnica Indigena ",
-                    "Autoidentificación étnica Afro ecuatoriano/ Afro descendiente ",
-                    "Autoidentificación étnica Negro/a ",
-                    "Autoidentificación étnica Mulato/a ",
-                    "Autoidentificación étnica Montubio/a ",
-                    "Autoidentificación étnica Mestizo/a ",
-                    "Autoidentificación étnica Blanco/a ",
-                    "Autoidentificación étnica Otro ",
-                    "NACIONALIDAD ETNICA Achuar ",
-                    "NACIONALIDAD ETNICA Andoa ",
-                    "NACIONALIDAD ETNICA Awa ",
-                    "NACIONALIDAD ETNICA Chachi ",
-                    "NACIONALIDAD ETNICA Cofan ",
-                    "NACIONALIDAD ETNICA Epera ",
-                    "NACIONALIDAD ETNICA Huancavilca ",
-                    "NACIONALIDAD ETNICA Kichwa ",
-                    "NACIONALIDAD ETNICA Manta ",
-                    "NACIONALIDAD ETNICA Secoya ",
-                    "NACIONALIDAD ETNICA Shiwiar ",
-                    "NACIONALIDAD ETNICA Shuar ",
-                    "NACIONALIDAD ETNICA Siona ",
-                    "NACIONALIDAD ETNICA Tsáchila ",
-                    "NACIONALIDAD ETNICA Waorani ",
-                    "NACIONALIDAD ETNICA Zapara ",
-                    "PUEBLOS Chibuleo ",
-                    "PUEBLOS Kañari ",
-                    "PUEBLOS Karanki ",
-                    "PUEBLOS Kayambi ",
-                    "PUEBLOS Kichwa Amazónico ",
-                    "PUEBLOS Kisapincha ",
-                    "PUEBLOS Kitukara ",
-                    "PUEBLOS Natabuela ",
-                    "PUEBLOS Otavalo ",
-                    "PUEBLOS Paltas ",
-                    "PUEBLOS Panzaleo ",
-                    "PUEBLOS Pastos ",
-                    "PUEBLOS Puruha ",
-                    "PUEBLOS Salasaka ",
-                    "PUEBLOS Saraguro ",
-                    "PUEBLOS Tomabela ",
-                    "PUEBLOS Waramka ",
-                    "(0 a 11 meses) Dosis única BCG primeras 24 horas de nacido",
-                    "(0 a 11 meses) Dosis única HB primeras 24 horas de nacido",
-                    "(0 a 11 meses) Dosis única *BCG desde el 2do día de nacido hasta los 364 días (Tardía)",
-                    "(0 a 11 meses) 1ra Dosis Rotavirus",
-                    "(0 a 11 meses) 1ra Dosis fIPV",
-                    "(0 a 11 meses) 1ra Dosis Neumococo",
-                    "(0 a 11 meses) 1ra Dosis Pentavalente",
-                    "(0 a 11 meses) 2da Dosis Rotavirus",
-                    "(0 a 11 meses) 2da Dosis fIPV",
-                    "(0 a 11 meses) 2da Dosis Neumococo",
-                    "(0 a 11 meses) 2da Dosis Pentavalente",
-                    "(0 a 11 meses) 3ra Dosis bOPV",
-                    "(0 a 11 meses) 3ra Dosis Neumococo",
-                    "(0 a 11 meses) 3ra Dosis Pentavalente",
-                    "12 a 23 meses 1ra Dosis SRP",
-                    "12 a 23 meses Dosis única FA",
-                    "12 a 23 meses Dosis única Varicela",
-                    "12 a 23 meses 2da Dosis SRP",
-                    "12 a 23 meses 4ta Dosis bOPV",
-                    "12 a 23 meses 4ta Dosis DPT",
-                    "5 años 5ta Dosis bOPV",
-                    "5 años 5ta Dosis DPT",
-                    "9 AÑOS (NIÑAS) 1ra Dosis HPV",
-                    "9 AÑOS (NIÑAS) 2da Dosis HPV",
-                    "10 Años (NIÑAS) 2da Dosis HPV",
-                    "15 años Tercer Refuerzo dT adulto",
-                    "idUser",
-                  ].map((header) => (
-                    <th
-                      key={header}
-                      className="px-1 py- text-gray-900 border-x-2"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white border">
-                {Array.isArray(currentRows) && currentRows.length > 0 ? (
-                  currentRows.map((registro) => (
-                    <tr key={registro.id}>
-                      <td className="whitespace-nowrap px-1 py-1 border">
-                        {registro.tem_tota ? (
-                          "Total"
-                        ) : (
-                          <>
-                            <button
-                              className="mr-2 cursor-pointer"
-                              onClick={() => handleEdit(registro.id)}
-                              tabIndex={0}
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              className="cursor-pointer"
-                              onClick={() => handleDelete(registro.id)}
-                              tabIndex={0}
-                            >
-                              <FaTrash />
-                            </button>
-                          </>
-                        )}
-                      </td>
-                      {Object.keys(registro)
-                        .filter((key) => key !== "id" && key !== "tem_tota")
-                        .map((key) => {
-                          let cellContent = registro[key];
-                          return (
-                            <td
-                              key={key}
-                              className="whitespace-nowrap px-1 py-1 border"
-                            >
-                              {cellContent}
-                            </td>
-                          );
-                        })}
-                    </tr>
-                  ))
-                ) : (
+    <div className="container">
+      <div className="flex items-center justify-center">
+        <input
+          type="month"
+          id="mesAnioTem"
+          name="mesAnioTem"
+          placeholder="AAAA-MM"
+          value={selectedMonthYear}
+          maxLength="7"
+          className={`${inputStyle} w-28`}
+          onChange={handleInputChange}
+        />
+        <button
+          type="button"
+          id="btnBuscarTem"
+          name="btnBuscarTem"
+          className={`${buttonStylePrimario} ${
+            !isValid
+              ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+              : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+          }`}
+          onClick={handleSearch}
+          disabled={!isValid}
+        >
+          Buscar
+        </button>
+      </div>
+      <div className="flex flex-col">
+        <div className="overflow-x-auto">
+          <div className="inline-block min-w-full py-2">
+            <div className="overflow-hidden">
+              <table className="min-w-full text-xs text-left text-gray-100 dark:text-gray-800">
+                <thead className="text-center text-gray-100 bg-gray-50 dark:bg-gray-100 dark:text-gray-100 tracking-tighter border-2">
                   <tr>
-                    <td colSpan="100%">No hay datos disponibles</td>
+                    {[
+                      "Acciones",
+                      "Fecha de registro",
+                      "Intramural ",
+                      "Extramural MIES CNH",
+                      "Extramural MIES CIBV",
+                      "Extramural MINEDUC E. General Básica",
+                      "Extramural MINEDUC Bachillerato",
+                      "Extramural VISITAS DOMICILIARIAS ",
+                      "Extramural ATENCIÓN COMUNITARIA ",
+                      "OTROS ",
+                      "Sexo Hombre",
+                      "Sexo Mujer",
+                      "LUGAR DE RESIDENCIA HABITULA Pertenece al establecimiento de salud ",
+                      "LUGAR DE RESIDENCIA HABITULA No pertenece al establecimiento de salud ",
+                      "Nacionalidad Ecuatoriana ",
+                      "Nacionalidad Colombiano ",
+                      "Nacionalidad Peruano ",
+                      "Nacionalidad Cubano ",
+                      "Nacionalidad Venezolano ",
+                      "Nacionalidad Otros ",
+                      "Autoidentificación étnica Indigena ",
+                      "Autoidentificación étnica Afro ecuatoriano/ Afro descendiente ",
+                      "Autoidentificación étnica Negro/a ",
+                      "Autoidentificación étnica Mulato/a ",
+                      "Autoidentificación étnica Montubio/a ",
+                      "Autoidentificación étnica Mestizo/a ",
+                      "Autoidentificación étnica Blanco/a ",
+                      "Autoidentificación étnica Otro ",
+                      "NACIONALIDAD ETNICA Achuar ",
+                      "NACIONALIDAD ETNICA Andoa ",
+                      "NACIONALIDAD ETNICA Awa ",
+                      "NACIONALIDAD ETNICA Chachi ",
+                      "NACIONALIDAD ETNICA Cofan ",
+                      "NACIONALIDAD ETNICA Epera ",
+                      "NACIONALIDAD ETNICA Huancavilca ",
+                      "NACIONALIDAD ETNICA Kichwa ",
+                      "NACIONALIDAD ETNICA Manta ",
+                      "NACIONALIDAD ETNICA Secoya ",
+                      "NACIONALIDAD ETNICA Shiwiar ",
+                      "NACIONALIDAD ETNICA Shuar ",
+                      "NACIONALIDAD ETNICA Siona ",
+                      "NACIONALIDAD ETNICA Tsáchila ",
+                      "NACIONALIDAD ETNICA Waorani ",
+                      "NACIONALIDAD ETNICA Zapara ",
+                      "PUEBLOS Chibuleo ",
+                      "PUEBLOS Kañari ",
+                      "PUEBLOS Karanki ",
+                      "PUEBLOS Kayambi ",
+                      "PUEBLOS Kichwa Amazónico ",
+                      "PUEBLOS Kisapincha ",
+                      "PUEBLOS Kitukara ",
+                      "PUEBLOS Natabuela ",
+                      "PUEBLOS Otavalo ",
+                      "PUEBLOS Paltas ",
+                      "PUEBLOS Panzaleo ",
+                      "PUEBLOS Pastos ",
+                      "PUEBLOS Puruha ",
+                      "PUEBLOS Salasaka ",
+                      "PUEBLOS Saraguro ",
+                      "PUEBLOS Tomabela ",
+                      "PUEBLOS Waramka ",
+                      "(0 a 11 meses) Dosis única BCG primeras 24 horas de nacido",
+                      "(0 a 11 meses) Dosis única HB primeras 24 horas de nacido",
+                      "(0 a 11 meses) Dosis única *BCG desde el 2do día de nacido hasta los 364 días (Tardía)",
+                      "(0 a 11 meses) 1ra Dosis Rotavirus",
+                      "(0 a 11 meses) 1ra Dosis fIPV",
+                      "(0 a 11 meses) 1ra Dosis Neumococo",
+                      "(0 a 11 meses) 1ra Dosis Pentavalente",
+                      "(0 a 11 meses) 2da Dosis Rotavirus",
+                      "(0 a 11 meses) 2da Dosis fIPV",
+                      "(0 a 11 meses) 2da Dosis Neumococo",
+                      "(0 a 11 meses) 2da Dosis Pentavalente",
+                      "(0 a 11 meses) 3ra Dosis bOPV",
+                      "(0 a 11 meses) 3ra Dosis Neumococo",
+                      "(0 a 11 meses) 3ra Dosis Pentavalente",
+                      "12 a 23 meses 1ra Dosis SRP",
+                      "12 a 23 meses Dosis única FA",
+                      "12 a 23 meses Dosis única Varicela",
+                      "12 a 23 meses 2da Dosis SRP",
+                      "12 a 23 meses 4ta Dosis bOPV",
+                      "12 a 23 meses 4ta Dosis DPT",
+                      "5 años 5ta Dosis bOPV",
+                      "5 años 5ta Dosis DPT",
+                      "9 AÑOS (NIÑAS) 1ra Dosis HPV",
+                      "9 AÑOS (NIÑAS) 2da Dosis HPV",
+                      "10 Años (NIÑAS) 2da Dosis HPV",
+                      "15 años Tercer Refuerzo dT adulto",
+                      "idUser",
+                    ].map((header) => (
+                      <th
+                        key={header}
+                        className="px-1 py- text-gray-900 border-x-2"
+                      >
+                        {header}
+                      </th>
+                    ))}
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white border">
+                  {Array.isArray(currentRows) && currentRows.length > 0 ? (
+                    currentRows.map((registro) => (
+                      <tr key={registro.id}>
+                        <td className="whitespace-nowrap px-1 py-1 border">
+                          {registro.tem_tota ? (
+                            "Total"
+                          ) : (
+                            <>
+                              <button
+                                className="mr-2 cursor-pointer"
+                                onClick={() => handleEdit(registro.id)}
+                                tabIndex={0}
+                              >
+                                <FaEdit />
+                              </button>
+                              <button
+                                className="cursor-pointer"
+                                onClick={() => handleDelete(registro.id)}
+                                tabIndex={0}
+                              >
+                                <FaTrash />
+                              </button>
+                            </>
+                          )}
+                        </td>
+                        {Object.keys(registro)
+                          .filter((key) => key !== "id" && key !== "tem_tota")
+                          .map((key) => {
+                            let cellContent = registro[key];
+                            return (
+                              <td
+                                key={key}
+                                className="whitespace-nowrap px-1 py-1 border"
+                              >
+                                {cellContent}
+                              </td>
+                            );
+                          })}
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="100%">No hay datos disponibles</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="flex justify-between mt-4">
-        <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-        >
-          Anterior
-        </button>
-        <span>
-          Página {currentPage} de {totalPages}
-        </span>
-        <button
-          onClick={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-          }
-          disabled={currentPage === totalPages}
-          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-        >
-          Siguiente
-        </button>
+        <div className="flex justify-between mt-4">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span>
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 TablaTemprano.propTypes = {
   setFormData: PropTypes.func.isRequired,
+  storedUserId: PropTypes.number.isRequired,
+  yearTem: PropTypes.number.isRequired,
+  monthTem: PropTypes.number.isRequired,
   setBotonEstado: PropTypes.func.isRequired,
   setIsEditing: PropTypes.func.isRequired,
   setIsLoading: PropTypes.func.isRequired,

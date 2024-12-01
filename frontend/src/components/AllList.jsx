@@ -5103,3 +5103,21 @@ export const listaUnidadesSalud = {
   "002900": "002900 CENTRO DE SALUD DE ARENILLAS",
   "050748": "050748 PUESTO DE VIGILANCIA HUAQUILLAS",
 };
+
+export const listaTipoTitu = [
+  { value: "BIOQUÍMICO MÉDICO/A", label: "BQ." },
+  { value: "DOCTOR/A", label: "Dr./a" },
+  { value: "DOCTOR/A - (RURAL)", label: "Dr./a (Rural)" },
+  { value: "ESPECIALISTA", label: "Eps." },
+  { value: "LICENCIADO EN ENFERMERÍA", label: "Lic." },
+  { value: "LICENCIADO EN ENFERMERÍA - (RURAL)", label: "Lic. (Rural)" },
+  { value: "MÉDICO GENERAL/A", label: "Med./a" },
+  { value: "MÉDICO GENERAL/A - (RURAL)", label: "Med./a  (Rural)" },
+  { value: "OBSTETRICIA", label: "Obst." },
+  { value: "OBSTETRICIA - (RURAL)", label: "Obst.  (Rural)" },
+  { value: "ODONTÓLOGO/A", label: "Odont./a" },
+  { value: "ODONTÓLOGO/A - (RURAL)", label: "Odont./a  (Rural)" },
+  { value: "PSICÓLOGO CLÍNICO/A", label: "Psic./a" },
+  { value: "PSICÓLOGO CLÍNICO/A - (RURAL)", label: "Psic./a  (Rural)" },
+  { value: "OTROS/A", label: "Sr./a" },
+];

@@ -129,9 +129,8 @@ const AdminUser = () => {
       }
       window.location.reload("/admin-user/");
     } catch (error) {
-      let errorMessage = "Hubo un error en la operación";
       const getErrorMessage = (error) => {
-        if (error.response && error.response.data) {
+        if (error.response?.data) {
           const data = error.response.data;
           if (typeof data === "object") {
             const firstKey = Object.keys(data)[0];
@@ -155,6 +154,7 @@ const AdminUser = () => {
         }
         return "Error desconocido";
       };
+      let errorMessage = "Hubo un error en la operación";
       errorMessage = getErrorMessage(error);
       setError(errorMessage);
       toast.error(errorMessage, { position: "bottom-right" });
@@ -193,10 +193,10 @@ const AdminUser = () => {
     } catch (error) {
       let errorMessage = "Hubo un error en la operación";
       if (error.response) {
-        if (error.response.data && error.response.data.error) {
+        if (error.response?.data?.error) {
           setError(error.response.data.error);
           errorMessage = error.response.data.error;
-        } else if (error.response.data && error.response.data.message) {
+        } else if (error.response?.data?.message) {
           setError(error.response.data.message);
           errorMessage = error.response.data.message;
         } else {

@@ -1,5 +1,5 @@
 import "./App.css";
-import "./index.css";
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Navigation } from "./components/Navigation.jsx";
 import Home from "./pages/Home.jsx";
@@ -11,11 +11,12 @@ import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
+import { AuthProvider } from "./components/AuthContext.jsx";
 import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
-    <BrowserRouter>
+    <AuthProvider>
       <div className="container mx-auto">
         <Navigation />
         <div className="mt-24">
@@ -40,7 +41,7 @@ function App() {
         </div>
         <Toaster />
       </div>
-    </BrowserRouter>
+    </AuthProvider>
   );
 }
 

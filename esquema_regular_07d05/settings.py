@@ -111,7 +111,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'es-ec'
 
-TIME_ZONE = 'UTC-5'
+TIME_ZONE = 'America/New_York'
 
 USE_I18N = True
 
@@ -147,7 +147,7 @@ SIMPLE_JWT = {
 
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
-    "VERIFYING_KEY": "",
+    "VERIFYING_KEY": None,
     "AUDIENCE": None,
     "ISSUER": None,
     "JSON_ENCODER": None,

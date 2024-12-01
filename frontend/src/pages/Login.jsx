@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../api/conexion.api.js";
 import PropTypes from "prop-types";
+import { AuthContext } from "../components/AuthContext.jsx";
 import { toast } from "react-hot-toast";
 
 const InputField = ({
   label,
   type,
   name,
+  id,
   value,
   onChange,
   placeholder,
@@ -20,6 +22,21 @@ const InputField = ({
       value ? "border-blue-500" : ""
     } focus-within:border-blue-500`}
   >
+    <input
+      type={type}
+      name={name}
+      id={name}
+      value={value}
+      onChange={onChange}
+      className="py-1 px-1 w-full text-base text-black bg-transparent focus:outline-none peer"
+      placeholder=" "
+    />
+    <label
+      htmlFor={name}
+      className="absolute left-2 text-sm text-gray-700 duration-300 transform -translate-y-4 scale-90 top-3 origin-[1] bg-gray-100 px-1 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1 peer-focus:scale-75 peer-focus:-translate-y-4"
+    >
+      {label}
+    </label>
     {icon &&
       (isButtonIcon ? (
         <button
@@ -32,20 +49,6 @@ const InputField = ({
       ) : (
         <span className="bg-gray-300 p-2 text-gray-500 text-lg">{icon}</span>
       ))}
-    <input
-      type={type}
-      name={name}
-      value={value}
-      onChange={onChange}
-      className="py-3 px-3 w-full text-sm text-black bg-transparent focus:outline-none peer"
-      placeholder=" "
-    />
-    <label
-      htmlFor={name}
-      className="absolute left-12 text-sm text-gray-700 duration-300 transform -translate-y-4 scale-90 top-3 origin-[0] bg-gray-100 px-1 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-2 peer-focus:scale-75 peer-focus:-translate-y-4"
-    >
-      {label}
-    </label>
   </div>
 );
 
@@ -53,6 +56,7 @@ InputField.propTypes = {
   label: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
+  id: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
@@ -76,6 +80,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const { setAuthData } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -93,25 +98,48 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLoading) return;
-    setIsLoading(true);
     try {
       const data = await loginUser(formData);
+      setAuthData({
+        isLoggedIn: true,
+        user: data, // Actualiza el contexto con los datos del usuario
+      });
       setSuccessMessage("Login con éxito!");
       toast.success("Login con éxito!", { position: "bottom-right" });
+      navigate("/"); // Redirige a la página deseada
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.[Object.keys(error.response.data)[0]]?.[0] ||
-        "Error durante el Login!";
-      setErrorMessage(errorMessage);
-      toast.error(errorMessage, { position: "bottom-right" });
+      let errorMsg = "Hubo un error en la operación";
+      if (error.response) {
+        const data = error.response.data;
+        //console.log("Datos de error:", data);
+        if (data.error && Array.isArray(data.error)) {
+          setErrorMessage(data.error[0]);
+          errorMsg = data.error[0];
+        } else if (Array.isArray(data)) {
+          setErrorMessage(data[0]);
+          errorMsg = data[0];
+        } else if (data.error) {
+          setErrorMessage(data.error);
+          errorMsg = data.error;
+        } else if (data.message) {
+          setErrorMessage(data.message);
+          errorMsg = data.message;
+        } else {
+          setErrorMessage("Error del servidor");
+        }
+      } else if (error.request) {
+        setErrorMessage("No se recibió respuesta del servidor");
+      } else {
+        setErrorMessage("Error desconocido");
+      }
+      toast.error(errorMsg, { position: "bottom-right" });
     } finally {
       setIsLoading(false);
     }
   };
 
   const labelMap = {
-    username: "Cedula de Identidad",
+    username: "Cédula de Identificación",
     password: "Clave de acceso",
   };
 
@@ -128,9 +156,11 @@ export default function Login() {
           <h2 className="text-2xl font-semibold text-center mb-6">Login</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <InputField
+              htmlFor="username"
               label={labelMap["username"]}
               type="text"
               name="username"
+              id="username"
               value={formData.username}
               onChange={handleChange}
               placeholder="Cedula de Identidad"
@@ -138,9 +168,11 @@ export default function Login() {
               isButtonIcon={false}
             />
             <InputField
+              htmlFor="password"
               label={labelMap["password"]}
               type={showPassword ? "text" : "password"}
               name="password"
+              id="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="Contraseña"

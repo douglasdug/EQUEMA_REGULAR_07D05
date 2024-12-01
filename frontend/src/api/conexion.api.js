@@ -1,89 +1,111 @@
 import axios from "axios";
-
 const API_URL = "http://localhost:8000/api/v1";
 
+// Funciones auxiliares para manejar tokens y almacenamiento local
+const getAccessToken = () => localStorage.getItem("accessToken");
+const getRefreshToken = () => {
+  return localStorage.getItem("refreshToken");
+};
+const setTokens = (access, refresh) => {
+  localStorage.setItem("accessToken", access);
+  localStorage.setItem("refreshToken", refresh);
+};
+const setUserId = (userId) => {
+  localStorage.setItem("userId", userId);
+};
+const clearAuthData = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userId");
+};
+
 // Función para obtener los encabezados de autenticación
-const getAuthHeaders = () => {
+export const getAuthHeaders = () => {
   const token = localStorage.getItem("accessToken");
   return {
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   };
 };
 
-// Funciones para los Usuarios
-export const getUser = async (token) => {
+// Refrescar el token de acceso
+const refreshAccessToken = async () => {
   try {
-    const response = await axios.get(`${API_URL}/user/`, getAuthHeaders());
-    return response.data;
-  } catch (error) {
-    if (error.response && error.response.data.code === "token_not_valid") {
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (refreshToken) {
-        const newAccessToken = await refreshAccessToken(refreshToken);
-        if (newAccessToken) {
-          localStorage.setItem("accessToken", newAccessToken);
-          const retryResponse = await axios.get(
-            `${API_URL}/user/`,
-            getAuthHeaders()
-          );
-          return retryResponse.data;
-        }
-      }
-    }
-    throw error;
-  }
-};
-
-const refreshAccessToken = async (refreshToken) => {
-  try {
+    const refreshToken = getRefreshToken();
     const response = await axios.post(`${API_URL}/token/refresh/`, {
       refresh: refreshToken,
     });
-    return response.data.access;
+    localStorage.setItem("accessToken", response.data.access);
   } catch (error) {
     console.error(
-      "Error refreshing access token:",
+      "Error al refrescar el token de acceso:",
       error.response ? error.response.data : error.message
     );
-    return null;
+    clearAuthData();
+    throw error;
   }
 };
 
-export const logoutUser = async (accessToken, refreshToken) => {
-  if (!accessToken || !refreshToken) {
-    throw new Error("Access token and refresh token are required");
-  }
-
-  const config = {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  };
-
+// Obtener información del usuario
+export const getUser = async () => {
   try {
-    const response = await axios.post(
-      `${API_URL}/logout/`,
-      { refresh: refreshToken },
-      config
-    );
+    const response = await axios.get(`${API_URL}/user/`, getAuthHeaders());
+    return response.data; // Devuelve los datos del usuario
+  } catch (error) {
+    console.error("Error al obtener el usuario:");
+    throw error;
+  }
+};
+
+// Iniciar sesión del usuario
+export const loginUser = async (formData) => {
+  try {
+    const response = await axios.post(`${API_URL}/login/`, formData);
+    const { id } = response.data;
+    const { access, refresh } = response.data.tokens;
+    if (!access || !refresh || !id) {
+      throw new Error("Datos de respuesta incompletos");
+    }
+    setTokens(access, refresh);
+    setUserId(response.data.id); // Si necesitas almacenar el ID
     return response.data;
   } catch (error) {
     console.error(
-      "Error logging out user:",
+      "Error al iniciar sesión:",
       error.response ? error.response.data : error.message
     );
     throw error;
   }
 };
 
-export const loginUser = async (formData) => {
-  const response = await axios.post(`${API_URL}/login/`, formData);
-  const { access, refresh } = response.data.tokens;
-  localStorage.setItem("accessToken", access);
-  localStorage.setItem("refreshToken", refresh);
-  return response.data;
+// Cerrar sesión del usuario
+export const logoutUser = async () => {
+  try {
+    const accessToken = getAccessToken();
+    const refreshToken = getRefreshToken();
+
+    if (!accessToken || !refreshToken) {
+      throw new Error("Se requieren tokens de acceso y refresco");
+    }
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    await axios.post(`${API_URL}/logout/`, { refresh: refreshToken }, config);
+    clearAuthData();
+  } catch (error) {
+    console.error(
+      "Error al cerrar sesión:",
+      error.response ? error.response.data : error.message
+    );
+    clearAuthData();
+    throw error;
+  }
 };
 
 export const registerUser = async (formData) => {
@@ -197,9 +219,11 @@ export const buscarUsuarioAdmision = async (tipo, identificacion) => {
 };
 
 //Funciones de Temprano
-export const getMesTemprano = async () => {
+export const getMesTemprano = async (user_id, month, year) => {
   try {
-    const response = await axios.get(`${API_URL}/temprano/`);
+    const response = await axios.get(`${API_URL}/temprano/`, {
+      params: { user_id, month, year },
+    });
     return response.data;
   } catch (error) {
     console.error(

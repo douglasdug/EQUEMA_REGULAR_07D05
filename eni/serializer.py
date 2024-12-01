@@ -56,13 +56,13 @@ class UserLoginSerializer(serializers.Serializer):
                 'request'), username=username, password=password)
             if not user:
                 raise serializers.ValidationError(
-                    'No se puede iniciar sesión con las credenciales proporcionadas!.', code='authorization')
+                    {"error": "No se puede iniciar sesión con las credenciales proporcionadas revisar Identificacion o Clave!"}, code='authorization')
             if user.fun_esta != 1:
                 raise serializers.ValidationError(
-                    'Su cuenta aún no ha sido activada. Por favor, contacte al administrador para completar el proceso de activación!', code='authorization')
+                    {"error": "Su cuenta aún no ha sido activada. Por favor, contacte al administrador para completar el proceso de activación!"}, code='authorization')
         else:
             raise serializers.ValidationError(
-                'Debe incluir "username" y "password"!', code='authorization')
+                {"error": 'Debe incluir "username" y "password"!'}, code='authorization')
 
         data['user'] = user
         return data
