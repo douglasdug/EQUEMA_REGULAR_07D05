@@ -115,7 +115,10 @@ const CreateTemprano = () => {
   const [error, setError] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isInputEstado, setIsInputEstado] = useState({
+    input: false,
+    tem_fech: false,
+  });
 
   const [botonEstado, setBotonEstado] = useState({
     btnBuscar: true,
@@ -125,14 +128,8 @@ const CreateTemprano = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const resValidarRegistro = validarRegistro(
-      formData,
-      setError,
-      setBotonEstado
-    );
-    setBotonEstado((prevState) => ({
-      btnRegistrarTem: false,
-    }));
+    const resValidarRegistro = validarRegistro(formData, setError);
+
     if (isLoading) return;
     setIsLoading(true);
     setError({});
@@ -187,6 +184,47 @@ const CreateTemprano = () => {
       };
       errorMessage = getErrorMessage(error);
       setError(errorMessage);
+      toast.error(errorMessage, { position: "bottom-right" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    const confirmDelete = window.confirm(
+      `¿Estás seguro de que deseas eliminar este registro?\n\nFecha: ${formData.tem_fech}`
+    );
+    if (!confirmDelete) return;
+
+    setIsLoading(true);
+    try {
+      const response = await deleteUser(formData.username);
+      setSuccessMessage("Registro eliminado con éxito!");
+      const message = response.message || "Registro eliminado con éxito!";
+      toast.success(message, {
+        position: "bottom-right",
+      });
+      window.location.reload("/create-temprano/");
+    } catch (error) {
+      let errorMessage = "Hubo un error en la operación";
+      if (error.response) {
+        if (error.response?.data?.error) {
+          setError(error.response.data.error);
+          errorMessage = error.response.data.error;
+        } else if (error.response?.data?.message) {
+          setError(error.response.data.message);
+          errorMessage = error.response.data.message;
+        } else {
+          setError("Error del servidor");
+        }
+      } else if (error.request) {
+        setError("No se recibió respuesta del servidor");
+      } else {
+        setError("Error desconocido");
+      }
       toast.error(errorMessage, { position: "bottom-right" });
     } finally {
       setIsLoading(false);
@@ -400,12 +438,19 @@ const CreateTemprano = () => {
       btnLimpiar: false,
       btnRegistrarTem: false,
     });
-    setIsEditing(false);
+    setIsInputEstado({
+      input: false,
+    });
   };
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    const resValidarRegistro = validarRegistro(formData);
+    setBotonEstado({
+      btnRegistrarTem: !resValidarRegistro.success,
+    });
+  }, [formData]);
 
-  const buttonText = isEditing ? "Actualizar Registro" : "Registrar";
+  const buttonText = isInputEstado.input ? "Actualizar Registro" : "Registrar";
 
   return (
     <div className="container">
@@ -540,7 +585,12 @@ const CreateTemprano = () => {
                           value={formData[key]}
                           onChange={handleChange}
                           placeholder="Información es requerida"
-                          className={`${inputStyle}`}
+                          className={`${inputStyle} ${
+                            isInputEstado[key]
+                              ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                              : "bg-white text-gray-700 cursor-pointer"
+                          }`}
+                          disabled={isInputEstado[key]}
                           min="0"
                           max=""
                           required
@@ -576,7 +626,7 @@ const CreateTemprano = () => {
             >
               Limpiar
             </button>
-            {isEditing && (
+            {isInputEstado.input && (
               <button
                 type="button"
                 id="btnEliminar"
@@ -597,7 +647,7 @@ const CreateTemprano = () => {
           yearTem={parseInt(yearTem)}
           monthTem={parseInt(monthTem)}
           setBotonEstado={setBotonEstado}
-          setIsEditing={setIsEditing}
+          setIsInputEstado={setIsInputEstado}
           setIsLoading={setIsLoading}
           setSuccessMessage={setSuccessMessage}
           setError={setError}

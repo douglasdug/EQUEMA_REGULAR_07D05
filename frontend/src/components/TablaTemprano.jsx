@@ -3,12 +3,59 @@ import PropTypes from "prop-types";
 import { getMesTemprano, deleteTemprano } from "../api/conexion.api.js";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import {
-  inputStyle,
   buttonStylePrimario,
   buttonStyleSecundario,
   buttonStyleEliminar,
 } from "../components/EstilosCustom.jsx";
 import { toast } from "react-hot-toast";
+
+const InputField = ({
+  label,
+  type,
+  name,
+  id,
+  value,
+  onChange,
+  placeholder,
+  icon,
+  onIconClick,
+  isButtonIcon,
+}) => (
+  <div
+    className={`flex items-center border-2 rounded-md overflow-hidden relative mb-0 ${
+      value ? "border-blue-500" : ""
+    } focus-within:border-blue-500`}
+  >
+    <input
+      type={type}
+      name={name}
+      id={id}
+      value={value}
+      onChange={onChange}
+      className="py-2 px-1 w-24 text-base text-black bg-transparent focus:outline-none peer"
+      placeholder={placeholder}
+    />
+    <label
+      htmlFor={name}
+      className="absolute left-2 text-sm text-gray-700 duration-300 transform -translate-y-4 scale-90 top-3 origin-[1] bg-gray-100 px-1 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1 peer-focus:scale-75 peer-focus:-translate-y-4"
+    >
+      {label}
+    </label>
+  </div>
+);
+
+InputField.propTypes = {
+  label: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  id: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  icon: PropTypes.node,
+  onIconClick: PropTypes.func,
+  isButtonIcon: PropTypes.bool,
+};
 
 const TablaTemprano = ({
   setFormData,
@@ -16,7 +63,7 @@ const TablaTemprano = ({
   yearTem,
   monthTem,
   setBotonEstado,
-  setIsEditing,
+  setIsInputEstado,
   setIsLoading,
   setSuccessMessage,
   setError,
@@ -54,8 +101,7 @@ const TablaTemprano = ({
     if (selectedMonthYear) {
       const [yearTem, monthTem] = selectedMonthYear.split("-");
       try {
-        console.log("yearTem", yearTem, "monthTem", monthTem);
-        //const data = await getMesTemprano(storedUserId, monthTem, yearTem);
+        const data = await getMesTemprano(storedUserId, monthTem, yearTem);
         setEniUsers(Array.isArray(data) ? data : []);
       } catch (error) {
         setError(error.message);
@@ -65,22 +111,18 @@ const TablaTemprano = ({
 
   const [isValid, setIsValid] = useState(false);
 
-  const handleInputChange = (e) => {
+  const valRegAnoMes = (e) => {
     let value = e.target.value;
-
     // Eliminar cualquier carácter que no sea número o guion
     value = value.replace(/[^\d]/g, "");
-
     // Insertar el guion después de cuatro dígitos (año)
     if (value.length > 3 && value[4] !== "-") {
       value = value.slice(0, 4) + "-" + value.slice(4);
     }
-
     // Limitar el tamaño máximo a 7 caracteres (AAAA-MM)
     if (value.length > 7) {
       value = value.slice(0, 7);
     }
-
     // Validar el año
     const anio = value.slice(0, 4);
     if (anio.length === 4) {
@@ -91,7 +133,6 @@ const TablaTemprano = ({
         return;
       }
     }
-
     // Validar el mes
     const mes = value.slice(5);
     if (mes.length === 2) {
@@ -101,7 +142,6 @@ const TablaTemprano = ({
         return;
       }
     }
-
     setSelectedMonthYear(value);
     const regex = /^\d{4}-(0[1-9]|1[0-2])$/;
     setIsValid(regex.test(value));
@@ -110,10 +150,12 @@ const TablaTemprano = ({
   const handleEdit = (id) => {
     const user = eniUsers.find((user) => user.id === id);
     if (user) {
-      const funAdmiRol = getFunAdmiRol(user.fun_admi_rol);
-      setFormData(getFormData(user, funAdmiRol));
-      setBotonEstado({ btnBuscar: true });
-      setIsEditing(true);
+      setFormData(getFormData(user));
+      setBotonEstado({ btnBuscarTabTem: true });
+      setIsInputEstado({
+        input: true,
+        tem_fech: true,
+      });
     }
   };
 
@@ -135,12 +177,12 @@ const TablaTemprano = ({
 
   const confirmDelete = (user) => {
     return window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${user.username}\nNombres: ${user.last_name} ${user.first_name}`
+      `¿Estás seguro de que deseas eliminar este registro?\n\Fecha: ${user.tem_fech}`
     );
   };
 
-  const deleteUserAndUpdateState = async (username, id) => {
-    const response = await deleteTemprano(username);
+  const deleteUserAndUpdateState = async (id) => {
+    const response = await deleteTemprano(id);
     setSuccessMessage("Registro eliminado con éxito!");
     const message = response.message || "Registro eliminado con éxito!";
     toast.success(message, {
@@ -170,58 +212,130 @@ const TablaTemprano = ({
     toast.error(errorMessage, { position: "bottom-right" });
   };
 
-  const getFunAdmiRol = (fun_admi_rol) => {
-    switch (fun_admi_rol) {
-      case 1:
-        return 1;
-      case 2:
-        return 2;
-      case 3:
-        return 3;
-      case 4:
-        return 4;
-      default:
-        return 0;
+  const getFormData = (user) => {
+    let formattedDate = "";
+    if (user.tem_fech) {
+      const [day, month, year] = user.tem_fech.split("/");
+      if (day && month && year) {
+        const date = new Date(year, parseInt(month) - 1, day);
+        if (!isNaN(date.getTime())) {
+          formattedDate = date.toISOString().split("T")[0];
+        } else {
+          formattedDate = ""; // O establece un valor predeterminado
+        }
+      } else {
+        formattedDate = ""; // O establece un valor predeterminado
+      }
     }
+    return {
+      tem_fech: formattedDate,
+      tem_intr: user.tem_intr || 0,
+      tem_extr_mies_cnh: user.tem_extr_mies_cnh || 0,
+      tem_extr_mies_cibv: user.tem_extr_mies_cibv || 0,
+      tem_extr_mine_egen: user.tem_extr_mine_egen || 0,
+      tem_extr_mine_bach: user.tem_extr_mine_bach || 0,
+      tem_extr_visi: user.tem_extr_visi || 0,
+      tem_extr_aten: user.tem_extr_aten || 0,
+      tem_otro: user.tem_otro || 0,
+      tem_sexo_homb: user.tem_sexo_homb || 0,
+      tem_sexo_muje: user.tem_sexo_muje || 0,
+      tem_luga_pert: user.tem_luga_pert || 0,
+      tem_luga_nope: user.tem_luga_nope || 0,
+      tem_naci_ecua: user.tem_naci_ecua || 0,
+      tem_naci_colo: user.tem_naci_colo || 0,
+      tem_naci_peru: user.tem_naci_peru || 0,
+      tem_naci_cuba: user.tem_naci_cuba || 0,
+      tem_naci_vene: user.tem_naci_vene || 0,
+      tem_naci_otro: user.tem_naci_otro || 0,
+      tem_auto_indi: user.tem_auto_indi || 0,
+      tem_auto_afro: user.tem_auto_afro || 0,
+      tem_auto_negr: user.tem_auto_negr || 0,
+      tem_auto_mula: user.tem_auto_mula || 0,
+      tem_auto_mont: user.tem_auto_mont || 0,
+      tem_auto_mest: user.tem_auto_mest || 0,
+      tem_auto_blan: user.tem_auto_blan || 0,
+      tem_auto_otro: user.tem_auto_otro || 0,
+      tem_naci_achu: user.tem_naci_achu || 0,
+      tem_naci_ando: user.tem_naci_ando || 0,
+      tem_naci_awa: user.tem_naci_awa || 0,
+      tem_naci_chac: user.tem_naci_chac || 0,
+      tem_naci_cofa: user.tem_naci_cofa || 0,
+      tem_naci_eper: user.tem_naci_eper || 0,
+      tem_naci_huan: user.tem_naci_huan || 0,
+      tem_naci_kich: user.tem_naci_kich || 0,
+      tem_naci_mant: user.tem_naci_mant || 0,
+      tem_naci_seco: user.tem_naci_seco || 0,
+      tem_naci_shiw: user.tem_naci_shiw || 0,
+      tem_naci_shua: user.tem_naci_shua || 0,
+      tem_naci_sion: user.tem_naci_sion || 0,
+      tem_naci_tsac: user.tem_naci_tsac || 0,
+      tem_naci_waor: user.tem_naci_waor || 0,
+      tem_naci_zapa: user.tem_naci_zapa || 0,
+      tem_pueb_chib: user.tem_pueb_chib || 0,
+      tem_pueb_kana: user.tem_pueb_kana || 0,
+      tem_pueb_kara: user.tem_pueb_kara || 0,
+      tem_pueb_kaya: user.tem_pueb_kaya || 0,
+      tem_pueb_kich: user.tem_pueb_kich || 0,
+      tem_pueb_kisa: user.tem_pueb_kisa || 0,
+      tem_pueb_kitu: user.tem_pueb_kitu || 0,
+      tem_pueb_nata: user.tem_pueb_nata || 0,
+      tem_pueb_otav: user.tem_pueb_otav || 0,
+      tem_pueb_palt: user.tem_pueb_palt || 0,
+      tem_pueb_panz: user.tem_pueb_panz || 0,
+      tem_pueb_past: user.tem_pueb_past || 0,
+      tem_pueb_puru: user.tem_pueb_puru || 0,
+      tem_pueb_sala: user.tem_pueb_sala || 0,
+      tem_pueb_sara: user.tem_pueb_sara || 0,
+      tem_pueb_toma: user.tem_pueb_toma || 0,
+      tem_pueb_wara: user.tem_pueb_wara || 0,
+      tem_men1_dosi_bcgp: user.tem_men1_dosi_bcgp || 0,
+      tem_men1_dosi_hbpr: user.tem_men1_dosi_hbpr || 0,
+      tem_men1_dosi_bcgd: user.tem_men1_dosi_bcgd || 0,
+      tem_men1_1rad_rota: user.tem_men1_1rad_rota || 0,
+      tem_men1_1rad_fipv: user.tem_men1_1rad_fipv || 0,
+      tem_men1_1rad_neum: user.tem_men1_1rad_neum || 0,
+      tem_men1_1rad_pent: user.tem_men1_1rad_pent || 0,
+      tem_men1_2dad_rota: user.tem_men1_2dad_rota || 0,
+      tem_men1_2dad_fipv: user.tem_men1_2dad_fipv || 0,
+      tem_men1_2dad_neum: user.tem_men1_2dad_neum || 0,
+      tem_men1_2dad_pent: user.tem_men1_2dad_pent || 0,
+      tem_men1_3rad_bopv: user.tem_men1_3rad_bopv || 0,
+      tem_men1_3rad_neum: user.tem_men1_3rad_neum || 0,
+      tem_men1_3rad_pent: user.tem_men1_3rad_pent || 0,
+      tem_12a23m_1rad_srp: user.tem_12a23m_1rad_srp || 0,
+      tem_12a23m_dosi_fa: user.tem_12a23m_dosi_fa || 0,
+      tem_12a23m_dosi_vari: user.tem_12a23m_dosi_vari || 0,
+      tem_12a23m_2dad_srp: user.tem_12a23m_2dad_srp || 0,
+      tem_12a23m_4tad_bopv: user.tem_12a23m_4tad_bopv || 0,
+      tem_12a23m_4tad_dpt: user.tem_12a23m_4tad_dpt || 0,
+      tem_5ano_5tad_bopv: user.tem_5ano_5tad_bopv || 0,
+      tem_5ano_5tad_dpt: user.tem_5ano_5tad_dpt || 0,
+      tem_9ano_1rad_hpv: user.tem_9ano_1rad_hpv || 0,
+      tem_9ano_2dad_hpv: user.tem_9ano_2dad_hpv || 0,
+      tem_10an_2dad_hpv: user.tem_10an_2dad_hpv || 0,
+      tem_15an_terc_dtad: user.tem_15an_terc_dtad || 0,
+    };
   };
-
-  const getFormData = (user, funAdmiRol) => ({
-    fun_tipo_iden: user.fun_tipo_iden || "",
-    username: user.username || "",
-    first_name: user.first_name || "",
-    last_name: user.last_name || "",
-    fun_sex: user.fun_sex || "",
-    email: user.email || "",
-    fun_titu: user.fun_titu || "",
-    password1: user.password || "",
-    password2: user.password || "",
-    fun_admi_rol: funAdmiRol || "",
-    uni_unic: Array.isArray(user.uni_unic)
-      ? user.uni_unic.map((item) => ({
-          value: item,
-          label: `${listaUnidadesSalud[item] || item}`.trim(),
-        }))
-      : [],
-    fun_esta: user.fun_esta === 1 ? 1 : 0,
-  });
 
   return (
     <div className="container">
       <div className="flex items-center justify-center">
-        <input
+        <InputField
+          htmlFor="mesAnioTem"
+          label={"AAAA-MM"}
           type="month"
-          id="mesAnioTem"
           name="mesAnioTem"
-          placeholder="AAAA-MM"
+          id="mesAnioTem"
           value={selectedMonthYear}
-          maxLength="7"
-          className={`${inputStyle} w-28`}
-          onChange={handleInputChange}
+          onChange={valRegAnoMes}
+          placeholder="AAAA-MM"
+          icon=""
+          isButtonIcon={false}
         />
         <button
           type="button"
-          id="btnBuscarTem"
-          name="btnBuscarTem"
+          id="btnBuscarTabTem"
+          name="btnBuscarTabTem"
           className={`${buttonStylePrimario} ${
             !isValid
               ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
@@ -332,7 +446,7 @@ const TablaTemprano = ({
                     ].map((header) => (
                       <th
                         key={header}
-                        className="px-1 py- text-gray-900 border-x-2"
+                        className="w-20 px-0 py-2 text-gray-900 border-x-2"
                       >
                         {header}
                       </th>
@@ -421,7 +535,7 @@ TablaTemprano.propTypes = {
   yearTem: PropTypes.number.isRequired,
   monthTem: PropTypes.number.isRequired,
   setBotonEstado: PropTypes.func.isRequired,
-  setIsEditing: PropTypes.func.isRequired,
+  setIsInputEstado: PropTypes.func.isRequired,
   setIsLoading: PropTypes.func.isRequired,
   setSuccessMessage: PropTypes.func.isRequired,
   setError: PropTypes.func.isRequired,

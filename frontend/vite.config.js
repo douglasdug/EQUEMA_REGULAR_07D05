@@ -1,10 +1,17 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   build: {
-    sourcemap: true, // Habilitar la generación de mapas de fuente
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          api: ["./src/api/conexion.api.js"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Ajusta el límite a 1000 kB
   },
 });

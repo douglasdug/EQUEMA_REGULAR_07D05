@@ -277,9 +277,7 @@ export const validarRegistro = (formData) => {
   ];
 
   const camposTotalSex = ["tem_sexo_homb", "tem_sexo_muje"];
-
   const camposTotalLugPer = ["tem_luga_pert", "tem_luga_nope"];
-
   const camposTotalNac = [
     "tem_naci_ecua",
     "tem_naci_colo",
@@ -288,7 +286,6 @@ export const validarRegistro = (formData) => {
     "tem_naci_vene",
     "tem_naci_otro",
   ];
-
   const camposTotalNacOtr = [
     "tem_naci_colo",
     "tem_naci_peru",
@@ -296,7 +293,6 @@ export const validarRegistro = (formData) => {
     "tem_naci_vene",
     "tem_naci_otro",
   ];
-
   const camposTotalAut = [
     "tem_auto_indi",
     "tem_auto_afro",
@@ -307,7 +303,6 @@ export const validarRegistro = (formData) => {
     "tem_auto_blan",
     "tem_auto_otro",
   ];
-
   const camposTotalNacIndi = [
     "tem_naci_achu",
     "tem_naci_ando",
@@ -326,7 +321,6 @@ export const validarRegistro = (formData) => {
     "tem_naci_waor",
     "tem_naci_zapa",
   ];
-
   const camposTotalPue = [
     "tem_pueb_chib",
     "tem_pueb_kana",
@@ -346,7 +340,6 @@ export const validarRegistro = (formData) => {
     "tem_pueb_toma",
     "tem_pueb_wara",
   ];
-
   const camposVacunas = [
     "tem_men1_dosi_bcgp",
     "tem_men1_dosi_bcgd",
@@ -376,6 +369,7 @@ export const validarRegistro = (formData) => {
     "tem_15an_terc_dtad",
   ];
 
+  // Cálculo de totales
   const totalIntExt = sumarCampos(formData, camposTotalIntExt);
   const totalSex = sumarCampos(formData, camposTotalSex);
   const totalLugPer = sumarCampos(formData, camposTotalLugPer);
@@ -395,106 +389,81 @@ export const validarRegistro = (formData) => {
     totalNacIndi +
     totalPue;
 
-  if (totalPersonas + totalVacunas >= 1 && formData.tem_fech !== "") {
-    if (
-      totalIntExt === totalSex &&
-      totalSex === totalLugPer &&
-      totalLugPer === totalNac &&
-      totalNac === totalAut
-    ) {
-      if (totalNacOtr === Number(formData.tem_auto_otro)) {
-        if (Number(formData.tem_auto_indi) === totalNacIndi) {
-          if (Number(formData.tem_naci_kich) === totalPue) {
-            const vacunasArray = [
-              totalSex,
-              totalVacunas,
-              sumarCampos(formData, [
-                "tem_men1_dosi_bcgp",
-                "tem_men1_dosi_bcgd",
-              ]),
-              Number(formData.tem_men1_dosi_hbpr),
-              sumarCampos(formData, [
-                "tem_men1_1rad_rota",
-                "tem_men1_2dad_rota",
-              ]),
-              sumarCampos(formData, [
-                "tem_men1_1rad_fipv",
-                "tem_men1_2dad_fipv",
-              ]),
-              sumarCampos(formData, [
-                "tem_men1_1rad_neum",
-                "tem_men1_2dad_neum",
-                "tem_men1_3rad_neum",
-              ]),
-              sumarCampos(formData, [
-                "tem_men1_1rad_pent",
-                "tem_men1_2dad_pent",
-                "tem_men1_3rad_pent",
-              ]),
-              sumarCampos(formData, [
-                "tem_men1_3rad_bopv",
-                "tem_12a23m_4tad_bopv",
-                "tem_5ano_5tad_bopv",
-              ]),
-              sumarCampos(formData, [
-                "tem_12a23m_1rad_srp",
-                "tem_12a23m_2dad_srp",
-              ]),
-              Number(formData.tem_12a23m_dosi_fa),
-              Number(formData.tem_12a23m_dosi_vari),
-              sumarCampos(formData, [
-                "tem_12a23m_4tad_dpt",
-                "tem_5ano_5tad_dpt",
-              ]),
-              sumarCampos(formData, [
-                "tem_9ano_1rad_hpv",
-                "tem_9ano_2dad_hpv",
-                "tem_10an_2dad_hpv",
-              ]),
-              Number(formData.tem_15an_terc_dtad),
-            ];
-            if (
-              vacunasArray[0] <= vacunasArray[1] &&
-              vacunasArray[0] >= vacunasArray[2] &&
-              vacunasArray[0] >= vacunasArray[3] &&
-              vacunasArray[0] >= vacunasArray[4] &&
-              vacunasArray[0] >= vacunasArray[5] &&
-              vacunasArray[0] >= vacunasArray[6] &&
-              vacunasArray[0] >= vacunasArray[7] &&
-              vacunasArray[0] >= vacunasArray[8] &&
-              vacunasArray[0] >= vacunasArray[9] &&
-              vacunasArray[0] >= vacunasArray[10] &&
-              vacunasArray[0] >= vacunasArray[11] &&
-              vacunasArray[0] >= vacunasArray[12] &&
-              vacunasArray[0] >= vacunasArray[13] &&
-              vacunasArray[0] >= vacunasArray[14]
-            ) {
-              let btnRegistrarTem = true;
-              setBotonEstado(btnRegistrarTem);
-              // Registro válido
-              return { success: true, message: mensajesError.messRegVac };
-            } else {
-              // Error en vacunas aplicadas
-              return { success: false, error: mensajesError.errVacApl };
-            }
-          } else {
-            // Error en KICHWA y PUEBLOS
-            return { success: false, error: mensajesError.errKic };
-          }
-        } else {
-          // Error en INDÍGENA y NACIONALIDAD ÉTNICA
-          return { success: false, error: mensajesError.errInd };
-        }
-      } else {
-        // Error en NACIONALIDAD OTRO y AUTOIDENTIFICACIÓN OTRO
-        return { success: false, error: mensajesError.errNacOtr };
-      }
-    } else {
-      // Error en INTRA-EXTRA, SEXO, RESIDENCIA, NACIONALIDAD, ÉTNICA
-      return { success: false, error: mensajesError.errIntExtSexResNacEtn };
-    }
-  } else {
-    // Error en registro en cero
+  if (totalPersonas + totalVacunas < 1 || formData.tem_fech === "") {
     return { success: false, error: mensajesError.errCero };
   }
+
+  if (
+    !validarTotalesIguales([
+      totalIntExt,
+      totalSex,
+      totalLugPer,
+      totalNac,
+      totalAut,
+    ])
+  ) {
+    return { success: false, error: mensajesError.errIntExtSexResNacEtn };
+  }
+
+  if (totalNacOtr !== Number(formData.tem_auto_otro)) {
+    return { success: false, error: mensajesError.errNacOtr };
+  }
+
+  if (Number(formData.tem_auto_indi) !== totalNacIndi) {
+    return { success: false, error: mensajesError.errInd };
+  }
+
+  if (Number(formData.tem_naci_kich) !== totalPue) {
+    return { success: false, error: mensajesError.errKic };
+  }
+
+  if (!validarVacunas(formData, totalSex, totalVacunas)) {
+    return { success: false, error: mensajesError.errVacApl };
+  }
+
+  return { success: true, message: mensajesError.messRegVac };
+};
+
+const validarTotalesIguales = (totales) => {
+  return totales.every((total) => total === totales[0]);
+};
+
+const validarVacunas = (formData, totalSex, totalVacunas) => {
+  const vacunasIndividuales = [
+    sumarCampos(formData, ["tem_men1_dosi_bcgp", "tem_men1_dosi_bcgd"]),
+    Number(formData.tem_men1_dosi_hbpr),
+    sumarCampos(formData, ["tem_men1_1rad_rota", "tem_men1_2dad_rota"]),
+    sumarCampos(formData, ["tem_men1_1rad_fipv", "tem_men1_2dad_fipv"]),
+    sumarCampos(formData, [
+      "tem_men1_1rad_neum",
+      "tem_men1_2dad_neum",
+      "tem_men1_3rad_neum",
+    ]),
+    sumarCampos(formData, [
+      "tem_men1_1rad_pent",
+      "tem_men1_2dad_pent",
+      "tem_men1_3rad_pent",
+    ]),
+    sumarCampos(formData, [
+      "tem_men1_3rad_bopv",
+      "tem_12a23m_4tad_bopv",
+      "tem_5ano_5tad_bopv",
+    ]),
+    sumarCampos(formData, ["tem_12a23m_1rad_srp", "tem_12a23m_2dad_srp"]),
+    Number(formData.tem_12a23m_dosi_fa),
+    Number(formData.tem_12a23m_dosi_vari),
+    sumarCampos(formData, ["tem_12a23m_4tad_dpt", "tem_5ano_5tad_dpt"]),
+    sumarCampos(formData, [
+      "tem_9ano_1rad_hpv",
+      "tem_9ano_2dad_hpv",
+      "tem_10an_2dad_hpv",
+    ]),
+    Number(formData.tem_15an_terc_dtad),
+  ];
+
+  if (totalSex > totalVacunas) {
+    return false;
+  }
+
+  return vacunasIndividuales.every((vacuna) => totalSex >= vacuna);
 };
