@@ -249,7 +249,10 @@ export const registerTemprano = async (formData) => {
 
 export const updateTemprano = async (id, formData) => {
   try {
-    const response = await axios.put(`${API_URL}/temprano/${id}/`, formData);
+    const response = await axios.put(
+      `${API_URL}/temprano/${id}/actualizar-temprano/`,
+      formData
+    );
     return response.data;
   } catch (error) {
     console.error(

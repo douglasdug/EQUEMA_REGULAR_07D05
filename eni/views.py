@@ -304,7 +304,9 @@ class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
 
 
 Error_Fecha_Registrada = "La fecha ya ha sido registrada desea Actualizar la información!."
-Dato_Registro_Correcto = "Datos registrados correctamente!."
+Dato_Create_Correcto = "Datos registrados correctamente!."
+Dato_Update_Correcto = "El registro se actualizó exitosamente!"
+Dato_Delete_Correcto = "Registros eliminados correctamente!"
 
 
 class TempranoRegistrationAPIView(viewsets.ModelViewSet):
@@ -328,7 +330,7 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('tem_fech', 'tem_tota')
 
-    def create(self, request, *args, **kwargs):
+    def create_temprano(self, request, *args, **kwargs):
         data = request.data
         tem_fech = parse_date(data.get('tem_fech'))
         eni_user_id = data.get('eniUser')
@@ -651,7 +653,6 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
         des_hpv_dosapli = int(data.get('tem_9ano_1rad_hpv', 0)) + int(
             data.get('tem_9ano_2dad_hpv', 0)) + int(data.get('tem_10an_2dad_hpv', 0))
         des_dtad_dosapli = int(data.get('tem_15an_terc_dtad', 0))
-
         des_bcg_pervacenfabi = int(data.get('des_bcg_pervacenfabi', 0))
         des_bcg_pervacfrasnoabi = int(data.get('des_bcg_pervacfrasnoabi', 0))
         des_hbpe_pervacenfabi = int(data.get('des_hbpe_pervacenfabi', 0))
@@ -1174,7 +1175,1018 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
                 eniUser_id=eni_user_id
             )
 
-        return Response({"message": Dato_Registro_Correcto}, status=status.HTTP_201_CREATED)
+        return Response({"message": Dato_Create_Correcto}, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['put', 'patch'], url_path='actualizar-temprano')
+    def update_temprano(self, request, pk=None):
+        data = request.data
+        tem_fech = parse_date(data.get('tem_fech'))
+        eni_user_id = data.get('eniUser')
+
+        # Obtener la instancia existente
+        instance = self.get_object()
+
+        # Actualizar la instancia con los nuevos datos
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # Crear variables de control
+        fech_inicio = tem_fech.replace(day=1)
+        fech_fin = (tem_fech.replace(day=1) + timedelta(days=32)
+                    ).replace(day=1) - timedelta(days=1)
+
+        # Filtrar registros del mes y sumar los valores donde tem_tota es False
+        registros_mes = temprano.objects.filter(
+            tem_fech__range=(
+                fech_inicio, fech_fin), eniUser_id=eni_user_id, tem_tota=False
+        )
+        sum_totals = registros_mes.aggregate(
+            tem_intr=Sum('tem_intr'),
+            tem_extr_mies_cnh=Sum('tem_extr_mies_cnh'),
+            tem_extr_mies_cibv=Sum('tem_extr_mies_cibv'),
+            tem_extr_mine_egen=Sum('tem_extr_mine_egen'),
+            tem_extr_mine_bach=Sum('tem_extr_mine_bach'),
+            tem_extr_visi=Sum('tem_extr_visi'),
+            tem_extr_aten=Sum('tem_extr_aten'),
+            tem_otro=Sum('tem_otro'),
+            tem_sexo_homb=Sum('tem_sexo_homb'),
+            tem_sexo_muje=Sum('tem_sexo_muje'),
+            tem_luga_pert=Sum('tem_luga_pert'),
+            tem_luga_nope=Sum('tem_luga_nope'),
+            tem_naci_ecua=Sum('tem_naci_ecua'),
+            tem_naci_colo=Sum('tem_naci_colo'),
+            tem_naci_peru=Sum('tem_naci_peru'),
+            tem_naci_cuba=Sum('tem_naci_cuba'),
+            tem_naci_vene=Sum('tem_naci_vene'),
+            tem_naci_otro=Sum('tem_naci_otro'),
+            tem_auto_indi=Sum('tem_auto_indi'),
+            tem_auto_afro=Sum('tem_auto_afro'),
+            tem_auto_negr=Sum('tem_auto_negr'),
+            tem_auto_mula=Sum('tem_auto_mula'),
+            tem_auto_mont=Sum('tem_auto_mont'),
+            tem_auto_mest=Sum('tem_auto_mest'),
+            tem_auto_blan=Sum('tem_auto_blan'),
+            tem_auto_otro=Sum('tem_auto_otro'),
+            tem_naci_achu=Sum('tem_naci_achu'),
+            tem_naci_ando=Sum('tem_naci_ando'),
+            tem_naci_awa=Sum('tem_naci_awa'),
+            tem_naci_chac=Sum('tem_naci_chac'),
+            tem_naci_cofa=Sum('tem_naci_cofa'),
+            tem_naci_eper=Sum('tem_naci_eper'),
+            tem_naci_huan=Sum('tem_naci_huan'),
+            tem_naci_kich=Sum('tem_naci_kich'),
+            tem_naci_mant=Sum('tem_naci_mant'),
+            tem_naci_seco=Sum('tem_naci_seco'),
+            tem_naci_shiw=Sum('tem_naci_shiw'),
+            tem_naci_shua=Sum('tem_naci_shua'),
+            tem_naci_sion=Sum('tem_naci_sion'),
+            tem_naci_tsac=Sum('tem_naci_tsac'),
+            tem_naci_waor=Sum('tem_naci_waor'),
+            tem_naci_zapa=Sum('tem_naci_zapa'),
+            tem_pueb_chib=Sum('tem_pueb_chib'),
+            tem_pueb_kana=Sum('tem_pueb_kana'),
+            tem_pueb_kara=Sum('tem_pueb_kara'),
+            tem_pueb_kaya=Sum('tem_pueb_kaya'),
+            tem_pueb_kich=Sum('tem_pueb_kich'),
+            tem_pueb_kisa=Sum('tem_pueb_kisa'),
+            tem_pueb_kitu=Sum('tem_pueb_kitu'),
+            tem_pueb_nata=Sum('tem_pueb_nata'),
+            tem_pueb_otav=Sum('tem_pueb_otav'),
+            tem_pueb_palt=Sum('tem_pueb_palt'),
+            tem_pueb_panz=Sum('tem_pueb_panz'),
+            tem_pueb_past=Sum('tem_pueb_past'),
+            tem_pueb_puru=Sum('tem_pueb_puru'),
+            tem_pueb_sala=Sum('tem_pueb_sala'),
+            tem_pueb_sara=Sum('tem_pueb_sara'),
+            tem_pueb_toma=Sum('tem_pueb_toma'),
+            tem_pueb_wara=Sum('tem_pueb_wara'),
+            tem_men1_dosi_bcgp=Sum('tem_men1_dosi_bcgp'),
+            tem_men1_dosi_hbpr=Sum('tem_men1_dosi_hbpr'),
+            tem_men1_dosi_bcgd=Sum('tem_men1_dosi_bcgd'),
+            tem_men1_1rad_rota=Sum('tem_men1_1rad_rota'),
+            tem_men1_1rad_fipv=Sum('tem_men1_1rad_fipv'),
+            tem_men1_1rad_neum=Sum('tem_men1_1rad_neum'),
+            tem_men1_1rad_pent=Sum('tem_men1_1rad_pent'),
+            tem_men1_2dad_rota=Sum('tem_men1_2dad_rota'),
+            tem_men1_2dad_fipv=Sum('tem_men1_2dad_fipv'),
+            tem_men1_2dad_neum=Sum('tem_men1_2dad_neum'),
+            tem_men1_2dad_pent=Sum('tem_men1_2dad_pent'),
+            tem_men1_3rad_bopv=Sum('tem_men1_3rad_bopv'),
+            tem_men1_3rad_neum=Sum('tem_men1_3rad_neum'),
+            tem_men1_3rad_pent=Sum('tem_men1_3rad_pent'),
+            tem_12a23m_1rad_srp=Sum('tem_12a23m_1rad_srp'),
+            tem_12a23m_dosi_fa=Sum('tem_12a23m_dosi_fa'),
+            tem_12a23m_dosi_vari=Sum('tem_12a23m_dosi_vari'),
+            tem_12a23m_2dad_srp=Sum('tem_12a23m_2dad_srp'),
+            tem_12a23m_4tad_bopv=Sum('tem_12a23m_4tad_bopv'),
+            tem_12a23m_4tad_dpt=Sum('tem_12a23m_4tad_dpt'),
+            tem_5ano_5tad_bopv=Sum('tem_5ano_5tad_bopv'),
+            tem_5ano_5tad_dpt=Sum('tem_5ano_5tad_dpt'),
+            tem_9ano_1rad_hpv=Sum('tem_9ano_1rad_hpv'),
+            tem_9ano_2dad_hpv=Sum('tem_9ano_2dad_hpv'),
+            tem_10an_2dad_hpv=Sum('tem_10an_2dad_hpv'),
+            tem_15an_terc_dtad=Sum('tem_15an_terc_dtad')
+        )
+
+        # Actualizar o crear el registro total_record como en create_temprano
+        total_record = temprano.objects.filter(
+            eniUser_id=eni_user_id, tem_fech=fech_fin, tem_tota=True
+        ).first()
+
+        if total_record:
+            # Actualizar el registro existente sumando los nuevos valores
+            total_record.tem_intr = sum_totals['tem_intr'] or 0
+            total_record.tem_extr_mies_cnh = sum_totals['tem_extr_mies_cnh'] or 0
+            total_record.tem_extr_mies_cibv = sum_totals['tem_extr_mies_cibv'] or 0
+            total_record.tem_extr_mine_egen = sum_totals['tem_extr_mine_egen'] or 0
+            total_record.tem_extr_mine_bach = sum_totals['tem_extr_mine_bach'] or 0
+            total_record.tem_extr_visi = sum_totals['tem_extr_visi'] or 0
+            total_record.tem_extr_aten = sum_totals['tem_extr_aten'] or 0
+            total_record.tem_otro = sum_totals['tem_otro'] or 0
+            total_record.tem_sexo_homb = sum_totals['tem_sexo_homb'] or 0
+            total_record.tem_sexo_muje = sum_totals['tem_sexo_muje'] or 0
+            total_record.tem_luga_pert = sum_totals['tem_luga_pert'] or 0
+            total_record.tem_luga_nope = sum_totals['tem_luga_nope'] or 0
+            total_record.tem_naci_ecua = sum_totals['tem_naci_ecua'] or 0
+            total_record.tem_naci_colo = sum_totals['tem_naci_colo'] or 0
+            total_record.tem_naci_peru = sum_totals['tem_naci_peru'] or 0
+            total_record.tem_naci_cuba = sum_totals['tem_naci_cuba'] or 0
+            total_record.tem_naci_vene = sum_totals['tem_naci_vene'] or 0
+            total_record.tem_naci_otro = sum_totals['tem_naci_otro'] or 0
+            total_record.tem_auto_indi = sum_totals['tem_auto_indi'] or 0
+            total_record.tem_auto_afro = sum_totals['tem_auto_afro'] or 0
+            total_record.tem_auto_negr = sum_totals['tem_auto_negr'] or 0
+            total_record.tem_auto_mula = sum_totals['tem_auto_mula'] or 0
+            total_record.tem_auto_mont = sum_totals['tem_auto_mont'] or 0
+            total_record.tem_auto_mest = sum_totals['tem_auto_mest'] or 0
+            total_record.tem_auto_blan = sum_totals['tem_auto_blan'] or 0
+            total_record.tem_auto_otro = sum_totals['tem_auto_otro'] or 0
+            total_record.tem_naci_achu = sum_totals['tem_naci_achu'] or 0
+            total_record.tem_naci_ando = sum_totals['tem_naci_ando'] or 0
+            total_record.tem_naci_awa = sum_totals['tem_naci_awa'] or 0
+            total_record.tem_naci_chac = sum_totals['tem_naci_chac'] or 0
+            total_record.tem_naci_cofa = sum_totals['tem_naci_cofa'] or 0
+            total_record.tem_naci_eper = sum_totals['tem_naci_eper'] or 0
+            total_record.tem_naci_huan = sum_totals['tem_naci_huan'] or 0
+            total_record.tem_naci_kich = sum_totals['tem_naci_kich'] or 0
+            total_record.tem_naci_mant = sum_totals['tem_naci_mant'] or 0
+            total_record.tem_naci_seco = sum_totals['tem_naci_seco'] or 0
+            total_record.tem_naci_shiw = sum_totals['tem_naci_shiw'] or 0
+            total_record.tem_naci_shua = sum_totals['tem_naci_shua'] or 0
+            total_record.tem_naci_sion = sum_totals['tem_naci_sion'] or 0
+            total_record.tem_naci_tsac = sum_totals['tem_naci_tsac'] or 0
+            total_record.tem_naci_waor = sum_totals['tem_naci_waor'] or 0
+            total_record.tem_naci_zapa = sum_totals['tem_naci_zapa'] or 0
+            total_record.tem_pueb_chib = sum_totals['tem_pueb_chib'] or 0
+            total_record.tem_pueb_kana = sum_totals['tem_pueb_kana'] or 0
+            total_record.tem_pueb_kara = sum_totals['tem_pueb_kara'] or 0
+            total_record.tem_pueb_kaya = sum_totals['tem_pueb_kaya'] or 0
+            total_record.tem_pueb_kich = sum_totals['tem_pueb_kich'] or 0
+            total_record.tem_pueb_kisa = sum_totals['tem_pueb_kisa'] or 0
+            total_record.tem_pueb_kitu = sum_totals['tem_pueb_kitu'] or 0
+            total_record.tem_pueb_nata = sum_totals['tem_pueb_nata'] or 0
+            total_record.tem_pueb_otav = sum_totals['tem_pueb_otav'] or 0
+            total_record.tem_pueb_palt = sum_totals['tem_pueb_palt'] or 0
+            total_record.tem_pueb_panz = sum_totals['tem_pueb_panz'] or 0
+            total_record.tem_pueb_past = sum_totals['tem_pueb_past'] or 0
+            total_record.tem_pueb_puru = sum_totals['tem_pueb_puru'] or 0
+            total_record.tem_pueb_sala = sum_totals['tem_pueb_sala'] or 0
+            total_record.tem_pueb_sara = sum_totals['tem_pueb_sara'] or 0
+            total_record.tem_pueb_toma = sum_totals['tem_pueb_toma'] or 0
+            total_record.tem_pueb_wara = sum_totals['tem_pueb_wara'] or 0
+            total_record.tem_men1_dosi_bcgp = sum_totals['tem_men1_dosi_bcgp'] or 0
+            total_record.tem_men1_dosi_hbpr = sum_totals['tem_men1_dosi_hbpr'] or 0
+            total_record.tem_men1_dosi_bcgd = sum_totals['tem_men1_dosi_bcgd'] or 0
+            total_record.tem_men1_1rad_rota = sum_totals['tem_men1_1rad_rota'] or 0
+            total_record.tem_men1_1rad_fipv = sum_totals['tem_men1_1rad_fipv'] or 0
+            total_record.tem_men1_1rad_neum = sum_totals['tem_men1_1rad_neum'] or 0
+            total_record.tem_men1_1rad_pent = sum_totals['tem_men1_1rad_pent'] or 0
+            total_record.tem_men1_2dad_rota = sum_totals['tem_men1_2dad_rota'] or 0
+            total_record.tem_men1_2dad_fipv = sum_totals['tem_men1_2dad_fipv'] or 0
+            total_record.tem_men1_2dad_neum = sum_totals['tem_men1_2dad_neum'] or 0
+            total_record.tem_men1_2dad_pent = sum_totals['tem_men1_2dad_pent'] or 0
+            total_record.tem_men1_3rad_bopv = sum_totals['tem_men1_3rad_bopv'] or 0
+            total_record.tem_men1_3rad_neum = sum_totals['tem_men1_3rad_neum'] or 0
+            total_record.tem_men1_3rad_pent = sum_totals['tem_men1_3rad_pent'] or 0
+            total_record.tem_12a23m_1rad_srp = sum_totals['tem_12a23m_1rad_srp'] or 0
+            total_record.tem_12a23m_dosi_fa = sum_totals['tem_12a23m_dosi_fa'] or 0
+            total_record.tem_12a23m_dosi_vari = sum_totals['tem_12a23m_dosi_vari'] or 0
+            total_record.tem_12a23m_2dad_srp = sum_totals['tem_12a23m_2dad_srp'] or 0
+            total_record.tem_12a23m_4tad_bopv = sum_totals['tem_12a23m_4tad_bopv'] or 0
+            total_record.tem_12a23m_4tad_dpt = sum_totals['tem_12a23m_4tad_dpt'] or 0
+            total_record.tem_5ano_5tad_bopv = sum_totals['tem_5ano_5tad_bopv'] or 0
+            total_record.tem_5ano_5tad_dpt = sum_totals['tem_5ano_5tad_dpt'] or 0
+            total_record.tem_9ano_1rad_hpv = sum_totals['tem_9ano_1rad_hpv'] or 0
+            total_record.tem_9ano_2dad_hpv = sum_totals['tem_9ano_2dad_hpv'] or 0
+            total_record.tem_10an_2dad_hpv = sum_totals['tem_10an_2dad_hpv'] or 0
+            total_record.tem_15an_terc_dtad = sum_totals['tem_15an_terc_dtad'] or 0
+            total_record.save()
+        else:
+            # Crear una nueva fila con los totales
+            temprano.objects.create(
+                tem_fech=fech_fin,
+                eniUser_id=eni_user_id,
+                tem_tota=True,
+                tem_intr=sum_totals['tem_intr'] or 0,
+                tem_extr_mies_cnh=sum_totals['tem_extr_mies_cnh'] or 0,
+                tem_extr_mies_cibv=sum_totals['tem_extr_mies_cibv'] or 0,
+                tem_extr_mine_egen=sum_totals['tem_extr_mine_egen'] or 0,
+                tem_extr_mine_bach=sum_totals['tem_extr_mine_bach'] or 0,
+                tem_extr_visi=sum_totals['tem_extr_visi'] or 0,
+                tem_extr_aten=sum_totals['tem_extr_aten'] or 0,
+                tem_otro=sum_totals['tem_otro'] or 0,
+                tem_sexo_homb=sum_totals['tem_sexo_homb'] or 0,
+                tem_sexo_muje=sum_totals['tem_sexo_muje'] or 0,
+                tem_luga_pert=sum_totals['tem_luga_pert'] or 0,
+                tem_luga_nope=sum_totals['tem_luga_nope'] or 0,
+                tem_naci_ecua=sum_totals['tem_naci_ecua'] or 0,
+                tem_naci_colo=sum_totals['tem_naci_colo'] or 0,
+                tem_naci_peru=sum_totals['tem_naci_peru'] or 0,
+                tem_naci_cuba=sum_totals['tem_naci_cuba'] or 0,
+                tem_naci_vene=sum_totals['tem_naci_vene'] or 0,
+                tem_naci_otro=sum_totals['tem_naci_otro'] or 0,
+                tem_auto_indi=sum_totals['tem_auto_indi'] or 0,
+                tem_auto_afro=sum_totals['tem_auto_afro'] or 0,
+                tem_auto_negr=sum_totals['tem_auto_negr'] or 0,
+                tem_auto_mula=sum_totals['tem_auto_mula'] or 0,
+                tem_auto_mont=sum_totals['tem_auto_mont'] or 0,
+                tem_auto_mest=sum_totals['tem_auto_mest'] or 0,
+                tem_auto_blan=sum_totals['tem_auto_blan'] or 0,
+                tem_auto_otro=sum_totals['tem_auto_otro'] or 0,
+                tem_naci_achu=sum_totals['tem_naci_achu'] or 0,
+                tem_naci_ando=sum_totals['tem_naci_ando'] or 0,
+                tem_naci_awa=sum_totals['tem_naci_awa'] or 0,
+                tem_naci_chac=sum_totals['tem_naci_chac'] or 0,
+                tem_naci_cofa=sum_totals['tem_naci_cofa'] or 0,
+                tem_naci_eper=sum_totals['tem_naci_eper'] or 0,
+                tem_naci_huan=sum_totals['tem_naci_huan'] or 0,
+                tem_naci_kich=sum_totals['tem_naci_kich'] or 0,
+                tem_naci_mant=sum_totals['tem_naci_mant'] or 0,
+                tem_naci_seco=sum_totals['tem_naci_seco'] or 0,
+                tem_naci_shiw=sum_totals['tem_naci_shiw'] or 0,
+                tem_naci_shua=sum_totals['tem_naci_shua'] or 0,
+                tem_naci_sion=sum_totals['tem_naci_sion'] or 0,
+                tem_naci_tsac=sum_totals['tem_naci_tsac'] or 0,
+                tem_naci_waor=sum_totals['tem_naci_waor'] or 0,
+                tem_naci_zapa=sum_totals['tem_naci_zapa'] or 0,
+                tem_pueb_chib=sum_totals['tem_pueb_chib'] or 0,
+                tem_pueb_kana=sum_totals['tem_pueb_kana'] or 0,
+                tem_pueb_kara=sum_totals['tem_pueb_kara'] or 0,
+                tem_pueb_kaya=sum_totals['tem_pueb_kaya'] or 0,
+                tem_pueb_kich=sum_totals['tem_pueb_kich'] or 0,
+                tem_pueb_kisa=sum_totals['tem_pueb_kisa'] or 0,
+                tem_pueb_kitu=sum_totals['tem_pueb_kitu'] or 0,
+                tem_pueb_nata=sum_totals['tem_pueb_nata'] or 0,
+                tem_pueb_otav=sum_totals['tem_pueb_otav'] or 0,
+                tem_pueb_palt=sum_totals['tem_pueb_palt'] or 0,
+                tem_pueb_panz=sum_totals['tem_pueb_panz'] or 0,
+                tem_pueb_past=sum_totals['tem_pueb_past'] or 0,
+                tem_pueb_puru=sum_totals['tem_pueb_puru'] or 0,
+                tem_pueb_sala=sum_totals['tem_pueb_sala'] or 0,
+                tem_pueb_sara=sum_totals['tem_pueb_sara'] or 0,
+                tem_pueb_toma=sum_totals['tem_pueb_toma'] or 0,
+                tem_pueb_wara=sum_totals['tem_pueb_wara'] or 0,
+                tem_men1_dosi_bcgp=sum_totals['tem_men1_dosi_bcgp'] or 0,
+                tem_men1_dosi_hbpr=sum_totals['tem_men1_dosi_hbpr'] or 0,
+                tem_men1_dosi_bcgd=sum_totals['tem_men1_dosi_bcgd'] or 0,
+                tem_men1_1rad_rota=sum_totals['tem_men1_1rad_rota'] or 0,
+                tem_men1_1rad_fipv=sum_totals['tem_men1_1rad_fipv'] or 0,
+                tem_men1_1rad_neum=sum_totals['tem_men1_1rad_neum'] or 0,
+                tem_men1_1rad_pent=sum_totals['tem_men1_1rad_pent'] or 0,
+                tem_men1_2dad_rota=sum_totals['tem_men1_2dad_rota'] or 0,
+                tem_men1_2dad_fipv=sum_totals['tem_men1_2dad_fipv'] or 0,
+                tem_men1_2dad_neum=sum_totals['tem_men1_2dad_neum'] or 0,
+                tem_men1_2dad_pent=sum_totals['tem_men1_2dad_pent'] or 0,
+                tem_men1_3rad_bopv=sum_totals['tem_men1_3rad_bopv'] or 0,
+                tem_men1_3rad_neum=sum_totals['tem_men1_3rad_neum'] or 0,
+                tem_men1_3rad_pent=sum_totals['tem_men1_3rad_pent'] or 0,
+                tem_12a23m_1rad_srp=sum_totals['tem_12a23m_1rad_srp'] or 0,
+                tem_12a23m_dosi_fa=sum_totals['tem_12a23m_dosi_fa'] or 0,
+                tem_12a23m_dosi_vari=sum_totals['tem_12a23m_dosi_vari'] or 0,
+                tem_12a23m_2dad_srp=sum_totals['tem_12a23m_2dad_srp'] or 0,
+                tem_12a23m_4tad_bopv=sum_totals['tem_12a23m_4tad_bopv'] or 0,
+                tem_12a23m_4tad_dpt=sum_totals['tem_12a23m_4tad_dpt'] or 0,
+                tem_5ano_5tad_bopv=sum_totals['tem_5ano_5tad_bopv'] or 0,
+                tem_5ano_5tad_dpt=sum_totals['tem_5ano_5tad_dpt'] or 0,
+                tem_9ano_1rad_hpv=sum_totals['tem_9ano_1rad_hpv'] or 0,
+                tem_9ano_2dad_hpv=sum_totals['tem_9ano_2dad_hpv'] or 0,
+                tem_10an_2dad_hpv=sum_totals['tem_10an_2dad_hpv'] or 0,
+                tem_15an_terc_dtad=sum_totals['tem_15an_terc_dtad'] or 0
+            )
+
+        # Filtrar en la tabla desperdicio para verificar si ya existe un registro con la misma fecha
+        existing_record = desperdicio.objects.filter(
+            des_fech=tem_fech,
+            eniUser_id=eni_user_id
+        ).first()
+
+        # Calcular las valores de las variables de Temprano y Desperdicio
+        des_bcg_dosapli = int(data.get('tem_men1_dosi_bcgp', 0)) + \
+            int(data.get('tem_men1_dosi_bcgd', 0))
+        des_hbpe_dosapli = int(data.get('tem_men1_dosi_hbpr', 0))
+        des_rota_dosapli = int(data.get('tem_men1_1rad_rota', 0)) + \
+            int(data.get('tem_men1_2dad_rota', 0))
+        des_pent_dosapli = int(data.get('tem_men1_1rad_pent', 0)) + int(
+            data.get('tem_men1_2dad_pent', 0)) + int(data.get('tem_men1_3rad_pent', 0))
+        des_fipv_dosapli = int(data.get('tem_men1_1rad_fipv', 0)) + \
+            int(data.get('tem_men1_2dad_fipv', 0))
+        des_anti_dosapli = int(data.get('tem_men1_3rad_bopv', 0)) + int(
+            data.get('tem_12a23m_4tad_bopv', 0)) + int(data.get('tem_5ano_5tad_bopv', 0))
+        des_neum_dosapli = int(data.get('tem_men1_1rad_neum', 0)) + int(
+            data.get('tem_men1_2dad_neum', 0)) + int(data.get('tem_men1_3rad_neum', 0))
+        des_srp_dosapli = int(data.get('tem_12a23m_1rad_srp', 0)) + \
+            int(data.get('tem_12a23m_2dad_srp', 0))
+        des_vari_dosapli = int(data.get('tem_12a23m_dosi_vari', 0))
+        des_fieb_dosapli = int(data.get('tem_12a23m_dosi_fa', 0))
+        des_dift_dosapli = int(
+            data.get('tem_12a23m_4tad_dpt', 0)) + int(data.get('tem_5ano_5tad_dpt', 0))
+        des_hpv_dosapli = int(data.get('tem_9ano_1rad_hpv', 0)) + int(
+            data.get('tem_9ano_2dad_hpv', 0)) + int(data.get('tem_10an_2dad_hpv', 0))
+        des_dtad_dosapli = int(data.get('tem_15an_terc_dtad', 0))
+        des_bcg_pervacenfabi = int(data.get('des_bcg_pervacenfabi', 0))
+        des_bcg_pervacfrasnoabi = int(data.get('des_bcg_pervacfrasnoabi', 0))
+        des_hbpe_pervacenfabi = int(data.get('des_hbpe_pervacenfabi', 0))
+        des_hbpe_pervacfrasnoabi = int(data.get('des_hbpe_pervacfrasnoabi', 0))
+        des_rota_pervacenfabi = int(data.get('des_rota_pervacenfabi', 0))
+        des_rota_pervacfrasnoabi = int(data.get('des_rota_pervacfrasnoabi', 0))
+        des_pent_pervacenfabi = int(data.get('des_pent_pervacenfabi', 0))
+        des_pent_pervacfrasnoabi = int(data.get('des_pent_pervacfrasnoabi', 0))
+        des_fipv_pervacenfabi = int(data.get('des_fipv_pervacenfabi', 0))
+        des_fipv_pervacfrasnoabi = int(data.get('des_fipv_pervacfrasnoabi', 0))
+        des_anti_pervacenfabi = int(data.get('des_anti_pervacenfabi', 0))
+        des_anti_pervacfrasnoabi = int(data.get('des_anti_pervacfrasnoabi', 0))
+        des_neum_pervacenfabi = int(data.get('des_neum_pervacenfabi', 0))
+        des_neum_pervacfrasnoabi = int(data.get('des_neum_pervacfrasnoabi', 0))
+        des_sr_dosapli = int(data.get('des_sr_dosapli', 0))
+        des_sr_pervacenfabi = int(data.get('des_sr_pervacenfabi', 0))
+        des_sr_pervacfrasnoabi = int(data.get('des_sr_pervacfrasnoabi', 0))
+        des_srp_pervacenfabi = int(data.get('des_srp_pervacenfabi', 0))
+        des_srp_pervacfrasnoabi = int(data.get('des_srp_pervacfrasnoabi', 0))
+        des_vari_pervacenfabi = int(data.get('des_vari_pervacenfabi', 0))
+        des_vari_pervacfrasnoabi = int(data.get('des_vari_pervacfrasnoabi', 0))
+        des_fieb_pervacenfabi = int(data.get('des_fieb_pervacenfabi', 0))
+        des_fieb_pervacfrasnoabi = int(data.get('des_fieb_pervacfrasnoabi', 0))
+        des_dift_pervacenfabi = int(data.get('des_dift_pervacenfabi', 0))
+        des_dift_pervacfrasnoabi = int(data.get('des_dift_pervacfrasnoabi', 0))
+        des_hpv_pervacenfabi = int(data.get('des_hpv_pervacenfabi', 0))
+        des_hpv_pervacfrasnoabi = int(data.get('des_hpv_pervacfrasnoabi', 0))
+        des_dtad_pervacenfabi = int(data.get('des_dtad_pervacenfabi', 0))
+        des_dtad_pervacfrasnoabi = int(data.get('des_dtad_pervacfrasnoabi', 0))
+        des_hepa_dosapli = int(data.get('des_hepa_dosapli', 0))
+        des_hepa_pervacenfabi = int(data.get('des_hepa_pervacenfabi', 0))
+        des_hepa_pervacfrasnoabi = int(data.get('des_hepa_pervacfrasnoabi', 0))
+        des_inmant_dosapli = int(data.get('des_inmant_dosapli', 0))
+        des_inmant_pervacenfabi = int(data.get('des_inmant_pervacenfabi', 0))
+        des_inmant_pervacfrasnoabi = int(
+            data.get('des_inmant_pervacfrasnoabi', 0))
+        des_inmanthepb_dosapli = int(data.get('des_inmanthepb_dosapli', 0))
+        des_inmanthepb_pervacenfabi = int(
+            data.get('des_inmanthepb_pervacenfabi', 0))
+        des_inmanthepb_pervacfrasnoabi = int(
+            data.get('des_inmanthepb_pervacfrasnoabi', 0))
+        des_inmantrra_dosapli = int(data.get('des_inmantrra_dosapli', 0))
+        des_inmantrra_pervacenfabi = int(
+            data.get('des_inmantrra_pervacenfabi', 0))
+        des_inmantrra_pervacfrasnoabi = int(
+            data.get('des_inmantrra_pervacfrasnoabi', 0))
+        des_infped_dosapli = int(data.get('des_infped_dosapli', 0))
+        des_infped_pervacenfabi = int(data.get('des_infped_pervacenfabi', 0))
+        des_infped_pervacfrasnoabi = int(
+            data.get('des_infped_pervacfrasnoabi', 0))
+        des_infadu_dosapli = int(data.get('des_infadu_dosapli', 0))
+        des_infadu_pervacenfabi = int(data.get('des_infadu_pervacenfabi', 0))
+        des_infadu_pervacfrasnoabi = int(
+            data.get('des_infadu_pervacfrasnoabi', 0))
+        des_viru_dosapli = int(data.get('des_viru_dosapli', 0))
+        des_viru_pervacenfabi = int(data.get('des_viru_pervacenfabi', 0))
+        des_viru_pervacfrasnoabi = int(data.get('des_viru_pervacfrasnoabi', 0))
+        des_vacsin_dosapli = int(data.get('des_vacsin_dosapli', 0))
+        des_vacsin_pervacenfabi = int(data.get('des_vacsin_pervacenfabi', 0))
+        des_vacsin_pervacfrasnoabi = int(
+            data.get('des_vacsin_pervacfrasnoabi', 0))
+        des_vacpfi_dosapli = int(data.get('des_vacpfi_dosapli', 0))
+        des_vacpfi_pervacenfabi = int(data.get('des_vacpfi_pervacenfabi', 0))
+        des_vacpfi_pervacfrasnoabi = int(
+            data.get('des_vacpfi_pervacfrasnoabi', 0))
+        des_vacmod_dosapli = int(data.get('des_vacmod_dosapli', 0))
+        des_vacmod_pervacenfabi = int(data.get('des_vacmod_pervacenfabi', 0))
+        des_vacmod_pervacfrasnoabi = int(
+            data.get('des_vacmod_pervacfrasnoabi', 0))
+        des_vacvphcam_dosapli = int(data.get('des_vacvphcam_dosapli', 0))
+        des_vacvphcam_pervacenfabi = int(
+            data.get('des_vacvphcam_pervacenfabi', 0))
+        des_vacvphcam_pervacfrasnoabi = int(
+            data.get('des_vacvphcam_pervacfrasnoabi', 0))
+
+        if existing_record:
+            # Si existe, actualizar el registro sumando los valores actuales
+            existing_record.des_bcg_dosapli = des_bcg_dosapli
+            existing_record.des_bcg_pervacenfabi = des_bcg_pervacenfabi
+            existing_record.des_bcg_pervacfrasnoabi = des_bcg_pervacfrasnoabi
+            existing_record.des_hbpe_dosapli = des_hbpe_dosapli
+            existing_record.des_hbpe_pervacenfabi = des_hbpe_pervacenfabi
+            existing_record.des_hbpe_pervacfrasnoabi = des_hbpe_pervacfrasnoabi
+            existing_record.des_rota_dosapli = des_rota_dosapli
+            existing_record.des_rota_pervacenfabi = des_rota_pervacenfabi
+            existing_record.des_rota_pervacfrasnoabi = des_rota_pervacfrasnoabi
+            existing_record.des_pent_dosapli = des_pent_dosapli
+            existing_record.des_pent_pervacenfabi = des_pent_pervacenfabi
+            existing_record.des_pent_pervacfrasnoabi = des_pent_pervacfrasnoabi
+            existing_record.des_fipv_dosapli = des_fipv_dosapli
+            existing_record.des_fipv_pervacenfabi = des_fipv_pervacenfabi
+            existing_record.des_fipv_pervacfrasnoabi = des_fipv_pervacfrasnoabi
+            existing_record.des_anti_dosapli = des_anti_dosapli
+            existing_record.des_anti_pervacenfabi = des_anti_pervacenfabi
+            existing_record.des_anti_pervacfrasnoabi = des_anti_pervacfrasnoabi
+            existing_record.des_neum_dosapli = des_neum_dosapli
+            existing_record.des_neum_pervacenfabi = des_neum_pervacenfabi
+            existing_record.des_neum_pervacfrasnoabi = des_neum_pervacfrasnoabi
+            existing_record.des_sr_dosapli = des_sr_dosapli
+            existing_record.des_sr_pervacenfabi = des_sr_pervacenfabi
+            existing_record.des_sr_pervacfrasnoabi = des_sr_pervacfrasnoabi
+            existing_record.des_srp_dosapli = des_srp_dosapli
+            existing_record.des_srp_pervacenfabi = des_srp_pervacenfabi
+            existing_record.des_srp_pervacfrasnoabi = des_srp_pervacfrasnoabi
+            existing_record.des_vari_dosapli = des_vari_dosapli
+            existing_record.des_vari_pervacenfabi = des_vari_pervacenfabi
+            existing_record.des_vari_pervacfrasnoabi = des_vari_pervacfrasnoabi
+            existing_record.des_fieb_dosapli = des_fieb_dosapli
+            existing_record.des_fieb_pervacenfabi = des_fieb_pervacenfabi
+            existing_record.des_fieb_pervacfrasnoabi = des_fieb_pervacfrasnoabi
+            existing_record.des_dift_dosapli = des_dift_dosapli
+            existing_record.des_dift_pervacenfabi = des_dift_pervacenfabi
+            existing_record.des_dift_pervacfrasnoabi = des_dift_pervacfrasnoabi
+            existing_record.des_hpv_dosapli = des_hpv_dosapli
+            existing_record.des_hpv_pervacenfabi = des_hpv_pervacenfabi
+            existing_record.des_hpv_pervacfrasnoabi = des_hpv_pervacfrasnoabi
+            existing_record.des_dtad_dosapli = des_dtad_dosapli
+            existing_record.des_dtad_pervacenfabi = des_dtad_pervacenfabi
+            existing_record.des_dtad_pervacfrasnoabi = des_dtad_pervacfrasnoabi
+            existing_record.des_hepa_dosapli = des_hepa_dosapli
+            existing_record.des_hepa_pervacenfabi = des_hepa_pervacenfabi
+            existing_record.des_hepa_pervacfrasnoabi = des_hepa_pervacfrasnoabi
+            existing_record.des_inmant_dosapli = des_inmant_dosapli
+            existing_record.des_inmant_pervacenfabi = des_inmant_pervacenfabi
+            existing_record.des_inmant_pervacfrasnoabi = des_inmant_pervacfrasnoabi
+            existing_record.des_inmanthepb_dosapli = des_inmanthepb_dosapli
+            existing_record.des_inmanthepb_pervacenfabi = des_inmanthepb_pervacenfabi
+            existing_record.des_inmanthepb_pervacfrasnoabi = des_inmanthepb_pervacfrasnoabi
+            existing_record.des_inmantrra_dosapli = des_inmantrra_dosapli
+            existing_record.des_inmantrra_pervacenfabi = des_inmantrra_pervacenfabi
+            existing_record.des_inmantrra_pervacfrasnoabi = des_inmantrra_pervacfrasnoabi
+            existing_record.des_infped_dosapli = des_infped_dosapli
+            existing_record.des_infped_pervacenfabi = des_infped_pervacenfabi
+            existing_record.des_infped_pervacfrasnoabi = des_infped_pervacfrasnoabi
+            existing_record.des_infadu_dosapli = des_infadu_dosapli
+            existing_record.des_infadu_pervacenfabi = des_infadu_pervacenfabi
+            existing_record.des_infadu_pervacfrasnoabi = des_infadu_pervacfrasnoabi
+            existing_record.des_viru_dosapli = des_viru_dosapli
+            existing_record.des_viru_pervacenfabi = des_viru_pervacenfabi
+            existing_record.des_viru_pervacfrasnoabi = des_viru_pervacfrasnoabi
+            existing_record.des_vacsin_dosapli = des_vacsin_dosapli
+            existing_record.des_vacsin_pervacenfabi = des_vacsin_pervacenfabi
+            existing_record.des_vacsin_pervacfrasnoabi = des_vacsin_pervacfrasnoabi
+            existing_record.des_vacpfi_dosapli = des_vacpfi_dosapli
+            existing_record.des_vacpfi_pervacenfabi = des_vacpfi_pervacenfabi
+            existing_record.des_vacpfi_pervacfrasnoabi = des_vacpfi_pervacfrasnoabi
+            existing_record.des_vacmod_dosapli = des_vacmod_dosapli
+            existing_record.des_vacmod_pervacenfabi = des_vacmod_pervacenfabi
+            existing_record.des_vacmod_pervacfrasnoabi = des_vacmod_pervacfrasnoabi
+            existing_record.des_vacvphcam_dosapli = des_vacvphcam_dosapli
+            existing_record.des_vacvphcam_pervacenfabi = des_vacvphcam_pervacenfabi
+            existing_record.des_vacvphcam_pervacfrasnoabi = des_vacvphcam_pervacfrasnoabi
+            existing_record.save()
+        else:
+            # Si no existe, crear un nuevo registro con los valores proporcionados
+            desperdicio.objects.create(
+                des_fech=tem_fech,
+                des_bcg_dosapli=des_bcg_dosapli,
+                des_bcg_pervacenfabi=des_bcg_pervacenfabi,
+                des_bcg_pervacfrasnoabi=des_bcg_pervacfrasnoabi,
+                des_hbpe_dosapli=des_hbpe_dosapli,
+                des_hbpe_pervacenfabi=des_hbpe_pervacenfabi,
+                des_hbpe_pervacfrasnoabi=des_hbpe_pervacfrasnoabi,
+                des_rota_dosapli=des_rota_dosapli,
+                des_rota_pervacenfabi=des_rota_pervacenfabi,
+                des_rota_pervacfrasnoabi=des_rota_pervacfrasnoabi,
+                des_pent_dosapli=des_pent_dosapli,
+                des_pent_pervacenfabi=des_pent_pervacenfabi,
+                des_pent_pervacfrasnoabi=des_pent_pervacfrasnoabi,
+                des_fipv_dosapli=des_fipv_dosapli,
+                des_fipv_pervacenfabi=des_fipv_pervacenfabi,
+                des_fipv_pervacfrasnoabi=des_fipv_pervacfrasnoabi,
+                des_anti_dosapli=des_anti_dosapli,
+                des_anti_pervacenfabi=des_anti_pervacenfabi,
+                des_anti_pervacfrasnoabi=des_anti_pervacfrasnoabi,
+                des_neum_dosapli=des_neum_dosapli,
+                des_neum_pervacenfabi=des_neum_pervacenfabi,
+                des_neum_pervacfrasnoabi=des_neum_pervacfrasnoabi,
+                des_sr_dosapli=des_sr_dosapli,
+                des_sr_pervacenfabi=des_sr_pervacenfabi,
+                des_sr_pervacfrasnoabi=des_sr_pervacfrasnoabi,
+                des_srp_dosapli=des_srp_dosapli,
+                des_srp_pervacenfabi=des_srp_pervacenfabi,
+                des_srp_pervacfrasnoabi=des_srp_pervacfrasnoabi,
+                des_vari_dosapli=des_vari_dosapli,
+                des_vari_pervacenfabi=des_vari_pervacenfabi,
+                des_vari_pervacfrasnoabi=des_vari_pervacfrasnoabi,
+                des_fieb_dosapli=des_fieb_dosapli,
+                des_fieb_pervacenfabi=des_fieb_pervacenfabi,
+                des_fieb_pervacfrasnoabi=des_fieb_pervacfrasnoabi,
+                des_dift_dosapli=des_dift_dosapli,
+                des_dift_pervacenfabi=des_dift_pervacenfabi,
+                des_dift_pervacfrasnoabi=des_dift_pervacfrasnoabi,
+                des_hpv_dosapli=des_hpv_dosapli,
+                des_hpv_pervacenfabi=des_hpv_pervacenfabi,
+                des_hpv_pervacfrasnoabi=des_hpv_pervacfrasnoabi,
+                des_dtad_dosapli=des_dtad_dosapli,
+                des_dtad_pervacenfabi=des_dtad_pervacenfabi,
+                des_dtad_pervacfrasnoabi=des_dtad_pervacfrasnoabi,
+                des_hepa_dosapli=des_hepa_dosapli,
+                des_hepa_pervacenfabi=des_hepa_pervacenfabi,
+                des_hepa_pervacfrasnoabi=des_hepa_pervacfrasnoabi,
+                des_inmant_dosapli=des_inmant_dosapli,
+                des_inmant_pervacenfabi=des_inmant_pervacenfabi,
+                des_inmant_pervacfrasnoabi=des_inmant_pervacfrasnoabi,
+                des_inmanthepb_dosapli=des_inmanthepb_dosapli,
+                des_inmanthepb_pervacenfabi=des_inmanthepb_pervacenfabi,
+                des_inmanthepb_pervacfrasnoabi=des_inmanthepb_pervacfrasnoabi,
+                des_inmantrra_dosapli=des_inmantrra_dosapli,
+                des_inmantrra_pervacenfabi=des_inmantrra_pervacenfabi,
+                des_inmantrra_pervacfrasnoabi=des_inmantrra_pervacfrasnoabi,
+                des_infped_dosapli=des_infped_dosapli,
+                des_infped_pervacenfabi=des_infped_pervacenfabi,
+                des_infped_pervacfrasnoabi=des_infped_pervacfrasnoabi,
+                des_infadu_dosapli=des_infadu_dosapli,
+                des_infadu_pervacenfabi=des_infadu_pervacenfabi,
+                des_infadu_pervacfrasnoabi=des_infadu_pervacfrasnoabi,
+                des_viru_dosapli=des_viru_dosapli,
+                des_viru_pervacenfabi=des_viru_pervacenfabi,
+                des_viru_pervacfrasnoabi=des_viru_pervacfrasnoabi,
+                des_vacsin_dosapli=des_vacsin_dosapli,
+                des_vacsin_pervacenfabi=des_vacsin_pervacenfabi,
+                des_vacsin_pervacfrasnoabi=des_vacsin_pervacfrasnoabi,
+                des_vacpfi_dosapli=des_vacpfi_dosapli,
+                des_vacpfi_pervacenfabi=des_vacpfi_pervacenfabi,
+                des_vacpfi_pervacfrasnoabi=des_vacpfi_pervacfrasnoabi,
+                des_vacmod_dosapli=des_vacmod_dosapli,
+                des_vacmod_pervacenfabi=des_vacmod_pervacenfabi,
+                des_vacmod_pervacfrasnoabi=des_vacmod_pervacfrasnoabi,
+                des_vacvphcam_dosapli=des_vacvphcam_dosapli,
+                des_vacvphcam_pervacenfabi=des_vacvphcam_pervacenfabi,
+                des_vacvphcam_pervacfrasnoabi=des_vacvphcam_pervacfrasnoabi,
+                eniUser_id=eni_user_id
+            )
+
+        # Filtrar y sumar columnas Desperdicio
+        sum_data_des = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_tota=False,
+            des_fech__range=(fech_inicio, fech_fin)
+        ).aggregate(
+            total_des_bcg_dosapli=Sum('des_bcg_dosapli'),
+            total_des_bcg_pervacenfabi=Sum('des_bcg_pervacenfabi'),
+            total_des_bcg_pervacfrasnoabi=Sum('des_bcg_pervacfrasnoabi'),
+            total_des_hbpe_dosapli=Sum('des_hbpe_dosapli'),
+            total_des_hbpe_pervacenfabi=Sum('des_hbpe_pervacenfabi'),
+            total_des_hbpe_pervacfrasnoabi=Sum('des_hbpe_pervacfrasnoabi'),
+            total_des_rota_dosapli=Sum('des_rota_dosapli'),
+            total_des_rota_pervacenfabi=Sum('des_rota_pervacenfabi'),
+            total_des_rota_pervacfrasnoabi=Sum('des_rota_pervacfrasnoabi'),
+            total_des_pent_dosapli=Sum('des_pent_dosapli'),
+            total_des_pent_pervacenfabi=Sum('des_pent_pervacenfabi'),
+            total_des_pent_pervacfrasnoabi=Sum('des_pent_pervacfrasnoabi'),
+            total_des_fipv_dosapli=Sum('des_fipv_dosapli'),
+            total_des_fipv_pervacenfabi=Sum('des_fipv_pervacenfabi'),
+            total_des_fipv_pervacfrasnoabi=Sum('des_fipv_pervacfrasnoabi'),
+            total_des_anti_dosapli=Sum('des_anti_dosapli'),
+            total_des_anti_pervacenfabi=Sum('des_anti_pervacenfabi'),
+            total_des_anti_pervacfrasnoabi=Sum('des_anti_pervacfrasnoabi'),
+            total_des_neum_dosapli=Sum('des_neum_dosapli'),
+            total_des_neum_pervacenfabi=Sum('des_neum_pervacenfabi'),
+            total_des_neum_pervacfrasnoabi=Sum('des_neum_pervacfrasnoabi'),
+            total_des_sr_dosapli=Sum('des_sr_dosapli'),
+            total_des_sr_pervacenfabi=Sum('des_sr_pervacenfabi'),
+            total_des_sr_pervacfrasnoabi=Sum('des_sr_pervacfrasnoabi'),
+            total_des_srp_dosapli=Sum('des_srp_dosapli'),
+            total_des_srp_pervacenfabi=Sum('des_srp_pervacenfabi'),
+            total_des_srp_pervacfrasnoabi=Sum('des_srp_pervacfrasnoabi'),
+            total_des_vari_dosapli=Sum('des_vari_dosapli'),
+            total_des_vari_pervacenfabi=Sum('des_vari_pervacenfabi'),
+            total_des_vari_pervacfrasnoabi=Sum('des_vari_pervacfrasnoabi'),
+            total_des_fieb_dosapli=Sum('des_fieb_dosapli'),
+            total_des_fieb_pervacenfabi=Sum('des_fieb_pervacenfabi'),
+            total_des_fieb_pervacfrasnoabi=Sum('des_fieb_pervacfrasnoabi'),
+            total_des_dift_dosapli=Sum('des_dift_dosapli'),
+            total_des_dift_pervacenfabi=Sum('des_dift_pervacenfabi'),
+            total_des_dift_pervacfrasnoabi=Sum('des_dift_pervacfrasnoabi'),
+            total_des_hpv_dosapli=Sum('des_hpv_dosapli'),
+            total_des_hpv_pervacenfabi=Sum('des_hpv_pervacenfabi'),
+            total_des_hpv_pervacfrasnoabi=Sum('des_hpv_pervacfrasnoabi'),
+            total_des_dtad_dosapli=Sum('des_dtad_dosapli'),
+            total_des_dtad_pervacenfabi=Sum('des_dtad_pervacenfabi'),
+            total_des_dtad_pervacfrasnoabi=Sum('des_dtad_pervacfrasnoabi'),
+            total_des_hepa_dosapli=Sum('des_hepa_dosapli'),
+            total_des_hepa_pervacenfabi=Sum('des_hepa_pervacenfabi'),
+            total_des_hepa_pervacfrasnoabi=Sum('des_hepa_pervacfrasnoabi'),
+            total_des_inmant_dosapli=Sum('des_inmant_dosapli'),
+            total_des_inmant_pervacenfabi=Sum('des_inmant_pervacenfabi'),
+            total_des_inmant_pervacfrasnoabi=Sum('des_inmant_pervacfrasnoabi'),
+            total_des_inmanthepb_dosapli=Sum('des_inmanthepb_dosapli'),
+            total_des_inmanthepb_pervacenfabi=Sum(
+                'des_inmanthepb_pervacenfabi'),
+            total_des_inmanthepb_pervacfrasnoabi=Sum(
+                'des_inmanthepb_pervacfrasnoabi'),
+            total_des_inmantrra_dosapli=Sum('des_inmantrra_dosapli'),
+            total_des_inmantrra_pervacenfabi=Sum('des_inmantrra_pervacenfabi'),
+            total_des_inmantrra_pervacfrasnoabi=Sum(
+                'des_inmantrra_pervacfrasnoabi'),
+            total_des_infped_dosapli=Sum('des_infped_dosapli'),
+            total_des_infped_pervacenfabi=Sum('des_infped_pervacenfabi'),
+            total_des_infped_pervacfrasnoabi=Sum('des_infped_pervacfrasnoabi'),
+            total_des_infadu_dosapli=Sum('des_infadu_dosapli'),
+            total_des_infadu_pervacenfabi=Sum('des_infadu_pervacenfabi'),
+            total_des_infadu_pervacfrasnoabi=Sum('des_infadu_pervacfrasnoabi'),
+            total_des_viru_dosapli=Sum('des_viru_dosapli'),
+            total_des_viru_pervacenfabi=Sum('des_viru_pervacenfabi'),
+            total_des_viru_pervacfrasnoabi=Sum('des_viru_pervacfrasnoabi'),
+            total_des_vacsin_dosapli=Sum('des_vacsin_dosapli'),
+            total_des_vacsin_pervacenfabi=Sum('des_vacsin_pervacenfabi'),
+            total_des_vacsin_pervacfrasnoabi=Sum('des_vacsin_pervacfrasnoabi'),
+            total_des_vacpfi_dosapli=Sum('des_vacpfi_dosapli'),
+            total_des_vacpfi_pervacenfabi=Sum('des_vacpfi_pervacenfabi'),
+            total_des_vacpfi_pervacfrasnoabi=Sum('des_vacpfi_pervacfrasnoabi'),
+            total_des_vacmod_dosapli=Sum('des_vacmod_dosapli'),
+            total_des_vacmod_pervacenfabi=Sum('des_vacmod_pervacenfabi'),
+            total_des_vacmod_pervacfrasnoabi=Sum('des_vacmod_pervacfrasnoabi'),
+            total_des_vacvphcam_dosapli=Sum('des_vacvphcam_dosapli'),
+            total_des_vacvphcam_pervacenfabi=Sum('des_vacvphcam_pervacenfabi'),
+            total_des_vacvphcam_pervacfrasnoabi=Sum(
+                'des_vacvphcam_pervacfrasnoabi')
+        )
+
+        # Actualizar o crear una nueva fila Desperdicio
+        existing_record_des = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_fech__range=(fech_inicio, fech_fin),
+            des_tota=True
+        ).first()
+
+        # Desperdicio
+        if existing_record_des:
+            existing_record_des.des_bcg_dosapli = sum_data_des['total_des_bcg_dosapli']
+            existing_record_des.des_bcg_pervacenfabi = sum_data_des['total_des_bcg_pervacenfabi']
+            existing_record_des.des_bcg_pervacfrasnoabi = sum_data_des[
+                'total_des_bcg_pervacfrasnoabi']
+            existing_record_des.des_hbpe_dosapli = sum_data_des['total_des_hbpe_dosapli']
+            existing_record_des.des_hbpe_pervacenfabi = sum_data_des['total_des_hbpe_pervacenfabi']
+            existing_record_des.des_hbpe_pervacfrasnoabi = sum_data_des[
+                'total_des_hbpe_pervacfrasnoabi']
+            existing_record_des.des_rota_dosapli = sum_data_des['total_des_rota_dosapli']
+            existing_record_des.des_rota_pervacenfabi = sum_data_des['total_des_rota_pervacenfabi']
+            existing_record_des.des_rota_pervacfrasnoabi = sum_data_des[
+                'total_des_rota_pervacfrasnoabi']
+            existing_record_des.des_pent_dosapli = sum_data_des['total_des_pent_dosapli']
+            existing_record_des.des_pent_pervacenfabi = sum_data_des['total_des_pent_pervacenfabi']
+            existing_record_des.des_pent_pervacfrasnoabi = sum_data_des[
+                'total_des_pent_pervacfrasnoabi']
+            existing_record_des.des_fipv_dosapli = sum_data_des['total_des_fipv_dosapli']
+            existing_record_des.des_fipv_pervacenfabi = sum_data_des['total_des_fipv_pervacenfabi']
+            existing_record_des.des_fipv_pervacfrasnoabi = sum_data_des[
+                'total_des_fipv_pervacfrasnoabi']
+            existing_record_des.des_anti_dosapli = sum_data_des['total_des_anti_dosapli']
+            existing_record_des.des_anti_pervacenfabi = sum_data_des['total_des_anti_pervacenfabi']
+            existing_record_des.des_anti_pervacfrasnoabi = sum_data_des[
+                'total_des_anti_pervacfrasnoabi']
+            existing_record_des.des_neum_dosapli = sum_data_des['total_des_neum_dosapli']
+            existing_record_des.des_neum_pervacenfabi = sum_data_des['total_des_neum_pervacenfabi']
+            existing_record_des.des_neum_pervacfrasnoabi = sum_data_des[
+                'total_des_neum_pervacfrasnoabi']
+            existing_record_des.des_sr_dosapli = sum_data_des['total_des_sr_dosapli']
+            existing_record_des.des_sr_pervacenfabi = sum_data_des['total_des_sr_pervacenfabi']
+            existing_record_des.des_sr_pervacfrasnoabi = sum_data_des['total_des_sr_pervacfrasnoabi']
+            existing_record_des.des_srp_dosapli = sum_data_des['total_des_srp_dosapli']
+            existing_record_des.des_srp_pervacenfabi = sum_data_des['total_des_srp_pervacenfabi']
+            existing_record_des.des_srp_pervacfrasnoabi = sum_data_des[
+                'total_des_srp_pervacfrasnoabi']
+            existing_record_des.des_vari_dosapli = sum_data_des['total_des_vari_dosapli']
+            existing_record_des.des_vari_pervacenfabi = sum_data_des['total_des_vari_pervacenfabi']
+            existing_record_des.des_vari_pervacfrasnoabi = sum_data_des[
+                'total_des_vari_pervacfrasnoabi']
+            existing_record_des.des_fieb_dosapli = sum_data_des['total_des_fieb_dosapli']
+            existing_record_des.des_fieb_pervacenfabi = sum_data_des['total_des_fieb_pervacenfabi']
+            existing_record_des.des_fieb_pervacfrasnoabi = sum_data_des[
+                'total_des_fieb_pervacfrasnoabi']
+            existing_record_des.des_dift_dosapli = sum_data_des['total_des_dift_dosapli']
+            existing_record_des.des_dift_pervacenfabi = sum_data_des['total_des_dift_pervacenfabi']
+            existing_record_des.des_dift_pervacfrasnoabi = sum_data_des[
+                'total_des_dift_pervacfrasnoabi']
+            existing_record_des.des_hpv_dosapli = sum_data_des['total_des_hpv_dosapli']
+            existing_record_des.des_hpv_pervacenfabi = sum_data_des['total_des_hpv_pervacenfabi']
+            existing_record_des.des_hpv_pervacfrasnoabi = sum_data_des[
+                'total_des_hpv_pervacfrasnoabi']
+            existing_record_des.des_dtad_dosapli = sum_data_des['total_des_dtad_dosapli']
+            existing_record_des.des_dtad_pervacenfabi = sum_data_des['total_des_dtad_pervacenfabi']
+            existing_record_des.des_dtad_pervacfrasnoabi = sum_data_des[
+                'total_des_dtad_pervacfrasnoabi']
+            existing_record_des.des_hepa_dosapli = sum_data_des['total_des_hepa_dosapli']
+            existing_record_des.des_hepa_pervacenfabi = sum_data_des['total_des_hepa_pervacenfabi']
+            existing_record_des.des_hepa_pervacfrasnoabi = sum_data_des[
+                'total_des_hepa_pervacfrasnoabi']
+            existing_record_des.des_inmant_dosapli = sum_data_des['total_des_inmant_dosapli']
+            existing_record_des.des_inmant_pervacenfabi = sum_data_des[
+                'total_des_inmant_pervacenfabi']
+            existing_record_des.des_inmant_pervacfrasnoabi = sum_data_des[
+                'total_des_inmant_pervacfrasnoabi']
+            existing_record_des.des_inmanthepb_dosapli = sum_data_des['total_des_inmanthepb_dosapli']
+            existing_record_des.des_inmanthepb_pervacenfabi = sum_data_des[
+                'total_des_inmanthepb_pervacenfabi']
+            existing_record_des.des_inmanthepb_pervacfrasnoabi = sum_data_des[
+                'total_des_inmanthepb_pervacfrasnoabi']
+            existing_record_des.des_inmantrra_dosapli = sum_data_des['total_des_inmantrra_dosapli']
+            existing_record_des.des_inmantrra_pervacenfabi = sum_data_des[
+                'total_des_inmantrra_pervacenfabi']
+            existing_record_des.des_inmantrra_pervacfrasnoabi = sum_data_des[
+                'total_des_inmantrra_pervacfrasnoabi']
+            existing_record_des.des_infped_dosapli = sum_data_des['total_des_infped_dosapli']
+            existing_record_des.des_infped_pervacenfabi = sum_data_des[
+                'total_des_infped_pervacenfabi']
+            existing_record_des.des_infped_pervacfrasnoabi = sum_data_des[
+                'total_des_infped_pervacfrasnoabi']
+            existing_record_des.des_infadu_dosapli = sum_data_des['total_des_infadu_dosapli']
+            existing_record_des.des_infadu_pervacenfabi = sum_data_des[
+                'total_des_infadu_pervacenfabi']
+            existing_record_des.des_infadu_pervacfrasnoabi = sum_data_des[
+                'total_des_infadu_pervacfrasnoabi']
+            existing_record_des.des_viru_dosapli = sum_data_des['total_des_viru_dosapli']
+            existing_record_des.des_viru_pervacenfabi = sum_data_des['total_des_viru_pervacenfabi']
+            existing_record_des.des_viru_pervacfrasnoabi = sum_data_des[
+                'total_des_viru_pervacfrasnoabi']
+            existing_record_des.des_vacsin_dosapli = sum_data_des['total_des_vacsin_dosapli']
+            existing_record_des.des_vacsin_pervacenfabi = sum_data_des[
+                'total_des_vacsin_pervacenfabi']
+            existing_record_des.des_vacsin_pervacfrasnoabi = sum_data_des[
+                'total_des_vacsin_pervacfrasnoabi']
+            existing_record_des.des_vacpfi_dosapli = sum_data_des['total_des_vacpfi_dosapli']
+            existing_record_des.des_vacpfi_pervacenfabi = sum_data_des[
+                'total_des_vacpfi_pervacenfabi']
+            existing_record_des.des_vacpfi_pervacfrasnoabi = sum_data_des[
+                'total_des_vacpfi_pervacfrasnoabi']
+            existing_record_des.des_vacmod_dosapli = sum_data_des['total_des_vacmod_dosapli']
+            existing_record_des.des_vacmod_pervacenfabi = sum_data_des[
+                'total_des_vacmod_pervacenfabi']
+            existing_record_des.des_vacmod_pervacfrasnoabi = sum_data_des[
+                'total_des_vacmod_pervacfrasnoabi']
+            existing_record_des.des_vacvphcam_dosapli = sum_data_des['total_des_vacvphcam_dosapli']
+            existing_record_des.des_vacvphcam_pervacenfabi = sum_data_des[
+                'total_des_vacvphcam_pervacenfabi']
+            existing_record_des.des_vacvphcam_pervacfrasnoabi = sum_data_des[
+                'total_des_vacvphcam_pervacfrasnoabi']
+            existing_record_des.save()
+        else:
+            desperdicio.objects.create(
+                des_fech=fech_fin,  # Último día del mes
+                des_bcg_dosapli=sum_data_des['total_des_bcg_dosapli'],
+                des_bcg_pervacenfabi=sum_data_des['total_des_bcg_pervacenfabi'],
+                des_bcg_pervacfrasnoabi=sum_data_des['total_des_bcg_pervacfrasnoabi'],
+                des_hbpe_dosapli=sum_data_des['total_des_hbpe_dosapli'],
+                des_hbpe_pervacenfabi=sum_data_des['total_des_hbpe_pervacenfabi'],
+                des_hbpe_pervacfrasnoabi=sum_data_des['total_des_hbpe_pervacfrasnoabi'],
+                des_rota_dosapli=sum_data_des['total_des_rota_dosapli'],
+                des_rota_pervacenfabi=sum_data_des['total_des_rota_pervacenfabi'],
+                des_rota_pervacfrasnoabi=sum_data_des['total_des_rota_pervacfrasnoabi'],
+                des_pent_dosapli=sum_data_des['total_des_pent_dosapli'],
+                des_pent_pervacenfabi=sum_data_des['total_des_pent_pervacenfabi'],
+                des_pent_pervacfrasnoabi=sum_data_des['total_des_pent_pervacfrasnoabi'],
+                des_fipv_dosapli=sum_data_des['total_des_fipv_dosapli'],
+                des_fipv_pervacenfabi=sum_data_des['total_des_fipv_pervacenfabi'],
+                des_fipv_pervacfrasnoabi=sum_data_des['total_des_fipv_pervacfrasnoabi'],
+                des_anti_dosapli=sum_data_des['total_des_anti_dosapli'],
+                des_anti_pervacenfabi=sum_data_des['total_des_anti_pervacenfabi'],
+                des_anti_pervacfrasnoabi=sum_data_des['total_des_anti_pervacfrasnoabi'],
+                des_neum_dosapli=sum_data_des['total_des_neum_dosapli'],
+                des_neum_pervacenfabi=sum_data_des['total_des_neum_pervacenfabi'],
+                des_neum_pervacfrasnoabi=sum_data_des['total_des_neum_pervacfrasnoabi'],
+                des_sr_dosapli=sum_data_des['total_des_sr_dosapli'],
+                des_sr_pervacenfabi=sum_data_des['total_des_sr_pervacenfabi'],
+                des_sr_pervacfrasnoabi=sum_data_des['total_des_sr_pervacfrasnoabi'],
+                des_srp_dosapli=sum_data_des['total_des_srp_dosapli'],
+                des_srp_pervacenfabi=sum_data_des['total_des_srp_pervacenfabi'],
+                des_srp_pervacfrasnoabi=sum_data_des['total_des_srp_pervacfrasnoabi'],
+                des_vari_dosapli=sum_data_des['total_des_vari_dosapli'],
+                des_vari_pervacenfabi=sum_data_des['total_des_vari_pervacenfabi'],
+                des_vari_pervacfrasnoabi=sum_data_des['total_des_vari_pervacfrasnoabi'],
+                des_fieb_dosapli=sum_data_des['total_des_fieb_dosapli'],
+                des_fieb_pervacenfabi=sum_data_des['total_des_fieb_pervacenfabi'],
+                des_fieb_pervacfrasnoabi=sum_data_des['total_des_fieb_pervacfrasnoabi'],
+                des_dift_dosapli=sum_data_des['total_des_dift_dosapli'],
+                des_dift_pervacenfabi=sum_data_des['total_des_dift_pervacenfabi'],
+                des_dift_pervacfrasnoabi=sum_data_des['total_des_dift_pervacfrasnoabi'],
+                des_hpv_dosapli=sum_data_des['total_des_hpv_dosapli'],
+                des_hpv_pervacenfabi=sum_data_des['total_des_hpv_pervacenfabi'],
+                des_hpv_pervacfrasnoabi=sum_data_des['total_des_hpv_pervacfrasnoabi'],
+                des_dtad_dosapli=sum_data_des['total_des_dtad_dosapli'],
+                des_dtad_pervacenfabi=sum_data_des['total_des_dtad_pervacenfabi'],
+                des_dtad_pervacfrasnoabi=sum_data_des['total_des_dtad_pervacfrasnoabi'],
+                des_hepa_dosapli=sum_data_des['total_des_hepa_dosapli'],
+                des_hepa_pervacenfabi=sum_data_des['total_des_hepa_pervacenfabi'],
+                des_hepa_pervacfrasnoabi=sum_data_des['total_des_hepa_pervacfrasnoabi'],
+                des_inmant_dosapli=sum_data_des['total_des_inmant_dosapli'],
+                des_inmant_pervacenfabi=sum_data_des['total_des_inmant_pervacenfabi'],
+                des_inmant_pervacfrasnoabi=sum_data_des['total_des_inmant_pervacfrasnoabi'],
+                des_inmanthepb_dosapli=sum_data_des['total_des_inmanthepb_dosapli'],
+                des_inmanthepb_pervacenfabi=sum_data_des['total_des_inmanthepb_pervacenfabi'],
+                des_inmanthepb_pervacfrasnoabi=sum_data_des['total_des_inmanthepb_pervacfrasnoabi'],
+                des_inmantrra_dosapli=sum_data_des['total_des_inmantrra_dosapli'],
+                des_inmantrra_pervacenfabi=sum_data_des['total_des_inmantrra_pervacenfabi'],
+                des_inmantrra_pervacfrasnoabi=sum_data_des['total_des_inmantrra_pervacfrasnoabi'],
+                des_infped_dosapli=sum_data_des['total_des_infped_dosapli'],
+                des_infped_pervacenfabi=sum_data_des['total_des_infped_pervacenfabi'],
+                des_infped_pervacfrasnoabi=sum_data_des['total_des_infped_pervacfrasnoabi'],
+                des_infadu_dosapli=sum_data_des['total_des_infadu_dosapli'],
+                des_infadu_pervacenfabi=sum_data_des['total_des_infadu_pervacenfabi'],
+                des_infadu_pervacfrasnoabi=sum_data_des['total_des_infadu_pervacfrasnoabi'],
+                des_viru_dosapli=sum_data_des['total_des_viru_dosapli'],
+                des_viru_pervacenfabi=sum_data_des['total_des_viru_pervacenfabi'],
+                des_viru_pervacfrasnoabi=sum_data_des['total_des_viru_pervacfrasnoabi'],
+                des_vacsin_dosapli=sum_data_des['total_des_vacsin_dosapli'],
+                des_vacsin_pervacenfabi=sum_data_des['total_des_vacsin_pervacenfabi'],
+                des_vacsin_pervacfrasnoabi=sum_data_des['total_des_vacsin_pervacfrasnoabi'],
+                des_vacpfi_dosapli=sum_data_des['total_des_vacpfi_dosapli'],
+                des_vacpfi_pervacenfabi=sum_data_des['total_des_vacpfi_pervacenfabi'],
+                des_vacpfi_pervacfrasnoabi=sum_data_des['total_des_vacpfi_pervacfrasnoabi'],
+                des_vacmod_dosapli=sum_data_des['total_des_vacmod_dosapli'],
+                des_vacmod_pervacenfabi=sum_data_des['total_des_vacmod_pervacenfabi'],
+                des_vacmod_pervacfrasnoabi=sum_data_des['total_des_vacmod_pervacfrasnoabi'],
+                des_vacvphcam_dosapli=sum_data_des['total_des_vacvphcam_dosapli'],
+                des_vacvphcam_pervacenfabi=sum_data_des['total_des_vacvphcam_pervacenfabi'],
+                des_vacvphcam_pervacfrasnoabi=sum_data_des['total_des_vacvphcam_pervacfrasnoabi'],
+                des_tota=True,
+                eniUser_id=eni_user_id
+            )
+
+        return Response({"message": Dato_Update_Correcto, "data": serializer.data}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'], url_path='eliminar-temprano')
+    def delete_temprano(self, request):
+        eni_user_id = request.data.get('eniUser')
+        tem_fech = request.data.get('tem_fech')
+
+        # Verificar que se hayan proporcionado el eniUser y la fecha
+        if not eni_user_id or not tem_fech:
+            return Response(
+                {"error": "Se requiere el ID del usuario (eniUser) y la fecha (tem_fech)."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Convertir tem_fech a objeto date
+        tem_fech_parsed = parse_date(tem_fech)
+        if not tem_fech_parsed:
+            return Response({"error": "Formato de fecha inválido para tem_fech."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Eliminar registros en 'temprano' asociados al usuario y fecha específica
+        temprano.objects.filter(eniUser_id=eni_user_id,
+                                tem_fech=tem_fech_parsed).delete()
+
+        # Recalcular los totales en 'temprano' donde tem_tota es True
+        # Obtener el primer y último día del mes
+        fech_inicio = tem_fech_parsed.replace(day=1)
+        next_month = fech_inicio + timedelta(days=32)
+        fech_fin = next_month.replace(day=1) - timedelta(days=1)
+
+        # Filtrar registros del mes (excluyendo los totales)
+        registros_mes = temprano.objects.filter(
+            eniUser_id=eni_user_id,
+            tem_fech__range=(fech_inicio, fech_fin),
+            tem_tota=False
+        )
+
+        # Sumar los campos necesarios
+        sum_totals = registros_mes.aggregate(
+            tem_intr=Sum('tem_intr') or 0,
+            tem_extr_mies_cnh=Sum('tem_extr_mies_cnh') or 0,
+            tem_extr_mies_cibv=Sum('tem_extr_mies_cibv') or 0,
+            tem_extr_mine_egen=Sum('tem_extr_mine_egen') or 0,
+            tem_extr_mine_bach=Sum('tem_extr_mine_bach') or 0,
+            tem_extr_visi=Sum('tem_extr_visi') or 0,
+            tem_extr_aten=Sum('tem_extr_aten') or 0,
+            tem_otro=Sum('tem_otro') or 0,
+            tem_sexo_homb=Sum('tem_sexo_homb') or 0,
+            tem_sexo_muje=Sum('tem_sexo_muje') or 0,
+            tem_luga_pert=Sum('tem_luga_pert') or 0,
+            tem_luga_nope=Sum('tem_luga_nope') or 0,
+            tem_naci_ecua=Sum('tem_naci_ecua') or 0,
+            tem_naci_colo=Sum('tem_naci_colo') or 0,
+            tem_naci_peru=Sum('tem_naci_peru') or 0,
+            tem_naci_cuba=Sum('tem_naci_cuba') or 0,
+            tem_naci_vene=Sum('tem_naci_vene') or 0,
+            tem_naci_otro=Sum('tem_naci_otro') or 0,
+            tem_auto_indi=Sum('tem_auto_indi') or 0,
+            tem_auto_afro=Sum('tem_auto_afro') or 0,
+            tem_auto_negr=Sum('tem_auto_negr') or 0,
+            tem_auto_mula=Sum('tem_auto_mula') or 0,
+            tem_auto_mont=Sum('tem_auto_mont') or 0,
+            tem_auto_mest=Sum('tem_auto_mest') or 0,
+            tem_auto_blan=Sum('tem_auto_blan') or 0,
+            tem_auto_otro=Sum('tem_auto_otro') or 0,
+            tem_naci_achu=Sum('tem_naci_achu') or 0,
+            tem_naci_ando=Sum('tem_naci_ando') or 0,
+            tem_naci_awa=Sum('tem_naci_awa') or 0,
+            tem_naci_chac=Sum('tem_naci_chac') or 0,
+            tem_naci_cofa=Sum('tem_naci_cofa') or 0,
+            tem_naci_eper=Sum('tem_naci_eper') or 0,
+            tem_naci_huan=Sum('tem_naci_huan') or 0,
+            tem_naci_kich=Sum('tem_naci_kich') or 0,
+            tem_naci_mant=Sum('tem_naci_mant') or 0,
+            tem_naci_seco=Sum('tem_naci_seco') or 0,
+            tem_naci_shiw=Sum('tem_naci_shiw') or 0,
+            tem_naci_shua=Sum('tem_naci_shua') or 0,
+            tem_naci_sion=Sum('tem_naci_sion') or 0,
+            tem_naci_tsac=Sum('tem_naci_tsac') or 0,
+            tem_naci_waor=Sum('tem_naci_waor') or 0,
+            tem_naci_zapa=Sum('tem_naci_zapa') or 0,
+            tem_pueb_chib=Sum('tem_pueb_chib') or 0,
+            tem_pueb_kana=Sum('tem_pueb_kana') or 0,
+            tem_pueb_kara=Sum('tem_pueb_kara') or 0,
+            tem_pueb_kaya=Sum('tem_pueb_kaya') or 0,
+            tem_pueb_kich=Sum('tem_pueb_kich') or 0,
+            tem_pueb_kisa=Sum('tem_pueb_kisa') or 0,
+            tem_pueb_kitu=Sum('tem_pueb_kitu') or 0,
+            tem_pueb_nata=Sum('tem_pueb_nata') or 0,
+            tem_pueb_otav=Sum('tem_pueb_otav') or 0,
+            tem_pueb_palt=Sum('tem_pueb_palt') or 0,
+            tem_pueb_panz=Sum('tem_pueb_panz') or 0,
+            tem_pueb_past=Sum('tem_pueb_past') or 0,
+            tem_pueb_puru=Sum('tem_pueb_puru') or 0,
+            tem_pueb_sala=Sum('tem_pueb_sala') or 0,
+            tem_pueb_sara=Sum('tem_pueb_sara') or 0,
+            tem_pueb_toma=Sum('tem_pueb_toma') or 0,
+            tem_pueb_wara=Sum('tem_pueb_wara') or 0,
+            tem_men1_dosi_bcgp=Sum('tem_men1_dosi_bcgp') or 0,
+            tem_men1_dosi_hbpr=Sum('tem_men1_dosi_hbpr') or 0,
+            tem_men1_dosi_bcgd=Sum('tem_men1_dosi_bcgd') or 0,
+            tem_men1_1rad_rota=Sum('tem_men1_1rad_rota') or 0,
+            tem_men1_1rad_fipv=Sum('tem_men1_1rad_fipv') or 0,
+            tem_men1_1rad_neum=Sum('tem_men1_1rad_neum') or 0,
+            tem_men1_1rad_pent=Sum('tem_men1_1rad_pent') or 0,
+            tem_men1_2dad_rota=Sum('tem_men1_2dad_rota') or 0,
+            tem_men1_2dad_fipv=Sum('tem_men1_2dad_fipv') or 0,
+            tem_men1_2dad_neum=Sum('tem_men1_2dad_neum') or 0,
+            tem_men1_2dad_pent=Sum('tem_men1_2dad_pent') or 0,
+            tem_men1_3rad_bopv=Sum('tem_men1_3rad_bopv') or 0,
+            tem_men1_3rad_neum=Sum('tem_men1_3rad_neum') or 0,
+            tem_men1_3rad_pent=Sum('tem_men1_3rad_pent') or 0,
+            tem_12a23m_1rad_srp=Sum('tem_12a23m_1rad_srp') or 0,
+            tem_12a23m_dosi_fa=Sum('tem_12a23m_dosi_fa') or 0,
+            tem_12a23m_dosi_vari=Sum('tem_12a23m_dosi_vari') or 0,
+            tem_12a23m_2dad_srp=Sum('tem_12a23m_2dad_srp') or 0,
+            tem_12a23m_4tad_bopv=Sum('tem_12a23m_4tad_bopv') or 0,
+            tem_12a23m_4tad_dpt=Sum('tem_12a23m_4tad_dpt') or 0,
+            tem_5ano_5tad_bopv=Sum('tem_5ano_5tad_bopv') or 0,
+            tem_5ano_5tad_dpt=Sum('tem_5ano_5tad_dpt') or 0,
+            tem_9ano_1rad_hpv=Sum('tem_9ano_1rad_hpv') or 0,
+            tem_9ano_2dad_hpv=Sum('tem_9ano_2dad_hpv') or 0,
+            tem_10an_2dad_hpv=Sum('tem_10an_2dad_hpv') or 0,
+            tem_15an_terc_dtad=Sum('tem_15an_terc_dtad') or 0,
+        )
+
+        # Actualizar o crear el registro total para el mes en 'temprano'
+        total_record, created = temprano.objects.update_or_create(
+            eniUser_id=eni_user_id,
+            tem_fech=fech_fin,
+            tem_tota=True,
+            defaults=sum_totals
+        )
+
+        # Eliminar registros en 'desperdicio' asociados al usuario y fecha específica
+        desperdicio.objects.filter(
+            eniUser_id=eni_user_id, des_fech=tem_fech_parsed).delete()
+
+        # Filtrar registros del mes en 'desperdicio' (excluyendo los totales)
+        registros_desperdicio_mes = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_fech__range=(fech_inicio, fech_fin),
+            des_tota=False
+        )
+
+        # Sumar los campos necesarios en 'desperdicio'
+        sum_totals_desperdicio = registros_desperdicio_mes.aggregate(
+            des_bcg_dosapli=Sum('des_bcg_dosapli') or 0,
+            des_bcg_pervacenfabi=Sum('des_bcg_pervacenfabi') or 0,
+            des_bcg_pervacfrasnoabi=Sum('des_bcg_pervacfrasnoabi') or 0,
+            # Agrega aquí todos los demás campos que necesites sumar...
+        )
+
+        # Actualizar o crear el registro total para el mes en 'desperdicio'
+        total_record_desperdicio, created = desperdicio.objects.update_or_create(
+            eniUser_id=eni_user_id,
+            des_fech=fech_fin,
+            des_tota=True,
+            defaults=sum_totals_desperdicio
+        )
+
+        return Response({"message": Dato_Delete_Correcto}, status=status.HTTP_200_OK)
 
 
 class TardioRegistrationAPIView(viewsets.ModelViewSet):
@@ -1198,7 +2210,7 @@ class TardioRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('tar_fech')
 
-    def create(self, request, *args, **kwargs):
+    def create_tardio(self, request, *args, **kwargs):
         data = request.data
         tar_fech = parse_date(data.get('tar_fech'))
         eni_user_id = data.get('eniUser')
@@ -2332,7 +3344,7 @@ class TardioRegistrationAPIView(viewsets.ModelViewSet):
                 eniUser_id=eni_user_id
             )
 
-        return Response({"message": Dato_Registro_Correcto}, status=status.HTTP_201_CREATED)
+        return Response({"message": Dato_Create_Correcto}, status=status.HTTP_201_CREATED)
 
 
 class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
@@ -2356,7 +3368,7 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('des_fech', 'des_tota')
 
-    def create(self, request, *args, **kwargs):
+    def create_desperdicio(self, request, *args, **kwargs):
         data = request.data
         des_fech = parse_date(data.get('des_fech'))
         eni_user_id = data.get('eniUser')
@@ -2645,7 +3657,7 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
                 des_vacvphcam_pervacfrasnoabi=sum_totals_des['des_vacvphcam_pervacfrasnoabi'] or 0
             )
 
-        return Response({"message": Dato_Registro_Correcto}, status=status.HTTP_201_CREATED)
+        return Response({"message": Dato_Create_Correcto}, status=status.HTTP_201_CREATED)
 
 
 class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
@@ -2775,7 +3787,7 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
             desperdicio_total.save(update_fields=['des_vacmod_dosapli'])
 
         headers = self.get_success_headers(serializer.data)
-        return Response({"message": Dato_Registro_Correcto, "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({"message": Dato_Create_Correcto, "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)
 
     @ action(detail=False, methods=['get'], url_path='descargar-csv')
     def get_descargar_csv(self, request, *args, **kwargs):

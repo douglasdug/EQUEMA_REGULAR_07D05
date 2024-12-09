@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { getMesTemprano, deleteTemprano } from "../api/conexion.api.js";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import { getMesTemprano, deleteTemprano } from "../api/conexion.api.js";
 import {
   buttonStylePrimario,
   buttonStyleSecundario,
@@ -58,6 +58,7 @@ InputField.propTypes = {
 };
 
 const TablaTemprano = ({
+  setIsIdTem,
   setFormData,
   storedUserId,
   yearTem,
@@ -73,11 +74,18 @@ const TablaTemprano = ({
   const rowsPerPage = 10;
 
   const [selectedMonthYear, setSelectedMonthYear] = useState(() => {
+    const storedValue = localStorage.getItem("selectedMonthYear");
+    if (storedValue) {
+      return storedValue;
+    }
     const formattedMonth = monthTem.toString().padStart(2, "0");
     return `${yearTem}-${formattedMonth}`;
   });
 
   useEffect(() => {
+    localStorage.setItem("selectedMonthYear", selectedMonthYear);
+    console.log("txtMesAnioTem", selectedMonthYear);
+    const [yearTem, monthTem] = selectedMonthYear.split("-");
     const loadTemprano = async () => {
       try {
         const data = await getMesTemprano(storedUserId, monthTem, yearTem);
@@ -87,7 +95,7 @@ const TablaTemprano = ({
       }
     };
     loadTemprano();
-  }, [setError]);
+  }, [setError, selectedMonthYear]);
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -150,6 +158,7 @@ const TablaTemprano = ({
   const handleEdit = (id) => {
     const user = eniUsers.find((user) => user.id === id);
     if (user) {
+      setIsIdTem(id);
       setFormData(getFormData(user));
       setBotonEstado({ btnBuscarTabTem: true });
       setIsInputEstado({
@@ -166,7 +175,7 @@ const TablaTemprano = ({
 
       setIsLoading(true);
       try {
-        await deleteUserAndUpdateState(user.username, id);
+        await deleteUserAndUpdateState(id);
       } catch (error) {
         handleDeleteError(error);
       } finally {
@@ -177,7 +186,7 @@ const TablaTemprano = ({
 
   const confirmDelete = (user) => {
     return window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\Fecha: ${user.tem_fech}`
+      `¿Estás seguro de que deseas eliminar este registro?\nFecha: ${user.tem_fech}`
     );
   };
 
@@ -220,11 +229,7 @@ const TablaTemprano = ({
         const date = new Date(year, parseInt(month) - 1, day);
         if (!isNaN(date.getTime())) {
           formattedDate = date.toISOString().split("T")[0];
-        } else {
-          formattedDate = ""; // O establece un valor predeterminado
         }
-      } else {
-        formattedDate = ""; // O establece un valor predeterminado
       }
     }
     return {
@@ -321,11 +326,11 @@ const TablaTemprano = ({
     <div className="container">
       <div className="flex items-center justify-center">
         <InputField
-          htmlFor="mesAnioTem"
+          htmlFor="txtMesAnioTem"
           label={"AAAA-MM"}
           type="month"
-          name="mesAnioTem"
-          id="mesAnioTem"
+          name="txtMesAnioTem"
+          id="txtMesAnioTem"
           value={selectedMonthYear}
           onChange={valRegAnoMes}
           placeholder="AAAA-MM"
@@ -442,7 +447,6 @@ const TablaTemprano = ({
                       "9 AÑOS (NIÑAS) 2da Dosis HPV",
                       "10 Años (NIÑAS) 2da Dosis HPV",
                       "15 años Tercer Refuerzo dT adulto",
-                      "idUser",
                     ].map((header) => (
                       <th
                         key={header}
@@ -480,7 +484,12 @@ const TablaTemprano = ({
                           )}
                         </td>
                         {Object.keys(registro)
-                          .filter((key) => key !== "id" && key !== "tem_tota")
+                          .filter(
+                            (key) =>
+                              key !== "id" &&
+                              key !== "tem_tota" &&
+                              key !== "eniUser"
+                          )
                           .map((key) => {
                             let cellContent = registro[key];
                             return (
@@ -530,6 +539,7 @@ const TablaTemprano = ({
   );
 };
 TablaTemprano.propTypes = {
+  setIsIdTem: PropTypes.func.isRequired,
   setFormData: PropTypes.func.isRequired,
   storedUserId: PropTypes.number.isRequired,
   yearTem: PropTypes.number.isRequired,

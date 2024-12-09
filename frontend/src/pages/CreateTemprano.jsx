@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { registerTemprano } from "../api/conexion.api.js";
+import {
+  registerTemprano,
+  updateTemprano,
+  deleteTemprano,
+} from "../api/conexion.api.js";
 import { validarDato, validarRegistro } from "../api/validadorUtil.js";
 import {
   inputStyle,
@@ -125,6 +129,7 @@ const CreateTemprano = () => {
     btnLimpiar: false,
     btnRegistrarTem: true,
   });
+  const [isIdTem, setIsIdTem] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -141,14 +146,26 @@ const CreateTemprano = () => {
 
     // Lógica para enviar los datos al servidor
     try {
+      let response;
       if (resValidarRegistro.success) {
-        await registerTemprano({ ...formData, eniUser: storedUserId });
-        setSuccessMessage(resValidarRegistro.message);
-        toast.success(resValidarRegistro.message, {
-          position: "bottom-right",
-        });
+        if (isInputEstado.input) {
+          response = await updateTemprano(isIdTem, {
+            ...formData,
+            eniUser: storedUserId,
+          });
+          setSuccessMessage(resValidarRegistro.message);
+          const message = response.message || "Registro actualizado con éxito!";
+          toast.success(message, {
+            position: "bottom-right",
+          });
+        } else {
+          await registerTemprano({ ...formData, eniUser: storedUserId });
+          setSuccessMessage(resValidarRegistro.message);
+          toast.success(resValidarRegistro.message, {
+            position: "bottom-right",
+          });
+        }
         window.location.reload("/create-temprano/");
-        // Otros procesos necesarios al guardar
       } else {
         // Hubo un error en la validación
         setError(resValidarRegistro.error);
@@ -450,7 +467,9 @@ const CreateTemprano = () => {
     });
   }, [formData]);
 
-  const buttonText = isInputEstado.input ? "Actualizar Registro" : "Registrar";
+  const txtBtnRegAct = isInputEstado.input
+    ? "Actualizar Registro"
+    : "Registrar";
 
   return (
     <div className="container">
@@ -615,7 +634,7 @@ const CreateTemprano = () => {
               disabled={botonEstado.btnRegistrarTem}
               onClick={handleSubmit}
             >
-              {buttonText}
+              {txtBtnRegAct}
             </button>
             <button
               type="button"
@@ -642,6 +661,7 @@ const CreateTemprano = () => {
       </div>
       <div className="mt-5">
         <TablaTemprano
+          setIsIdTem={setIsIdTem}
           setFormData={setFormData}
           storedUserId={parseInt(storedUserId)}
           yearTem={parseInt(yearTem)}

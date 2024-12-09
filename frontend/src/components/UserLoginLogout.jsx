@@ -16,13 +16,13 @@ const UserLoginLogout = () => {
         isLoggedIn: false,
         user: null,
       });
-      navigate("/login/");
     } catch (error) {
       console.error(
         "Error al cerrar sesión:",
         error.response ? error.response.data : error.message
       );
     }
+    window.location.replace("/login/");
   };
 
   const handleLogin = () => {
