@@ -263,9 +263,17 @@ export const updateTemprano = async (id, formData) => {
   }
 };
 
-export const deleteTemprano = async (id) => {
+export const deleteTemprano = async (id, formData) => {
   try {
-    const response = await axios.delete(`${API_URL}/temprano/${id}/`);
+    const response = await axios.delete(
+      `${API_URL}/temprano/${id}/eliminar-temprano/`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: formData,
+      }
+    );
     return response.data;
   } catch (error) {
     console.error(

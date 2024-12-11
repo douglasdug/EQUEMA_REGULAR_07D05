@@ -2028,41 +2028,37 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
 
         return Response({"message": Dato_Update_Correcto, "data": serializer.data}, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['delete'], url_path='eliminar-temprano')
-    def delete_temprano(self, request):
-        eni_user_id = request.data.get('eniUser')
-        tem_fech = request.data.get('tem_fech')
+    @action(detail=True, methods=['delete'], url_path='eliminar-temprano')
+    def delete_temprano(self, request, pk=None):
+        data = request.data
+        tem_fech = parse_date(data.get('tem_fech'))
+        print(f"Fecha original: {tem_fech}")
+        eni_user_id = data.get('eniUser')
 
-        # Verificar que se hayan proporcionado el eniUser y la fecha
-        if not eni_user_id or not tem_fech:
-            return Response(
-                {"error": "Se requiere el ID del usuario (eniUser) y la fecha (tem_fech)."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Crear variables de control
+        fech_inicio = tem_fech.replace(day=1)
+        fech_fin = (tem_fech.replace(day=1) + timedelta(days=32)
+                    ).replace(day=1) - timedelta(days=1)
+        print(f"EniUserId: {eni_user_id}")
+        print(f"Inicio del mes (fech_inicio): {fech_inicio}")
+        print(f"Fin del mes (fech_fin): {fech_fin}")
 
-        # Convertir tem_fech a objeto date
-        tem_fech_parsed = parse_date(tem_fech)
-        if not tem_fech_parsed:
-            return Response({"error": "Formato de fecha inválido para tem_fech."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Eliminar registros en 'temprano' asociados al usuario y fecha específica
-        temprano.objects.filter(eniUser_id=eni_user_id,
-                                tem_fech=tem_fech_parsed).delete()
-
-        # Recalcular los totales en 'temprano' donde tem_tota es True
-        # Obtener el primer y último día del mes
-        fech_inicio = tem_fech_parsed.replace(day=1)
-        next_month = fech_inicio + timedelta(days=32)
-        fech_fin = next_month.replace(day=1) - timedelta(days=1)
-
-        # Filtrar registros del mes (excluyendo los totales)
-        registros_mes = temprano.objects.filter(
+        # Eliminar registros en 'temprano' donde tem_tota=False
+        primeros_registros = temprano.objects.filter(
             eniUser_id=eni_user_id,
-            tem_fech__range=(fech_inicio, fech_fin),
+            tem_fech=tem_fech,
             tem_tota=False
-        )
+            # Asegúrate de que 'id' es el campo correcto para ordenar
+        ).order_by('id')
+        if primeros_registros.exists():
+            primer_registro = primeros_registros.first()
+            primer_registro.delete()
 
-        # Sumar los campos necesarios
+        # Filtrar registros del mes y sumar los valores donde tem_tota es False
+        registros_mes = temprano.objects.filter(
+            tem_fech__range=(
+                fech_inicio, fech_fin), eniUser_id=eni_user_id, tem_tota=False
+        )
         sum_totals = registros_mes.aggregate(
             tem_intr=Sum('tem_intr') or 0,
             tem_extr_mies_cnh=Sum('tem_extr_mies_cnh') or 0,
@@ -2148,42 +2144,127 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
             tem_9ano_1rad_hpv=Sum('tem_9ano_1rad_hpv') or 0,
             tem_9ano_2dad_hpv=Sum('tem_9ano_2dad_hpv') or 0,
             tem_10an_2dad_hpv=Sum('tem_10an_2dad_hpv') or 0,
-            tem_15an_terc_dtad=Sum('tem_15an_terc_dtad') or 0,
+            tem_15an_terc_dtad=Sum('tem_15an_terc_dtad') or 0
         )
+        sum_totals = {k: v if v is not None else 0 for k,
+                      v in sum_totals.items()}
 
-        # Actualizar o crear el registro total para el mes en 'temprano'
-        total_record, created = temprano.objects.update_or_create(
+        # Actualizar o crear el registro total en 'temprano'
+        _, created = temprano.objects.update_or_create(
             eniUser_id=eni_user_id,
             tem_fech=fech_fin,
             tem_tota=True,
             defaults=sum_totals
         )
 
-        # Eliminar registros en 'desperdicio' asociados al usuario y fecha específica
-        desperdicio.objects.filter(
-            eniUser_id=eni_user_id, des_fech=tem_fech_parsed).delete()
+        # Eliminar registros en 'desperdicio' donde des_tota=False
+        primeros_registros_des = desperdicio.objects.filter(
+            eniUser_id=eni_user_id,
+            des_fech=tem_fech,
+            des_tota=False
+            # Asegúrate de que 'id' es el campo correcto para ordenar
+        ).order_by('id')
+        if primeros_registros_des.exists():
+            primer_registro_des = primeros_registros_des.first()
+            primer_registro_des.delete()
 
-        # Filtrar registros del mes en 'desperdicio' (excluyendo los totales)
-        registros_desperdicio_mes = desperdicio.objects.filter(
+        # Recalcular los totales en 'desperdicio' para el mes
+        registros_mes_des = desperdicio.objects.filter(
             eniUser_id=eni_user_id,
             des_fech__range=(fech_inicio, fech_fin),
             des_tota=False
         )
 
-        # Sumar los campos necesarios en 'desperdicio'
-        sum_totals_desperdicio = registros_desperdicio_mes.aggregate(
+        sum_totals_des = registros_mes_des.aggregate(
             des_bcg_dosapli=Sum('des_bcg_dosapli') or 0,
             des_bcg_pervacenfabi=Sum('des_bcg_pervacenfabi') or 0,
             des_bcg_pervacfrasnoabi=Sum('des_bcg_pervacfrasnoabi') or 0,
-            # Agrega aquí todos los demás campos que necesites sumar...
+            des_hbpe_dosapli=Sum('des_hbpe_dosapli') or 0,
+            des_hbpe_pervacenfabi=Sum('des_hbpe_pervacenfabi') or 0,
+            des_hbpe_pervacfrasnoabi=Sum('des_hbpe_pervacfrasnoabi') or 0,
+            des_rota_dosapli=Sum('des_rota_dosapli') or 0,
+            des_rota_pervacenfabi=Sum('des_rota_pervacenfabi') or 0,
+            des_rota_pervacfrasnoabi=Sum('des_rota_pervacfrasnoabi') or 0,
+            des_pent_dosapli=Sum('des_pent_dosapli') or 0,
+            des_pent_pervacenfabi=Sum('des_pent_pervacenfabi') or 0,
+            des_pent_pervacfrasnoabi=Sum('des_pent_pervacfrasnoabi') or 0,
+            des_fipv_dosapli=Sum('des_fipv_dosapli') or 0,
+            des_fipv_pervacenfabi=Sum('des_fipv_pervacenfabi') or 0,
+            des_fipv_pervacfrasnoabi=Sum('des_fipv_pervacfrasnoabi') or 0,
+            des_anti_dosapli=Sum('des_anti_dosapli') or 0,
+            des_anti_pervacenfabi=Sum('des_anti_pervacenfabi') or 0,
+            des_anti_pervacfrasnoabi=Sum('des_anti_pervacfrasnoabi') or 0,
+            des_neum_dosapli=Sum('des_neum_dosapli') or 0,
+            des_neum_pervacenfabi=Sum('des_neum_pervacenfabi') or 0,
+            des_neum_pervacfrasnoabi=Sum('des_neum_pervacfrasnoabi') or 0,
+            des_sr_dosapli=Sum('des_sr_dosapli') or 0,
+            des_sr_pervacenfabi=Sum('des_sr_pervacenfabi') or 0,
+            des_sr_pervacfrasnoabi=Sum('des_sr_pervacfrasnoabi') or 0,
+            des_srp_dosapli=Sum('des_srp_dosapli') or 0,
+            des_srp_pervacenfabi=Sum('des_srp_pervacenfabi') or 0,
+            des_srp_pervacfrasnoabi=Sum('des_srp_pervacfrasnoabi') or 0,
+            des_vari_dosapli=Sum('des_vari_dosapli') or 0,
+            des_vari_pervacenfabi=Sum('des_vari_pervacenfabi') or 0,
+            des_vari_pervacfrasnoabi=Sum('des_vari_pervacfrasnoabi') or 0,
+            des_fieb_dosapli=Sum('des_fieb_dosapli') or 0,
+            des_fieb_pervacenfabi=Sum('des_fieb_pervacenfabi') or 0,
+            des_fieb_pervacfrasnoabi=Sum('des_fieb_pervacfrasnoabi') or 0,
+            des_dift_dosapli=Sum('des_dift_dosapli') or 0,
+            des_dift_pervacenfabi=Sum('des_dift_pervacenfabi') or 0,
+            des_dift_pervacfrasnoabi=Sum('des_dift_pervacfrasnoabi') or 0,
+            des_hpv_dosapli=Sum('des_hpv_dosapli') or 0,
+            des_hpv_pervacenfabi=Sum('des_hpv_pervacenfabi') or 0,
+            des_hpv_pervacfrasnoabi=Sum('des_hpv_pervacfrasnoabi') or 0,
+            des_dtad_dosapli=Sum('des_dtad_dosapli') or 0,
+            des_dtad_pervacenfabi=Sum('des_dtad_pervacenfabi') or 0,
+            des_dtad_pervacfrasnoabi=Sum('des_dtad_pervacfrasnoabi') or 0,
+            des_hepa_dosapli=Sum('des_hepa_dosapli') or 0,
+            des_hepa_pervacenfabi=Sum('des_hepa_pervacenfabi') or 0,
+            des_hepa_pervacfrasnoabi=Sum('des_hepa_pervacfrasnoabi') or 0,
+            des_inmant_dosapli=Sum('des_inmant_dosapli') or 0,
+            des_inmant_pervacenfabi=Sum('des_inmant_pervacenfabi') or 0,
+            des_inmant_pervacfrasnoabi=Sum('des_inmant_pervacfrasnoabi') or 0,
+            des_inmanthepb_dosapli=Sum('des_inmanthepb_dosapli') or 0,
+            des_inmanthepb_pervacenfabi=Sum(
+                'des_inmanthepb_pervacenfabi') or 0,
+            des_inmanthepb_pervacfrasnoabi=Sum(
+                'des_inmanthepb_pervacfrasnoabi') or 0,
+            des_inmantrra_dosapli=Sum('des_inmantrra_dosapli') or 0,
+            des_inmantrra_pervacenfabi=Sum('des_inmantrra_pervacenfabi') or 0,
+            des_inmantrra_pervacfrasnoabi=Sum(
+                'des_inmantrra_pervacfrasnoabi') or 0,
+            des_infped_dosapli=Sum('des_infped_dosapli') or 0,
+            des_infped_pervacenfabi=Sum('des_infped_pervacenfabi') or 0,
+            des_infped_pervacfrasnoabi=Sum('des_infped_pervacfrasnoabi') or 0,
+            des_infadu_dosapli=Sum('des_infadu_dosapli') or 0,
+            des_infadu_pervacenfabi=Sum('des_infadu_pervacenfabi') or 0,
+            des_infadu_pervacfrasnoabi=Sum('des_infadu_pervacfrasnoabi') or 0,
+            des_viru_dosapli=Sum('des_viru_dosapli') or 0,
+            des_viru_pervacenfabi=Sum('des_viru_pervacenfabi') or 0,
+            des_viru_pervacfrasnoabi=Sum('des_viru_pervacfrasnoabi') or 0,
+            des_vacsin_dosapli=Sum('des_vacsin_dosapli') or 0,
+            des_vacsin_pervacenfabi=Sum('des_vacsin_pervacenfabi') or 0,
+            des_vacsin_pervacfrasnoabi=Sum('des_vacsin_pervacfrasnoabi') or 0,
+            des_vacpfi_dosapli=Sum('des_vacpfi_dosapli') or 0,
+            des_vacpfi_pervacenfabi=Sum('des_vacpfi_pervacenfabi') or 0,
+            des_vacpfi_pervacfrasnoabi=Sum('des_vacpfi_pervacfrasnoabi') or 0,
+            des_vacmod_dosapli=Sum('des_vacmod_dosapli') or 0,
+            des_vacmod_pervacenfabi=Sum('des_vacmod_pervacenfabi') or 0,
+            des_vacmod_pervacfrasnoabi=Sum('des_vacmod_pervacfrasnoabi') or 0,
+            des_vacvphcam_dosapli=Sum('des_vacvphcam_dosapli') or 0,
+            des_vacvphcam_pervacenfabi=Sum('des_vacvphcam_pervacenfabi') or 0,
+            des_vacvphcam_pervacfrasnoabi=Sum(
+                'des_vacvphcam_pervacfrasnoabi') or 0,
         )
+        sum_totals_des = {k: v if v is not None else 0 for k,
+                          v in sum_totals_des.items()}
 
-        # Actualizar o crear el registro total para el mes en 'desperdicio'
-        total_record_desperdicio, created = desperdicio.objects.update_or_create(
+        # Actualizar o crear el registro total en 'desperdicio'
+        _, created = desperdicio.objects.update_or_create(
             eniUser_id=eni_user_id,
             des_fech=fech_fin,
             des_tota=True,
-            defaults=sum_totals_desperdicio
+            defaults=sum_totals_des
         )
 
         return Response({"message": Dato_Delete_Correcto}, status=status.HTTP_200_OK)

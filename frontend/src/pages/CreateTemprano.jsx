@@ -218,7 +218,16 @@ const CreateTemprano = () => {
 
     setIsLoading(true);
     try {
-      const response = await deleteUser(formData.username);
+      let tem_fech = formData.tem_fech;
+      const [dia, mes, año] = tem_fech.split("/");
+      if (dia && mes && año) {
+        tem_fech = `${año}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+      }
+      const dataToSend = {
+        eniUser: storedUserId,
+        tem_fech: tem_fech,
+      };
+      const response = await deleteTemprano(isIdTem, dataToSend);
       setSuccessMessage("Registro eliminado con éxito!");
       const message = response.message || "Registro eliminado con éxito!";
       toast.success(message, {

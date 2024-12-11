@@ -175,7 +175,18 @@ const TablaTemprano = ({
 
       setIsLoading(true);
       try {
-        await deleteUserAndUpdateState(id);
+        let tem_fech = user.tem_fech;
+
+        const [dia, mes, año] = tem_fech.split("/");
+        if (dia && mes && año) {
+          tem_fech = `${año}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+        }
+
+        const formData = {
+          eniUser: user.eniUser,
+          tem_fech: tem_fech,
+        };
+        await deleteUserAndUpdateState(id, formData);
       } catch (error) {
         handleDeleteError(error);
       } finally {
@@ -190,8 +201,8 @@ const TablaTemprano = ({
     );
   };
 
-  const deleteUserAndUpdateState = async (id) => {
-    const response = await deleteTemprano(id);
+  const deleteUserAndUpdateState = async (id, formData) => {
+    const response = await deleteTemprano(id, formData);
     setSuccessMessage("Registro eliminado con éxito!");
     const message = response.message || "Registro eliminado con éxito!";
     toast.success(message, {
