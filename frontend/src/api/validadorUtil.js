@@ -264,7 +264,7 @@ const mensajesError = {
   messRegVac: "Registro guardado con éxito!",
 };
 
-export const validarRegistro = (formData) => {
+export const validarRegistroTemprano = (formData) => {
   const camposTotalIntExt = [
     "tem_intr",
     "tem_extr_mies_cnh",
@@ -429,6 +429,210 @@ const validarTotalesIguales = (totales) => {
 };
 
 const validarVacunas = (formData, totalSex, totalVacunas) => {
+  const vacunasIndividuales = [
+    sumarCampos(formData, ["tem_men1_dosi_bcgp", "tem_men1_dosi_bcgd"]),
+    Number(formData.tem_men1_dosi_hbpr),
+    sumarCampos(formData, ["tem_men1_1rad_rota", "tem_men1_2dad_rota"]),
+    sumarCampos(formData, ["tem_men1_1rad_fipv", "tem_men1_2dad_fipv"]),
+    sumarCampos(formData, [
+      "tem_men1_1rad_neum",
+      "tem_men1_2dad_neum",
+      "tem_men1_3rad_neum",
+    ]),
+    sumarCampos(formData, [
+      "tem_men1_1rad_pent",
+      "tem_men1_2dad_pent",
+      "tem_men1_3rad_pent",
+    ]),
+    sumarCampos(formData, [
+      "tem_men1_3rad_bopv",
+      "tem_12a23m_4tad_bopv",
+      "tem_5ano_5tad_bopv",
+    ]),
+    sumarCampos(formData, ["tem_12a23m_1rad_srp", "tem_12a23m_2dad_srp"]),
+    Number(formData.tem_12a23m_dosi_fa),
+    Number(formData.tem_12a23m_dosi_vari),
+    sumarCampos(formData, ["tem_12a23m_4tad_dpt", "tem_5ano_5tad_dpt"]),
+    sumarCampos(formData, [
+      "tem_9ano_1rad_hpv",
+      "tem_9ano_2dad_hpv",
+      "tem_10an_2dad_hpv",
+    ]),
+    Number(formData.tem_15an_terc_dtad),
+  ];
+
+  if (totalSex > totalVacunas) {
+    return false;
+  }
+
+  return vacunasIndividuales.every((vacuna) => totalSex >= vacuna);
+};
+
+export const validarRegistroTardio = (formData) => {
+  const camposTotalIntExt = [
+    "tar_intr",
+    "tar_extr_mies_cnh",
+    "tar_extr_mies_cibv",
+    "tar_extr_mine_egen",
+    "tar_extr_mine_bach",
+    "tar_extr_visi",
+    "tar_extr_aten",
+    "tar_otro",
+  ];
+
+  const camposTotalSex = ["tar_sexo_homb", "tar_sexo_muje"];
+  const camposTotalLugPer = ["tar_luga_pert", "tar_luga_nope"];
+  const camposTotalNac = [
+    "tar_naci_ecua",
+    "tar_naci_colo",
+    "tar_naci_peru",
+    "tar_naci_cuba",
+    "tar_naci_vene",
+    "tar_naci_otro",
+  ];
+  const camposTotalNacOtr = [
+    "tar_naci_colo",
+    "tar_naci_peru",
+    "tar_naci_cuba",
+    "tar_naci_vene",
+    "tar_naci_otro",
+  ];
+  const camposTotalAut = [
+    "tar_auto_indi",
+    "tar_auto_afro",
+    "tar_auto_negr",
+    "tar_auto_mula",
+    "tar_auto_mont",
+    "tar_auto_mest",
+    "tar_auto_blan",
+    "tar_auto_otro",
+  ];
+  const camposTotalNacIndi = [
+    "tar_naci_achu",
+    "tar_naci_ando",
+    "tar_naci_awa",
+    "tar_naci_chac",
+    "tar_naci_cofa",
+    "tar_naci_eper",
+    "tar_naci_huan",
+    "tar_naci_kich",
+    "tar_naci_mant",
+    "tar_naci_seco",
+    "tar_naci_shiw",
+    "tar_naci_shua",
+    "tar_naci_sion",
+    "tar_naci_tsac",
+    "tar_naci_waor",
+    "tar_naci_zapa",
+  ];
+  const camposTotalPue = [
+    "tar_pueb_chib",
+    "tar_pueb_kana",
+    "tar_pueb_kara",
+    "tar_pueb_kaya",
+    "tar_pueb_kich",
+    "tar_pueb_kisa",
+    "tar_pueb_kitu",
+    "tar_pueb_nata",
+    "tar_pueb_otav",
+    "tar_pueb_palt",
+    "tar_pueb_panz",
+    "tar_pueb_past",
+    "tar_pueb_puru",
+    "tar_pueb_sala",
+    "tar_pueb_sara",
+    "tar_pueb_toma",
+    "tar_pueb_wara",
+  ];
+  const camposVacunas = [
+    "tar_men1_dosi_bcgp",
+    "tar_men1_dosi_bcgd",
+    "tar_men1_dosi_hbpr",
+    "tar_men1_1rad_rota",
+    "tar_men1_2dad_rota",
+    "tar_men1_1rad_fipv",
+    "tar_men1_2dad_fipv",
+    "tar_men1_1rad_neum",
+    "tar_men1_2dad_neum",
+    "tar_men1_3rad_neum",
+    "tar_men1_1rad_pent",
+    "tar_men1_2dad_pent",
+    "tar_men1_3rad_pent",
+    "tar_men1_3rad_bopv",
+    "tar_12a23m_4tad_bopv",
+    "tar_5ano_5tad_bopv",
+    "tar_12a23m_1rad_srp",
+    "tar_12a23m_2dad_srp",
+    "tar_12a23m_dosi_fa",
+    "tar_12a23m_dosi_vari",
+    "tar_12a23m_4tad_dpt",
+    "tar_5ano_5tad_dpt",
+    "tar_9ano_1rad_hpv",
+    "tar_9ano_2dad_hpv",
+    "tar_10an_2dad_hpv",
+    "tar_15an_terc_dtad",
+  ];
+
+  // Cálculo de totales
+  const totalIntExt = sumarCampos(formData, camposTotalIntExt);
+  const totalSex = sumarCampos(formData, camposTotalSex);
+  const totalLugPer = sumarCampos(formData, camposTotalLugPer);
+  const totalNac = sumarCampos(formData, camposTotalNac);
+  const totalNacOtr = sumarCampos(formData, camposTotalNacOtr);
+  const totalAut = sumarCampos(formData, camposTotalAut);
+  const totalNacIndi = sumarCampos(formData, camposTotalNacIndi);
+  const totalPue = sumarCampos(formData, camposTotalPue);
+  const totalVacunas = sumarCampos(formData, camposVacunas);
+
+  const totalPersonas =
+    totalIntExt +
+    totalSex +
+    totalLugPer +
+    totalNac +
+    totalAut +
+    totalNacIndi +
+    totalPue;
+
+  if (totalPersonas + totalVacunas < 1 || formData.tar_fech === "") {
+    return { success: false, error: mensajesError.errCero };
+  }
+
+  if (
+    !validarTotalesIgualesTar([
+      totalIntExt,
+      totalSex,
+      totalLugPer,
+      totalNac,
+      totalAut,
+    ])
+  ) {
+    return { success: false, error: mensajesError.errIntExtSexResNacEtn };
+  }
+
+  if (totalNacOtr !== Number(formData.tar_auto_otro)) {
+    return { success: false, error: mensajesError.errNacOtr };
+  }
+
+  if (Number(formData.tar_auto_indi) !== totalNacIndi) {
+    return { success: false, error: mensajesError.errInd };
+  }
+
+  if (Number(formData.tar_naci_kich) !== totalPue) {
+    return { success: false, error: mensajesError.errKic };
+  }
+
+  if (!validarVacunasTar(formData, totalSex, totalVacunas)) {
+    return { success: false, error: mensajesError.errVacApl };
+  }
+
+  return { success: true, message: mensajesError.messRegVac };
+};
+
+const validarTotalesIgualesTar = (totales) => {
+  return totales.every((total) => total === totales[0]);
+};
+
+const validarVacunasTar = (formData, totalSex, totalVacunas) => {
   const vacunasIndividuales = [
     sumarCampos(formData, ["tem_men1_dosi_bcgp", "tem_men1_dosi_bcgd"]),
     Number(formData.tem_men1_dosi_hbpr),

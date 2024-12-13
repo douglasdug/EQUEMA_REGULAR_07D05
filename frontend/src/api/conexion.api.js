@@ -17,6 +17,7 @@ const clearAuthData = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("userId");
+  localStorage.removeItem("selectedMonthYear");
 };
 
 // Función para obtener los encabezados de autenticación
@@ -83,8 +84,12 @@ export const loginUser = async (formData) => {
 // Cerrar sesión del usuario
 export const logoutUser = async () => {
   try {
+    console.log("Iniciando logout");
     const accessToken = getAccessToken();
     const refreshToken = getRefreshToken();
+
+    console.log("Access Token:", accessToken);
+    console.log("Refresh Token:", refreshToken);
 
     if (!accessToken || !refreshToken) {
       throw new Error("Se requieren tokens de acceso y refresco");
@@ -97,13 +102,16 @@ export const logoutUser = async () => {
     };
 
     await axios.post(`${API_URL}/logout/`, { refresh: refreshToken }, config);
+    console.log("Logout exitoso en el servidor");
     clearAuthData();
+    console.log("Datos de autenticación eliminados");
   } catch (error) {
     console.error(
       "Error al cerrar sesión:",
       error.response ? error.response.data : error.message
     );
     clearAuthData();
+    console.log("Datos de autenticación eliminados en catch");
     throw error;
   }
 };

@@ -4,7 +4,7 @@ import {
   updateTemprano,
   deleteTemprano,
 } from "../api/conexion.api.js";
-import { validarDato, validarRegistro } from "../api/validadorUtil.js";
+import { validarDato, validarRegistroTemprano } from "../api/validadorUtil.js";
 import {
   inputStyle,
   buttonStylePrimario,
@@ -133,7 +133,7 @@ const CreateTemprano = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const resValidarRegistro = validarRegistro(formData, setError);
+    const resValidarRegistro = validarRegistroTemprano(formData, setError);
 
     if (isLoading) return;
     setIsLoading(true);
@@ -470,7 +470,7 @@ const CreateTemprano = () => {
   };
 
   useEffect(() => {
-    const resValidarRegistro = validarRegistro(formData);
+    const resValidarRegistro = validarRegistroTemprano(formData);
     setBotonEstado({
       btnRegistrarTem: !resValidarRegistro.success,
     });

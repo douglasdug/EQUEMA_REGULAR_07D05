@@ -354,7 +354,7 @@ const TablaDesperdicio = ({
         <InputField
           htmlFor="txtMesAnioDes"
           label={"AAAA-MM"}
-          type="month"
+          type="text"
           name="txtMesAnioDes"
           id="txtMesAnioDes"
           value={selectedMonthYear}

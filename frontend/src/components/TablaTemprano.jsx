@@ -339,7 +339,7 @@ const TablaTemprano = ({
         <InputField
           htmlFor="txtMesAnioTem"
           label={"AAAA-MM"}
-          type="month"
+          type="text"
           name="txtMesAnioTem"
           id="txtMesAnioTem"
           value={selectedMonthYear}
