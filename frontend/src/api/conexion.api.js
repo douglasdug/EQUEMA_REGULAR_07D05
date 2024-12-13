@@ -296,3 +296,161 @@ export const getTemprano = async (id) => {
     throw error;
   }
 };
+
+//Funciones de Tardio
+export const getMesTardio = async (user_id, month, year) => {
+  try {
+    const response = await axios.get(`${API_URL}/tardio/`, {
+      params: { user_id, month, year },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const registerTardio = async (formData) => {
+  try {
+    const response = await axios.post(`${API_URL}/tardio/`, formData);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error creating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const updateTardio = async (id, formData) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/tardio/${id}/actualizar-tardio/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const deleteTardio = async (id, formData) => {
+  try {
+    const response = await axios.delete(
+      `${API_URL}/tardio/${id}/eliminar-tardio/`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: formData,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error deleting early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const getTardio = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/tardio/${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+//Funciones de Desperdicio
+export const getMesDesperdicio = async (user_id, month, year) => {
+  try {
+    const response = await axios.get(`${API_URL}/desperdicio/`, {
+      params: { user_id, month, year },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const registerDesperdicio = async (formData) => {
+  try {
+    const response = await axios.post(`${API_URL}/desperdicio/`, formData);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error creating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const updateDesperdicio = async (id, formData) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/desperdicio/${id}/actualizar-desperdicio/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const deleteDesperdicio = async (id, formData) => {
+  try {
+    const response = await axios.delete(
+      `${API_URL}/desperdicio/${id}/eliminar-desperdicio/`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: formData,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error deleting early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const getDesperdicio = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/desperdicio/${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
