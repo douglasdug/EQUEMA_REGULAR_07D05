@@ -330,6 +330,7 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('tem_fech', 'tem_tota')
 
+    @action(detail=False, methods=['post'], url_path='crear-temprano')
     def create_temprano(self, request, *args, **kwargs):
         data = request.data
         tem_fech = parse_date(data.get('tem_fech'))
@@ -2287,6 +2288,7 @@ class TardioRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('tar_fech')
 
+    @action(detail=False, methods=['post'], url_path='crear-tardio')
     def create_tardio(self, request, *args, **kwargs):
         data = request.data
         tar_fech = parse_date(data.get('tar_fech'))
@@ -4912,6 +4914,7 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('des_fech', 'des_tota')
 
+    @action(detail=False, methods=['post'], url_path='crear-desperdicio')
     def create_desperdicio(self, request, *args, **kwargs):
         data = request.data
         des_fech = parse_date(data.get('des_fech'))

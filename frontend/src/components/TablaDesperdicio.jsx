@@ -61,8 +61,7 @@ const TablaDesperdicio = ({
   setIsIdDes,
   setFormData,
   storedUserId,
-  yearDes,
-  monthDes,
+  fechaInput,
   setBotonEstado,
   setIsInputEstado,
   setIsLoading,
@@ -70,22 +69,31 @@ const TablaDesperdicio = ({
   setError,
 }) => {
   const [eniUsers, setEniUsers] = useState([]);
+  const storedInputFech =
+    localStorage.getItem("dateInputFech") ||
+    new Date().toISOString().slice(0, 10);
+  const [yearDes, monthDes] = storedInputFech.split("-");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
-  const [selectedMonthYear, setSelectedMonthYear] = useState(() => {
-    const storedValue = localStorage.getItem("selectedMonthYear");
-    if (storedValue) {
-      return storedValue;
-    }
-    const formattedMonth = monthTem.toString().padStart(2, "0");
-    return `${yearTem}-${formattedMonth}`;
-  });
+  const getYearMonth = (date) => {
+    const [year, month] = date.split("-");
+    return `${year}-${month}`;
+  };
+
+  let initialMonthYear = "";
+  if (fechaInput) {
+    initialMonthYear = getYearMonth(fechaInput);
+  } else if (yearDes && monthDes) {
+    initialMonthYear = `${yearDes}-${monthDes}`;
+  }
+  const [selectedMonthYear, setSelectedMonthYear] = useState(initialMonthYear);
 
   useEffect(() => {
-    localStorage.setItem("selectedMonthYear", selectedMonthYear);
-    console.log("txtMesAnioDes", selectedMonthYear);
-    const [yearDes, monthDes] = selectedMonthYear.split("-");
+    console.log("Ano y mes Local: ", yearDes, "y", monthDes);
+    if (fechaInput) {
+      setSelectedMonthYear(getYearMonth(fechaInput));
+    }
     const loadDesperdicio = async () => {
       try {
         const data = await getMesDesperdicio(storedUserId, monthDes, yearDes);
@@ -95,7 +103,7 @@ const TablaDesperdicio = ({
       }
     };
     loadDesperdicio();
-  }, [setError, selectedMonthYear]);
+  }, [setError, storedInputFech, fechaInput]);
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -106,8 +114,7 @@ const TablaDesperdicio = ({
   const totalPages = Math.ceil(eniUsers.length / rowsPerPage);
 
   const handleSearch = async () => {
-    if (selectedMonthYear) {
-      const [yearDes, monthDes] = selectedMonthYear.split("-");
+    if (storedInputFech) {
       try {
         const data = await getMesDesperdicio(storedUserId, monthDes, yearDes);
         setEniUsers(Array.isArray(data) ? data : []);
@@ -121,16 +128,17 @@ const TablaDesperdicio = ({
 
   const valRegAnoMes = (e) => {
     let value = e.target.value;
-    // Eliminar cualquier carácter que no sea número o guion
+    // Eliminar cualquier carácter que no sea número
     value = value.replace(/[^\d]/g, "");
     // Insertar el guion después de cuatro dígitos (año)
-    if (value.length > 3 && value[4] !== "-") {
-      value = value.slice(0, 4) + "-" + value.slice(4);
-    }
+    //if (value.length > 3) {
+    //  value = value.slice(0, 4) + "-" + value.slice(4);
+    //}
     // Limitar el tamaño máximo a 7 caracteres (AAAA-MM)
     if (value.length > 7) {
       value = value.slice(0, 7);
     }
+    setSelectedMonthYear(value);
     // Validar el año
     const anio = value.slice(0, 4);
     if (anio.length === 4) {
@@ -138,6 +146,7 @@ const TablaDesperdicio = ({
       const anioActual = new Date().getFullYear();
       if (anioNum < 1900 || anioNum > anioActual) {
         // Año inválido
+        setIsValid(false);
         return;
       }
     }
@@ -147,10 +156,14 @@ const TablaDesperdicio = ({
       const mesNum = parseInt(mes, 10);
       if (mesNum < 1 || mesNum > 12) {
         // Mes inválido
+        setIsValid(false);
         return;
       }
     }
-    setSelectedMonthYear(value);
+    // Guardar en localStorage
+    localStorage.setItem("dateInputFech", value);
+    console.log("Fecha del input: ", value);
+    // Validar el formato completo
     const regex = /^\d{4}-(0[1-9]|1[0-2])$/;
     setIsValid(regex.test(value));
   };
@@ -352,11 +365,11 @@ const TablaDesperdicio = ({
     <div className="container">
       <div className="flex items-center justify-center">
         <InputField
-          htmlFor="txtMesAnioDes"
+          htmlFor="txtMesAnioTabDes"
           label={"AAAA-MM"}
           type="text"
-          name="txtMesAnioDes"
-          id="txtMesAnioDes"
+          name="txtMesAnioTabDes"
+          id="txtMesAnioTabDes"
           value={selectedMonthYear}
           onChange={valRegAnoMes}
           placeholder="AAAA-MM"
@@ -558,8 +571,7 @@ TablaDesperdicio.propTypes = {
   setIsIdDes: PropTypes.func.isRequired,
   setFormData: PropTypes.func.isRequired,
   storedUserId: PropTypes.number.isRequired,
-  yearDes: PropTypes.number.isRequired,
-  monthDes: PropTypes.number.isRequired,
+  fechaInput: PropTypes.string.isRequired,
   setBotonEstado: PropTypes.func.isRequired,
   setIsInputEstado: PropTypes.func.isRequired,
   setIsLoading: PropTypes.func.isRequired,

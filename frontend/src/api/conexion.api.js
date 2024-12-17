@@ -13,11 +13,14 @@ const setTokens = (access, refresh) => {
 const setUserId = (userId) => {
   localStorage.setItem("userId", userId);
 };
+const setInputFech = (dateActual = new Date().toISOString().slice(0, 10)) => {
+  localStorage.setItem("dateInputFech", dateActual);
+};
 const clearAuthData = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("userId");
-  localStorage.removeItem("selectedMonthYear");
+  localStorage.removeItem("dateInputFech");
 };
 
 // Función para obtener los encabezados de autenticación
@@ -70,7 +73,8 @@ export const loginUser = async (formData) => {
       throw new Error("Datos de respuesta incompletos");
     }
     setTokens(access, refresh);
-    setUserId(response.data.id); // Si necesitas almacenar el ID
+    setUserId(response.data.id);
+    setInputFech();
     return response.data;
   } catch (error) {
     console.error(
@@ -244,7 +248,10 @@ export const getMesTemprano = async (user_id, month, year) => {
 
 export const registerTemprano = async (formData) => {
   try {
-    const response = await axios.post(`${API_URL}/temprano/`, formData);
+    const response = await axios.post(
+      `${API_URL}/temprano/crear-temprano/`,
+      formData
+    );
     return response.data;
   } catch (error) {
     console.error(
@@ -323,7 +330,10 @@ export const getMesTardio = async (user_id, month, year) => {
 
 export const registerTardio = async (formData) => {
   try {
-    const response = await axios.post(`${API_URL}/tardio/`, formData);
+    const response = await axios.post(
+      `${API_URL}/tardio/crear-tardio/`,
+      formData
+    );
     return response.data;
   } catch (error) {
     console.error(
@@ -402,7 +412,10 @@ export const getMesDesperdicio = async (user_id, month, year) => {
 
 export const registerDesperdicio = async (formData) => {
   try {
-    const response = await axios.post(`${API_URL}/desperdicio/`, formData);
+    const response = await axios.post(
+      `${API_URL}/desperdicio/crear-desperdicio/`,
+      formData
+    );
     return response.data;
   } catch (error) {
     console.error(

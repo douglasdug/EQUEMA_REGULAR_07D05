@@ -4,7 +4,7 @@ import {
   updateDesperdicio,
   deleteDesperdicio,
 } from "../api/conexion.api.js";
-import { validarDato, validarRegistro } from "../api/validadorUtil.js";
+import { validarDato, validarRegistroTemprano } from "../api/validadorUtil.js";
 import {
   inputStyle,
   buttonStylePrimario,
@@ -24,11 +24,13 @@ const getInputType = (key) => {
 
 const CreateDesperdicio = () => {
   const storedUserId = localStorage.getItem("userId") || "";
-  const dateActual = new Date().toISOString().slice(0, 10);
-  const [yearDes, monthDes] = dateActual.split("-");
+  const storedInputFech =
+    localStorage.getItem("dateInputFech") ||
+    new Date().toISOString().slice(0, 10);
+  const [fechaInput, setFechaInput] = useState("");
 
   const [formData, setFormData] = useState({
-    des_fech: dateActual,
+    des_fech: storedInputFech,
     des_bcg_dosapli: 0,
     des_bcg_pervacenfabi: 0,
     des_bcg_pervacfrasnoabi: 0,
@@ -148,7 +150,7 @@ const CreateDesperdicio = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const resValidarRegistro = validarRegistro(formData, setError);
+    const resValidarRegistro = validarRegistroTemprano(formData, setError);
 
     if (isLoading) return;
     setIsLoading(true);
@@ -360,12 +362,15 @@ const CreateDesperdicio = () => {
         ...formData,
         [name]: value,
       });
+      if (name === "des_fech") {
+        setFechaInput(e.target.value);
+      }
     }
   };
 
   const limpiarVariables = () => {
     setFormData({
-      des_fech: dateActual,
+      des_fech: storedInputFech,
       des_bcg_dosapli: 0,
       des_bcg_pervacenfabi: 0,
       des_bcg_pervacfrasnoabi: 0,
@@ -451,11 +456,37 @@ const CreateDesperdicio = () => {
     });
     setIsInputEstado({
       input: false,
+      des_bcg_dosapli: true,
+      des_hbpe_dosapli: true,
+      des_rota_dosapli: true,
+      des_pent_dosapli: true,
+      des_fipv_dosapli: true,
+      des_anti_dosapli: true,
+      des_neum_dosapli: true,
+      des_sr_dosapli: true,
+      des_srp_dosapli: true,
+      des_vari_dosapli: true,
+      des_fieb_dosapli: true,
+      des_dift_dosapli: true,
+      des_hpv_dosapli: true,
+      des_dtad_dosapli: true,
+      des_hepa_dosapli: true,
+      des_inmant_dosapli: true,
+      des_inmanthepb_dosapli: true,
+      des_inmantrra_dosapli: true,
+      des_infped_dosapli: true,
+      des_infadu_dosapli: true,
+      des_viru_dosapli: true,
+      des_vacsin_dosapli: true,
+      des_vacpfi_dosapli: true,
+      des_vacmod_dosapli: true,
+      des_vacvphcam_dosapli: true,
     });
   };
 
   useEffect(() => {
-    const resValidarRegistro = validarRegistro(formData);
+    console.log("Fecha CreaDes input: ", fechaInput);
+    const resValidarRegistro = validarRegistroTemprano(formData);
     setBotonEstado({
       btnRegistrarDes: !resValidarRegistro.success,
     });
@@ -574,8 +605,7 @@ const CreateDesperdicio = () => {
           setIsIdDes={setIsIdDes}
           setFormData={setFormData}
           storedUserId={parseInt(storedUserId)}
-          yearDes={parseInt(yearDes)}
-          monthDes={parseInt(monthDes)}
+          fechaInput={fechaInput}
           setBotonEstado={setBotonEstado}
           setIsInputEstado={setIsInputEstado}
           setIsLoading={setIsLoading}
