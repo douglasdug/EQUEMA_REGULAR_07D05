@@ -69,30 +69,34 @@ const TablaDesperdicio = ({
   setError,
 }) => {
   const [eniUsers, setEniUsers] = useState([]);
-  const storedInputFech =
+  const storedDateFecha =
     localStorage.getItem("dateInputFech") ||
     new Date().toISOString().slice(0, 10);
-  const [yearDes, monthDes] = storedInputFech.split("-");
+  const [yearDes, monthDes] = storedDateFecha.split("-");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
-  const getYearMonth = (date) => {
-    const [year, month] = date.split("-");
-    return `${year}-${month}`;
+  const getMonthName = (monthNumber) => {
+    const months = [
+      "ENERO",
+      "FEBRERO",
+      "MARZO",
+      "ABRIL",
+      "MAYO",
+      "JUNIO",
+      "JULIO",
+      "AGOSTO",
+      "SEPTIEMBRE",
+      "OCTUBRE",
+      "NOVIEMBRE",
+      "DICIEMBRE",
+    ];
+    return months[parseInt(monthNumber, 10) - 1];
   };
 
-  let initialMonthYear = "";
-  if (fechaInput) {
-    initialMonthYear = getYearMonth(fechaInput);
-  } else if (yearDes && monthDes) {
-    initialMonthYear = `${yearDes}-${monthDes}`;
-  }
-  const [selectedMonthYear, setSelectedMonthYear] = useState(initialMonthYear);
-
   useEffect(() => {
-    console.log("Ano y mes Local: ", yearDes, "y", monthDes);
     if (fechaInput) {
-      setSelectedMonthYear(getYearMonth(fechaInput));
+      localStorage.setItem("dateInputFech", fechaInput);
     }
     const loadDesperdicio = async () => {
       try {
@@ -103,7 +107,7 @@ const TablaDesperdicio = ({
       }
     };
     loadDesperdicio();
-  }, [setError, storedInputFech, fechaInput]);
+  }, [fechaInput, monthDes, yearDes, storedUserId, setError]);
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -112,61 +116,6 @@ const TablaDesperdicio = ({
     : [];
 
   const totalPages = Math.ceil(eniUsers.length / rowsPerPage);
-
-  const handleSearch = async () => {
-    if (storedInputFech) {
-      try {
-        const data = await getMesDesperdicio(storedUserId, monthDes, yearDes);
-        setEniUsers(Array.isArray(data) ? data : []);
-      } catch (error) {
-        setError(error.message);
-      }
-    }
-  };
-
-  const [isValid, setIsValid] = useState(false);
-
-  const valRegAnoMes = (e) => {
-    let value = e.target.value;
-    // Eliminar cualquier carácter que no sea número
-    value = value.replace(/[^\d]/g, "");
-    // Insertar el guion después de cuatro dígitos (año)
-    //if (value.length > 3) {
-    //  value = value.slice(0, 4) + "-" + value.slice(4);
-    //}
-    // Limitar el tamaño máximo a 7 caracteres (AAAA-MM)
-    if (value.length > 7) {
-      value = value.slice(0, 7);
-    }
-    setSelectedMonthYear(value);
-    // Validar el año
-    const anio = value.slice(0, 4);
-    if (anio.length === 4) {
-      const anioNum = parseInt(anio, 10);
-      const anioActual = new Date().getFullYear();
-      if (anioNum < 1900 || anioNum > anioActual) {
-        // Año inválido
-        setIsValid(false);
-        return;
-      }
-    }
-    // Validar el mes
-    const mes = value.slice(5);
-    if (mes.length === 2) {
-      const mesNum = parseInt(mes, 10);
-      if (mesNum < 1 || mesNum > 12) {
-        // Mes inválido
-        setIsValid(false);
-        return;
-      }
-    }
-    // Guardar en localStorage
-    localStorage.setItem("dateInputFech", value);
-    console.log("Fecha del input: ", value);
-    // Validar el formato completo
-    const regex = /^\d{4}-(0[1-9]|1[0-2])$/;
-    setIsValid(regex.test(value));
-  };
 
   const handleEdit = (id) => {
     const user = eniUsers.find((user) => user.id === id);
@@ -364,32 +313,11 @@ const TablaDesperdicio = ({
   return (
     <div className="container">
       <div className="flex items-center justify-center">
-        <InputField
-          htmlFor="txtMesAnioTabDes"
-          label={"AAAA-MM"}
-          type="text"
-          name="txtMesAnioTabDes"
-          id="txtMesAnioTabDes"
-          value={selectedMonthYear}
-          onChange={valRegAnoMes}
-          placeholder="AAAA-MM"
-          icon=""
-          isButtonIcon={false}
-        />
-        <button
-          type="button"
-          id="btnBuscarTabDes"
-          name="btnBuscarTabDes"
-          className={`${buttonStylePrimario} ${
-            !isValid
-              ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-              : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-          }`}
-          onClick={handleSearch}
-          disabled={!isValid}
-        >
-          Buscar
-        </button>
+        <h1 className="text-lg font-bold text-center text-green-50 dark:text-black">
+          Para localizar los meses en la tabla, es necesario seleccionar el
+          registro de la fecha correspondiente al mes de{" "}
+          {getMonthName(monthDes)} del año {yearDes}.
+        </h1>
       </div>
       <div className="flex flex-col">
         <div className="overflow-x-auto">

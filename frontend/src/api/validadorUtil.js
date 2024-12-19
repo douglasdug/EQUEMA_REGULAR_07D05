@@ -870,3 +870,65 @@ const validarVacunasTar = (formData, totalSex, totalVacunas) => {
 
   return vacunasIndividuales.every((vacuna) => totalSex >= vacuna);
 };
+
+export const validarRegistroDesperdicio = (formData) => {
+  const camposVacunas = [
+    "des_bcg_pervacenfabi",
+    "des_bcg_pervacfrasnoabi",
+    "des_hbpe_pervacenfabi",
+    "des_hbpe_pervacfrasnoabi",
+    "des_rota_pervacenfabi",
+    "des_rota_pervacfrasnoabi",
+    "des_pent_pervacenfabi",
+    "des_pent_pervacfrasnoabi",
+    "des_fipv_pervacenfabi",
+    "des_fipv_pervacfrasnoabi",
+    "des_anti_pervacenfabi",
+    "des_anti_pervacfrasnoabi",
+    "des_neum_pervacenfabi",
+    "des_neum_pervacfrasnoabi",
+    "des_sr_pervacenfabi",
+    "des_sr_pervacfrasnoabi",
+    "des_srp_pervacenfabi",
+    "des_srp_pervacfrasnoabi",
+    "des_vari_pervacenfabi",
+    "des_vari_pervacfrasnoabi",
+    "des_fieb_pervacenfabi",
+    "des_fieb_pervacfrasnoabi",
+    "des_dift_pervacenfabi",
+    "des_dift_pervacfrasnoabi",
+    "des_hpv_pervacenfabi",
+    "des_hpv_pervacfrasnoabi",
+    "des_dtad_pervacenfabi",
+    "des_dtad_pervacfrasnoabi",
+    "des_hepa_pervacenfabi",
+    "des_hepa_pervacfrasnoabi",
+    "des_inmant_pervacenfabi",
+    "des_inmant_pervacfrasnoabi",
+    "des_inmanthepb_pervacenfabi",
+    "des_inmanthepb_pervacfrasnoabi",
+    "des_inmantrra_pervacenfabi",
+    "des_inmantrra_pervacfrasnoabi",
+    "des_infped_pervacenfabi",
+    "des_infped_pervacfrasnoabi",
+    "des_infadu_pervacenfabi",
+    "des_infadu_pervacfrasnoabi",
+    "des_viru_pervacenfabi",
+    "des_viru_pervacfrasnoabi",
+    "des_vacsin_pervacenfabi",
+    "des_vacsin_pervacfrasnoabi",
+    "des_vacpfi_pervacenfabi",
+    "des_vacpfi_pervacfrasnoabi",
+    "des_vacmod_pervacenfabi",
+    "des_vacmod_pervacfrasnoabi",
+    "des_vacvphcam_pervacenfabi",
+    "des_vacvphcam_pervacfrasnoabi",
+  ];
+
+  const totalVacunas = sumarCampos(formData, camposVacunas);
+
+  if (totalVacunas < 1 || formData.des_fech === "") {
+    return { success: false, error: mensajesError.errCero };
+  }
+  return { success: true, message: mensajesError.messRegVac };
+};

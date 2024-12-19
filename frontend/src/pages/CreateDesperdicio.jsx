@@ -4,7 +4,10 @@ import {
   updateDesperdicio,
   deleteDesperdicio,
 } from "../api/conexion.api.js";
-import { validarDato, validarRegistroTemprano } from "../api/validadorUtil.js";
+import {
+  validarDato,
+  validarRegistroDesperdicio,
+} from "../api/validadorUtil.js";
 import {
   inputStyle,
   buttonStylePrimario,
@@ -150,7 +153,7 @@ const CreateDesperdicio = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const resValidarRegistro = validarRegistroTemprano(formData, setError);
+    const resValidarRegistro = validarRegistroDesperdicio(formData, setError);
 
     if (isLoading) return;
     setIsLoading(true);
@@ -275,6 +278,7 @@ const CreateDesperdicio = () => {
   };
 
   const labelMap = {
+    des_fech: "Fecha",
     des_bcg_dosapli: "Dosis aplicadas",
     des_bcg_pervacenfabi: "Perdida de vacuna en frasco abierto",
     des_bcg_pervacfrasnoabi: "Perdida de vacuna en frasco no abierto",
@@ -486,7 +490,7 @@ const CreateDesperdicio = () => {
 
   useEffect(() => {
     console.log("Fecha CreaDes input: ", fechaInput);
-    const resValidarRegistro = validarRegistroTemprano(formData);
+    const resValidarRegistro = validarRegistroDesperdicio(formData);
     setBotonEstado({
       btnRegistrarDes: !resValidarRegistro.success,
     });
