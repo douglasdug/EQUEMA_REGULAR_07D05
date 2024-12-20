@@ -10,6 +10,7 @@ import AdminUser from "./pages/AdminUser.jsx";
 import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
+import CreateInfluenza from "./pages/CreateInfluenza.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
 import { AuthProvider } from "./components/AuthContext.jsx";
 import { Toaster } from "react-hot-toast";
@@ -33,6 +34,7 @@ function App() {
               path="/create-desperdicio/"
               element={<CreateDesperdicio />}
             />
+            <Route path="/create-influenza/" element={<CreateInfluenza />} />
             <Route
               path="/create-registro-vacunado/"
               element={<CreateRegistroVacunado />}

@@ -36,6 +36,7 @@ export function Navigation() {
     { to: "/create-temprano/", label: "Temprano" },
     { to: "/create-tardio/", label: "Tardio" },
     { to: "/create-desperdicio/", label: "Desperdicio" },
+    { to: "/create-influenza/", label: "Influenza" },
     { to: "/create-registro-vacunado/", label: "Registro Vacunado" },
   ];
 

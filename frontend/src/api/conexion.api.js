@@ -475,3 +475,85 @@ export const getDesperdicio = async (id) => {
     throw error;
   }
 };
+
+//Funciones de Influenza
+export const getMesInfluenza = async (user_id, month, year) => {
+  try {
+    const response = await axios.get(`${API_URL}/influenza/`, {
+      params: { user_id, month, year },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const registerInfluenza = async (formData) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/influenza/crear-influenza/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error creating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const updateInfluenza = async (id, formData) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/influenza/${id}/actualizar-influenza/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const deleteInfluenza = async (id, formData) => {
+  try {
+    const response = await axios.delete(
+      `${API_URL}/influenza/${id}/eliminar-influenza/`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: formData,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error deleting early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const getInfluenza = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/influenza/${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
