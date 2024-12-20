@@ -489,7 +489,6 @@ const CreateDesperdicio = () => {
   };
 
   useEffect(() => {
-    console.log("Fecha CreaDes input: ", fechaInput);
     const resValidarRegistro = validarRegistroDesperdicio(formData);
     setBotonEstado({
       btnRegistrarDes: !resValidarRegistro.success,

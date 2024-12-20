@@ -24,11 +24,13 @@ const getInputType = (key) => {
 
 const CreateInfluenza = () => {
   const storedUserId = localStorage.getItem("userId") || "";
-  const dateActual = new Date().toISOString().slice(0, 10);
-  const [yearInf, monthInf] = dateActual.split("-");
+  const storedInputFech =
+    localStorage.getItem("dateInputFech") ||
+    new Date().toISOString().slice(0, 10);
+  const [fechaInput, setFechaInput] = useState("");
 
   const [formData, setFormData] = useState({
-    inf_fech: dateActual,
+    inf_fech: storedInputFech,
     inf_intr: 0,
     inf_extr_mies_cnh: 0,
     inf_extr_mies_cibv: 0,
@@ -348,6 +350,9 @@ const CreateInfluenza = () => {
         ...formData,
         [name]: value,
       });
+      if (name === "inf_fech") {
+        setFechaInput(e.target.value);
+      }
     }
     if (name === "inf_auto_indi") {
       setShowAutoIndi(value >= 1);
@@ -359,7 +364,7 @@ const CreateInfluenza = () => {
 
   const limpiarVariables = () => {
     setFormData({
-      inf_fech: dateActual,
+      inf_fech: storedInputFech,
       inf_intr: 0,
       inf_extr_mies_cnh: 0,
       inf_extr_mies_cibv: 0,
@@ -657,8 +662,7 @@ const CreateInfluenza = () => {
           setIsIdInf={setIsIdInf}
           setFormData={setFormData}
           storedUserId={parseInt(storedUserId)}
-          yearInf={parseInt(yearInf)}
-          monthInf={parseInt(monthInf)}
+          fechaInput={fechaInput}
           setBotonEstado={setBotonEstado}
           setIsInputEstado={setIsInputEstado}
           setIsLoading={setIsLoading}

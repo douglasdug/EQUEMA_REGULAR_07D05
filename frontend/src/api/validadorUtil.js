@@ -934,63 +934,194 @@ export const validarRegistroDesperdicio = (formData) => {
 };
 
 export const validarRegistroInfluenza = (formData) => {
-  const camposVacunas = [
-    "des_bcg_pervacenfabi",
-    "des_bcg_pervacfrasnoabi",
-    "des_hbpe_pervacenfabi",
-    "des_hbpe_pervacfrasnoabi",
-    "des_rota_pervacenfabi",
-    "des_rota_pervacfrasnoabi",
-    "des_pent_pervacenfabi",
-    "des_pent_pervacfrasnoabi",
-    "des_fipv_pervacenfabi",
-    "des_fipv_pervacfrasnoabi",
-    "des_anti_pervacenfabi",
-    "des_anti_pervacfrasnoabi",
-    "des_neum_pervacenfabi",
-    "des_neum_pervacfrasnoabi",
-    "des_sr_pervacenfabi",
-    "des_sr_pervacfrasnoabi",
-    "des_srp_pervacenfabi",
-    "des_srp_pervacfrasnoabi",
-    "des_vari_pervacenfabi",
-    "des_vari_pervacfrasnoabi",
-    "des_fieb_pervacenfabi",
-    "des_fieb_pervacfrasnoabi",
-    "des_dift_pervacenfabi",
-    "des_dift_pervacfrasnoabi",
-    "des_hpv_pervacenfabi",
-    "des_hpv_pervacfrasnoabi",
-    "des_dtad_pervacenfabi",
-    "des_dtad_pervacfrasnoabi",
-    "des_hepa_pervacenfabi",
-    "des_hepa_pervacfrasnoabi",
-    "des_inmant_pervacenfabi",
-    "des_inmant_pervacfrasnoabi",
-    "des_inmanthepb_pervacenfabi",
-    "des_inmanthepb_pervacfrasnoabi",
-    "des_inmantrra_pervacenfabi",
-    "des_inmantrra_pervacfrasnoabi",
-    "des_infped_pervacenfabi",
-    "des_infped_pervacfrasnoabi",
-    "des_infadu_pervacenfabi",
-    "des_infadu_pervacfrasnoabi",
-    "des_viru_pervacenfabi",
-    "des_viru_pervacfrasnoabi",
-    "des_vacsin_pervacenfabi",
-    "des_vacsin_pervacfrasnoabi",
-    "des_vacpfi_pervacenfabi",
-    "des_vacpfi_pervacfrasnoabi",
-    "des_vacmod_pervacenfabi",
-    "des_vacmod_pervacfrasnoabi",
-    "des_vacvphcam_pervacenfabi",
-    "des_vacvphcam_pervacfrasnoabi",
+  const camposTotalIntExt = [
+    "inf_intr",
+    "inf_extr_mies_cnh",
+    "inf_extr_mies_cibv",
+    "inf_extr_mine_egen",
+    "inf_extr_mine_bach",
+    "inf_extr_visi",
+    "inf_extr_aten",
+    "inf_otro",
   ];
 
+  const camposTotalSex = ["inf_sexo_homb", "inf_sexo_muje"];
+  const camposTotalLugPer = ["inf_luga_pert", "inf_luga_nope"];
+  const camposTotalNac = [
+    "inf_naci_ecua",
+    "inf_naci_colo",
+    "inf_naci_peru",
+    "inf_naci_cuba",
+    "inf_naci_vene",
+    "inf_naci_otro",
+  ];
+  const camposTotalNacOtr = [
+    "inf_naci_colo",
+    "inf_naci_peru",
+    "inf_naci_cuba",
+    "inf_naci_vene",
+    "inf_naci_otro",
+  ];
+  const camposTotalAut = [
+    "inf_auto_indi",
+    "inf_auto_afro",
+    "inf_auto_negr",
+    "inf_auto_mula",
+    "inf_auto_mont",
+    "inf_auto_mest",
+    "inf_auto_blan",
+    "inf_auto_otro",
+  ];
+  const camposTotalNacIndi = [
+    "inf_naci_achu",
+    "inf_naci_ando",
+    "inf_naci_awa",
+    "inf_naci_chac",
+    "inf_naci_cofa",
+    "inf_naci_eper",
+    "inf_naci_huan",
+    "inf_naci_kich",
+    "inf_naci_mant",
+    "inf_naci_seco",
+    "inf_naci_shiw",
+    "inf_naci_shua",
+    "inf_naci_sion",
+    "inf_naci_tsac",
+    "inf_naci_waor",
+    "inf_naci_zapa",
+  ];
+  const camposTotalPue = [
+    "inf_pueb_chib",
+    "inf_pueb_kana",
+    "inf_pueb_kara",
+    "inf_pueb_kaya",
+    "inf_pueb_kich",
+    "inf_pueb_kisa",
+    "inf_pueb_kitu",
+    "inf_pueb_nata",
+    "inf_pueb_otav",
+    "inf_pueb_palt",
+    "inf_pueb_panz",
+    "inf_pueb_past",
+    "inf_pueb_puru",
+    "inf_pueb_sala",
+    "inf_pueb_sara",
+    "inf_pueb_toma",
+    "inf_pueb_wara",
+  ];
+  const camposVacunas = [
+    "inf_6a11_prim",
+    "inf_6a11_segu",
+    "inf_1ano_dosi",
+    "inf_2ano_dosi",
+    "inf_3ano_dosi",
+    "inf_4ano_dosi",
+    "inf_5ano_dosi",
+    "inf_6ano_dosi",
+    "inf_7ano_dosi",
+    "inf_65an_dosi",
+    "inf_emba_dosi",
+    "inf_8a64_dosi",
+    "inf_puer_dosi",
+    "inf_pers_salu_dosi",
+    "inf_pers_disc_dosi",
+    "inf_cuid_adul_dosi",
+    "inf_pers_cuid_dosi",
+    "inf_trab_avic_dosi",
+    "inf_ppl_dosi",
+    "inf_otro_ries_dosi",
+    "inf_pobl_gene_dosi",
+  ];
+
+  // Cálculo de totales
+  const totalIntExt = sumarCampos(formData, camposTotalIntExt);
+  const totalSex = sumarCampos(formData, camposTotalSex);
+  const totalLugPer = sumarCampos(formData, camposTotalLugPer);
+  const totalNac = sumarCampos(formData, camposTotalNac);
+  const totalNacOtr = sumarCampos(formData, camposTotalNacOtr);
+  const totalAut = sumarCampos(formData, camposTotalAut);
+  const totalNacIndi = sumarCampos(formData, camposTotalNacIndi);
+  const totalPue = sumarCampos(formData, camposTotalPue);
   const totalVacunas = sumarCampos(formData, camposVacunas);
 
-  if (totalVacunas < 1 || formData.des_fech === "") {
+  const totalPersonas =
+    totalIntExt +
+    totalSex +
+    totalLugPer +
+    totalNac +
+    totalAut +
+    totalNacIndi +
+    totalPue;
+
+  if (totalPersonas + totalVacunas < 1 || formData.inf_fech === "") {
     return { success: false, error: mensajesError.errCero };
   }
+
+  if (
+    !validarTotalesIgualesInf([
+      totalIntExt,
+      totalSex,
+      totalLugPer,
+      totalNac,
+      totalAut,
+    ])
+  ) {
+    return { success: false, error: mensajesError.errIntExtSexResNacEtn };
+  }
+
+  if (totalNacOtr !== Number(formData.inf_auto_otro)) {
+    return { success: false, error: mensajesError.errNacOtr };
+  }
+
+  if (Number(formData.inf_auto_indi) !== totalNacIndi) {
+    return { success: false, error: mensajesError.errInd };
+  }
+
+  if (Number(formData.inf_naci_kich) !== totalPue) {
+    return { success: false, error: mensajesError.errKic };
+  }
+
+  if (!validarVacunasInf(formData, totalSex, totalVacunas)) {
+    return { success: false, error: mensajesError.errVacApl };
+  }
+
   return { success: true, message: mensajesError.messRegVac };
+};
+
+const validarTotalesIgualesInf = (totales) => {
+  return totales.every((total) => total === totales[0]);
+};
+
+const validarVacunasInf = (formData, totalSex, totalVacunas) => {
+  const vacunasIndividuales = [
+    sumarCampos(formData, [
+      "inf_6a11_prim",
+      "inf_6a11_segu",
+      "inf_1ano_dosi",
+      "inf_2ano_dosi",
+      "inf_3ano_dosi",
+      "inf_4ano_dosi",
+      "inf_5ano_dosi",
+      "inf_6ano_dosi",
+      "inf_7ano_dosi",
+      "inf_65an_dosi",
+      "inf_emba_dosi",
+      "inf_8a64_dosi",
+      "inf_puer_dosi",
+      "inf_pers_salu_dosi",
+      "inf_pers_disc_dosi",
+      "inf_cuid_adul_dosi",
+      "inf_pers_cuid_dosi",
+      "inf_trab_avic_dosi",
+      "inf_ppl_dosi",
+      "inf_otro_ries_dosi",
+      "inf_pobl_gene_dosi",
+    ]),
+  ];
+
+  if (totalSex > totalVacunas) {
+    return false;
+  }
+
+  return vacunasIndividuales.every((vacuna) => totalSex >= vacuna);
 };
