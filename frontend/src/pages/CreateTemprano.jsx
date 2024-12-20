@@ -24,11 +24,13 @@ const getInputType = (key) => {
 
 const CreateTemprano = () => {
   const storedUserId = localStorage.getItem("userId") || "";
-  const dateActual = new Date().toISOString().slice(0, 10);
-  const [yearTem, monthTem] = dateActual.split("-");
+  const storedInputFech =
+    localStorage.getItem("dateInputFech") ||
+    new Date().toISOString().slice(0, 10);
+  const [fechaInput, setFechaInput] = useState("");
 
   const [formData, setFormData] = useState({
-    tem_fech: dateActual,
+    tem_fech: storedInputFech,
     tem_intr: 0,
     tem_extr_mies_cnh: 0,
     tem_extr_mies_cibv: 0,
@@ -359,6 +361,9 @@ const CreateTemprano = () => {
         ...formData,
         [name]: value,
       });
+      if (name === "tem_fech") {
+        setFechaInput(e.target.value);
+      }
     }
     if (name === "tem_auto_indi") {
       setShowAutoIndi(value >= 1);
@@ -370,7 +375,7 @@ const CreateTemprano = () => {
 
   const limpiarVariables = () => {
     setFormData({
-      tem_fech: dateActual,
+      tem_fech: storedInputFech,
       tem_intr: 0,
       tem_extr_mies_cnh: 0,
       tem_extr_mies_cibv: 0,
@@ -673,8 +678,7 @@ const CreateTemprano = () => {
           setIsIdTem={setIsIdTem}
           setFormData={setFormData}
           storedUserId={parseInt(storedUserId)}
-          yearTem={parseInt(yearTem)}
-          monthTem={parseInt(monthTem)}
+          fechaInput={fechaInput}
           setBotonEstado={setBotonEstado}
           setIsInputEstado={setIsInputEstado}
           setIsLoading={setIsLoading}
