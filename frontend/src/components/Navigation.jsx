@@ -37,6 +37,7 @@ export function Navigation() {
     { to: "/create-tardio/", label: "Tardio" },
     { to: "/create-desperdicio/", label: "Desperdicio" },
     { to: "/create-influenza/", label: "Influenza" },
+    { to: "/create-reporte-eni/", label: "Reporte ENI" },
     { to: "/create-registro-vacunado/", label: "Registro Vacunado" },
   ];
 

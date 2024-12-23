@@ -557,3 +557,76 @@ export const getInfluenza = async (id) => {
     throw error;
   }
 };
+
+//Funciones de ReporteENI
+export const getMesReporteENI = async (user_id, month, year) => {
+  try {
+    const response = await axios.get(`${API_URL}/reporte-eni/`, {
+      params: { user_id, month, year },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const registerReporteENI = async (formData) => {
+  try {
+    const response = await axios.post(`${API_URL}/reporte-eni/`, formData);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error creating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const updateReporteENI = async (id, formData) => {
+  try {
+    const response = await axios.put(`${API_URL}/reporte-eni/${id}/`, formData);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const deleteReporteENI = async (id, formData) => {
+  try {
+    const response = await axios.delete(`${API_URL}/reporte-eni/${id}/`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: formData,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error deleting early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const getReporteENI = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/reporte-eni/${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};

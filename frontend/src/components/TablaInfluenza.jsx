@@ -123,6 +123,10 @@ const TablaInfluenza = ({
       setIsIdInf(id);
       setFormData(getFormData(user));
       setBotonEstado({ btnBuscarTabInf: true });
+      setIsInputEstado({
+        input: true,
+        inf_fech: true,
+      });
     }
   };
 

@@ -61,8 +61,7 @@ const TablaTardio = ({
   setIsIdTar,
   setFormData,
   storedUserId,
-  yearTar,
-  monthTar,
+  fechaInput,
   setBotonEstado,
   setIsInputEstado,
   setIsLoading,
@@ -70,22 +69,35 @@ const TablaTardio = ({
   setError,
 }) => {
   const [eniUsers, setEniUsers] = useState([]);
+  const storedDateFecha =
+    localStorage.getItem("dateInputFech") ||
+    new Date().toISOString().slice(0, 10);
+  const [yearTar, monthTar] = storedDateFecha.split("-");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
-  const [selectedMonthYear, setSelectedMonthYear] = useState(() => {
-    const storedValue = localStorage.getItem("selectedMonthYear");
-    if (storedValue) {
-      return storedValue;
-    }
-    const formattedMonth = monthTar.toString().padStart(2, "0");
-    return `${yearTar}-${formattedMonth}`;
-  });
+  const getMonthName = (monthNumber) => {
+    const months = [
+      "ENERO",
+      "FEBRERO",
+      "MARZO",
+      "ABRIL",
+      "MAYO",
+      "JUNIO",
+      "JULIO",
+      "AGOSTO",
+      "SEPTIEMBRE",
+      "OCTUBRE",
+      "NOVIEMBRE",
+      "DICIEMBRE",
+    ];
+    return months[parseInt(monthNumber, 10) - 1];
+  };
 
   useEffect(() => {
-    localStorage.setItem("selectedMonthYear", selectedMonthYear);
-    console.log("txtMesAnioTar", selectedMonthYear);
-    const [yearTar, monthTar] = selectedMonthYear.split("-");
+    if (fechaInput) {
+      localStorage.setItem("dateInputFech", fechaInput);
+    }
     const loadTardio = async () => {
       try {
         const data = await getMesTardio(storedUserId, monthTar, yearTar);
@@ -95,7 +107,7 @@ const TablaTardio = ({
       }
     };
     loadTardio();
-  }, [setError, selectedMonthYear]);
+  }, [fechaInput, monthTar, yearTar, storedUserId, setError]);
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -104,56 +116,6 @@ const TablaTardio = ({
     : [];
 
   const totalPages = Math.ceil(eniUsers.length / rowsPerPage);
-
-  const handleSearch = async () => {
-    if (selectedMonthYear) {
-      const [yearTar, monthTar] = selectedMonthYear.split("-");
-      try {
-        const data = await getMesTardio(storedUserId, monthTar, yearTar);
-        setEniUsers(Array.isArray(data) ? data : []);
-      } catch (error) {
-        setError(error.message);
-      }
-    }
-  };
-
-  const [isValid, setIsValid] = useState(false);
-
-  const valRegAnoMes = (e) => {
-    let value = e.target.value;
-    // Eliminar cualquier carácter que no sea número o guion
-    value = value.replace(/[^\d]/g, "");
-    // Insertar el guion después de cuatro dígitos (año)
-    if (value.length > 3 && value[4] !== "-") {
-      value = value.slice(0, 4) + "-" + value.slice(4);
-    }
-    // Limitar el tamaño máximo a 7 caracteres (AAAA-MM)
-    if (value.length > 7) {
-      value = value.slice(0, 7);
-    }
-    // Validar el año
-    const anio = value.slice(0, 4);
-    if (anio.length === 4) {
-      const anioNum = parseInt(anio, 10);
-      const anioActual = new Date().getFullYear();
-      if (anioNum < 1900 || anioNum > anioActual) {
-        // Año inválido
-        return;
-      }
-    }
-    // Validar el mes
-    const mes = value.slice(5);
-    if (mes.length === 2) {
-      const mesNum = parseInt(mes, 10);
-      if (mesNum < 1 || mesNum > 12) {
-        // Mes inválido
-        return;
-      }
-    }
-    setSelectedMonthYear(value);
-    const regex = /^\d{4}-(0[1-9]|1[0-2])$/;
-    setIsValid(regex.test(value));
-  };
 
   const handleEdit = (id) => {
     const user = eniUsers.find((user) => user.id === id);
@@ -428,32 +390,11 @@ const TablaTardio = ({
   return (
     <div className="container">
       <div className="flex items-center justify-center">
-        <InputField
-          htmlFor="txtMesAnioTar"
-          label={"AAAA-MM"}
-          type="text"
-          name="txtMesAnioTar"
-          id="txtMesAnioTar"
-          value={selectedMonthYear}
-          onChange={valRegAnoMes}
-          placeholder="AAAA-MM"
-          icon=""
-          isButtonIcon={false}
-        />
-        <button
-          type="button"
-          id="btnBuscarTabTar"
-          name="btnBuscarTabTar"
-          className={`${buttonStylePrimario} ${
-            !isValid
-              ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-              : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-          }`}
-          onClick={handleSearch}
-          disabled={!isValid}
-        >
-          Buscar
-        </button>
+        <h1 className="text-lg font-bold text-center text-green-50 dark:text-black">
+          Para localizar los meses en la tabla, es necesario seleccionar el
+          registro de la fecha correspondiente al mes de{" "}
+          {getMonthName(monthTar)} del año {yearTar}.
+        </h1>
       </div>
       <div className="flex flex-col">
         <div className="overflow-x-auto">
@@ -737,8 +678,7 @@ TablaTardio.propTypes = {
   setIsIdTar: PropTypes.func.isRequired,
   setFormData: PropTypes.func.isRequired,
   storedUserId: PropTypes.number.isRequired,
-  yearTar: PropTypes.number.isRequired,
-  monthTar: PropTypes.number.isRequired,
+  fechaInput: PropTypes.string.isRequired,
   setBotonEstado: PropTypes.func.isRequired,
   setIsInputEstado: PropTypes.func.isRequired,
   setIsLoading: PropTypes.func.isRequired,

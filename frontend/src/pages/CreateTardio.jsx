@@ -24,11 +24,13 @@ const getInputType = (key) => {
 
 const CreateTardio = () => {
   const storedUserId = localStorage.getItem("userId") || "";
-  const dateActual = new Date().toISOString().slice(0, 10);
-  const [yearTar, monthTar] = dateActual.split("-");
+  const storedInputFech =
+    localStorage.getItem("dateInputFech") ||
+    new Date().toISOString().slice(0, 10);
+  const [fechaInput, setFechaInput] = useState("");
 
   const [formData, setFormData] = useState({
-    tar_fech: dateActual,
+    tar_fech: storedInputFech,
     tar_intr: 0,
     tar_extr_mies_cnh: 0,
     tar_extr_mies_cibv: 0,
@@ -554,7 +556,7 @@ const CreateTardio = () => {
 
   const limpiarVariables = () => {
     setFormData({
-      tar_fech: dateActual,
+      tar_fech: storedInputFech,
       tar_intr: 0,
       tar_extr_mies_cnh: 0,
       tar_extr_mies_cibv: 0,
@@ -949,8 +951,7 @@ const CreateTardio = () => {
           setIsIdTar={setIsIdTar}
           setFormData={setFormData}
           storedUserId={parseInt(storedUserId)}
-          yearTar={parseInt(yearTar)}
-          monthTar={parseInt(monthTar)}
+          fechaInput={fechaInput}
           setBotonEstado={setBotonEstado}
           setIsInputEstado={setIsInputEstado}
           setIsLoading={setIsLoading}

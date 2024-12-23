@@ -11,6 +11,7 @@ import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
 import CreateInfluenza from "./pages/CreateInfluenza.jsx";
+import CreateReporteENI from "./pages/CreateReporteENI.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
 import { AuthProvider } from "./components/AuthContext.jsx";
 import { Toaster } from "react-hot-toast";
@@ -35,6 +36,7 @@ function App() {
               element={<CreateDesperdicio />}
             />
             <Route path="/create-influenza/" element={<CreateInfluenza />} />
+            <Route path="/create-reporte-eni/" element={<CreateReporteENI />} />
             <Route
               path="/create-registro-vacunado/"
               element={<CreateRegistroVacunado />}

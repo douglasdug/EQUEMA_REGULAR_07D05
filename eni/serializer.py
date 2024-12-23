@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, admision_datos, registro_vacunado
+from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, registro_vacunado
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
@@ -141,6 +141,15 @@ class InfluenzaRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = influenza
+        fields = '__all__'
+
+
+class ReporteENIRegistrationSerializer(serializers.ModelSerializer):
+    rep_fech = serializers.DateField(
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+
+    class Meta:
+        model = reporte_eni
         fields = '__all__'
 
 

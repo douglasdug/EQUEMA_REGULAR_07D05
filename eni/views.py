@@ -3,8 +3,8 @@ from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, admision_datos, registro_vacunado
-from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, AdmisionDatosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
+from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, registro_vacunado
+from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 
 from django.db.models import F, Sum
 from django.utils.dateparse import parse_date
@@ -7116,6 +7116,28 @@ class InfluenzaRegistrationAPIView(viewsets.ModelViewSet):
         )
 
         return Response({"message": Dato_Delete_Correcto}, status=status.HTTP_200_OK)
+
+
+class ReporteENIRegistrationAPIView(viewsets.ModelViewSet):
+    serializer_class = ReporteENIRegistrationSerializer
+    queryset = reporte_eni.objects.all()
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        user_id = self.request.query_params.get('user_id', None)
+        month = self.request.query_params.get('month', None)
+        year = self.request.query_params.get('year', None)
+
+        queryset = self.queryset
+
+        if user_id is not None:
+            queryset = queryset.filter(eniUser=user_id)
+
+        if month is not None and year is not None:
+            queryset = queryset.filter(
+                rep_fech__year=year, rep_fech__month=month)
+
+        return queryset.order_by('rep_fech', 'rep_eni')
 
 
 class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
