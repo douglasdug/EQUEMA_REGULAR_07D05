@@ -4914,6 +4914,16 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('des_fech', 'des_tota')
 
+    @action(detail=False, methods=['get'], url_path='total-desperdicio')
+    def get_total_mes(self, request, *args, **kwargs):
+        user_id = self.request.query_params.get('user_id', None)
+        queryset = self.queryset
+        if user_id is not None:
+            queryset = queryset.filter(eniUser=user_id, des_tota=True)
+        queryset = queryset.order_by('des_fech', 'des_tota')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     @action(detail=False, methods=['post'], url_path='crear-desperdicio')
     def create_desperdicio(self, request, *args, **kwargs):
         data = request.data

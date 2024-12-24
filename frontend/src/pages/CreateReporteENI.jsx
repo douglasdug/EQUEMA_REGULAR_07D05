@@ -833,9 +833,9 @@ const CreateReporteENI = () => {
               <thead className="text-xs bg-gray-50 dark:bg-gray-100">
                 <tr>
                   <th className="w-36 px-0 py-0">
-                    <label htmlFor="rep_fech">Fecha</label>
+                    <label htmlFor="rep_fech">Fecha de reporte</label>
                   </th>
-                  <td>
+                  <td colSpan={2} className="border-2 px-0 py-0">
                     <input
                       type="date"
                       id="rep_fech"
@@ -846,6 +846,24 @@ const CreateReporteENI = () => {
                       max=""
                       required
                     />
+                  </td>
+                  <td></td>
+                  <td>Mes a reportar</td>
+                  <td colSpan={2} className="border-2 px-0 py-0">
+                    <input
+                      type="text"
+                      id="rep_eni_mes"
+                      name="rep_eni_mes"
+                      placeholder="Información es requerida"
+                      className={`${inputStyle} ${"bg-white text-gray-700 cursor-pointer"}`}
+                      min="0"
+                      max=""
+                      required
+                    />
+                  </td>
+                  <td></td>
+                  <td>
+                    <button>Enivar</button>
                   </td>
                 </tr>
                 <tr>
