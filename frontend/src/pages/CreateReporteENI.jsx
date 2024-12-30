@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
+  getTotalDesperdicio,
   registerReporteENI,
   updateReporteENI,
   deleteReporteENI,
@@ -812,6 +813,20 @@ const CreateReporteENI = () => {
     console.log(formData);
   };
 
+  const [meses, setMeses] = useState([]);
+
+  useEffect(() => {
+    const fetchMeses = async () => {
+      try {
+        const data = await getTotalDesperdicio(1);
+        setMeses(data);
+      } catch (error) {
+        console.error("Error al obtener los meses:", error);
+      }
+    };
+    fetchMeses();
+  }, []);
+
   return (
     <div className="container">
       <div className="max-w-max m-auto mt-5">
@@ -850,16 +865,80 @@ const CreateReporteENI = () => {
                   <td></td>
                   <td>Mes a reportar</td>
                   <td colSpan={2} className="border-2 px-0 py-0">
-                    <input
-                      type="text"
+                    <select
                       id="rep_eni_mes"
                       name="rep_eni_mes"
-                      placeholder="Información es requerida"
-                      className={`${inputStyle} ${"bg-white text-gray-700 cursor-pointer"}`}
-                      min="0"
-                      max=""
+                      className={`${inputStyle} bg-white text-gray-700 cursor-pointer`}
                       required
-                    />
+                      value={formData.des_fech}
+                      onChange={(e) => {
+                        const dataDesperdicioMes = meses.find(
+                          (mes) => mes.des_fech === e.target.value
+                        );
+                        console.log("Mes seleccionado:", dataDesperdicioMes);
+                        setFormData({
+                          ...formData,
+                          row01: {
+                            ...formData.row01,
+                            rep_inf_egr_apl_mes_bcg: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_bcg_dosapli
+                              : formData.row01.rep_inf_egr_apl_mes_bcg,
+                          },
+                          row02: {
+                            ...formData.row02,
+                            rep_inf_egr_apl_mes_pent: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_pent_dosapli
+                              : formData.row02.rep_inf_egr_apl_mes_pent,
+                          },
+                          row03: {
+                            ...formData.row03,
+                            rep_inf_egr_apl_mes_neum: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_neum_dosapli
+                              : formData.row03.rep_inf_egr_apl_mes_neum,
+                          },
+                          row09: {
+                            ...formData.row09,
+                            rep_inf_egr_apl_mes_srp_unid: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_srp_dosapli
+                              : formData.row04.rep_inf_egr_apl_mes_srp_unid,
+                          },
+                          row10: {
+                            ...formData.row10,
+                            rep_inf_egr_apl_mes_srp_mult: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_srp_dosapli
+                              : formData.row04.rep_inf_egr_apl_mes_srp_mult,
+                          },
+                        });
+                      }}
+                    >
+                      <option value="">Seleccione un mes</option>
+                      {meses.length > 0 ? (
+                        meses.map((mes) => {
+                          const [day, month, year] = mes.des_fech.split("/");
+                          const date = new Date(`${year}-${month}-${day}`);
+
+                          if (isNaN(date)) {
+                            return (
+                              <option key={mes.id} value="">
+                                Fecha inválida
+                              </option>
+                            );
+                          }
+
+                          const monthName = date
+                            .toLocaleString("es-ES", { month: "long" })
+                            .toUpperCase();
+
+                          return (
+                            <option key={mes.id} value={mes.des_fech}>
+                              {monthName} {year}
+                            </option>
+                          );
+                        })
+                      ) : (
+                        <option value="">No hay datos</option>
+                      )}
+                    </select>
                   </td>
                   <td></td>
                   <td>

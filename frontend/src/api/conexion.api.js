@@ -410,6 +410,24 @@ export const getMesDesperdicio = async (user_id, month, year) => {
   }
 };
 
+export const getTotalDesperdicio = async (user_id) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/desperdicio/total-desperdicio/`,
+      {
+        params: { user_id },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching early data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
 export const registerDesperdicio = async (formData) => {
   try {
     const response = await axios.post(
