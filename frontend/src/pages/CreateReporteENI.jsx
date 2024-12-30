@@ -15,7 +15,7 @@ import {
 import { toast } from "react-hot-toast";
 
 const getInputType = (key) => {
-  if (key === "inf_fech") {
+  if (key === "rep_fech") {
     return { inputType: "date" };
   } else if (
     key === "rep_con_lot_bio_bcg" ||
@@ -24,34 +24,22 @@ const getInputType = (key) => {
     key === "rep_con_fec_cad_pent" ||
     key === "rep_con_lot_bio_neum" ||
     key === "rep_con_fec_cad_neum" ||
-    key === "rep_con_lot_bio_anti_fr20" ||
-    key === "rep_con_fec_cad_anti_fr20" ||
-    key === "rep_con_lot_bio_anti_fr25" ||
-    key === "rep_con_fec_cad_anti_fr25" ||
-    key === "rep_con_lot_bio_fipv_fr25" ||
-    key === "rep_con_fec_cad_fipv_fr25" ||
-    key === "rep_con_lot_bio_fipv_fr50" ||
-    key === "rep_con_fec_cad_fipv_fr50" ||
+    key === "rep_con_lot_bio_anti" ||
+    key === "rep_con_fec_cad_anti" ||
+    key === "rep_con_lot_bio_fipv" ||
+    key === "rep_con_fec_cad_fipv" ||
     key === "rep_con_lot_bio_rota" ||
     key === "rep_con_fec_cad_rota" ||
-    key === "rep_con_lot_bio_srp_unid" ||
-    key === "rep_con_fec_cad_srp_unid" ||
-    key === "rep_con_lot_bio_srp_mult" ||
-    key === "rep_con_fec_cad_srp_mult" ||
-    key === "rep_con_lot_bio_fieb_fr05" ||
-    key === "rep_con_fec_cad_fieb_fr05" ||
-    key === "rep_con_lot_bio_fieb_fr10" ||
-    key === "rep_con_fec_cad_fieb_fr10" ||
+    key === "rep_con_lot_bio_srp" ||
+    key === "rep_con_fec_cad_srp" ||
+    key === "rep_con_lot_bio_fieb" ||
+    key === "rep_con_fec_cad_fieb" ||
     key === "rep_con_lot_bio_vari" ||
     key === "rep_con_fec_cad_vari" ||
-    key === "rep_con_lot_bio_sr_unid" ||
-    key === "rep_con_fec_cad_sr_unid" ||
-    key === "rep_con_lot_bio_sr_mult" ||
-    key === "rep_con_fec_cad_sr_mult" ||
-    key === "rep_con_lot_bio_dift_frun" ||
-    key === "rep_con_fec_cad_dift_frun" ||
-    key === "rep_con_lot_bio_dift_fr10" ||
-    key === "rep_con_fec_cad_dift_fr10" ||
+    key === "rep_con_lot_bio_sr" ||
+    key === "rep_con_fec_cad_sr" ||
+    key === "rep_con_lot_bio_dift" ||
+    key === "rep_con_fec_cad_dift" ||
     key === "rep_con_lot_bio_dtad" ||
     key === "rep_con_fec_cad_dtad" ||
     key === "rep_con_lot_bio_hpv" ||
@@ -66,10 +54,8 @@ const getInputType = (key) => {
     key === "rep_con_fec_cad_infadu" ||
     key === "rep_con_lot_bio_pfiz" ||
     key === "rep_con_fec_cad_pfiz" ||
-    key === "rep_con_lot_bio_sino_unid" ||
-    key === "rep_con_fec_cad_sino_unid" ||
-    key === "rep_con_lot_bio_sino_mult" ||
-    key === "rep_con_fec_cad_sino_mult" ||
+    key === "rep_con_lot_bio_sino" ||
+    key === "rep_con_fec_cad_sino" ||
     key === "rep_con_lot_bio_cans" ||
     key === "rep_con_fec_cad_cans" ||
     key === "rep_con_lot_bio_astr" ||
@@ -78,6 +64,8 @@ const getInputType = (key) => {
     key === "rep_con_fec_cad_modr" ||
     key === "rep_con_lot_bio_virsim" ||
     key === "rep_con_fec_cad_virsim" ||
+    key === "rep_con_lot_bio_vacvphcam" ||
+    key === "rep_con_fec_cad_vacvphcam" ||
     key === "rep_con_lot_bio_inm_anti" ||
     key === "rep_con_fec_cad_inm_anti" ||
     key === "rep_con_lot_bio_inm_ant_hep_b" ||
@@ -153,82 +141,44 @@ const CreateReporteENI = () => {
       rep_con_fec_cad_neum: "",
     },
     row04: {
-      rep_inf_sal_ant_anti_fr20: 0,
-      rep_inf_ing_ban_vac_anti_fr20: 0,
-      rep_inf_ing_con_fis_anti_fr20: 0,
-      rep_inf_ing_rec_otr_anti_fr20: 0,
-      rep_inf_ing_tot_ing_anti_fr20: 0,
-      rep_inf_tot_dis_anti_fr20: 0,
-      rep_inf_egr_apl_mes_anti_fr20: 0,
-      rep_inf_egr_per_vac_abi_anti_fr20: 0,
-      rep_inf_egr_per_vac_noa_anti_fr20: 0,
-      rep_inf_egr_tra_otr_anti_fr20: 0,
-      rep_inf_egr_dev_ban_anti_fr20: 0,
-      rep_inf_egr_tot_dos_anti_fr20: 0,
-      rep_inf_sal_mes_anti_fr20: 0,
-      rep_sol_nec_mes_anti_fr20: 0,
-      rep_sol_sol_mes_anti_fr20: 0,
-      rep_con_lot_bio_anti_fr20: "",
-      rep_con_fec_cad_anti_fr20: "",
+      rep_inf_sal_ant_anti: 0,
+      rep_inf_ing_ban_vac_anti: 0,
+      rep_inf_ing_con_fis_anti: 0,
+      rep_inf_ing_rec_otr_anti: 0,
+      rep_inf_ing_tot_ing_anti: 0,
+      rep_inf_tot_dis_anti: 0,
+      rep_inf_egr_apl_mes_anti: 0,
+      rep_inf_egr_per_vac_abi_anti: 0,
+      rep_inf_egr_per_vac_noa_anti: 0,
+      rep_inf_egr_tra_otr_anti: 0,
+      rep_inf_egr_dev_ban_anti: 0,
+      rep_inf_egr_tot_dos_anti: 0,
+      rep_inf_sal_mes_anti: 0,
+      rep_sol_nec_mes_anti: 0,
+      rep_sol_sol_mes_anti: 0,
+      rep_con_lot_bio_anti: "",
+      rep_con_fec_cad_anti: "",
     },
     row05: {
-      rep_inf_sal_ant_anti_fr25: 0,
-      rep_inf_ing_ban_vac_anti_fr25: 0,
-      rep_inf_ing_con_fis_anti_fr25: 0,
-      rep_inf_ing_rec_otr_anti_fr25: 0,
-      rep_inf_ing_tot_ing_anti_fr25: 0,
-      rep_inf_tot_dis_anti_fr25: 0,
-      rep_inf_egr_apl_mes_anti_fr25: 0,
-      rep_inf_egr_per_vac_abi_anti_fr25: 0,
-      rep_inf_egr_per_vac_noa_anti_fr25: 0,
-      rep_inf_egr_tra_otr_anti_fr25: 0,
-      rep_inf_egr_dev_ban_anti_fr25: 0,
-      rep_inf_egr_tot_dos_anti_fr25: 0,
-      rep_inf_sal_mes_anti_fr25: 0,
-      rep_sol_nec_mes_anti_fr25: 0,
-      rep_sol_sol_mes_anti_fr25: 0,
-      rep_con_lot_bio_anti_fr25: "",
-      rep_con_fec_cad_anti_fr25: "",
+      rep_inf_sal_ant_fipv: 0,
+      rep_inf_ing_ban_vac_fipv: 0,
+      rep_inf_ing_con_fis_fipv: 0,
+      rep_inf_ing_rec_otr_fipv: 0,
+      rep_inf_ing_tot_ing_fipv: 0,
+      rep_inf_tot_dis_fipv: 0,
+      rep_inf_egr_apl_mes_fipv: 0,
+      rep_inf_egr_per_vac_abi_fipv: 0,
+      rep_inf_egr_per_vac_noa_fipv: 0,
+      rep_inf_egr_tra_otr_fipv: 0,
+      rep_inf_egr_dev_ban_fipv: 0,
+      rep_inf_egr_tot_dos_fipv: 0,
+      rep_inf_sal_mes_fipv: 0,
+      rep_sol_nec_mes_fipv: 0,
+      rep_sol_sol_mes_fipv: 0,
+      rep_con_lot_bio_fipv: "",
+      rep_con_fec_cad_fipv: "",
     },
     row06: {
-      rep_inf_sal_ant_fipv_fr25: 0,
-      rep_inf_ing_ban_vac_fipv_fr25: 0,
-      rep_inf_ing_con_fis_fipv_fr25: 0,
-      rep_inf_ing_rec_otr_fipv_fr25: 0,
-      rep_inf_ing_tot_ing_fipv_fr25: 0,
-      rep_inf_tot_dis_fipv_fr25: 0,
-      rep_inf_egr_apl_mes_fipv_fr25: 0,
-      rep_inf_egr_per_vac_abi_fipv_fr25: 0,
-      rep_inf_egr_per_vac_noa_fipv_fr25: 0,
-      rep_inf_egr_tra_otr_fipv_fr25: 0,
-      rep_inf_egr_dev_ban_fipv_fr25: 0,
-      rep_inf_egr_tot_dos_fipv_fr25: 0,
-      rep_inf_sal_mes_fipv_fr25: 0,
-      rep_sol_nec_mes_fipv_fr25: 0,
-      rep_sol_sol_mes_fipv_fr25: 0,
-      rep_con_lot_bio_fipv_fr25: "",
-      rep_con_fec_cad_fipv_fr25: "",
-    },
-    row07: {
-      rep_inf_sal_ant_fipv_fr50: 0,
-      rep_inf_ing_ban_vac_fipv_fr50: 0,
-      rep_inf_ing_con_fis_fipv_fr50: 0,
-      rep_inf_ing_rec_otr_fipv_fr50: 0,
-      rep_inf_ing_tot_ing_fipv_fr50: 0,
-      rep_inf_tot_dis_fipv_fr50: 0,
-      rep_inf_egr_apl_mes_fipv_fr50: 0,
-      rep_inf_egr_per_vac_abi_fipv_fr50: 0,
-      rep_inf_egr_per_vac_noa_fipv_fr50: 0,
-      rep_inf_egr_tra_otr_fipv_fr50: 0,
-      rep_inf_egr_dev_ban_fipv_fr50: 0,
-      rep_inf_egr_tot_dos_fipv_fr50: 0,
-      rep_inf_sal_mes_fipv_fr50: 0,
-      rep_sol_nec_mes_fipv_fr50: 0,
-      rep_sol_sol_mes_fipv_fr50: 0,
-      rep_con_lot_bio_fipv_fr50: "",
-      rep_con_fec_cad_fipv_fr50: "",
-    },
-    row08: {
       rep_inf_sal_ant_rota: 0,
       rep_inf_ing_ban_vac_rota: 0,
       rep_inf_ing_con_fis_rota: 0,
@@ -247,83 +197,45 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_rota: "",
       rep_con_fec_cad_rota: "",
     },
+    row07: {
+      rep_inf_sal_ant_srp: 0,
+      rep_inf_ing_ban_vac_srp: 0,
+      rep_inf_ing_con_fis_srp: 0,
+      rep_inf_ing_rec_otr_srp: 0,
+      rep_inf_ing_tot_ing_srp: 0,
+      rep_inf_tot_dis_srp: 0,
+      rep_inf_egr_apl_mes_srp: 0,
+      rep_inf_egr_per_vac_abi_srp: 0,
+      rep_inf_egr_per_vac_noa_srp: 0,
+      rep_inf_egr_tra_otr_srp: 0,
+      rep_inf_egr_dev_ban_srp: 0,
+      rep_inf_egr_tot_dos_srp: 0,
+      rep_inf_sal_mes_srp: 0,
+      rep_sol_nec_mes_srp: 0,
+      rep_sol_sol_mes_srp: 0,
+      rep_con_lot_bio_srp: "",
+      rep_con_fec_cad_srp: "",
+    },
+    row08: {
+      rep_inf_sal_ant_fieb: 0,
+      rep_inf_ing_ban_vac_fieb: 0,
+      rep_inf_ing_con_fis_fieb: 0,
+      rep_inf_ing_rec_otr_fieb: 0,
+      rep_inf_ing_tot_ing_fieb: 0,
+      rep_inf_tot_dis_fieb: 0,
+      rep_inf_egr_apl_mes_fieb: 0,
+      rep_inf_egr_per_vac_abi_fieb: 0,
+      rep_inf_egr_per_vac_noa_fieb: 0,
+      rep_inf_egr_tra_otr_fieb: 0,
+      rep_inf_egr_dev_ban_fieb: 0,
+      rep_inf_egr_tot_dos_fieb: 0,
+      rep_inf_sal_mes_fieb: 0,
+      rep_sol_nec_mes_fieb: 0,
+      rep_sol_sol_mes_fieb: 0,
+      rep_con_lot_bio_fieb: "",
+      rep_con_fec_cad_fieb: "",
+    },
     row09: {
-      rep_inf_sal_ant_srp_unid: 0,
-      rep_inf_ing_ban_vac_srp_unid: 0,
-      rep_inf_ing_con_fis_srp_unid: 0,
-      rep_inf_ing_rec_otr_srp_unid: 0,
-      rep_inf_ing_tot_ing_srp_unid: 0,
-      rep_inf_tot_dis_srp_unid: 0,
-      rep_inf_egr_apl_mes_srp_unid: 0,
-      rep_inf_egr_per_vac_abi_srp_unid: 0,
-      rep_inf_egr_per_vac_noa_srp_unid: 0,
-      rep_inf_egr_tra_otr_srp_unid: 0,
-      rep_inf_egr_dev_ban_srp_unid: 0,
-      rep_inf_egr_tot_dos_srp_unid: 0,
-      rep_inf_sal_mes_srp_unid: 0,
-      rep_sol_nec_mes_srp_unid: 0,
-      rep_sol_sol_mes_srp_unid: 0,
-      rep_con_lot_bio_srp_unid: "",
-      rep_con_fec_cad_srp_unid: "",
-    },
-    row10: {
-      rep_inf_sal_ant_srp_mult: 0,
-      rep_inf_ing_ban_vac_srp_mult: 0,
-      rep_inf_ing_con_fis_srp_mult: 0,
-      rep_inf_ing_rec_otr_srp_mult: 0,
-      rep_inf_ing_tot_ing_srp_mult: 0,
-      rep_inf_tot_dis_srp_mult: 0,
-      rep_inf_egr_apl_mes_srp_mult: 0,
-      rep_inf_egr_per_vac_abi_srp_mult: 0,
-      rep_inf_egr_per_vac_noa_srp_mult: 0,
-      rep_inf_egr_tra_otr_srp_mult: 0,
-      rep_inf_egr_dev_ban_srp_mult: 0,
-      rep_inf_egr_tot_dos_srp_mult: 0,
-      rep_inf_sal_mes_srp_mult: 0,
-      rep_sol_nec_mes_srp_mult: 0,
-      rep_sol_sol_mes_srp_mult: 0,
-      rep_con_lot_bio_srp_mult: "",
-      rep_con_fec_cad_srp_mult: "",
-    },
-    row11: {
-      rep_inf_sal_ant_fieb_fr05: 0,
-      rep_inf_ing_ban_vac_fieb_fr05: 0,
-      rep_inf_ing_con_fis_fieb_fr05: 0,
-      rep_inf_ing_rec_otr_fieb_fr05: 0,
-      rep_inf_ing_tot_ing_fieb_fr05: 0,
-      rep_inf_tot_dis_fieb_fr05: 0,
-      rep_inf_egr_apl_mes_fieb_fr05: 0,
-      rep_inf_egr_per_vac_abi_fieb_fr05: 0,
-      rep_inf_egr_per_vac_noa_fieb_fr05: 0,
-      rep_inf_egr_tra_otr_fieb_fr05: 0,
-      rep_inf_egr_dev_ban_fieb_fr05: 0,
-      rep_inf_egr_tot_dos_fieb_fr05: 0,
-      rep_inf_sal_mes_fieb_fr05: 0,
-      rep_sol_nec_mes_fieb_fr05: 0,
-      rep_sol_sol_mes_fieb_fr05: 0,
-      rep_con_lot_bio_fieb_fr05: "",
-      rep_con_fec_cad_fieb_fr05: "",
-    },
-    row12: {
-      rep_inf_sal_ant_fieb_fr10: 0,
-      rep_inf_ing_ban_vac_fieb_fr10: 0,
-      rep_inf_ing_con_fis_fieb_fr10: 0,
-      rep_inf_ing_rec_otr_fieb_fr10: 0,
-      rep_inf_ing_tot_ing_fieb_fr10: 0,
-      rep_inf_tot_dis_fieb_fr10: 0,
-      rep_inf_egr_apl_mes_fieb_fr10: 0,
-      rep_inf_egr_per_vac_abi_fieb_fr10: 0,
-      rep_inf_egr_per_vac_noa_fieb_fr10: 0,
-      rep_inf_egr_tra_otr_fieb_fr10: 0,
-      rep_inf_egr_dev_ban_fieb_fr10: 0,
-      rep_inf_egr_tot_dos_fieb_fr10: 0,
-      rep_inf_sal_mes_fieb_fr10: 0,
-      rep_sol_nec_mes_fieb_fr10: 0,
-      rep_sol_sol_mes_fieb_fr10: 0,
-      rep_con_lot_bio_fieb_fr10: "",
-      rep_con_fec_cad_fieb_fr10: "",
-    },
-    row13: {
       rep_inf_sal_ant_vari: 0,
       rep_inf_ing_ban_vac_vari: 0,
       rep_inf_ing_con_fis_vari: 0,
@@ -342,83 +254,45 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_vari: "",
       rep_con_fec_cad_vari: "",
     },
-    row14: {
-      rep_inf_sal_ant_sr_unid: 0,
-      rep_inf_ing_ban_vac_sr_unid: 0,
-      rep_inf_ing_con_fis_sr_unid: 0,
-      rep_inf_ing_rec_otr_sr_unid: 0,
-      rep_inf_ing_tot_ing_sr_unid: 0,
-      rep_inf_tot_dis_sr_unid: 0,
-      rep_inf_egr_apl_mes_sr_unid: 0,
-      rep_inf_egr_per_vac_abi_sr_unid: 0,
-      rep_inf_egr_per_vac_noa_sr_unid: 0,
-      rep_inf_egr_tra_otr_sr_unid: 0,
-      rep_inf_egr_dev_ban_sr_unid: 0,
-      rep_inf_egr_tot_dos_sr_unid: 0,
-      rep_inf_sal_mes_sr_unid: 0,
-      rep_sol_nec_mes_sr_unid: 0,
-      rep_sol_sol_mes_sr_unid: 0,
-      rep_con_lot_bio_sr_unid: "",
-      rep_con_fec_cad_sr_unid: "",
+    row10: {
+      rep_inf_sal_ant_sr: 0,
+      rep_inf_ing_ban_vac_sr: 0,
+      rep_inf_ing_con_fis_sr: 0,
+      rep_inf_ing_rec_otr_sr: 0,
+      rep_inf_ing_tot_ing_sr: 0,
+      rep_inf_tot_dis_sr: 0,
+      rep_inf_egr_apl_mes_sr: 0,
+      rep_inf_egr_per_vac_abi_sr: 0,
+      rep_inf_egr_per_vac_noa_sr: 0,
+      rep_inf_egr_tra_otr_sr: 0,
+      rep_inf_egr_dev_ban_sr: 0,
+      rep_inf_egr_tot_dos_sr: 0,
+      rep_inf_sal_mes_sr: 0,
+      rep_sol_nec_mes_sr: 0,
+      rep_sol_sol_mes_sr: 0,
+      rep_con_lot_bio_sr: "",
+      rep_con_fec_cad_sr: "",
     },
-    row15: {
-      rep_inf_sal_ant_sr_mult: 0,
-      rep_inf_ing_ban_vac_sr_mult: 0,
-      rep_inf_ing_con_fis_sr_mult: 0,
-      rep_inf_ing_rec_otr_sr_mult: 0,
-      rep_inf_ing_tot_ing_sr_mult: 0,
-      rep_inf_tot_dis_sr_mult: 0,
-      rep_inf_egr_apl_mes_sr_mult: 0,
-      rep_inf_egr_per_vac_abi_sr_mult: 0,
-      rep_inf_egr_per_vac_noa_sr_mult: 0,
-      rep_inf_egr_tra_otr_sr_mult: 0,
-      rep_inf_egr_dev_ban_sr_mult: 0,
-      rep_inf_egr_tot_dos_sr_mult: 0,
-      rep_inf_sal_mes_sr_mult: 0,
-      rep_sol_nec_mes_sr_mult: 0,
-      rep_sol_sol_mes_sr_mult: 0,
-      rep_con_lot_bio_sr_mult: "",
-      rep_con_fec_cad_sr_mult: "",
+    row11: {
+      rep_inf_sal_ant_dift: 0,
+      rep_inf_ing_ban_vac_dift: 0,
+      rep_inf_ing_con_fis_dift: 0,
+      rep_inf_ing_rec_otr_dift: 0,
+      rep_inf_ing_tot_ing_dift: 0,
+      rep_inf_tot_dis_dift: 0,
+      rep_inf_egr_apl_mes_dift: 0,
+      rep_inf_egr_per_vac_abi_dift: 0,
+      rep_inf_egr_per_vac_noa_dift: 0,
+      rep_inf_egr_tra_otr_dift: 0,
+      rep_inf_egr_dev_ban_dift: 0,
+      rep_inf_egr_tot_dos_dift: 0,
+      rep_inf_sal_mes_dift: 0,
+      rep_sol_nec_mes_dift: 0,
+      rep_sol_sol_mes_dift: 0,
+      rep_con_lot_bio_dift: "",
+      rep_con_fec_cad_dift: "",
     },
-    row16: {
-      rep_inf_sal_ant_dift_frun: 0,
-      rep_inf_ing_ban_vac_dift_frun: 0,
-      rep_inf_ing_con_fis_dift_frun: 0,
-      rep_inf_ing_rec_otr_dift_frun: 0,
-      rep_inf_ing_tot_ing_dift_frun: 0,
-      rep_inf_tot_dis_dift_frun: 0,
-      rep_inf_egr_apl_mes_dift_frun: 0,
-      rep_inf_egr_per_vac_abi_dift_frun: 0,
-      rep_inf_egr_per_vac_noa_dift_frun: 0,
-      rep_inf_egr_tra_otr_dift_frun: 0,
-      rep_inf_egr_dev_ban_dift_frun: 0,
-      rep_inf_egr_tot_dos_dift_frun: 0,
-      rep_inf_sal_mes_dift_frun: 0,
-      rep_sol_nec_mes_dift_frun: 0,
-      rep_sol_sol_mes_dift_frun: 0,
-      rep_con_lot_bio_dift_frun: "",
-      rep_con_fec_cad_dift_frun: "",
-    },
-    row17: {
-      rep_inf_sal_ant_dift_fr10: 0,
-      rep_inf_ing_ban_vac_dift_fr10: 0,
-      rep_inf_ing_con_fis_dift_fr10: 0,
-      rep_inf_ing_rec_otr_dift_fr10: 0,
-      rep_inf_ing_tot_ing_dift_fr10: 0,
-      rep_inf_tot_dis_dift_fr10: 0,
-      rep_inf_egr_apl_mes_dift_fr10: 0,
-      rep_inf_egr_per_vac_abi_dift_fr10: 0,
-      rep_inf_egr_per_vac_noa_dift_fr10: 0,
-      rep_inf_egr_tra_otr_dift_fr10: 0,
-      rep_inf_egr_dev_ban_dift_fr10: 0,
-      rep_inf_egr_tot_dos_dift_fr10: 0,
-      rep_inf_sal_mes_dift_fr10: 0,
-      rep_sol_nec_mes_dift_fr10: 0,
-      rep_sol_sol_mes_dift_fr10: 0,
-      rep_con_lot_bio_dift_fr10: "",
-      rep_con_fec_cad_dift_fr10: "",
-    },
-    row18: {
+    row12: {
       rep_inf_sal_ant_dtad: 0,
       rep_inf_ing_ban_vac_dtad: 0,
       rep_inf_ing_con_fis_dtad: 0,
@@ -437,7 +311,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_dtad: "",
       rep_con_fec_cad_dtad: "",
     },
-    row19: {
+    row13: {
       rep_inf_sal_ant_hpv: 0,
       rep_inf_ing_ban_vac_hpv: 0,
       rep_inf_ing_con_fis_hpv: 0,
@@ -456,7 +330,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_hpv: "",
       rep_con_fec_cad_hpv: "",
     },
-    row20: {
+    row14: {
       rep_inf_sal_ant_hepa: 0,
       rep_inf_ing_ban_vac_hepa: 0,
       rep_inf_ing_con_fis_hepa: 0,
@@ -475,7 +349,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_hepa: "",
       rep_con_fec_cad_hepa: "",
     },
-    row21: {
+    row15: {
       rep_inf_sal_ant_hbpe: 0,
       rep_inf_ing_ban_vac_hbpe: 0,
       rep_inf_ing_con_fis_hbpe: 0,
@@ -494,7 +368,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_hbpe: "",
       rep_con_fec_cad_hbpe: "",
     },
-    row22: {
+    row16: {
       rep_inf_sal_ant_infped: 0,
       rep_inf_ing_ban_vac_infped: 0,
       rep_inf_ing_con_fis_infped: 0,
@@ -513,7 +387,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_infped: "",
       rep_con_fec_cad_infped: "",
     },
-    row23: {
+    row17: {
       rep_inf_sal_ant_infadu: 0,
       rep_inf_ing_ban_vac_infadu: 0,
       rep_inf_ing_con_fis_infadu: 0,
@@ -532,7 +406,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_infadu: "",
       rep_con_fec_cad_infadu: "",
     },
-    row24: {
+    row18: {
       rep_inf_sal_ant_pfiz: 0,
       rep_inf_ing_ban_vac_pfiz: 0,
       rep_inf_ing_con_fis_pfiz: 0,
@@ -551,45 +425,26 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_pfiz: "",
       rep_con_fec_cad_pfiz: "",
     },
-    row25: {
-      rep_inf_sal_ant_sino_unid: 0,
-      rep_inf_ing_ban_vac_sino_unid: 0,
-      rep_inf_ing_con_fis_sino_unid: 0,
-      rep_inf_ing_rec_otr_sino_unid: 0,
-      rep_inf_ing_tot_ing_sino_unid: 0,
-      rep_inf_tot_dis_sino_unid: 0,
-      rep_inf_egr_apl_mes_sino_unid: 0,
-      rep_inf_egr_per_vac_abi_sino_unid: 0,
-      rep_inf_egr_per_vac_noa_sino_unid: 0,
-      rep_inf_egr_tra_otr_sino_unid: 0,
-      rep_inf_egr_dev_ban_sino_unid: 0,
-      rep_inf_egr_tot_dos_sino_unid: 0,
-      rep_inf_sal_mes_sino_unid: 0,
-      rep_sol_nec_mes_sino_unid: 0,
-      rep_sol_sol_mes_sino_unid: 0,
-      rep_con_lot_bio_sino_unid: "",
-      rep_con_fec_cad_sino_unid: "",
+    row19: {
+      rep_inf_sal_ant_sino: 0,
+      rep_inf_ing_ban_vac_sino: 0,
+      rep_inf_ing_con_fis_sino: 0,
+      rep_inf_ing_rec_otr_sino: 0,
+      rep_inf_ing_tot_ing_sino: 0,
+      rep_inf_tot_dis_sino: 0,
+      rep_inf_egr_apl_mes_sino: 0,
+      rep_inf_egr_per_vac_abi_sino: 0,
+      rep_inf_egr_per_vac_noa_sino: 0,
+      rep_inf_egr_tra_otr_sino: 0,
+      rep_inf_egr_dev_ban_sino: 0,
+      rep_inf_egr_tot_dos_sino: 0,
+      rep_inf_sal_mes_sino: 0,
+      rep_sol_nec_mes_sino: 0,
+      rep_sol_sol_mes_sino: 0,
+      rep_con_lot_bio_sino: "",
+      rep_con_fec_cad_sino: "",
     },
-    row26: {
-      rep_inf_sal_ant_sino_mult: 0,
-      rep_inf_ing_ban_vac_sino_mult: 0,
-      rep_inf_ing_con_fis_sino_mult: 0,
-      rep_inf_ing_rec_otr_sino_mult: 0,
-      rep_inf_ing_tot_ing_sino_mult: 0,
-      rep_inf_tot_dis_sino_mult: 0,
-      rep_inf_egr_apl_mes_sino_mult: 0,
-      rep_inf_egr_per_vac_abi_sino_mult: 0,
-      rep_inf_egr_per_vac_noa_sino_mult: 0,
-      rep_inf_egr_tra_otr_sino_mult: 0,
-      rep_inf_egr_dev_ban_sino_mult: 0,
-      rep_inf_egr_tot_dos_sino_mult: 0,
-      rep_inf_sal_mes_sino_mult: 0,
-      rep_sol_nec_mes_sino_mult: 0,
-      rep_sol_sol_mes_sino_mult: 0,
-      rep_con_lot_bio_sino_mult: "",
-      rep_con_fec_cad_sino_mult: "",
-    },
-    row27: {
+    row20: {
       rep_inf_sal_ant_cans: 0,
       rep_inf_ing_ban_vac_cans: 0,
       rep_inf_ing_con_fis_cans: 0,
@@ -608,7 +463,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_cans: "",
       rep_con_fec_cad_cans: "",
     },
-    row28: {
+    row21: {
       rep_inf_sal_ant_astr: 0,
       rep_inf_ing_ban_vac_astr: 0,
       rep_inf_ing_con_fis_astr: 0,
@@ -627,7 +482,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_astr: "",
       rep_con_fec_cad_astr: "",
     },
-    row29: {
+    row22: {
       rep_inf_sal_ant_modr: 0,
       rep_inf_ing_ban_vac_modr: 0,
       rep_inf_ing_con_fis_modr: 0,
@@ -646,7 +501,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_modr: "",
       rep_con_fec_cad_modr: "",
     },
-    row30: {
+    row23: {
       rep_inf_sal_ant_virsim: 0,
       rep_inf_ing_ban_vac_virsim: 0,
       rep_inf_ing_con_fis_virsim: 0,
@@ -665,7 +520,26 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_virsim: "",
       rep_con_fec_cad_virsim: "",
     },
-    row31: {
+    row24: {
+      rep_inf_sal_ant_vacvphcam: 0,
+      rep_inf_ing_ban_vac_vacvphcam: 0,
+      rep_inf_ing_con_fis_vacvphcam: 0,
+      rep_inf_ing_rec_otr_vacvphcam: 0,
+      rep_inf_ing_tot_ing_vacvphcam: 0,
+      rep_inf_tot_dis_vacvphcam: 0,
+      rep_inf_egr_apl_mes_vacvphcam: 0,
+      rep_inf_egr_per_vac_abi_vacvphcam: 0,
+      rep_inf_egr_per_vac_noa_vacvphcam: 0,
+      rep_inf_egr_tra_otr_vacvphcam: 0,
+      rep_inf_egr_dev_ban_vacvphcam: 0,
+      rep_inf_egr_tot_dos_vacvphcam: 0,
+      rep_inf_sal_mes_vacvphcam: 0,
+      rep_sol_nec_mes_vacvphcam: 0,
+      rep_sol_sol_mes_vacvphcam: 0,
+      rep_con_lot_bio_vacvphcam: "",
+      rep_con_fec_cad_vacvphcam: "",
+    },
+    row25: {
       rep_inf_sal_ant_inm_anti: 0,
       rep_inf_ing_ban_vac_inm_anti: 0,
       rep_inf_ing_con_fis_inm_anti: 0,
@@ -684,7 +558,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_inm_anti: "",
       rep_con_fec_cad_inm_anti: "",
     },
-    row32: {
+    row26: {
       rep_inf_sal_ant_inm_ant_hep_b: 0,
       rep_inf_ing_ban_vac_inm_ant_hep_b: 0,
       rep_inf_ing_con_fis_inm_ant_hep_b: 0,
@@ -703,7 +577,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_inm_ant_hep_b: "",
       rep_con_fec_cad_inm_ant_hep_b: "",
     },
-    row33: {
+    row27: {
       rep_inf_sal_ant_inm_ant_rrab: 0,
       rep_inf_ing_ban_vac_inm_ant_rrab: 0,
       rep_inf_ing_con_fis_inm_ant_rrab: 0,
@@ -722,7 +596,7 @@ const CreateReporteENI = () => {
       rep_con_lot_bio_inm_ant_rrab: "",
       rep_con_fec_cad_inm_ant_rrab: "",
     },
-    row34: {
+    row28: {
       rep_inf_sal_ant_caj_bios: 0,
       rep_inf_ing_ban_vac_caj_bios: 0,
       rep_inf_ing_con_fis_caj_bios: 0,
@@ -762,37 +636,31 @@ const CreateReporteENI = () => {
     row01: "BCG",
     row02: "PENTAVALENTE (DPT-HB-Hib)",
     row03: "NEUMOCOCO CONJUGADA",
-    row04: "ANTIPOLIOMIELITICA ORAL (OPV) Frasco por 20",
-    row05: "ANTIPOLIOMIELITICA ORAL (OPV) Frasco por 25",
-    row06: "fIPV Frasco por 25",
-    row07: "fIPV Frasco por 50",
-    row08: "ROTAVIRUS",
-    row09: "SRP TRIPLE VIRAL (unidosis)",
-    row10: "SRP TRIPLE VIRAL (multidosis)",
-    row11: "Fiebre Amarilla Frasco por 5",
-    row12: "Fiebre Amarilla Frasco por 10",
-    row13: "Varicela",
-    row14: "SR (dupla viral) (unidosis)",
-    row15: "SR (dupla viral) (Multidosis)",
-    row16: "DIFTERIA, TOSFERINA Y TETANOS (DPT) REF Frasco por UNO",
-    row17: "DIFTERIA, TOSFERINA Y TETANOS (DPT) REF Frasco por 10",
-    row18: "dT adultos",
-    row19: "HPV",
-    row20: "HEPATITIS B ADULTO",
-    row21: "HB PEDIATRICA",
-    row22: "INFLUENZA PEDIATRICA",
-    row23: "INFLUENZA ADULTOS",
-    row24: "PFIZER",
-    row25: "SINOVAC UNI-DOSIS",
-    row26: "SINOVAC MUL-DOSIS",
-    row27: "CANSINO",
-    row28: "ASTRAZENECA",
-    row29: "MODERNA",
-    row30: "VIRUELA SIMICA",
-    row31: "Antitetánica",
-    row32: "Anti Hepatitis B",
-    row33: "Antirrábica",
-    row34: "CAJAS DE BIOSEGURIDAD",
+    row04: "ANTIPOLIOMIELITICA ORAL (OPV)",
+    row05: "fIPV",
+    row06: "ROTAVIRUS",
+    row07: "SRP TRIPLE VIRAL",
+    row08: "Fiebre Amarilla",
+    row09: "Varicela",
+    row10: "SR (dupla viral)",
+    row11: "DIFTERIA, TOSFERINA Y TETANOS (DPT) REF",
+    row12: "dT adultos",
+    row13: "HPV",
+    row14: "HEPATITIS B ADULTO",
+    row15: "HB PEDIATRICA",
+    row16: "INFLUENZA PEDIATRICA",
+    row17: "INFLUENZA ADULTOS",
+    row18: "PFIZER",
+    row19: "SINOVAC",
+    row20: "CANSINO",
+    row21: "ASTRAZENECA",
+    row22: "MODERNA",
+    row23: "VIRUELA SIMICA",
+    row24: "VACUNA VPH CAMPAÑA",
+    row25: "Antitetánica",
+    row26: "Anti Hepatitis B",
+    row27: "Antirrábica",
+    row28: "CAJAS DE BIOSEGURIDAD",
   };
 
   const keys = Object.keys(formData);
@@ -875,7 +743,6 @@ const CreateReporteENI = () => {
                         const dataDesperdicioMes = meses.find(
                           (mes) => mes.des_fech === e.target.value
                         );
-                        console.log("Mes seleccionado:", dataDesperdicioMes);
                         setFormData({
                           ...formData,
                           row01: {
@@ -883,30 +750,314 @@ const CreateReporteENI = () => {
                             rep_inf_egr_apl_mes_bcg: dataDesperdicioMes
                               ? dataDesperdicioMes.des_bcg_dosapli
                               : formData.row01.rep_inf_egr_apl_mes_bcg,
+                            rep_inf_egr_per_vac_abi_bcg: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_bcg_pervacenfabi
+                              : formData.row01.rep_inf_egr_per_vac_abi_bcg,
+                            rep_inf_egr_per_vac_noa_bcg: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_bcg_pervacfrasnoabi
+                              : formData.row01.rep_inf_egr_per_vac_noa_bcg,
                           },
                           row02: {
                             ...formData.row02,
                             rep_inf_egr_apl_mes_pent: dataDesperdicioMes
                               ? dataDesperdicioMes.des_pent_dosapli
                               : formData.row02.rep_inf_egr_apl_mes_pent,
+                            rep_inf_egr_per_vac_abi_pent: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_pent_pervacenfabi
+                              : formData.row02.rep_inf_egr_per_vac_abi_pent,
+                            rep_inf_egr_per_vac_noa_pent: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_pent_pervacfrasnoabi
+                              : formData.row02.rep_inf_egr_per_vac_noa_pent,
                           },
                           row03: {
                             ...formData.row03,
                             rep_inf_egr_apl_mes_neum: dataDesperdicioMes
                               ? dataDesperdicioMes.des_neum_dosapli
                               : formData.row03.rep_inf_egr_apl_mes_neum,
+                            rep_inf_egr_per_vac_abi_neum: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_neum_pervacenfabi
+                              : formData.row03.rep_inf_egr_per_vac_abi_neum,
+                            rep_inf_egr_per_vac_noa_neum: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_neum_pervacfrasnoabi
+                              : formData.row03.rep_inf_egr_per_vac_noa_neum,
+                          },
+                          row04: {
+                            ...formData.row04,
+                            rep_inf_egr_apl_mes_anti: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_anti_dosapli
+                              : formData.row04.rep_inf_egr_apl_mes_anti,
+                            rep_inf_egr_per_vac_abi_anti: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_anti_pervacenfabi
+                              : formData.row04.rep_inf_egr_per_vac_abi_anti,
+                            rep_inf_egr_per_vac_noa_anti: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_anti_pervacfrasnoabi
+                              : formData.row04.rep_inf_egr_per_vac_noa_anti,
+                          },
+                          row05: {
+                            ...formData.row05,
+                            rep_inf_egr_apl_mes_fipv: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_fipv_dosapli
+                              : formData.row05.rep_inf_egr_apl_mes_fipv,
+                            rep_inf_egr_per_vac_abi_fipv: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_fipv_pervacenfabi
+                              : formData.row05.rep_inf_egr_per_vac_abi_fipv,
+                            rep_inf_egr_per_vac_noa_fipv: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_fipv_pervacfrasnoabi
+                              : formData.row05.rep_inf_egr_per_vac_noa_fipv,
+                          },
+                          row06: {
+                            ...formData.row06,
+                            rep_inf_egr_apl_mes_rota: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_rota_dosapli
+                              : formData.row06.rep_inf_egr_apl_mes_rota,
+                            rep_inf_egr_per_vac_abi_rota: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_rota_pervacenfabi
+                              : formData.row06.rep_inf_egr_per_vac_abi_rota,
+                            rep_inf_egr_per_vac_noa_rota: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_rota_pervacfrasnoabi
+                              : formData.row06.rep_inf_egr_per_vac_noa_rota,
+                          },
+                          row07: {
+                            ...formData.row07,
+                            rep_inf_egr_apl_mes_srp: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_srp_dosapli
+                              : formData.row07.rep_inf_egr_apl_mes_srp,
+                            rep_inf_egr_per_vac_abi_srp: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_srp_pervacenfabi
+                              : formData.row07.rep_inf_egr_per_vac_abi_srp,
+                            rep_inf_egr_per_vac_noa_srp: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_srp_pervacfrasnoabi
+                              : formData.row07.rep_inf_egr_per_vac_noa_srp,
+                          },
+                          row08: {
+                            ...formData.row08,
+                            rep_inf_egr_apl_mes_fieb: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_fieb_dosapli
+                              : formData.row08.rep_inf_egr_apl_mes_fieb,
+                            rep_inf_egr_per_vac_abi_fieb: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_fieb_pervacenfabi
+                              : formData.row08.rep_inf_egr_per_vac_abi_fieb,
+                            rep_inf_egr_per_vac_noa_fieb: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_fieb_pervacfrasnoabi
+                              : formData.row08.rep_inf_egr_per_vac_noa_fieb,
                           },
                           row09: {
                             ...formData.row09,
-                            rep_inf_egr_apl_mes_srp_unid: dataDesperdicioMes
-                              ? dataDesperdicioMes.des_srp_dosapli
-                              : formData.row04.rep_inf_egr_apl_mes_srp_unid,
+                            rep_inf_egr_apl_mes_vari: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vari_dosapli
+                              : formData.row09.rep_inf_egr_apl_mes_vari,
+                            rep_inf_egr_per_vac_abi_vari: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vari_pervacenfabi
+                              : formData.row09.rep_inf_egr_per_vac_abi_vari,
+                            rep_inf_egr_per_vac_noa_vari: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vari_pervacfrasnoabi
+                              : formData.row09.rep_inf_egr_per_vac_noa_vari,
                           },
                           row10: {
                             ...formData.row10,
-                            rep_inf_egr_apl_mes_srp_mult: dataDesperdicioMes
-                              ? dataDesperdicioMes.des_srp_dosapli
-                              : formData.row04.rep_inf_egr_apl_mes_srp_mult,
+                            rep_inf_egr_apl_mes_sr: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_sr_dosapli
+                              : formData.row10.rep_inf_egr_apl_mes_sr,
+                            rep_inf_egr_per_vac_abi_sr: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_sr_pervacenfabi
+                              : formData.row10.rep_inf_egr_per_vac_abi_sr,
+                            rep_inf_egr_per_vac_noa_sr: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_sr_pervacfrasnoabi
+                              : formData.row10.rep_inf_egr_per_vac_noa_sr,
+                          },
+                          row11: {
+                            ...formData.row11,
+                            rep_inf_egr_apl_mes_dift: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_dift_dosapli
+                              : formData.row11.rep_inf_egr_apl_mes_dift,
+                            rep_inf_egr_per_vac_abi_dift: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_dift_pervacenfabi
+                              : formData.row11.rep_inf_egr_per_vac_abi_dift,
+                            rep_inf_egr_per_vac_noa_dift: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_dift_pervacfrasnoabi
+                              : formData.row11.rep_inf_egr_per_vac_noa_dift,
+                          },
+                          row12: {
+                            ...formData.row12,
+                            rep_inf_egr_apl_mes_dtad: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_dtad_dosapli
+                              : formData.row12.rep_inf_egr_apl_mes_dtad,
+                            rep_inf_egr_per_vac_abi_dtad: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_dtad_pervacenfabi
+                              : formData.row12.rep_inf_egr_per_vac_abi_dtad,
+                            rep_inf_egr_per_vac_noa_dtad: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_dtad_pervacfrasnoabi
+                              : formData.row12.rep_inf_egr_per_vac_noa_dtad,
+                          },
+                          row13: {
+                            ...formData.row13,
+                            rep_inf_egr_apl_mes_hpv: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_hpv_dosapli
+                              : formData.row13.rep_inf_egr_apl_mes_hpv,
+                            rep_inf_egr_per_vac_abi_hpv: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_hpv_pervacenfabi
+                              : formData.row13.rep_inf_egr_per_vac_abi_hpv,
+                            rep_inf_egr_per_vac_noa_hpv: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_hpv_pervacfrasnoabi
+                              : formData.row13.rep_inf_egr_per_vac_noa_hpv,
+                          },
+                          row14: {
+                            ...formData.row14,
+                            rep_inf_egr_apl_mes_hepa: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_hepa_dosapli
+                              : formData.row14.rep_inf_egr_apl_mes_hepa,
+                            rep_inf_egr_per_vac_abi_hepa: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_hepa_pervacenfabi
+                              : formData.row14.rep_inf_egr_per_vac_abi_hepa,
+                            rep_inf_egr_per_vac_noa_hepa: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_hepa_pervacfrasnoabi
+                              : formData.row14.rep_inf_egr_per_vac_noa_hepa,
+                          },
+                          row15: {
+                            ...formData.row15,
+                            rep_inf_egr_apl_mes_hbpe: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_hbpe_dosapli
+                              : formData.row15.rep_inf_egr_apl_mes_hbpe,
+                            rep_inf_egr_per_vac_abi_hbpe: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_hbpe_pervacenfabi
+                              : formData.row15.rep_inf_egr_per_vac_abi_hbpe,
+                            rep_inf_egr_per_vac_noa_hbpe: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_hbpe_pervacfrasnoabi
+                              : formData.row15.rep_inf_egr_per_vac_noa_hbpe,
+                          },
+                          row16: {
+                            ...formData.row16,
+                            rep_inf_egr_apl_mes_infped: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_infped_dosapli
+                              : formData.row16.rep_inf_egr_apl_mes_infped,
+                            rep_inf_egr_per_vac_abi_infped: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_infped_pervacenfabi
+                              : formData.row16.rep_inf_egr_per_vac_abi_infped,
+                            rep_inf_egr_per_vac_noa_infped: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_infped_pervacfrasnoabi
+                              : formData.row16.rep_inf_egr_per_vac_noa_infped,
+                          },
+                          row17: {
+                            ...formData.row17,
+                            rep_inf_egr_apl_mes_infadu: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_infadu_dosapli
+                              : formData.row17.rep_inf_egr_apl_mes_infadu,
+                            rep_inf_egr_per_vac_abi_infadu: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_infadu_pervacenfabi
+                              : formData.row17.rep_inf_egr_per_vac_abi_infadu,
+                            rep_inf_egr_per_vac_noa_infadu: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_infadu_pervacfrasnoabi
+                              : formData.row17.rep_inf_egr_per_vac_noa_infadu,
+                          },
+                          row18: {
+                            ...formData.row18,
+                            rep_inf_egr_apl_mes_pfiz: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacpfi_dosapli
+                              : formData.row18.rep_inf_egr_apl_mes_pfiz,
+                            rep_inf_egr_per_vac_abi_pfiz: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacpfi_pervacenfabi
+                              : formData.row18.rep_inf_egr_per_vac_abi_pfiz,
+                            rep_inf_egr_per_vac_noa_pfiz: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacpfi_pervacfrasnoabi
+                              : formData.row18.rep_inf_egr_per_vac_noa_pfiz,
+                          },
+                          row19: {
+                            ...formData.row19,
+                            rep_inf_egr_apl_mes_sino: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacsin_dosapli
+                              : formData.row19.rep_inf_egr_apl_mes_sino,
+                            rep_inf_egr_per_vac_abi_sino: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacsin_pervacenfabi
+                              : formData.row19.rep_inf_egr_per_vac_abi_sino,
+                            rep_inf_egr_per_vac_noa_sino: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacsin_pervacfrasnoabi
+                              : formData.row19.rep_inf_egr_per_vac_noa_sino,
+                          },
+                          row22: {
+                            ...formData.row22,
+                            rep_inf_egr_apl_mes_modr: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacmod_dosapli
+                              : formData.row22.rep_inf_egr_apl_mes_modr,
+                            rep_inf_egr_per_vac_abi_modr: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacmod_pervacenfabi
+                              : formData.row22.rep_inf_egr_per_vac_abi_modr,
+                            rep_inf_egr_per_vac_noa_modr: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacmod_pervacfrasnoabi
+                              : formData.row22.rep_inf_egr_per_vac_noa_modr,
+                          },
+                          row23: {
+                            ...formData.row23,
+                            rep_inf_egr_apl_mes_virsim: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_viru_dosapli
+                              : formData.row23.rep_inf_egr_apl_mes_virsim,
+                            rep_inf_egr_per_vac_abi_virsim: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_viru_pervacenfabi
+                              : formData.row23.rep_inf_egr_per_vac_abi_virsim,
+                            rep_inf_egr_per_vac_noa_virsim: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_viru_pervacfrasnoabi
+                              : formData.row23.rep_inf_egr_per_vac_noa_virsim,
+                          },
+                          row24: {
+                            ...formData.row24,
+                            rep_inf_egr_apl_mes_vacvphcam: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_vacvphcam_dosapli
+                              : formData.row24.rep_inf_egr_apl_mes_vacvphcam,
+                            rep_inf_egr_per_vac_abi_vacvphcam:
+                              dataDesperdicioMes
+                                ? dataDesperdicioMes.des_vacvphcam_pervacenfabi
+                                : formData.row24
+                                    .rep_inf_egr_per_vac_abi_vacvphcam,
+                            rep_inf_egr_per_vac_noa_vacvphcam:
+                              dataDesperdicioMes
+                                ? dataDesperdicioMes.des_vacvphcam_pervacfrasnoabi
+                                : formData.row24
+                                    .rep_inf_egr_per_vac_noa_vacvphcam,
+                          },
+                          row25: {
+                            ...formData.row25,
+                            rep_inf_egr_apl_mes_inm_anti: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_inmant_dosapli
+                              : formData.row25.rep_inf_egr_apl_mes_inm_anti,
+                            rep_inf_egr_per_vac_abi_inm_anti: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_inmant_pervacenfabi
+                              : formData.row25.rep_inf_egr_per_vac_abi_inm_anti,
+                            rep_inf_egr_per_vac_noa_inm_anti: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_inmant_pervacfrasnoabi
+                              : formData.row25.rep_inf_egr_per_vac_noa_inm_anti,
+                          },
+                          row26: {
+                            ...formData.row26,
+                            rep_inf_egr_apl_mes_inm_ant_hep_b:
+                              dataDesperdicioMes
+                                ? dataDesperdicioMes.des_inmanthepb_dosapli
+                                : formData.row26
+                                    .rep_inf_egr_apl_mes_inm_ant_hep_b,
+                            rep_inf_egr_per_vac_abi_inm_ant_hep_b:
+                              dataDesperdicioMes
+                                ? dataDesperdicioMes.des_inmanthepb_pervacenfabi
+                                : formData.row26
+                                    .rep_inf_egr_per_vac_abi_inm_ant_hep_b,
+                            rep_inf_egr_per_vac_noa_inm_ant_hep_b:
+                              dataDesperdicioMes
+                                ? dataDesperdicioMes.des_inmanthepb_pervacfrasnoabi
+                                : formData.row26
+                                    .rep_inf_egr_per_vac_noa_inm_ant_hep_b,
+                          },
+                          row27: {
+                            ...formData.row27,
+                            rep_inf_egr_apl_mes_inm_ant_rrab: dataDesperdicioMes
+                              ? dataDesperdicioMes.des_inmantrra_dosapli
+                              : formData.row27.rep_inf_egr_apl_mes_inm_ant_rrab,
+                            rep_inf_egr_per_vac_abi_inm_ant_rrab:
+                              dataDesperdicioMes
+                                ? dataDesperdicioMes.des_inmantrra_pervacenfabi
+                                : formData.row27
+                                    .rep_inf_egr_per_vac_abi_inm_ant_rrab,
+                            rep_inf_egr_per_vac_noa_inm_ant_rrab:
+                              dataDesperdicioMes
+                                ? dataDesperdicioMes.des_inmantrra_pervacfrasnoabi
+                                : formData.row27
+                                    .rep_inf_egr_per_vac_noa_inm_ant_rrab,
                           },
                         });
                       }}
