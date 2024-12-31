@@ -667,12 +667,383 @@ const CreateReporteENI = () => {
 
   const handleChange = (e, row, input) => {
     const { value } = e.target;
-    setFormData({
-      ...formData,
-      [row]: {
-        ...formData[row],
-        [input]: value,
-      },
+    const newValue = Number(value);
+
+    setFormData((prevData) => {
+      const updatedRow = {
+        ...prevData[row],
+        [input]: newValue,
+      };
+
+      if (
+        input === "rep_inf_ing_ban_vac_bcg" ||
+        input === "rep_inf_ing_con_fis_bcg" ||
+        input === "rep_inf_ing_rec_otr_bcg"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_bcg =
+          (updatedRow.rep_inf_ing_ban_vac_bcg ||
+            prevData[row].rep_inf_ing_ban_vac_bcg) +
+          (updatedRow.rep_inf_ing_con_fis_bcg ||
+            prevData[row].rep_inf_ing_con_fis_bcg) +
+          (updatedRow.rep_inf_ing_rec_otr_bcg ||
+            prevData[row].rep_inf_ing_rec_otr_bcg);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_pent" ||
+        input === "rep_inf_ing_con_fis_pent" ||
+        input === "rep_inf_ing_rec_otr_pent"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_pent =
+          (updatedRow.rep_inf_ing_ban_vac_pent ||
+            prevData[row].rep_inf_ing_ban_vac_pent) +
+          (updatedRow.rep_inf_ing_con_fis_pent ||
+            prevData[row].rep_inf_ing_con_fis_pent) +
+          (updatedRow.rep_inf_ing_rec_otr_pent ||
+            prevData[row].rep_inf_ing_rec_otr_pent);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_neum" ||
+        input === "rep_inf_ing_con_fis_neum" ||
+        input === "rep_inf_ing_rec_otr_neum"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_neum =
+          (updatedRow.rep_inf_ing_ban_vac_neum ||
+            prevData[row].rep_inf_ing_ban_vac_neum) +
+          (updatedRow.rep_inf_ing_con_fis_neum ||
+            prevData[row].rep_inf_ing_con_fis_neum) +
+          (updatedRow.rep_inf_ing_rec_otr_neum ||
+            prevData[row].rep_inf_ing_rec_otr_neum);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_anti" ||
+        input === "rep_inf_ing_con_fis_anti" ||
+        input === "rep_inf_ing_rec_otr_anti"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_anti =
+          (updatedRow.rep_inf_ing_ban_vac_anti ||
+            prevData[row].rep_inf_ing_ban_vac_anti) +
+          (updatedRow.rep_inf_ing_con_fis_anti ||
+            prevData[row].rep_inf_ing_con_fis_anti) +
+          (updatedRow.rep_inf_ing_rec_otr_anti ||
+            prevData[row].rep_inf_ing_rec_otr_anti);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_fipv" ||
+        input === "rep_inf_ing_con_fis_fipv" ||
+        input === "rep_inf_ing_rec_otr_fipv"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_fipv =
+          (updatedRow.rep_inf_ing_ban_vac_fipv ||
+            prevData[row].rep_inf_ing_ban_vac_fipv) +
+          (updatedRow.rep_inf_ing_con_fis_fipv ||
+            prevData[row].rep_inf_ing_con_fis_fipv) +
+          (updatedRow.rep_inf_ing_rec_otr_fipv ||
+            prevData[row].rep_inf_ing_rec_otr_fipv);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_rota" ||
+        input === "rep_inf_ing_con_fis_rota" ||
+        input === "rep_inf_ing_rec_otr_rota"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_rota =
+          (updatedRow.rep_inf_ing_ban_vac_rota ||
+            prevData[row].rep_inf_ing_ban_vac_rota) +
+          (updatedRow.rep_inf_ing_con_fis_rota ||
+            prevData[row].rep_inf_ing_con_fis_rota) +
+          (updatedRow.rep_inf_ing_rec_otr_rota ||
+            prevData[row].rep_inf_ing_rec_otr_rota);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_srp" ||
+        input === "rep_inf_ing_con_fis_srp" ||
+        input === "rep_inf_ing_rec_otr_srp"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_srp =
+          (updatedRow.rep_inf_ing_ban_vac_srp ||
+            prevData[row].rep_inf_ing_ban_vac_srp) +
+          (updatedRow.rep_inf_ing_con_fis_srp ||
+            prevData[row].rep_inf_ing_con_fis_srp) +
+          (updatedRow.rep_inf_ing_rec_otr_srp ||
+            prevData[row].rep_inf_ing_rec_otr_srp);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_fieb" ||
+        input === "rep_inf_ing_con_fis_fieb" ||
+        input === "rep_inf_ing_rec_otr_fieb"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_fieb =
+          (updatedRow.rep_inf_ing_ban_vac_fieb ||
+            prevData[row].rep_inf_ing_ban_vac_fieb) +
+          (updatedRow.rep_inf_ing_con_fis_fieb ||
+            prevData[row].rep_inf_ing_con_fis_fieb) +
+          (updatedRow.rep_inf_ing_rec_otr_fieb ||
+            prevData[row].rep_inf_ing_rec_otr_fieb);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_vari" ||
+        input === "rep_inf_ing_con_fis_vari" ||
+        input === "rep_inf_ing_rec_otr_vari"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_vari =
+          (updatedRow.rep_inf_ing_ban_vac_vari ||
+            prevData[row].rep_inf_ing_ban_vac_vari) +
+          (updatedRow.rep_inf_ing_con_fis_vari ||
+            prevData[row].rep_inf_ing_con_fis_vari) +
+          (updatedRow.rep_inf_ing_rec_otr_vari ||
+            prevData[row].rep_inf_ing_rec_otr_vari);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_sr" ||
+        input === "rep_inf_ing_con_fis_sr" ||
+        input === "rep_inf_ing_rec_otr_sr"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_sr =
+          (updatedRow.rep_inf_ing_ban_vac_sr ||
+            prevData[row].rep_inf_ing_ban_vac_sr) +
+          (updatedRow.rep_inf_ing_con_fis_sr ||
+            prevData[row].rep_inf_ing_con_fis_sr) +
+          (updatedRow.rep_inf_ing_rec_otr_sr ||
+            prevData[row].rep_inf_ing_rec_otr_sr);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_dift" ||
+        input === "rep_inf_ing_con_fis_dift" ||
+        input === "rep_inf_ing_rec_otr_dift"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_dift =
+          (updatedRow.rep_inf_ing_ban_vac_dift ||
+            prevData[row].rep_inf_ing_ban_vac_dift) +
+          (updatedRow.rep_inf_ing_con_fis_dift ||
+            prevData[row].rep_inf_ing_con_fis_dift) +
+          (updatedRow.rep_inf_ing_rec_otr_dift ||
+            prevData[row].rep_inf_ing_rec_otr_dift);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_dtad" ||
+        input === "rep_inf_ing_con_fis_dtad" ||
+        input === "rep_inf_ing_rec_otr_dtad"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_dtad =
+          (updatedRow.rep_inf_ing_ban_vac_dtad ||
+            prevData[row].rep_inf_ing_ban_vac_dtad) +
+          (updatedRow.rep_inf_ing_con_fis_dtad ||
+            prevData[row].rep_inf_ing_con_fis_dtad) +
+          (updatedRow.rep_inf_ing_rec_otr_dtad ||
+            prevData[row].rep_inf_ing_rec_otr_dtad);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_hpv" ||
+        input === "rep_inf_ing_con_fis_hpv" ||
+        input === "rep_inf_ing_rec_otr_hpv"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_hpv =
+          (updatedRow.rep_inf_ing_ban_vac_hpv ||
+            prevData[row].rep_inf_ing_ban_vac_hpv) +
+          (updatedRow.rep_inf_ing_con_fis_hpv ||
+            prevData[row].rep_inf_ing_con_fis_hpv) +
+          (updatedRow.rep_inf_ing_rec_otr_hpv ||
+            prevData[row].rep_inf_ing_rec_otr_hpv);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_hepa" ||
+        input === "rep_inf_ing_con_fis_hepa" ||
+        input === "rep_inf_ing_rec_otr_hepa"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_hepa =
+          (updatedRow.rep_inf_ing_ban_vac_hepa ||
+            prevData[row].rep_inf_ing_ban_vac_hepa) +
+          (updatedRow.rep_inf_ing_con_fis_hepa ||
+            prevData[row].rep_inf_ing_con_fis_hepa) +
+          (updatedRow.rep_inf_ing_rec_otr_hepa ||
+            prevData[row].rep_inf_ing_rec_otr_hepa);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_hbpe" ||
+        input === "rep_inf_ing_con_fis_hbpe" ||
+        input === "rep_inf_ing_rec_otr_hbpe"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_hbpe =
+          (updatedRow.rep_inf_ing_ban_vac_hbpe ||
+            prevData[row].rep_inf_ing_ban_vac_hbpe) +
+          (updatedRow.rep_inf_ing_con_fis_hbpe ||
+            prevData[row].rep_inf_ing_con_fis_hbpe) +
+          (updatedRow.rep_inf_ing_rec_otr_hbpe ||
+            prevData[row].rep_inf_ing_rec_otr_hbpe);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_infped" ||
+        input === "rep_inf_ing_con_fis_infped" ||
+        input === "rep_inf_ing_rec_otr_infped"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_infped =
+          (updatedRow.rep_inf_ing_ban_vac_infped ||
+            prevData[row].rep_inf_ing_ban_vac_infped) +
+          (updatedRow.rep_inf_ing_con_fis_infped ||
+            prevData[row].rep_inf_ing_con_fis_infped) +
+          (updatedRow.rep_inf_ing_rec_otr_infped ||
+            prevData[row].rep_inf_ing_rec_otr_infped);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_infadu" ||
+        input === "rep_inf_ing_con_fis_infadu" ||
+        input === "rep_inf_ing_rec_otr_infadu"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_infadu =
+          (updatedRow.rep_inf_ing_ban_vac_infadu ||
+            prevData[row].rep_inf_ing_ban_vac_infadu) +
+          (updatedRow.rep_inf_ing_con_fis_infadu ||
+            prevData[row].rep_inf_ing_con_fis_infadu) +
+          (updatedRow.rep_inf_ing_rec_otr_infadu ||
+            prevData[row].rep_inf_ing_rec_otr_infadu);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_pfiz" ||
+        input === "rep_inf_ing_con_fis_pfiz" ||
+        input === "rep_inf_ing_rec_otr_pfiz"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_pfiz =
+          (updatedRow.rep_inf_ing_ban_vac_pfiz ||
+            prevData[row].rep_inf_ing_ban_vac_pfiz) +
+          (updatedRow.rep_inf_ing_con_fis_pfiz ||
+            prevData[row].rep_inf_ing_con_fis_pfiz) +
+          (updatedRow.rep_inf_ing_rec_otr_pfiz ||
+            prevData[row].rep_inf_ing_rec_otr_pfiz);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_sino" ||
+        input === "rep_inf_ing_con_fis_sino" ||
+        input === "rep_inf_ing_rec_otr_sino"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_sino =
+          (updatedRow.rep_inf_ing_ban_vac_sino ||
+            prevData[row].rep_inf_ing_ban_vac_sino) +
+          (updatedRow.rep_inf_ing_con_fis_sino ||
+            prevData[row].rep_inf_ing_con_fis_sino) +
+          (updatedRow.rep_inf_ing_rec_otr_sino ||
+            prevData[row].rep_inf_ing_rec_otr_sino);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_cans" ||
+        input === "rep_inf_ing_con_fis_cans" ||
+        input === "rep_inf_ing_rec_otr_cans"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_cans =
+          (updatedRow.rep_inf_ing_ban_vac_cans ||
+            prevData[row].rep_inf_ing_ban_vac_cans) +
+          (updatedRow.rep_inf_ing_con_fis_cans ||
+            prevData[row].rep_inf_ing_con_fis_cans) +
+          (updatedRow.rep_inf_ing_rec_otr_cans ||
+            prevData[row].rep_inf_ing_rec_otr_cans);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_astr" ||
+        input === "rep_inf_ing_con_fis_astr" ||
+        input === "rep_inf_ing_rec_otr_astr"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_astr =
+          (updatedRow.rep_inf_ing_ban_vac_astr ||
+            prevData[row].rep_inf_ing_ban_vac_astr) +
+          (updatedRow.rep_inf_ing_con_fis_astr ||
+            prevData[row].rep_inf_ing_con_fis_astr) +
+          (updatedRow.rep_inf_ing_rec_otr_astr ||
+            prevData[row].rep_inf_ing_rec_otr_astr);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_modr" ||
+        input === "rep_inf_ing_con_fis_modr" ||
+        input === "rep_inf_ing_rec_otr_modr"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_modr =
+          (updatedRow.rep_inf_ing_ban_vac_modr ||
+            prevData[row].rep_inf_ing_ban_vac_modr) +
+          (updatedRow.rep_inf_ing_con_fis_modr ||
+            prevData[row].rep_inf_ing_con_fis_modr) +
+          (updatedRow.rep_inf_ing_rec_otr_modr ||
+            prevData[row].rep_inf_ing_rec_otr_modr);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_virsim" ||
+        input === "rep_inf_ing_con_fis_virsim" ||
+        input === "rep_inf_ing_rec_otr_virsim"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_virsim =
+          (updatedRow.rep_inf_ing_ban_vac_virsim ||
+            prevData[row].rep_inf_ing_ban_vac_virsim) +
+          (updatedRow.rep_inf_ing_con_fis_virsim ||
+            prevData[row].rep_inf_ing_con_fis_virsim) +
+          (updatedRow.rep_inf_ing_rec_otr_virsim ||
+            prevData[row].rep_inf_ing_rec_otr_virsim);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_vacvphcam" ||
+        input === "rep_inf_ing_con_fis_vacvphcam" ||
+        input === "rep_inf_ing_rec_otr_vacvphcam"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_vacvphcam =
+          (updatedRow.rep_inf_ing_ban_vac_vacvphcam ||
+            prevData[row].rep_inf_ing_ban_vac_vacvphcam) +
+          (updatedRow.rep_inf_ing_con_fis_vacvphcam ||
+            prevData[row].rep_inf_ing_con_fis_vacvphcam) +
+          (updatedRow.rep_inf_ing_rec_otr_vacvphcam ||
+            prevData[row].rep_inf_ing_rec_otr_vacvphcam);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_inm_anti" ||
+        input === "rep_inf_ing_con_fis_inm_anti" ||
+        input === "rep_inf_ing_rec_otr_inm_anti"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_inm_anti =
+          (updatedRow.rep_inf_ing_ban_vac_inm_anti ||
+            prevData[row].rep_inf_ing_ban_vac_inm_anti) +
+          (updatedRow.rep_inf_ing_con_fis_inm_anti ||
+            prevData[row].rep_inf_ing_con_fis_inm_anti) +
+          (updatedRow.rep_inf_ing_rec_otr_inm_anti ||
+            prevData[row].rep_inf_ing_rec_otr_inm_anti);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_inm_ant_hep_b" ||
+        input === "rep_inf_ing_con_fis_inm_ant_hep_b" ||
+        input === "rep_inf_ing_rec_otr_inm_ant_hep_b"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_inm_ant_hep_b =
+          (updatedRow.rep_inf_ing_ban_vac_inm_ant_hep_b ||
+            prevData[row].rep_inf_ing_ban_vac_inm_ant_hep_b) +
+          (updatedRow.rep_inf_ing_con_fis_inm_ant_hep_b ||
+            prevData[row].rep_inf_ing_con_fis_inm_ant_hep_b) +
+          (updatedRow.rep_inf_ing_rec_otr_inm_ant_hep_b ||
+            prevData[row].rep_inf_ing_rec_otr_inm_ant_hep_b);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_inm_ant_rrab" ||
+        input === "rep_inf_ing_con_fis_inm_ant_rrab" ||
+        input === "rep_inf_ing_rec_otr_inm_ant_rrab"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_inm_ant_rrab =
+          (updatedRow.rep_inf_ing_ban_vac_inm_ant_rrab ||
+            prevData[row].rep_inf_ing_ban_vac_inm_ant_rrab) +
+          (updatedRow.rep_inf_ing_con_fis_inm_ant_rrab ||
+            prevData[row].rep_inf_ing_con_fis_inm_ant_rrab) +
+          (updatedRow.rep_inf_ing_rec_otr_inm_ant_rrab ||
+            prevData[row].rep_inf_ing_rec_otr_inm_ant_rrab);
+      }
+      if (
+        input === "rep_inf_ing_ban_vac_caj_bios" ||
+        input === "rep_inf_ing_con_fis_caj_bios" ||
+        input === "rep_inf_ing_rec_otr_caj_bios"
+      ) {
+        updatedRow.rep_inf_ing_tot_ing_caj_bios =
+          (updatedRow.rep_inf_ing_ban_vac_caj_bios ||
+            prevData[row].rep_inf_ing_ban_vac_caj_bios) +
+          (updatedRow.rep_inf_ing_con_fis_caj_bios ||
+            prevData[row].rep_inf_ing_con_fis_caj_bios) +
+          (updatedRow.rep_inf_ing_rec_otr_caj_bios ||
+            prevData[row].rep_inf_ing_rec_otr_caj_bios);
+      }
+
+      return {
+        ...prevData,
+        [row]: updatedRow,
+      };
     });
   };
 
