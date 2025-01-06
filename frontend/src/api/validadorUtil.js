@@ -1125,3 +1125,1436 @@ const validarVacunasInf = (formData, totalSex, totalVacunas) => {
 
   return vacunasIndividuales.every((vacuna) => totalSex >= vacuna);
 };
+
+//Calcula la suma de los campos de un formulario Reporte ENI
+export const calculateTotal = (updatedRow, prevData, row, fields) => {
+  return fields.reduce((total, field) => {
+    return total + (updatedRow[field] ?? prevData[row][field] ?? 0);
+  }, 0);
+};
+
+export const calculateDifference = (
+  updatedRow,
+  prevData,
+  row,
+  minuendField,
+  subtrahendField
+) => {
+  return (
+    (updatedRow[minuendField] ?? prevData[row][minuendField] ?? 0) -
+    (updatedRow[subtrahendField] ?? prevData[row][subtrahendField] ?? 0)
+  );
+};
+
+export const fieldMappings = {
+  rep_inf_ing_tot_ing_bcg: [
+    "rep_inf_ing_ban_vac_bcg",
+    "rep_inf_ing_con_fis_bcg",
+    "rep_inf_ing_rec_otr_bcg",
+  ],
+  rep_inf_ing_tot_ing_pent: [
+    "rep_inf_ing_ban_vac_pent",
+    "rep_inf_ing_con_fis_pent",
+    "rep_inf_ing_rec_otr_pent",
+  ],
+  rep_inf_ing_tot_ing_neum: [
+    "rep_inf_ing_ban_vac_neum",
+    "rep_inf_ing_con_fis_neum",
+    "rep_inf_ing_rec_otr_neum",
+  ],
+  rep_inf_ing_tot_ing_anti: [
+    "rep_inf_ing_ban_vac_anti",
+    "rep_inf_ing_con_fis_anti",
+    "rep_inf_ing_rec_otr_anti",
+  ],
+  rep_inf_ing_tot_ing_fipv: [
+    "rep_inf_ing_ban_vac_fipv",
+    "rep_inf_ing_con_fis_fipv",
+    "rep_inf_ing_rec_otr_fipv",
+  ],
+  rep_inf_ing_tot_ing_rota: [
+    "rep_inf_ing_ban_vac_rota",
+    "rep_inf_ing_con_fis_rota",
+    "rep_inf_ing_rec_otr_rota",
+  ],
+  rep_inf_ing_tot_ing_srp: [
+    "rep_inf_ing_ban_vac_srp",
+    "rep_inf_ing_con_fis_srp",
+    "rep_inf_ing_rec_otr_srp",
+  ],
+  rep_inf_ing_tot_ing_fieb: [
+    "rep_inf_ing_ban_vac_fieb",
+    "rep_inf_ing_con_fis_fieb",
+    "rep_inf_ing_rec_otr_fieb",
+  ],
+  rep_inf_ing_tot_ing_vari: [
+    "rep_inf_ing_ban_vac_vari",
+    "rep_inf_ing_con_fis_vari",
+    "rep_inf_ing_rec_otr_vari",
+  ],
+  rep_inf_ing_tot_ing_sr: [
+    "rep_inf_ing_ban_vac_sr",
+    "rep_inf_ing_con_fis_sr",
+    "rep_inf_ing_rec_otr_sr",
+  ],
+  rep_inf_ing_tot_ing_dift: [
+    "rep_inf_ing_ban_vac_dift",
+    "rep_inf_ing_con_fis_dift",
+    "rep_inf_ing_rec_otr_dift",
+  ],
+  rep_inf_ing_tot_ing_dtad: [
+    "rep_inf_ing_ban_vac_dtad",
+    "rep_inf_ing_con_fis_dtad",
+    "rep_inf_ing_rec_otr_dtad",
+  ],
+  rep_inf_ing_tot_ing_hpv: [
+    "rep_inf_ing_ban_vac_hpv",
+    "rep_inf_ing_con_fis_hpv",
+    "rep_inf_ing_rec_otr_hpv",
+  ],
+  rep_inf_ing_tot_ing_hepa: [
+    "rep_inf_ing_ban_vac_hepa",
+    "rep_inf_ing_con_fis_hepa",
+    "rep_inf_ing_rec_otr_hepa",
+  ],
+  rep_inf_ing_tot_ing_hbpe: [
+    "rep_inf_ing_ban_vac_hbpe",
+    "rep_inf_ing_con_fis_hbpe",
+    "rep_inf_ing_rec_otr_hbpe",
+  ],
+  rep_inf_ing_tot_ing_infped: [
+    "rep_inf_ing_ban_vac_infped",
+    "rep_inf_ing_con_fis_infped",
+    "rep_inf_ing_rec_otr_infped",
+  ],
+  rep_inf_ing_tot_ing_infadu: [
+    "rep_inf_ing_ban_vac_infadu",
+    "rep_inf_ing_con_fis_infadu",
+    "rep_inf_ing_rec_otr_infadu",
+  ],
+  rep_inf_ing_tot_ing_pfiz: [
+    "rep_inf_ing_ban_vac_pfiz",
+    "rep_inf_ing_con_fis_pfiz",
+    "rep_inf_ing_rec_otr_pfiz",
+  ],
+  rep_inf_ing_tot_ing_sino: [
+    "rep_inf_ing_ban_vac_sino",
+    "rep_inf_ing_con_fis_sino",
+    "rep_inf_ing_rec_otr_sino",
+  ],
+  rep_inf_ing_tot_ing_cans: [
+    "rep_inf_ing_ban_vac_cans",
+    "rep_inf_ing_con_fis_cans",
+    "rep_inf_ing_rec_otr_cans",
+  ],
+  rep_inf_ing_tot_ing_astr: [
+    "rep_inf_ing_ban_vac_astr",
+    "rep_inf_ing_con_fis_astr",
+    "rep_inf_ing_rec_otr_astr",
+  ],
+  rep_inf_ing_tot_ing_modr: [
+    "rep_inf_ing_ban_vac_modr",
+    "rep_inf_ing_con_fis_modr",
+    "rep_inf_ing_rec_otr_modr",
+  ],
+  rep_inf_ing_tot_ing_virsim: [
+    "rep_inf_ing_ban_vac_virsim",
+    "rep_inf_ing_con_fis_virsim",
+    "rep_inf_ing_rec_otr_virsim",
+  ],
+  rep_inf_ing_tot_ing_vacvphcam: [
+    "rep_inf_ing_ban_vac_vacvphcam",
+    "rep_inf_ing_con_fis_vacvphcam",
+    "rep_inf_ing_rec_otr_vacvphcam",
+  ],
+  rep_inf_ing_tot_ing_inm_anti: [
+    "rep_inf_ing_ban_vac_inm_anti",
+    "rep_inf_ing_con_fis_inm_anti",
+    "rep_inf_ing_rec_otr_inm_anti",
+  ],
+  rep_inf_ing_tot_ing_inm_ant_hep_b: [
+    "rep_inf_ing_ban_vac_inm_ant_hep_b",
+    "rep_inf_ing_con_fis_inm_ant_hep_b",
+    "rep_inf_ing_rec_otr_inm_ant_hep_b",
+  ],
+  rep_inf_ing_tot_ing_inm_ant_rrab: [
+    "rep_inf_ing_ban_vac_inm_ant_rrab",
+    "rep_inf_ing_con_fis_inm_ant_rrab",
+    "rep_inf_ing_rec_otr_inm_ant_rrab",
+  ],
+  rep_inf_ing_tot_ing_caj_bios: [
+    "rep_inf_ing_ban_vac_caj_bios",
+    "rep_inf_ing_con_fis_caj_bios",
+    "rep_inf_ing_rec_otr_caj_bios",
+  ],
+
+  rep_inf_egr_tot_dos_bcg: [
+    "rep_inf_egr_apl_mes_bcg",
+    "rep_inf_egr_per_vac_abi_bcg",
+    "rep_inf_egr_per_vac_noa_bcg",
+    "rep_inf_egr_tra_otr_bcg",
+    "rep_inf_egr_dev_ban_bcg",
+  ],
+  rep_inf_egr_tot_dos_pent: [
+    "rep_inf_egr_apl_mes_pent",
+    "rep_inf_egr_per_vac_abi_pent",
+    "rep_inf_egr_per_vac_noa_pent",
+    "rep_inf_egr_tra_otr_pent",
+    "rep_inf_egr_dev_ban_pent",
+  ],
+  rep_inf_egr_tot_dos_neum: [
+    "rep_inf_egr_apl_mes_neum",
+    "rep_inf_egr_per_vac_abi_neum",
+    "rep_inf_egr_per_vac_noa_neum",
+    "rep_inf_egr_tra_otr_neum",
+    "rep_inf_egr_dev_ban_neum",
+  ],
+  rep_inf_egr_tot_dos_anti: [
+    "rep_inf_egr_apl_mes_anti",
+    "rep_inf_egr_per_vac_abi_anti",
+    "rep_inf_egr_per_vac_noa_anti",
+    "rep_inf_egr_tra_otr_anti",
+    "rep_inf_egr_dev_ban_anti",
+  ],
+  rep_inf_egr_tot_dos_fipv: [
+    "rep_inf_egr_apl_mes_fipv",
+    "rep_inf_egr_per_vac_abi_fipv",
+    "rep_inf_egr_per_vac_noa_fipv",
+    "rep_inf_egr_tra_otr_fipv",
+    "rep_inf_egr_dev_ban_fipv",
+  ],
+  rep_inf_egr_tot_dos_rota: [
+    "rep_inf_egr_apl_mes_rota",
+    "rep_inf_egr_per_vac_abi_rota",
+    "rep_inf_egr_per_vac_noa_rota",
+    "rep_inf_egr_tra_otr_rota",
+    "rep_inf_egr_dev_ban_rota",
+  ],
+  rep_inf_egr_tot_dos_srp: [
+    "rep_inf_egr_apl_mes_srp",
+    "rep_inf_egr_per_vac_abi_srp",
+    "rep_inf_egr_per_vac_noa_srp",
+    "rep_inf_egr_tra_otr_srp",
+    "rep_inf_egr_dev_ban_srp",
+  ],
+  rep_inf_egr_tot_dos_fieb: [
+    "rep_inf_egr_apl_mes_fieb",
+    "rep_inf_egr_per_vac_abi_fieb",
+    "rep_inf_egr_per_vac_noa_fieb",
+    "rep_inf_egr_tra_otr_fieb",
+    "rep_inf_egr_dev_ban_fieb",
+  ],
+  rep_inf_egr_tot_dos_vari: [
+    "rep_inf_egr_apl_mes_vari",
+    "rep_inf_egr_per_vac_abi_vari",
+    "rep_inf_egr_per_vac_noa_vari",
+    "rep_inf_egr_tra_otr_vari",
+    "rep_inf_egr_dev_ban_vari",
+  ],
+  rep_inf_egr_tot_dos_sr: [
+    "rep_inf_egr_apl_mes_sr",
+    "rep_inf_egr_per_vac_abi_sr",
+    "rep_inf_egr_per_vac_noa_sr",
+    "rep_inf_egr_tra_otr_sr",
+    "rep_inf_egr_dev_ban_sr",
+  ],
+  rep_inf_egr_tot_dos_dift: [
+    "rep_inf_egr_apl_mes_dift",
+    "rep_inf_egr_per_vac_abi_dift",
+    "rep_inf_egr_per_vac_noa_dift",
+    "rep_inf_egr_tra_otr_dift",
+    "rep_inf_egr_dev_ban_dift",
+  ],
+  rep_inf_egr_tot_dos_dtad: [
+    "rep_inf_egr_apl_mes_dtad",
+    "rep_inf_egr_per_vac_abi_dtad",
+    "rep_inf_egr_per_vac_noa_dtad",
+    "rep_inf_egr_tra_otr_dtad",
+    "rep_inf_egr_dev_ban_dtad",
+  ],
+  rep_inf_egr_tot_dos_hpv: [
+    "rep_inf_egr_apl_mes_hpv",
+    "rep_inf_egr_per_vac_abi_hpv",
+    "rep_inf_egr_per_vac_noa_hpv",
+    "rep_inf_egr_tra_otr_hpv",
+    "rep_inf_egr_dev_ban_hpv",
+  ],
+  rep_inf_egr_tot_dos_hepa: [
+    "rep_inf_egr_apl_mes_hepa",
+    "rep_inf_egr_per_vac_abi_hepa",
+    "rep_inf_egr_per_vac_noa_hepa",
+    "rep_inf_egr_tra_otr_hepa",
+    "rep_inf_egr_dev_ban_hepa",
+  ],
+  rep_inf_egr_tot_dos_hbpe: [
+    "rep_inf_egr_apl_mes_hbpe",
+    "rep_inf_egr_per_vac_abi_hbpe",
+    "rep_inf_egr_per_vac_noa_hbpe",
+    "rep_inf_egr_tra_otr_hbpe",
+    "rep_inf_egr_dev_ban_hbpe",
+  ],
+  rep_inf_egr_tot_dos_infped: [
+    "rep_inf_egr_apl_mes_infped",
+    "rep_inf_egr_per_vac_abi_infped",
+    "rep_inf_egr_per_vac_noa_infped",
+    "rep_inf_egr_tra_otr_infped",
+    "rep_inf_egr_dev_ban_infped",
+  ],
+  rep_inf_egr_tot_dos_infadu: [
+    "rep_inf_egr_apl_mes_infadu",
+    "rep_inf_egr_per_vac_abi_infadu",
+    "rep_inf_egr_per_vac_noa_infadu",
+    "rep_inf_egr_tra_otr_infadu",
+    "rep_inf_egr_dev_ban_infadu",
+  ],
+  rep_inf_egr_tot_dos_pfiz: [
+    "rep_inf_egr_apl_mes_pfiz",
+    "rep_inf_egr_per_vac_abi_pfiz",
+    "rep_inf_egr_per_vac_noa_pfiz",
+    "rep_inf_egr_tra_otr_pfiz",
+    "rep_inf_egr_dev_ban_pfiz",
+  ],
+  rep_inf_egr_tot_dos_sino: [
+    "rep_inf_egr_apl_mes_sino",
+    "rep_inf_egr_per_vac_abi_sino",
+    "rep_inf_egr_per_vac_noa_sino",
+    "rep_inf_egr_tra_otr_sino",
+    "rep_inf_egr_dev_ban_sino",
+  ],
+  rep_inf_egr_tot_dos_cans: [
+    "rep_inf_egr_apl_mes_cans",
+    "rep_inf_egr_per_vac_abi_cans",
+    "rep_inf_egr_per_vac_noa_cans",
+    "rep_inf_egr_tra_otr_cans",
+    "rep_inf_egr_dev_ban_cans",
+  ],
+  rep_inf_egr_tot_dos_astr: [
+    "rep_inf_egr_apl_mes_astr",
+    "rep_inf_egr_per_vac_abi_astr",
+    "rep_inf_egr_per_vac_noa_astr",
+    "rep_inf_egr_tra_otr_astr",
+    "rep_inf_egr_dev_ban_astr",
+  ],
+  rep_inf_egr_tot_dos_modr: [
+    "rep_inf_egr_apl_mes_modr",
+    "rep_inf_egr_per_vac_abi_modr",
+    "rep_inf_egr_per_vac_noa_modr",
+    "rep_inf_egr_tra_otr_modr",
+    "rep_inf_egr_dev_ban_modr",
+  ],
+  rep_inf_egr_tot_dos_virsim: [
+    "rep_inf_egr_apl_mes_virsim",
+    "rep_inf_egr_per_vac_abi_virsim",
+    "rep_inf_egr_per_vac_noa_virsim",
+    "rep_inf_egr_tra_otr_virsim",
+    "rep_inf_egr_dev_ban_virsim",
+  ],
+  rep_inf_egr_tot_dos_vacvphcam: [
+    "rep_inf_egr_apl_mes_vacvphcam",
+    "rep_inf_egr_per_vac_abi_vacvphcam",
+    "rep_inf_egr_per_vac_noa_vacvphcam",
+    "rep_inf_egr_tra_otr_vacvphcam",
+    "rep_inf_egr_dev_ban_vacvphcam",
+  ],
+  rep_inf_egr_tot_dos_inm_anti: [
+    "rep_inf_egr_apl_mes_inm_anti",
+    "rep_inf_egr_per_vac_abi_inm_anti",
+    "rep_inf_egr_per_vac_noa_inm_anti",
+    "rep_inf_egr_tra_otr_inm_anti",
+    "rep_inf_egr_dev_ban_inm_anti",
+  ],
+  rep_inf_egr_tot_dos_inm_ant_hep_b: [
+    "rep_inf_egr_apl_mes_inm_ant_hep_b",
+    "rep_inf_egr_per_vac_abi_inm_ant_hep_b",
+    "rep_inf_egr_per_vac_noa_inm_ant_hep_b",
+    "rep_inf_egr_tra_otr_inm_ant_hep_b",
+    "rep_inf_egr_dev_ban_inm_ant_hep_b",
+  ],
+  rep_inf_egr_tot_dos_inm_ant_rrab: [
+    "rep_inf_egr_apl_mes_inm_ant_rrab",
+    "rep_inf_egr_per_vac_abi_inm_ant_rrab",
+    "rep_inf_egr_per_vac_noa_inm_ant_rrab",
+    "rep_inf_egr_tra_otr_inm_ant_rrab",
+    "rep_inf_egr_dev_ban_inm_ant_rrab",
+  ],
+  rep_inf_egr_tot_dos_caj_bios: [
+    "rep_inf_egr_apl_mes_caj_bios",
+    "rep_inf_egr_per_vac_abi_caj_bios",
+    "rep_inf_egr_per_vac_noa_caj_bios",
+    "rep_inf_egr_tra_otr_caj_bios",
+    "rep_inf_egr_dev_ban_caj_bios",
+  ],
+};
+
+export const updateField = (
+  updatedRow,
+  prevData,
+  row,
+  input,
+  fields,
+  totalField
+) => {
+  if (fields.includes(input)) {
+    updatedRow[totalField] = calculateTotal(updatedRow, prevData, row, fields);
+  }
+};
+
+export const updateDependentFields = (updatedRow, prevData, row, input) => {
+  const dependentFields_bcg = [
+    "rep_inf_sal_ant_bcg",
+    "rep_inf_ing_ban_vac_bcg",
+    "rep_inf_ing_con_fis_bcg",
+    "rep_inf_ing_rec_otr_bcg",
+    "rep_inf_ing_tot_ing_bcg",
+    "rep_inf_tot_dis_bcg",
+    "rep_inf_egr_apl_mes_bcg",
+    "rep_inf_egr_per_vac_abi_bcg",
+    "rep_inf_egr_per_vac_noa_bcg",
+    "rep_inf_egr_tra_otr_bcg",
+    "rep_inf_egr_dev_ban_bcg",
+    "rep_inf_egr_tot_dos_bcg",
+    "rep_inf_sal_mes_bcg",
+    "rep_sol_nec_mes_bcg",
+  ];
+  const dependentFields_pent = [
+    "rep_inf_sal_ant_pent",
+    "rep_inf_ing_ban_vac_pent",
+    "rep_inf_ing_con_fis_pent",
+    "rep_inf_ing_rec_otr_pent",
+    "rep_inf_ing_tot_ing_pent",
+    "rep_inf_tot_dis_pent",
+    "rep_inf_egr_apl_mes_pent",
+    "rep_inf_egr_per_vac_abi_pent",
+    "rep_inf_egr_per_vac_noa_pent",
+    "rep_inf_egr_tra_otr_pent",
+    "rep_inf_egr_dev_ban_pent",
+    "rep_inf_egr_tot_dos_pent",
+    "rep_inf_sal_mes_pent",
+    "rep_sol_nec_mes_pent",
+  ];
+  const dependentFields_neum = [
+    "rep_inf_sal_ant_neum",
+    "rep_inf_ing_ban_vac_neum",
+    "rep_inf_ing_con_fis_neum",
+    "rep_inf_ing_rec_otr_neum",
+    "rep_inf_ing_tot_ing_neum",
+    "rep_inf_tot_dis_neum",
+    "rep_inf_egr_apl_mes_neum",
+    "rep_inf_egr_per_vac_abi_neum",
+    "rep_inf_egr_per_vac_noa_neum",
+    "rep_inf_egr_tra_otr_neum",
+    "rep_inf_egr_dev_ban_neum",
+    "rep_inf_egr_tot_dos_neum",
+    "rep_inf_sal_mes_neum",
+    "rep_sol_nec_mes_neum",
+  ];
+  const dependentFields_anti = [
+    "rep_inf_sal_ant_anti",
+    "rep_inf_ing_ban_vac_anti",
+    "rep_inf_ing_con_fis_anti",
+    "rep_inf_ing_rec_otr_anti",
+    "rep_inf_ing_tot_ing_anti",
+    "rep_inf_tot_dis_anti",
+    "rep_inf_egr_apl_mes_anti",
+    "rep_inf_egr_per_vac_abi_anti",
+    "rep_inf_egr_per_vac_noa_anti",
+    "rep_inf_egr_tra_otr_anti",
+    "rep_inf_egr_dev_ban_anti",
+    "rep_inf_egr_tot_dos_anti",
+    "rep_inf_sal_mes_anti",
+    "rep_sol_nec_mes_anti",
+  ];
+  const dependentFields_fipv = [
+    "rep_inf_sal_ant_fipv",
+    "rep_inf_ing_ban_vac_fipv",
+    "rep_inf_ing_con_fis_fipv",
+    "rep_inf_ing_rec_otr_fipv",
+    "rep_inf_ing_tot_ing_fipv",
+    "rep_inf_tot_dis_fipv",
+    "rep_inf_egr_apl_mes_fipv",
+    "rep_inf_egr_per_vac_abi_fipv",
+    "rep_inf_egr_per_vac_noa_fipv",
+    "rep_inf_egr_tra_otr_fipv",
+    "rep_inf_egr_dev_ban_fipv",
+    "rep_inf_egr_tot_dos_fipv",
+    "rep_inf_sal_mes_fipv",
+    "rep_sol_nec_mes_fipv",
+  ];
+  const dependentFields_rota = [
+    "rep_inf_sal_ant_rota",
+    "rep_inf_ing_ban_vac_rota",
+    "rep_inf_ing_con_fis_rota",
+    "rep_inf_ing_rec_otr_rota",
+    "rep_inf_ing_tot_ing_rota",
+    "rep_inf_tot_dis_rota",
+    "rep_inf_egr_apl_mes_rota",
+    "rep_inf_egr_per_vac_abi_rota",
+    "rep_inf_egr_per_vac_noa_rota",
+    "rep_inf_egr_tra_otr_rota",
+    "rep_inf_egr_dev_ban_rota",
+    "rep_inf_egr_tot_dos_rota",
+    "rep_inf_sal_mes_rota",
+    "rep_sol_nec_mes_rota",
+  ];
+  const dependentFields_srp = [
+    "rep_inf_sal_ant_srp",
+    "rep_inf_ing_ban_vac_srp",
+    "rep_inf_ing_con_fis_srp",
+    "rep_inf_ing_rec_otr_srp",
+    "rep_inf_ing_tot_ing_srp",
+    "rep_inf_tot_dis_srp",
+    "rep_inf_egr_apl_mes_srp",
+    "rep_inf_egr_per_vac_abi_srp",
+    "rep_inf_egr_per_vac_noa_srp",
+    "rep_inf_egr_tra_otr_srp",
+    "rep_inf_egr_dev_ban_srp",
+    "rep_inf_egr_tot_dos_srp",
+    "rep_inf_sal_mes_srp",
+    "rep_sol_nec_mes_srp",
+  ];
+  const dependentFields_fieb = [
+    "rep_inf_sal_ant_fieb",
+    "rep_inf_ing_ban_vac_fieb",
+    "rep_inf_ing_con_fis_fieb",
+    "rep_inf_ing_rec_otr_fieb",
+    "rep_inf_ing_tot_ing_fieb",
+    "rep_inf_tot_dis_fieb",
+    "rep_inf_egr_apl_mes_fieb",
+    "rep_inf_egr_per_vac_abi_fieb",
+    "rep_inf_egr_per_vac_noa_fieb",
+    "rep_inf_egr_tra_otr_fieb",
+    "rep_inf_egr_dev_ban_fieb",
+    "rep_inf_egr_tot_dos_fieb",
+    "rep_inf_sal_mes_fieb",
+    "rep_sol_nec_mes_fieb",
+  ];
+  const dependentFields_vari = [
+    "rep_inf_sal_ant_vari",
+    "rep_inf_ing_ban_vac_vari",
+    "rep_inf_ing_con_fis_vari",
+    "rep_inf_ing_rec_otr_vari",
+    "rep_inf_ing_tot_ing_vari",
+    "rep_inf_tot_dis_vari",
+    "rep_inf_egr_apl_mes_vari",
+    "rep_inf_egr_per_vac_abi_vari",
+    "rep_inf_egr_per_vac_noa_vari",
+    "rep_inf_egr_tra_otr_vari",
+    "rep_inf_egr_dev_ban_vari",
+    "rep_inf_egr_tot_dos_vari",
+    "rep_inf_sal_mes_vari",
+    "rep_sol_nec_mes_vari",
+  ];
+  const dependentFields_sr = [
+    "rep_inf_sal_ant_sr",
+    "rep_inf_ing_ban_vac_sr",
+    "rep_inf_ing_con_fis_sr",
+    "rep_inf_ing_rec_otr_sr",
+    "rep_inf_ing_tot_ing_sr",
+    "rep_inf_tot_dis_sr",
+    "rep_inf_egr_apl_mes_sr",
+    "rep_inf_egr_per_vac_abi_sr",
+    "rep_inf_egr_per_vac_noa_sr",
+    "rep_inf_egr_tra_otr_sr",
+    "rep_inf_egr_dev_ban_sr",
+    "rep_inf_egr_tot_dos_sr",
+    "rep_inf_sal_mes_sr",
+    "rep_sol_nec_mes_sr",
+  ];
+  const dependentFields_dift = [
+    "rep_inf_sal_ant_dift",
+    "rep_inf_ing_ban_vac_dift",
+    "rep_inf_ing_con_fis_dift",
+    "rep_inf_ing_rec_otr_dift",
+    "rep_inf_ing_tot_ing_dift",
+    "rep_inf_tot_dis_dift",
+    "rep_inf_egr_apl_mes_dift",
+    "rep_inf_egr_per_vac_abi_dift",
+    "rep_inf_egr_per_vac_noa_dift",
+    "rep_inf_egr_tra_otr_dift",
+    "rep_inf_egr_dev_ban_dift",
+    "rep_inf_egr_tot_dos_dift",
+    "rep_inf_sal_mes_dift",
+    "rep_sol_nec_mes_dift",
+  ];
+  const dependentFields_dtad = [
+    "rep_inf_sal_ant_dtad",
+    "rep_inf_ing_ban_vac_dtad",
+    "rep_inf_ing_con_fis_dtad",
+    "rep_inf_ing_rec_otr_dtad",
+    "rep_inf_ing_tot_ing_dtad",
+    "rep_inf_tot_dis_dtad",
+    "rep_inf_egr_apl_mes_dtad",
+    "rep_inf_egr_per_vac_abi_dtad",
+    "rep_inf_egr_per_vac_noa_dtad",
+    "rep_inf_egr_tra_otr_dtad",
+    "rep_inf_egr_dev_ban_dtad",
+    "rep_inf_egr_tot_dos_dtad",
+    "rep_inf_sal_mes_dtad",
+    "rep_sol_nec_mes_dtad",
+  ];
+  const dependentFields_hpv = [
+    "rep_inf_sal_ant_hpv",
+    "rep_inf_ing_ban_vac_hpv",
+    "rep_inf_ing_con_fis_hpv",
+    "rep_inf_ing_rec_otr_hpv",
+    "rep_inf_ing_tot_ing_hpv",
+    "rep_inf_tot_dis_hpv",
+    "rep_inf_egr_apl_mes_hpv",
+    "rep_inf_egr_per_vac_abi_hpv",
+    "rep_inf_egr_per_vac_noa_hpv",
+    "rep_inf_egr_tra_otr_hpv",
+    "rep_inf_egr_dev_ban_hpv",
+    "rep_inf_egr_tot_dos_hpv",
+    "rep_inf_sal_mes_hpv",
+    "rep_sol_nec_mes_hpv",
+  ];
+  const dependentFields_hepa = [
+    "rep_inf_sal_ant_hepa",
+    "rep_inf_ing_ban_vac_hepa",
+    "rep_inf_ing_con_fis_hepa",
+    "rep_inf_ing_rec_otr_hepa",
+    "rep_inf_ing_tot_ing_hepa",
+    "rep_inf_tot_dis_hepa",
+    "rep_inf_egr_apl_mes_hepa",
+    "rep_inf_egr_per_vac_abi_hepa",
+    "rep_inf_egr_per_vac_noa_hepa",
+    "rep_inf_egr_tra_otr_hepa",
+    "rep_inf_egr_dev_ban_hepa",
+    "rep_inf_egr_tot_dos_hepa",
+    "rep_inf_sal_mes_hepa",
+    "rep_sol_nec_mes_hepa",
+  ];
+  const dependentFields_hbpe = [
+    "rep_inf_sal_ant_hbpe",
+    "rep_inf_ing_ban_vac_hbpe",
+    "rep_inf_ing_con_fis_hbpe",
+    "rep_inf_ing_rec_otr_hbpe",
+    "rep_inf_ing_tot_ing_hbpe",
+    "rep_inf_tot_dis_hbpe",
+    "rep_inf_egr_apl_mes_hbpe",
+    "rep_inf_egr_per_vac_abi_hbpe",
+    "rep_inf_egr_per_vac_noa_hbpe",
+    "rep_inf_egr_tra_otr_hbpe",
+    "rep_inf_egr_dev_ban_hbpe",
+    "rep_inf_egr_tot_dos_hbpe",
+    "rep_inf_sal_mes_hbpe",
+    "rep_sol_nec_mes_hbpe",
+  ];
+  const dependentFields_infped = [
+    "rep_inf_sal_ant_infped",
+    "rep_inf_ing_ban_vac_infped",
+    "rep_inf_ing_con_fis_infped",
+    "rep_inf_ing_rec_otr_infped",
+    "rep_inf_ing_tot_ing_infped",
+    "rep_inf_tot_dis_infped",
+    "rep_inf_egr_apl_mes_infped",
+    "rep_inf_egr_per_vac_abi_infped",
+    "rep_inf_egr_per_vac_noa_infped",
+    "rep_inf_egr_tra_otr_infped",
+    "rep_inf_egr_dev_ban_infped",
+    "rep_inf_egr_tot_dos_infped",
+    "rep_inf_sal_mes_infped",
+    "rep_sol_nec_mes_infped",
+  ];
+  const dependentFields_infadu = [
+    "rep_inf_sal_ant_infadu",
+    "rep_inf_ing_ban_vac_infadu",
+    "rep_inf_ing_con_fis_infadu",
+    "rep_inf_ing_rec_otr_infadu",
+    "rep_inf_ing_tot_ing_infadu",
+    "rep_inf_tot_dis_infadu",
+    "rep_inf_egr_apl_mes_infadu",
+    "rep_inf_egr_per_vac_abi_infadu",
+    "rep_inf_egr_per_vac_noa_infadu",
+    "rep_inf_egr_tra_otr_infadu",
+    "rep_inf_egr_dev_ban_infadu",
+    "rep_inf_egr_tot_dos_infadu",
+    "rep_inf_sal_mes_infadu",
+    "rep_sol_nec_mes_infadu",
+  ];
+  const dependentFields_pfiz = [
+    "rep_inf_sal_ant_pfiz",
+    "rep_inf_ing_ban_vac_pfiz",
+    "rep_inf_ing_con_fis_pfiz",
+    "rep_inf_ing_rec_otr_pfiz",
+    "rep_inf_ing_tot_ing_pfiz",
+    "rep_inf_tot_dis_pfiz",
+    "rep_inf_egr_apl_mes_pfiz",
+    "rep_inf_egr_per_vac_abi_pfiz",
+    "rep_inf_egr_per_vac_noa_pfiz",
+    "rep_inf_egr_tra_otr_pfiz",
+    "rep_inf_egr_dev_ban_pfiz",
+    "rep_inf_egr_tot_dos_pfiz",
+    "rep_inf_sal_mes_pfiz",
+    "rep_sol_nec_mes_pfiz",
+  ];
+  const dependentFields_sino = [
+    "rep_inf_sal_ant_sino",
+    "rep_inf_ing_ban_vac_sino",
+    "rep_inf_ing_con_fis_sino",
+    "rep_inf_ing_rec_otr_sino",
+    "rep_inf_ing_tot_ing_sino",
+    "rep_inf_tot_dis_sino",
+    "rep_inf_egr_apl_mes_sino",
+    "rep_inf_egr_per_vac_abi_sino",
+    "rep_inf_egr_per_vac_noa_sino",
+    "rep_inf_egr_tra_otr_sino",
+    "rep_inf_egr_dev_ban_sino",
+    "rep_inf_egr_tot_dos_sino",
+    "rep_inf_sal_mes_sino",
+    "rep_sol_nec_mes_sino",
+  ];
+  const dependentFields_cans = [
+    "rep_inf_sal_ant_cans",
+    "rep_inf_ing_ban_vac_cans",
+    "rep_inf_ing_con_fis_cans",
+    "rep_inf_ing_rec_otr_cans",
+    "rep_inf_ing_tot_ing_cans",
+    "rep_inf_tot_dis_cans",
+    "rep_inf_egr_apl_mes_cans",
+    "rep_inf_egr_per_vac_abi_cans",
+    "rep_inf_egr_per_vac_noa_cans",
+    "rep_inf_egr_tra_otr_cans",
+    "rep_inf_egr_dev_ban_cans",
+    "rep_inf_egr_tot_dos_cans",
+    "rep_inf_sal_mes_cans",
+    "rep_sol_nec_mes_cans",
+  ];
+  const dependentFields_astr = [
+    "rep_inf_sal_ant_astr",
+    "rep_inf_ing_ban_vac_astr",
+    "rep_inf_ing_con_fis_astr",
+    "rep_inf_ing_rec_otr_astr",
+    "rep_inf_ing_tot_ing_astr",
+    "rep_inf_tot_dis_astr",
+    "rep_inf_egr_apl_mes_astr",
+    "rep_inf_egr_per_vac_abi_astr",
+    "rep_inf_egr_per_vac_noa_astr",
+    "rep_inf_egr_tra_otr_astr",
+    "rep_inf_egr_dev_ban_astr",
+    "rep_inf_egr_tot_dos_astr",
+    "rep_inf_sal_mes_astr",
+    "rep_sol_nec_mes_astr",
+  ];
+  const dependentFields_modr = [
+    "rep_inf_sal_ant_modr",
+    "rep_inf_ing_ban_vac_modr",
+    "rep_inf_ing_con_fis_modr",
+    "rep_inf_ing_rec_otr_modr",
+    "rep_inf_ing_tot_ing_modr",
+    "rep_inf_tot_dis_modr",
+    "rep_inf_egr_apl_mes_modr",
+    "rep_inf_egr_per_vac_abi_modr",
+    "rep_inf_egr_per_vac_noa_modr",
+    "rep_inf_egr_tra_otr_modr",
+    "rep_inf_egr_dev_ban_modr",
+    "rep_inf_egr_tot_dos_modr",
+    "rep_inf_sal_mes_modr",
+    "rep_sol_nec_mes_modr",
+  ];
+  const dependentFields_virsim = [
+    "rep_inf_sal_ant_virsim",
+    "rep_inf_ing_ban_vac_virsim",
+    "rep_inf_ing_con_fis_virsim",
+    "rep_inf_ing_rec_otr_virsim",
+    "rep_inf_ing_tot_ing_virsim",
+    "rep_inf_tot_dis_virsim",
+    "rep_inf_egr_apl_mes_virsim",
+    "rep_inf_egr_per_vac_abi_virsim",
+    "rep_inf_egr_per_vac_noa_virsim",
+    "rep_inf_egr_tra_otr_virsim",
+    "rep_inf_egr_dev_ban_virsim",
+    "rep_inf_egr_tot_dos_virsim",
+    "rep_inf_sal_mes_virsim",
+    "rep_sol_nec_mes_virsim",
+  ];
+  const dependentFields_vacvphcam = [
+    "rep_inf_sal_ant_vacvphcam",
+    "rep_inf_ing_ban_vac_vacvphcam",
+    "rep_inf_ing_con_fis_vacvphcam",
+    "rep_inf_ing_rec_otr_vacvphcam",
+    "rep_inf_ing_tot_ing_vacvphcam",
+    "rep_inf_tot_dis_vacvphcam",
+    "rep_inf_egr_apl_mes_vacvphcam",
+    "rep_inf_egr_per_vac_abi_vacvphcam",
+    "rep_inf_egr_per_vac_noa_vacvphcam",
+    "rep_inf_egr_tra_otr_vacvphcam",
+    "rep_inf_egr_dev_ban_vacvphcam",
+    "rep_inf_egr_tot_dos_vacvphcam",
+    "rep_inf_sal_mes_vacvphcam",
+    "rep_sol_nec_mes_vacvphcam",
+  ];
+  const dependentFields_inm_anti = [
+    "rep_inf_sal_ant_inm_anti",
+    "rep_inf_ing_ban_vac_inm_anti",
+    "rep_inf_ing_con_fis_inm_anti",
+    "rep_inf_ing_rec_otr_inm_anti",
+    "rep_inf_ing_tot_ing_inm_anti",
+    "rep_inf_tot_dis_inm_anti",
+    "rep_inf_egr_apl_mes_inm_anti",
+    "rep_inf_egr_per_vac_abi_inm_anti",
+    "rep_inf_egr_per_vac_noa_inm_anti",
+    "rep_inf_egr_tra_otr_inm_anti",
+    "rep_inf_egr_dev_ban_inm_anti",
+    "rep_inf_egr_tot_dos_inm_anti",
+    "rep_inf_sal_mes_inm_anti",
+    "rep_sol_nec_mes_inm_anti",
+  ];
+  const dependentFields_inm_ant_hep_b = [
+    "rep_inf_sal_ant_inm_ant_hep_b",
+    "rep_inf_ing_ban_vac_inm_ant_hep_b",
+    "rep_inf_ing_con_fis_inm_ant_hep_b",
+    "rep_inf_ing_rec_otr_inm_ant_hep_b",
+    "rep_inf_ing_tot_ing_inm_ant_hep_b",
+    "rep_inf_tot_dis_inm_ant_hep_b",
+    "rep_inf_egr_apl_mes_inm_ant_hep_b",
+    "rep_inf_egr_per_vac_abi_inm_ant_hep_b",
+    "rep_inf_egr_per_vac_noa_inm_ant_hep_b",
+    "rep_inf_egr_tra_otr_inm_ant_hep_b",
+    "rep_inf_egr_dev_ban_inm_ant_hep_b",
+    "rep_inf_egr_tot_dos_inm_ant_hep_b",
+    "rep_inf_sal_mes_inm_ant_hep_b",
+    "rep_sol_nec_mes_inm_ant_hep_b",
+  ];
+  const dependentFields_inm_ant_rrab = [
+    "rep_inf_sal_ant_inm_ant_rrab",
+    "rep_inf_ing_ban_vac_inm_ant_rrab",
+    "rep_inf_ing_con_fis_inm_ant_rrab",
+    "rep_inf_ing_rec_otr_inm_ant_rrab",
+    "rep_inf_ing_tot_ing_inm_ant_rrab",
+    "rep_inf_tot_dis_inm_ant_rrab",
+    "rep_inf_egr_apl_mes_inm_ant_rrab",
+    "rep_inf_egr_per_vac_abi_inm_ant_rrab",
+    "rep_inf_egr_per_vac_noa_inm_ant_rrab",
+    "rep_inf_egr_tra_otr_inm_ant_rrab",
+    "rep_inf_egr_dev_ban_inm_ant_rrab",
+    "rep_inf_egr_tot_dos_inm_ant_rrab",
+    "rep_inf_sal_mes_inm_ant_rrab",
+    "rep_sol_nec_mes_inm_ant_rrab",
+  ];
+  const dependentFields_caj_bios = [
+    "rep_inf_sal_ant_caj_bios",
+    "rep_inf_ing_ban_vac_caj_bios",
+    "rep_inf_ing_con_fis_caj_bios",
+    "rep_inf_ing_rec_otr_caj_bios",
+    "rep_inf_ing_tot_ing_caj_bios",
+    "rep_inf_tot_dis_caj_bios",
+    "rep_inf_egr_apl_mes_caj_bios",
+    "rep_inf_egr_per_vac_abi_caj_bios",
+    "rep_inf_egr_per_vac_noa_caj_bios",
+    "rep_inf_egr_tra_otr_caj_bios",
+    "rep_inf_egr_dev_ban_caj_bios",
+    "rep_inf_egr_tot_dos_caj_bios",
+    "rep_inf_sal_mes_caj_bios",
+    "rep_sol_nec_mes_caj_bios",
+  ];
+
+  if (dependentFields_bcg.includes(input)) {
+    updatedRow.rep_inf_tot_dis_bcg = calculateTotal(updatedRow, prevData, row, [
+      "rep_inf_sal_ant_bcg",
+      "rep_inf_ing_tot_ing_bcg",
+    ]);
+    updatedRow.rep_inf_sal_mes_bcg = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_bcg",
+      "rep_inf_egr_tot_dos_bcg"
+    );
+    updatedRow.rep_sol_sol_mes_bcg = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_bcg",
+      "rep_sol_nec_mes_bcg"
+    );
+  }
+  if (dependentFields_pent.includes(input)) {
+    updatedRow.rep_inf_tot_dis_pent = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_pent", "rep_inf_ing_tot_ing_pent"]
+    );
+    updatedRow.rep_inf_sal_mes_pent = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_pent",
+      "rep_inf_egr_tot_dos_pent"
+    );
+    updatedRow.rep_sol_sol_mes_pent = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_pent",
+      "rep_sol_nec_mes_pent"
+    );
+  }
+  if (dependentFields_neum.includes(input)) {
+    updatedRow.rep_inf_tot_dis_neum = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_neum", "rep_inf_ing_tot_ing_neum"]
+    );
+    updatedRow.rep_inf_sal_mes_neum = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_neum",
+      "rep_inf_egr_tot_dos_neum"
+    );
+    updatedRow.rep_sol_sol_mes_neum = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_neum",
+      "rep_sol_nec_mes_neum"
+    );
+  }
+  if (dependentFields_anti.includes(input)) {
+    updatedRow.rep_inf_tot_dis_anti = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_anti", "rep_inf_ing_tot_ing_anti"]
+    );
+    updatedRow.rep_inf_sal_mes_anti = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_anti",
+      "rep_inf_egr_tot_dos_anti"
+    );
+    updatedRow.rep_sol_sol_mes_anti = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_anti",
+      "rep_sol_nec_mes_anti"
+    );
+  }
+  if (dependentFields_fipv.includes(input)) {
+    updatedRow.rep_inf_tot_dis_fipv = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_fipv", "rep_inf_ing_tot_ing_fipv"]
+    );
+    updatedRow.rep_inf_sal_mes_fipv = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_fipv",
+      "rep_inf_egr_tot_dos_fipv"
+    );
+    updatedRow.rep_sol_sol_mes_fipv = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_fipv",
+      "rep_sol_nec_mes_fipv"
+    );
+  }
+  if (dependentFields_rota.includes(input)) {
+    updatedRow.rep_inf_tot_dis_rota = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_rota", "rep_inf_ing_tot_ing_rota"]
+    );
+    updatedRow.rep_inf_sal_mes_rota = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_rota",
+      "rep_inf_egr_tot_dos_rota"
+    );
+    updatedRow.rep_sol_sol_mes_rota = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_rota",
+      "rep_sol_nec_mes_rota"
+    );
+  }
+  if (dependentFields_srp.includes(input)) {
+    updatedRow.rep_inf_tot_dis_srp = calculateTotal(updatedRow, prevData, row, [
+      "rep_inf_sal_ant_srp",
+      "rep_inf_ing_tot_ing_srp",
+    ]);
+    updatedRow.rep_inf_sal_mes_srp = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_srp",
+      "rep_inf_egr_tot_dos_srp"
+    );
+    updatedRow.rep_sol_sol_mes_srp = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_srp",
+      "rep_sol_nec_mes_srp"
+    );
+  }
+  if (dependentFields_fieb.includes(input)) {
+    updatedRow.rep_inf_tot_dis_fieb = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_fieb", "rep_inf_ing_tot_ing_fieb"]
+    );
+    updatedRow.rep_inf_sal_mes_fieb = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_fieb",
+      "rep_inf_egr_tot_dos_fieb"
+    );
+    updatedRow.rep_sol_sol_mes_fieb = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_fieb",
+      "rep_sol_nec_mes_fieb"
+    );
+  }
+  if (dependentFields_vari.includes(input)) {
+    updatedRow.rep_inf_tot_dis_vari = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_vari", "rep_inf_ing_tot_ing_vari"]
+    );
+    updatedRow.rep_inf_sal_mes_vari = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_vari",
+      "rep_inf_egr_tot_dos_vari"
+    );
+    updatedRow.rep_sol_sol_mes_vari = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_vari",
+      "rep_sol_nec_mes_vari"
+    );
+  }
+  if (dependentFields_sr.includes(input)) {
+    updatedRow.rep_inf_tot_dis_sr = calculateTotal(updatedRow, prevData, row, [
+      "rep_inf_sal_ant_sr",
+      "rep_inf_ing_tot_ing_sr",
+    ]);
+    updatedRow.rep_inf_sal_mes_sr = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_sr",
+      "rep_inf_egr_tot_dos_sr"
+    );
+    updatedRow.rep_sol_sol_mes_sr = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_sr",
+      "rep_sol_nec_mes_sr"
+    );
+  }
+  if (dependentFields_dift.includes(input)) {
+    updatedRow.rep_inf_tot_dis_dift = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_dift", "rep_inf_ing_tot_ing_dift"]
+    );
+    updatedRow.rep_inf_sal_mes_dift = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_dift",
+      "rep_inf_egr_tot_dos_dift"
+    );
+    updatedRow.rep_sol_sol_mes_dift = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_dift",
+      "rep_sol_nec_mes_dift"
+    );
+  }
+  if (dependentFields_dtad.includes(input)) {
+    updatedRow.rep_inf_tot_dis_dtad = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_dtad", "rep_inf_ing_tot_ing_dtad"]
+    );
+    updatedRow.rep_inf_sal_mes_dtad = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_dtad",
+      "rep_inf_egr_tot_dos_dtad"
+    );
+    updatedRow.rep_sol_sol_mes_dtad = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_dtad",
+      "rep_sol_nec_mes_dtad"
+    );
+  }
+  if (dependentFields_hpv.includes(input)) {
+    updatedRow.rep_inf_tot_dis_hpv = calculateTotal(updatedRow, prevData, row, [
+      "rep_inf_sal_ant_hpv",
+      "rep_inf_ing_tot_ing_hpv",
+    ]);
+    updatedRow.rep_inf_sal_mes_hpv = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_hpv",
+      "rep_inf_egr_tot_dos_hpv"
+    );
+    updatedRow.rep_sol_sol_mes_hpv = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_hpv",
+      "rep_sol_nec_mes_hpv"
+    );
+  }
+  if (dependentFields_hepa.includes(input)) {
+    updatedRow.rep_inf_tot_dis_hepa = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_hepa", "rep_inf_ing_tot_ing_hepa"]
+    );
+    updatedRow.rep_inf_sal_mes_hepa = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_hepa",
+      "rep_inf_egr_tot_dos_hepa"
+    );
+    updatedRow.rep_sol_sol_mes_hepa = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_hepa",
+      "rep_sol_nec_mes_hepa"
+    );
+  }
+  if (dependentFields_hbpe.includes(input)) {
+    updatedRow.rep_inf_tot_dis_hbpe = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_hbpe", "rep_inf_ing_tot_ing_hbpe"]
+    );
+    updatedRow.rep_inf_sal_mes_hbpe = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_hbpe",
+      "rep_inf_egr_tot_dos_hbpe"
+    );
+    updatedRow.rep_sol_sol_mes_hbpe = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_hbpe",
+      "rep_sol_nec_mes_hbpe"
+    );
+  }
+  if (dependentFields_infped.includes(input)) {
+    updatedRow.rep_inf_tot_dis_infped = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_infped", "rep_inf_ing_tot_ing_infped"]
+    );
+    updatedRow.rep_inf_sal_mes_infped = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_infped",
+      "rep_inf_egr_tot_dos_infped"
+    );
+    updatedRow.rep_sol_sol_mes_infped = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_infped",
+      "rep_sol_nec_mes_infped"
+    );
+  }
+  if (dependentFields_infadu.includes(input)) {
+    updatedRow.rep_inf_tot_dis_infadu = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_infadu", "rep_inf_ing_tot_ing_infadu"]
+    );
+    updatedRow.rep_inf_sal_mes_infadu = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_infadu",
+      "rep_inf_egr_tot_dos_infadu"
+    );
+    updatedRow.rep_sol_sol_mes_infadu = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_infadu",
+      "rep_sol_nec_mes_infadu"
+    );
+  }
+  if (dependentFields_pfiz.includes(input)) {
+    updatedRow.rep_inf_tot_dis_pfiz = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_pfiz", "rep_inf_ing_tot_ing_pfiz"]
+    );
+    updatedRow.rep_inf_sal_mes_pfiz = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_pfiz",
+      "rep_inf_egr_tot_dos_pfiz"
+    );
+    updatedRow.rep_sol_sol_mes_pfiz = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_pfiz",
+      "rep_sol_nec_mes_pfiz"
+    );
+  }
+  if (dependentFields_sino.includes(input)) {
+    updatedRow.rep_inf_tot_dis_sino = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_sino", "rep_inf_ing_tot_ing_sino"]
+    );
+    updatedRow.rep_inf_sal_mes_sino = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_sino",
+      "rep_inf_egr_tot_dos_sino"
+    );
+    updatedRow.rep_sol_sol_mes_sino = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_sino",
+      "rep_sol_nec_mes_sino"
+    );
+  }
+  if (dependentFields_cans.includes(input)) {
+    updatedRow.rep_inf_tot_dis_cans = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_cans", "rep_inf_ing_tot_ing_cans"]
+    );
+    updatedRow.rep_inf_sal_mes_cans = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_cans",
+      "rep_inf_egr_tot_dos_cans"
+    );
+    updatedRow.rep_sol_sol_mes_cans = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_cans",
+      "rep_sol_nec_mes_cans"
+    );
+  }
+  if (dependentFields_astr.includes(input)) {
+    updatedRow.rep_inf_tot_dis_astr = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_astr", "rep_inf_ing_tot_ing_astr"]
+    );
+    updatedRow.rep_inf_sal_mes_astr = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_astr",
+      "rep_inf_egr_tot_dos_astr"
+    );
+    updatedRow.rep_sol_sol_mes_astr = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_astr",
+      "rep_sol_nec_mes_astr"
+    );
+  }
+  if (dependentFields_modr.includes(input)) {
+    updatedRow.rep_inf_tot_dis_modr = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_modr", "rep_inf_ing_tot_ing_modr"]
+    );
+    updatedRow.rep_inf_sal_mes_modr = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_modr",
+      "rep_inf_egr_tot_dos_modr"
+    );
+    updatedRow.rep_sol_sol_mes_modr = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_modr",
+      "rep_sol_nec_mes_modr"
+    );
+  }
+  if (dependentFields_virsim.includes(input)) {
+    updatedRow.rep_inf_tot_dis_virsim = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_virsim", "rep_inf_ing_tot_ing_virsim"]
+    );
+    updatedRow.rep_inf_sal_mes_virsim = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_virsim",
+      "rep_inf_egr_tot_dos_virsim"
+    );
+    updatedRow.rep_sol_sol_mes_virsim = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_virsim",
+      "rep_sol_nec_mes_virsim"
+    );
+  }
+  if (dependentFields_vacvphcam.includes(input)) {
+    updatedRow.rep_inf_tot_dis_vacvphcam = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_vacvphcam", "rep_inf_ing_tot_ing_vacvphcam"]
+    );
+    updatedRow.rep_inf_sal_mes_vacvphcam = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_vacvphcam",
+      "rep_inf_egr_tot_dos_vacvphcam"
+    );
+    updatedRow.rep_sol_sol_mes_vacvphcam = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_vacvphcam",
+      "rep_sol_nec_mes_vacvphcam"
+    );
+  }
+  if (dependentFields_inm_anti.includes(input)) {
+    updatedRow.rep_inf_tot_dis_inm_anti = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_inm_anti", "rep_inf_ing_tot_ing_inm_anti"]
+    );
+    updatedRow.rep_inf_sal_mes_inm_anti = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_inm_anti",
+      "rep_inf_egr_tot_dos_inm_anti"
+    );
+    updatedRow.rep_sol_sol_mes_inm_anti = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_inm_anti",
+      "rep_sol_nec_mes_inm_anti"
+    );
+  }
+  if (dependentFields_inm_ant_hep_b.includes(input)) {
+    updatedRow.rep_inf_tot_dis_inm_ant_hep_b = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_inm_ant_hep_b", "rep_inf_ing_tot_ing_inm_ant_hep_b"]
+    );
+    updatedRow.rep_inf_sal_mes_inm_ant_hep_b = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_inm_ant_hep_b",
+      "rep_inf_egr_tot_dos_inm_ant_hep_b"
+    );
+    updatedRow.rep_sol_sol_mes_inm_ant_hep_b = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_inm_ant_hep_b",
+      "rep_sol_nec_mes_inm_ant_hep_b"
+    );
+  }
+  if (dependentFields_inm_ant_rrab.includes(input)) {
+    updatedRow.rep_inf_tot_dis_inm_ant_rrab = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_inm_ant_rrab", "rep_inf_ing_tot_ing_inm_ant_rrab"]
+    );
+    updatedRow.rep_inf_sal_mes_inm_ant_rrab = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_inm_ant_rrab",
+      "rep_inf_egr_tot_dos_inm_ant_rrab"
+    );
+    updatedRow.rep_sol_sol_mes_inm_ant_rrab = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_inm_ant_rrab",
+      "rep_sol_nec_mes_inm_ant_rrab"
+    );
+  }
+  if (dependentFields_caj_bios.includes(input)) {
+    updatedRow.rep_inf_tot_dis_caj_bios = calculateTotal(
+      updatedRow,
+      prevData,
+      row,
+      ["rep_inf_sal_ant_caj_bios", "rep_inf_ing_tot_ing_caj_bios"]
+    );
+    updatedRow.rep_inf_sal_mes_caj_bios = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_tot_dis_caj_bios",
+      "rep_inf_egr_tot_dos_caj_bios"
+    );
+    updatedRow.rep_sol_sol_mes_caj_bios = calculateDifference(
+      updatedRow,
+      prevData,
+      row,
+      "rep_inf_sal_mes_caj_bios",
+      "rep_sol_nec_mes_caj_bios"
+    );
+  }
+};

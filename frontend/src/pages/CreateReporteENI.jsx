@@ -12,6 +12,13 @@ import {
   buttonStyleSecundario,
   buttonStyleEliminar,
 } from "../components/EstilosCustom.jsx";
+import {
+  calculateTotal,
+  calculateDifference,
+  fieldMappings,
+  updateField,
+  updateDependentFields,
+} from "../api/validadorUtil.js";
 import { toast } from "react-hot-toast";
 
 const getInputType = (key) => {
@@ -622,7 +629,538 @@ const CreateReporteENI = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [isInputEstado, setIsInputEstado] = useState({
     input: false,
-    inf_fech: false,
+    row01: {
+      rep_inf_sal_ant_bcg: true,
+      rep_inf_ing_ban_vac_bcg: true,
+      rep_inf_ing_con_fis_bcg: true,
+      rep_inf_ing_rec_otr_bcg: true,
+      rep_inf_ing_tot_ing_bcg: true,
+      rep_inf_tot_dis_bcg: true,
+      rep_inf_egr_apl_mes_bcg: true,
+      rep_inf_egr_per_vac_abi_bcg: true,
+      rep_inf_egr_per_vac_noa_bcg: true,
+      rep_inf_egr_tra_otr_bcg: true,
+      rep_inf_egr_dev_ban_bcg: true,
+      rep_inf_egr_tot_dos_bcg: true,
+      rep_inf_sal_mes_bcg: true,
+      rep_sol_nec_mes_bcg: true,
+      rep_sol_sol_mes_bcg: true,
+      rep_con_lot_bio_bcg: true,
+      rep_con_fec_cad_bcg: true,
+    },
+    row02: {
+      rep_inf_sal_ant_pent: true,
+      rep_inf_ing_ban_vac_pent: true,
+      rep_inf_ing_con_fis_pent: true,
+      rep_inf_ing_rec_otr_pent: true,
+      rep_inf_ing_tot_ing_pent: true,
+      rep_inf_tot_dis_pent: true,
+      rep_inf_egr_apl_mes_pent: true,
+      rep_inf_egr_per_vac_abi_pent: true,
+      rep_inf_egr_per_vac_noa_pent: true,
+      rep_inf_egr_tra_otr_pent: true,
+      rep_inf_egr_dev_ban_pent: true,
+      rep_inf_egr_tot_dos_pent: true,
+      rep_inf_sal_mes_pent: true,
+      rep_sol_nec_mes_pent: true,
+      rep_sol_sol_mes_pent: true,
+      rep_con_lot_bio_pent: true,
+      rep_con_fec_cad_pent: true,
+    },
+    row03: {
+      rep_inf_sal_ant_neum: true,
+      rep_inf_ing_ban_vac_neum: true,
+      rep_inf_ing_con_fis_neum: true,
+      rep_inf_ing_rec_otr_neum: true,
+      rep_inf_ing_tot_ing_neum: true,
+      rep_inf_tot_dis_neum: true,
+      rep_inf_egr_apl_mes_neum: true,
+      rep_inf_egr_per_vac_abi_neum: true,
+      rep_inf_egr_per_vac_noa_neum: true,
+      rep_inf_egr_tra_otr_neum: true,
+      rep_inf_egr_dev_ban_neum: true,
+      rep_inf_egr_tot_dos_neum: true,
+      rep_inf_sal_mes_neum: true,
+      rep_sol_nec_mes_neum: true,
+      rep_sol_sol_mes_neum: true,
+      rep_con_lot_bio_neum: true,
+      rep_con_fec_cad_neum: true,
+    },
+    row04: {
+      rep_inf_sal_ant_anti: true,
+      rep_inf_ing_ban_vac_anti: true,
+      rep_inf_ing_con_fis_anti: true,
+      rep_inf_ing_rec_otr_anti: true,
+      rep_inf_ing_tot_ing_anti: true,
+      rep_inf_tot_dis_anti: true,
+      rep_inf_egr_apl_mes_anti: true,
+      rep_inf_egr_per_vac_abi_anti: true,
+      rep_inf_egr_per_vac_noa_anti: true,
+      rep_inf_egr_tra_otr_anti: true,
+      rep_inf_egr_dev_ban_anti: true,
+      rep_inf_egr_tot_dos_anti: true,
+      rep_inf_sal_mes_anti: true,
+      rep_sol_nec_mes_anti: true,
+      rep_sol_sol_mes_anti: true,
+      rep_con_lot_bio_anti: true,
+      rep_con_fec_cad_anti: true,
+    },
+    row05: {
+      rep_inf_sal_ant_fipv: true,
+      rep_inf_ing_ban_vac_fipv: true,
+      rep_inf_ing_con_fis_fipv: true,
+      rep_inf_ing_rec_otr_fipv: true,
+      rep_inf_ing_tot_ing_fipv: true,
+      rep_inf_tot_dis_fipv: true,
+      rep_inf_egr_apl_mes_fipv: true,
+      rep_inf_egr_per_vac_abi_fipv: true,
+      rep_inf_egr_per_vac_noa_fipv: true,
+      rep_inf_egr_tra_otr_fipv: true,
+      rep_inf_egr_dev_ban_fipv: true,
+      rep_inf_egr_tot_dos_fipv: true,
+      rep_inf_sal_mes_fipv: true,
+      rep_sol_nec_mes_fipv: true,
+      rep_sol_sol_mes_fipv: true,
+      rep_con_lot_bio_fipv: true,
+      rep_con_fec_cad_fipv: true,
+    },
+    row06: {
+      rep_inf_sal_ant_rota: true,
+      rep_inf_ing_ban_vac_rota: true,
+      rep_inf_ing_con_fis_rota: true,
+      rep_inf_ing_rec_otr_rota: true,
+      rep_inf_ing_tot_ing_rota: true,
+      rep_inf_tot_dis_rota: true,
+      rep_inf_egr_apl_mes_rota: true,
+      rep_inf_egr_per_vac_abi_rota: true,
+      rep_inf_egr_per_vac_noa_rota: true,
+      rep_inf_egr_tra_otr_rota: true,
+      rep_inf_egr_dev_ban_rota: true,
+      rep_inf_egr_tot_dos_rota: true,
+      rep_inf_sal_mes_rota: true,
+      rep_sol_nec_mes_rota: true,
+      rep_sol_sol_mes_rota: true,
+      rep_con_lot_bio_rota: true,
+      rep_con_fec_cad_rota: true,
+    },
+    row07: {
+      rep_inf_sal_ant_srp: true,
+      rep_inf_ing_ban_vac_srp: true,
+      rep_inf_ing_con_fis_srp: true,
+      rep_inf_ing_rec_otr_srp: true,
+      rep_inf_ing_tot_ing_srp: true,
+      rep_inf_tot_dis_srp: true,
+      rep_inf_egr_apl_mes_srp: true,
+      rep_inf_egr_per_vac_abi_srp: true,
+      rep_inf_egr_per_vac_noa_srp: true,
+      rep_inf_egr_tra_otr_srp: true,
+      rep_inf_egr_dev_ban_srp: true,
+      rep_inf_egr_tot_dos_srp: true,
+      rep_inf_sal_mes_srp: true,
+      rep_sol_nec_mes_srp: true,
+      rep_sol_sol_mes_srp: true,
+      rep_con_lot_bio_srp: true,
+      rep_con_fec_cad_srp: true,
+    },
+    row08: {
+      rep_inf_sal_ant_fieb: true,
+      rep_inf_ing_ban_vac_fieb: true,
+      rep_inf_ing_con_fis_fieb: true,
+      rep_inf_ing_rec_otr_fieb: true,
+      rep_inf_ing_tot_ing_fieb: true,
+      rep_inf_tot_dis_fieb: true,
+      rep_inf_egr_apl_mes_fieb: true,
+      rep_inf_egr_per_vac_abi_fieb: true,
+      rep_inf_egr_per_vac_noa_fieb: true,
+      rep_inf_egr_tra_otr_fieb: true,
+      rep_inf_egr_dev_ban_fieb: true,
+      rep_inf_egr_tot_dos_fieb: true,
+      rep_inf_sal_mes_fieb: true,
+      rep_sol_nec_mes_fieb: true,
+      rep_sol_sol_mes_fieb: true,
+      rep_con_lot_bio_fieb: true,
+      rep_con_fec_cad_fieb: true,
+    },
+    row09: {
+      rep_inf_sal_ant_vari: true,
+      rep_inf_ing_ban_vac_vari: true,
+      rep_inf_ing_con_fis_vari: true,
+      rep_inf_ing_rec_otr_vari: true,
+      rep_inf_ing_tot_ing_vari: true,
+      rep_inf_tot_dis_vari: true,
+      rep_inf_egr_apl_mes_vari: true,
+      rep_inf_egr_per_vac_abi_vari: true,
+      rep_inf_egr_per_vac_noa_vari: true,
+      rep_inf_egr_tra_otr_vari: true,
+      rep_inf_egr_dev_ban_vari: true,
+      rep_inf_egr_tot_dos_vari: true,
+      rep_inf_sal_mes_vari: true,
+      rep_sol_nec_mes_vari: true,
+      rep_sol_sol_mes_vari: true,
+      rep_con_lot_bio_vari: true,
+      rep_con_fec_cad_vari: true,
+    },
+    row10: {
+      rep_inf_sal_ant_sr: true,
+      rep_inf_ing_ban_vac_sr: true,
+      rep_inf_ing_con_fis_sr: true,
+      rep_inf_ing_rec_otr_sr: true,
+      rep_inf_ing_tot_ing_sr: true,
+      rep_inf_tot_dis_sr: true,
+      rep_inf_egr_apl_mes_sr: true,
+      rep_inf_egr_per_vac_abi_sr: true,
+      rep_inf_egr_per_vac_noa_sr: true,
+      rep_inf_egr_tra_otr_sr: true,
+      rep_inf_egr_dev_ban_sr: true,
+      rep_inf_egr_tot_dos_sr: true,
+      rep_inf_sal_mes_sr: true,
+      rep_sol_nec_mes_sr: true,
+      rep_sol_sol_mes_sr: true,
+      rep_con_lot_bio_sr: true,
+      rep_con_fec_cad_sr: true,
+    },
+    row11: {
+      rep_inf_sal_ant_dift: true,
+      rep_inf_ing_ban_vac_dift: true,
+      rep_inf_ing_con_fis_dift: true,
+      rep_inf_ing_rec_otr_dift: true,
+      rep_inf_ing_tot_ing_dift: true,
+      rep_inf_tot_dis_dift: true,
+      rep_inf_egr_apl_mes_dift: true,
+      rep_inf_egr_per_vac_abi_dift: true,
+      rep_inf_egr_per_vac_noa_dift: true,
+      rep_inf_egr_tra_otr_dift: true,
+      rep_inf_egr_dev_ban_dift: true,
+      rep_inf_egr_tot_dos_dift: true,
+      rep_inf_sal_mes_dift: true,
+      rep_sol_nec_mes_dift: true,
+      rep_sol_sol_mes_dift: true,
+      rep_con_lot_bio_dift: true,
+      rep_con_fec_cad_dift: true,
+    },
+    row12: {
+      rep_inf_sal_ant_dtad: true,
+      rep_inf_ing_ban_vac_dtad: true,
+      rep_inf_ing_con_fis_dtad: true,
+      rep_inf_ing_rec_otr_dtad: true,
+      rep_inf_ing_tot_ing_dtad: true,
+      rep_inf_tot_dis_dtad: true,
+      rep_inf_egr_apl_mes_dtad: true,
+      rep_inf_egr_per_vac_abi_dtad: true,
+      rep_inf_egr_per_vac_noa_dtad: true,
+      rep_inf_egr_tra_otr_dtad: true,
+      rep_inf_egr_dev_ban_dtad: true,
+      rep_inf_egr_tot_dos_dtad: true,
+      rep_inf_sal_mes_dtad: true,
+      rep_sol_nec_mes_dtad: true,
+      rep_sol_sol_mes_dtad: true,
+      rep_con_lot_bio_dtad: true,
+      rep_con_fec_cad_dtad: true,
+    },
+    row13: {
+      rep_inf_sal_ant_hpv: true,
+      rep_inf_ing_ban_vac_hpv: true,
+      rep_inf_ing_con_fis_hpv: true,
+      rep_inf_ing_rec_otr_hpv: true,
+      rep_inf_ing_tot_ing_hpv: true,
+      rep_inf_tot_dis_hpv: true,
+      rep_inf_egr_apl_mes_hpv: true,
+      rep_inf_egr_per_vac_abi_hpv: true,
+      rep_inf_egr_per_vac_noa_hpv: true,
+      rep_inf_egr_tra_otr_hpv: true,
+      rep_inf_egr_dev_ban_hpv: true,
+      rep_inf_egr_tot_dos_hpv: true,
+      rep_inf_sal_mes_hpv: true,
+      rep_sol_nec_mes_hpv: true,
+      rep_sol_sol_mes_hpv: true,
+      rep_con_lot_bio_hpv: true,
+      rep_con_fec_cad_hpv: true,
+    },
+    row14: {
+      rep_inf_sal_ant_hepa: true,
+      rep_inf_ing_ban_vac_hepa: true,
+      rep_inf_ing_con_fis_hepa: true,
+      rep_inf_ing_rec_otr_hepa: true,
+      rep_inf_ing_tot_ing_hepa: true,
+      rep_inf_tot_dis_hepa: true,
+      rep_inf_egr_apl_mes_hepa: true,
+      rep_inf_egr_per_vac_abi_hepa: true,
+      rep_inf_egr_per_vac_noa_hepa: true,
+      rep_inf_egr_tra_otr_hepa: true,
+      rep_inf_egr_dev_ban_hepa: true,
+      rep_inf_egr_tot_dos_hepa: true,
+      rep_inf_sal_mes_hepa: true,
+      rep_sol_nec_mes_hepa: true,
+      rep_sol_sol_mes_hepa: true,
+      rep_con_lot_bio_hepa: true,
+      rep_con_fec_cad_hepa: true,
+    },
+    row15: {
+      rep_inf_sal_ant_hbpe: true,
+      rep_inf_ing_ban_vac_hbpe: true,
+      rep_inf_ing_con_fis_hbpe: true,
+      rep_inf_ing_rec_otr_hbpe: true,
+      rep_inf_ing_tot_ing_hbpe: true,
+      rep_inf_tot_dis_hbpe: true,
+      rep_inf_egr_apl_mes_hbpe: true,
+      rep_inf_egr_per_vac_abi_hbpe: true,
+      rep_inf_egr_per_vac_noa_hbpe: true,
+      rep_inf_egr_tra_otr_hbpe: true,
+      rep_inf_egr_dev_ban_hbpe: true,
+      rep_inf_egr_tot_dos_hbpe: true,
+      rep_inf_sal_mes_hbpe: true,
+      rep_sol_nec_mes_hbpe: true,
+      rep_sol_sol_mes_hbpe: true,
+      rep_con_lot_bio_hbpe: true,
+      rep_con_fec_cad_hbpe: true,
+    },
+    row16: {
+      rep_inf_sal_ant_infped: true,
+      rep_inf_ing_ban_vac_infped: true,
+      rep_inf_ing_con_fis_infped: true,
+      rep_inf_ing_rec_otr_infped: true,
+      rep_inf_ing_tot_ing_infped: true,
+      rep_inf_tot_dis_infped: true,
+      rep_inf_egr_apl_mes_infped: true,
+      rep_inf_egr_per_vac_abi_infped: true,
+      rep_inf_egr_per_vac_noa_infped: true,
+      rep_inf_egr_tra_otr_infped: true,
+      rep_inf_egr_dev_ban_infped: true,
+      rep_inf_egr_tot_dos_infped: true,
+      rep_inf_sal_mes_infped: true,
+      rep_sol_nec_mes_infped: true,
+      rep_sol_sol_mes_infped: true,
+      rep_con_lot_bio_infped: true,
+      rep_con_fec_cad_infped: true,
+    },
+    row17: {
+      rep_inf_sal_ant_infadu: true,
+      rep_inf_ing_ban_vac_infadu: true,
+      rep_inf_ing_con_fis_infadu: true,
+      rep_inf_ing_rec_otr_infadu: true,
+      rep_inf_ing_tot_ing_infadu: true,
+      rep_inf_tot_dis_infadu: true,
+      rep_inf_egr_apl_mes_infadu: true,
+      rep_inf_egr_per_vac_abi_infadu: true,
+      rep_inf_egr_per_vac_noa_infadu: true,
+      rep_inf_egr_tra_otr_infadu: true,
+      rep_inf_egr_dev_ban_infadu: true,
+      rep_inf_egr_tot_dos_infadu: true,
+      rep_inf_sal_mes_infadu: true,
+      rep_sol_nec_mes_infadu: true,
+      rep_sol_sol_mes_infadu: true,
+      rep_con_lot_bio_infadu: true,
+      rep_con_fec_cad_infadu: true,
+    },
+    row18: {
+      rep_inf_sal_ant_pfiz: true,
+      rep_inf_ing_ban_vac_pfiz: true,
+      rep_inf_ing_con_fis_pfiz: true,
+      rep_inf_ing_rec_otr_pfiz: true,
+      rep_inf_ing_tot_ing_pfiz: true,
+      rep_inf_tot_dis_pfiz: true,
+      rep_inf_egr_apl_mes_pfiz: true,
+      rep_inf_egr_per_vac_abi_pfiz: true,
+      rep_inf_egr_per_vac_noa_pfiz: true,
+      rep_inf_egr_tra_otr_pfiz: true,
+      rep_inf_egr_dev_ban_pfiz: true,
+      rep_inf_egr_tot_dos_pfiz: true,
+      rep_inf_sal_mes_pfiz: true,
+      rep_sol_nec_mes_pfiz: true,
+      rep_sol_sol_mes_pfiz: true,
+      rep_con_lot_bio_pfiz: true,
+      rep_con_fec_cad_pfiz: true,
+    },
+    row19: {
+      rep_inf_sal_ant_sino: true,
+      rep_inf_ing_ban_vac_sino: true,
+      rep_inf_ing_con_fis_sino: true,
+      rep_inf_ing_rec_otr_sino: true,
+      rep_inf_ing_tot_ing_sino: true,
+      rep_inf_tot_dis_sino: true,
+      rep_inf_egr_apl_mes_sino: true,
+      rep_inf_egr_per_vac_abi_sino: true,
+      rep_inf_egr_per_vac_noa_sino: true,
+      rep_inf_egr_tra_otr_sino: true,
+      rep_inf_egr_dev_ban_sino: true,
+      rep_inf_egr_tot_dos_sino: true,
+      rep_inf_sal_mes_sino: true,
+      rep_sol_nec_mes_sino: true,
+      rep_sol_sol_mes_sino: true,
+      rep_con_lot_bio_sino: true,
+      rep_con_fec_cad_sino: true,
+    },
+    row20: {
+      rep_inf_sal_ant_cans: true,
+      rep_inf_ing_ban_vac_cans: true,
+      rep_inf_ing_con_fis_cans: true,
+      rep_inf_ing_rec_otr_cans: true,
+      rep_inf_ing_tot_ing_cans: true,
+      rep_inf_tot_dis_cans: true,
+      rep_inf_egr_apl_mes_cans: true,
+      rep_inf_egr_per_vac_abi_cans: true,
+      rep_inf_egr_per_vac_noa_cans: true,
+      rep_inf_egr_tra_otr_cans: true,
+      rep_inf_egr_dev_ban_cans: true,
+      rep_inf_egr_tot_dos_cans: true,
+      rep_inf_sal_mes_cans: true,
+      rep_sol_nec_mes_cans: true,
+      rep_sol_sol_mes_cans: true,
+      rep_con_lot_bio_cans: true,
+      rep_con_fec_cad_cans: true,
+    },
+    row21: {
+      rep_inf_sal_ant_astr: true,
+      rep_inf_ing_ban_vac_astr: true,
+      rep_inf_ing_con_fis_astr: true,
+      rep_inf_ing_rec_otr_astr: true,
+      rep_inf_ing_tot_ing_astr: true,
+      rep_inf_tot_dis_astr: true,
+      rep_inf_egr_apl_mes_astr: true,
+      rep_inf_egr_per_vac_abi_astr: true,
+      rep_inf_egr_per_vac_noa_astr: true,
+      rep_inf_egr_tra_otr_astr: true,
+      rep_inf_egr_dev_ban_astr: true,
+      rep_inf_egr_tot_dos_astr: true,
+      rep_inf_sal_mes_astr: true,
+      rep_sol_nec_mes_astr: true,
+      rep_sol_sol_mes_astr: true,
+      rep_con_lot_bio_astr: true,
+      rep_con_fec_cad_astr: true,
+    },
+    row22: {
+      rep_inf_sal_ant_modr: true,
+      rep_inf_ing_ban_vac_modr: true,
+      rep_inf_ing_con_fis_modr: true,
+      rep_inf_ing_rec_otr_modr: true,
+      rep_inf_ing_tot_ing_modr: true,
+      rep_inf_tot_dis_modr: true,
+      rep_inf_egr_apl_mes_modr: true,
+      rep_inf_egr_per_vac_abi_modr: true,
+      rep_inf_egr_per_vac_noa_modr: true,
+      rep_inf_egr_tra_otr_modr: true,
+      rep_inf_egr_dev_ban_modr: true,
+      rep_inf_egr_tot_dos_modr: true,
+      rep_inf_sal_mes_modr: true,
+      rep_sol_nec_mes_modr: true,
+      rep_sol_sol_mes_modr: true,
+      rep_con_lot_bio_modr: true,
+      rep_con_fec_cad_modr: true,
+    },
+    row23: {
+      rep_inf_sal_ant_virsim: true,
+      rep_inf_ing_ban_vac_virsim: true,
+      rep_inf_ing_con_fis_virsim: true,
+      rep_inf_ing_rec_otr_virsim: true,
+      rep_inf_ing_tot_ing_virsim: true,
+      rep_inf_tot_dis_virsim: true,
+      rep_inf_egr_apl_mes_virsim: true,
+      rep_inf_egr_per_vac_abi_virsim: true,
+      rep_inf_egr_per_vac_noa_virsim: true,
+      rep_inf_egr_tra_otr_virsim: true,
+      rep_inf_egr_dev_ban_virsim: true,
+      rep_inf_egr_tot_dos_virsim: true,
+      rep_inf_sal_mes_virsim: true,
+      rep_sol_nec_mes_virsim: true,
+      rep_sol_sol_mes_virsim: true,
+      rep_con_lot_bio_virsim: true,
+      rep_con_fec_cad_virsim: true,
+    },
+    row24: {
+      rep_inf_sal_ant_vacvphcam: true,
+      rep_inf_ing_ban_vac_vacvphcam: true,
+      rep_inf_ing_con_fis_vacvphcam: true,
+      rep_inf_ing_rec_otr_vacvphcam: true,
+      rep_inf_ing_tot_ing_vacvphcam: true,
+      rep_inf_tot_dis_vacvphcam: true,
+      rep_inf_egr_apl_mes_vacvphcam: true,
+      rep_inf_egr_per_vac_abi_vacvphcam: true,
+      rep_inf_egr_per_vac_noa_vacvphcam: true,
+      rep_inf_egr_tra_otr_vacvphcam: true,
+      rep_inf_egr_dev_ban_vacvphcam: true,
+      rep_inf_egr_tot_dos_vacvphcam: true,
+      rep_inf_sal_mes_vacvphcam: true,
+      rep_sol_nec_mes_vacvphcam: true,
+      rep_sol_sol_mes_vacvphcam: true,
+      rep_con_lot_bio_vacvphcam: true,
+      rep_con_fec_cad_vacvphcam: true,
+    },
+    row25: {
+      rep_inf_sal_ant_inm_anti: true,
+      rep_inf_ing_ban_vac_inm_anti: true,
+      rep_inf_ing_con_fis_inm_anti: true,
+      rep_inf_ing_rec_otr_inm_anti: true,
+      rep_inf_ing_tot_ing_inm_anti: true,
+      rep_inf_tot_dis_inm_anti: true,
+      rep_inf_egr_apl_mes_inm_anti: true,
+      rep_inf_egr_per_vac_abi_inm_anti: true,
+      rep_inf_egr_per_vac_noa_inm_anti: true,
+      rep_inf_egr_tra_otr_inm_anti: true,
+      rep_inf_egr_dev_ban_inm_anti: true,
+      rep_inf_egr_tot_dos_inm_anti: true,
+      rep_inf_sal_mes_inm_anti: true,
+      rep_sol_nec_mes_inm_anti: true,
+      rep_sol_sol_mes_inm_anti: true,
+      rep_con_lot_bio_inm_anti: true,
+      rep_con_fec_cad_inm_anti: true,
+    },
+    row26: {
+      rep_inf_sal_ant_inm_ant_hep_b: true,
+      rep_inf_ing_ban_vac_inm_ant_hep_b: true,
+      rep_inf_ing_con_fis_inm_ant_hep_b: true,
+      rep_inf_ing_rec_otr_inm_ant_hep_b: true,
+      rep_inf_ing_tot_ing_inm_ant_hep_b: true,
+      rep_inf_tot_dis_inm_ant_hep_b: true,
+      rep_inf_egr_apl_mes_inm_ant_hep_b: true,
+      rep_inf_egr_per_vac_abi_inm_ant_hep_b: true,
+      rep_inf_egr_per_vac_noa_inm_ant_hep_b: true,
+      rep_inf_egr_tra_otr_inm_ant_hep_b: true,
+      rep_inf_egr_dev_ban_inm_ant_hep_b: true,
+      rep_inf_egr_tot_dos_inm_ant_hep_b: true,
+      rep_inf_sal_mes_inm_ant_hep_b: true,
+      rep_sol_nec_mes_inm_ant_hep_b: true,
+      rep_sol_sol_mes_inm_ant_hep_b: true,
+      rep_con_lot_bio_inm_ant_hep_b: true,
+      rep_con_fec_cad_inm_ant_hep_b: true,
+    },
+    row27: {
+      rep_inf_sal_ant_inm_ant_rrab: true,
+      rep_inf_ing_ban_vac_inm_ant_rrab: true,
+      rep_inf_ing_con_fis_inm_ant_rrab: true,
+      rep_inf_ing_rec_otr_inm_ant_rrab: true,
+      rep_inf_ing_tot_ing_inm_ant_rrab: true,
+      rep_inf_tot_dis_inm_ant_rrab: true,
+      rep_inf_egr_apl_mes_inm_ant_rrab: true,
+      rep_inf_egr_per_vac_abi_inm_ant_rrab: true,
+      rep_inf_egr_per_vac_noa_inm_ant_rrab: true,
+      rep_inf_egr_tra_otr_inm_ant_rrab: true,
+      rep_inf_egr_dev_ban_inm_ant_rrab: true,
+      rep_inf_egr_tot_dos_inm_ant_rrab: true,
+      rep_inf_sal_mes_inm_ant_rrab: true,
+      rep_sol_nec_mes_inm_ant_rrab: true,
+      rep_sol_sol_mes_inm_ant_rrab: true,
+      rep_con_lot_bio_inm_ant_rrab: true,
+      rep_con_fec_cad_inm_ant_rrab: true,
+    },
+    row28: {
+      rep_inf_sal_ant_caj_bios: true,
+      rep_inf_ing_ban_vac_caj_bios: true,
+      rep_inf_ing_con_fis_caj_bios: true,
+      rep_inf_ing_rec_otr_caj_bios: true,
+      rep_inf_ing_tot_ing_caj_bios: true,
+      rep_inf_tot_dis_caj_bios: true,
+      rep_inf_egr_apl_mes_caj_bios: true,
+      rep_inf_egr_per_vac_abi_caj_bios: true,
+      rep_inf_egr_per_vac_noa_caj_bios: true,
+      rep_inf_egr_tra_otr_caj_bios: true,
+      rep_inf_egr_dev_ban_caj_bios: true,
+      rep_inf_egr_tot_dos_caj_bios: true,
+      rep_inf_sal_mes_caj_bios: true,
+      rep_sol_nec_mes_caj_bios: true,
+      rep_sol_sol_mes_caj_bios: true,
+      rep_con_lot_bio_caj_bios: true,
+      rep_con_fec_cad_caj_bios: true,
+    },
   });
 
   const [botonEstado, setBotonEstado] = useState({
@@ -675,370 +1213,18 @@ const CreateReporteENI = () => {
         [input]: newValue,
       };
 
-      if (
-        input === "rep_inf_ing_ban_vac_bcg" ||
-        input === "rep_inf_ing_con_fis_bcg" ||
-        input === "rep_inf_ing_rec_otr_bcg"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_bcg =
-          (updatedRow.rep_inf_ing_ban_vac_bcg ||
-            prevData[row].rep_inf_ing_ban_vac_bcg) +
-          (updatedRow.rep_inf_ing_con_fis_bcg ||
-            prevData[row].rep_inf_ing_con_fis_bcg) +
-          (updatedRow.rep_inf_ing_rec_otr_bcg ||
-            prevData[row].rep_inf_ing_rec_otr_bcg);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_pent" ||
-        input === "rep_inf_ing_con_fis_pent" ||
-        input === "rep_inf_ing_rec_otr_pent"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_pent =
-          (updatedRow.rep_inf_ing_ban_vac_pent ||
-            prevData[row].rep_inf_ing_ban_vac_pent) +
-          (updatedRow.rep_inf_ing_con_fis_pent ||
-            prevData[row].rep_inf_ing_con_fis_pent) +
-          (updatedRow.rep_inf_ing_rec_otr_pent ||
-            prevData[row].rep_inf_ing_rec_otr_pent);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_neum" ||
-        input === "rep_inf_ing_con_fis_neum" ||
-        input === "rep_inf_ing_rec_otr_neum"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_neum =
-          (updatedRow.rep_inf_ing_ban_vac_neum ||
-            prevData[row].rep_inf_ing_ban_vac_neum) +
-          (updatedRow.rep_inf_ing_con_fis_neum ||
-            prevData[row].rep_inf_ing_con_fis_neum) +
-          (updatedRow.rep_inf_ing_rec_otr_neum ||
-            prevData[row].rep_inf_ing_rec_otr_neum);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_anti" ||
-        input === "rep_inf_ing_con_fis_anti" ||
-        input === "rep_inf_ing_rec_otr_anti"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_anti =
-          (updatedRow.rep_inf_ing_ban_vac_anti ||
-            prevData[row].rep_inf_ing_ban_vac_anti) +
-          (updatedRow.rep_inf_ing_con_fis_anti ||
-            prevData[row].rep_inf_ing_con_fis_anti) +
-          (updatedRow.rep_inf_ing_rec_otr_anti ||
-            prevData[row].rep_inf_ing_rec_otr_anti);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_fipv" ||
-        input === "rep_inf_ing_con_fis_fipv" ||
-        input === "rep_inf_ing_rec_otr_fipv"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_fipv =
-          (updatedRow.rep_inf_ing_ban_vac_fipv ||
-            prevData[row].rep_inf_ing_ban_vac_fipv) +
-          (updatedRow.rep_inf_ing_con_fis_fipv ||
-            prevData[row].rep_inf_ing_con_fis_fipv) +
-          (updatedRow.rep_inf_ing_rec_otr_fipv ||
-            prevData[row].rep_inf_ing_rec_otr_fipv);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_rota" ||
-        input === "rep_inf_ing_con_fis_rota" ||
-        input === "rep_inf_ing_rec_otr_rota"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_rota =
-          (updatedRow.rep_inf_ing_ban_vac_rota ||
-            prevData[row].rep_inf_ing_ban_vac_rota) +
-          (updatedRow.rep_inf_ing_con_fis_rota ||
-            prevData[row].rep_inf_ing_con_fis_rota) +
-          (updatedRow.rep_inf_ing_rec_otr_rota ||
-            prevData[row].rep_inf_ing_rec_otr_rota);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_srp" ||
-        input === "rep_inf_ing_con_fis_srp" ||
-        input === "rep_inf_ing_rec_otr_srp"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_srp =
-          (updatedRow.rep_inf_ing_ban_vac_srp ||
-            prevData[row].rep_inf_ing_ban_vac_srp) +
-          (updatedRow.rep_inf_ing_con_fis_srp ||
-            prevData[row].rep_inf_ing_con_fis_srp) +
-          (updatedRow.rep_inf_ing_rec_otr_srp ||
-            prevData[row].rep_inf_ing_rec_otr_srp);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_fieb" ||
-        input === "rep_inf_ing_con_fis_fieb" ||
-        input === "rep_inf_ing_rec_otr_fieb"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_fieb =
-          (updatedRow.rep_inf_ing_ban_vac_fieb ||
-            prevData[row].rep_inf_ing_ban_vac_fieb) +
-          (updatedRow.rep_inf_ing_con_fis_fieb ||
-            prevData[row].rep_inf_ing_con_fis_fieb) +
-          (updatedRow.rep_inf_ing_rec_otr_fieb ||
-            prevData[row].rep_inf_ing_rec_otr_fieb);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_vari" ||
-        input === "rep_inf_ing_con_fis_vari" ||
-        input === "rep_inf_ing_rec_otr_vari"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_vari =
-          (updatedRow.rep_inf_ing_ban_vac_vari ||
-            prevData[row].rep_inf_ing_ban_vac_vari) +
-          (updatedRow.rep_inf_ing_con_fis_vari ||
-            prevData[row].rep_inf_ing_con_fis_vari) +
-          (updatedRow.rep_inf_ing_rec_otr_vari ||
-            prevData[row].rep_inf_ing_rec_otr_vari);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_sr" ||
-        input === "rep_inf_ing_con_fis_sr" ||
-        input === "rep_inf_ing_rec_otr_sr"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_sr =
-          (updatedRow.rep_inf_ing_ban_vac_sr ||
-            prevData[row].rep_inf_ing_ban_vac_sr) +
-          (updatedRow.rep_inf_ing_con_fis_sr ||
-            prevData[row].rep_inf_ing_con_fis_sr) +
-          (updatedRow.rep_inf_ing_rec_otr_sr ||
-            prevData[row].rep_inf_ing_rec_otr_sr);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_dift" ||
-        input === "rep_inf_ing_con_fis_dift" ||
-        input === "rep_inf_ing_rec_otr_dift"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_dift =
-          (updatedRow.rep_inf_ing_ban_vac_dift ||
-            prevData[row].rep_inf_ing_ban_vac_dift) +
-          (updatedRow.rep_inf_ing_con_fis_dift ||
-            prevData[row].rep_inf_ing_con_fis_dift) +
-          (updatedRow.rep_inf_ing_rec_otr_dift ||
-            prevData[row].rep_inf_ing_rec_otr_dift);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_dtad" ||
-        input === "rep_inf_ing_con_fis_dtad" ||
-        input === "rep_inf_ing_rec_otr_dtad"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_dtad =
-          (updatedRow.rep_inf_ing_ban_vac_dtad ||
-            prevData[row].rep_inf_ing_ban_vac_dtad) +
-          (updatedRow.rep_inf_ing_con_fis_dtad ||
-            prevData[row].rep_inf_ing_con_fis_dtad) +
-          (updatedRow.rep_inf_ing_rec_otr_dtad ||
-            prevData[row].rep_inf_ing_rec_otr_dtad);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_hpv" ||
-        input === "rep_inf_ing_con_fis_hpv" ||
-        input === "rep_inf_ing_rec_otr_hpv"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_hpv =
-          (updatedRow.rep_inf_ing_ban_vac_hpv ||
-            prevData[row].rep_inf_ing_ban_vac_hpv) +
-          (updatedRow.rep_inf_ing_con_fis_hpv ||
-            prevData[row].rep_inf_ing_con_fis_hpv) +
-          (updatedRow.rep_inf_ing_rec_otr_hpv ||
-            prevData[row].rep_inf_ing_rec_otr_hpv);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_hepa" ||
-        input === "rep_inf_ing_con_fis_hepa" ||
-        input === "rep_inf_ing_rec_otr_hepa"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_hepa =
-          (updatedRow.rep_inf_ing_ban_vac_hepa ||
-            prevData[row].rep_inf_ing_ban_vac_hepa) +
-          (updatedRow.rep_inf_ing_con_fis_hepa ||
-            prevData[row].rep_inf_ing_con_fis_hepa) +
-          (updatedRow.rep_inf_ing_rec_otr_hepa ||
-            prevData[row].rep_inf_ing_rec_otr_hepa);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_hbpe" ||
-        input === "rep_inf_ing_con_fis_hbpe" ||
-        input === "rep_inf_ing_rec_otr_hbpe"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_hbpe =
-          (updatedRow.rep_inf_ing_ban_vac_hbpe ||
-            prevData[row].rep_inf_ing_ban_vac_hbpe) +
-          (updatedRow.rep_inf_ing_con_fis_hbpe ||
-            prevData[row].rep_inf_ing_con_fis_hbpe) +
-          (updatedRow.rep_inf_ing_rec_otr_hbpe ||
-            prevData[row].rep_inf_ing_rec_otr_hbpe);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_infped" ||
-        input === "rep_inf_ing_con_fis_infped" ||
-        input === "rep_inf_ing_rec_otr_infped"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_infped =
-          (updatedRow.rep_inf_ing_ban_vac_infped ||
-            prevData[row].rep_inf_ing_ban_vac_infped) +
-          (updatedRow.rep_inf_ing_con_fis_infped ||
-            prevData[row].rep_inf_ing_con_fis_infped) +
-          (updatedRow.rep_inf_ing_rec_otr_infped ||
-            prevData[row].rep_inf_ing_rec_otr_infped);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_infadu" ||
-        input === "rep_inf_ing_con_fis_infadu" ||
-        input === "rep_inf_ing_rec_otr_infadu"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_infadu =
-          (updatedRow.rep_inf_ing_ban_vac_infadu ||
-            prevData[row].rep_inf_ing_ban_vac_infadu) +
-          (updatedRow.rep_inf_ing_con_fis_infadu ||
-            prevData[row].rep_inf_ing_con_fis_infadu) +
-          (updatedRow.rep_inf_ing_rec_otr_infadu ||
-            prevData[row].rep_inf_ing_rec_otr_infadu);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_pfiz" ||
-        input === "rep_inf_ing_con_fis_pfiz" ||
-        input === "rep_inf_ing_rec_otr_pfiz"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_pfiz =
-          (updatedRow.rep_inf_ing_ban_vac_pfiz ||
-            prevData[row].rep_inf_ing_ban_vac_pfiz) +
-          (updatedRow.rep_inf_ing_con_fis_pfiz ||
-            prevData[row].rep_inf_ing_con_fis_pfiz) +
-          (updatedRow.rep_inf_ing_rec_otr_pfiz ||
-            prevData[row].rep_inf_ing_rec_otr_pfiz);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_sino" ||
-        input === "rep_inf_ing_con_fis_sino" ||
-        input === "rep_inf_ing_rec_otr_sino"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_sino =
-          (updatedRow.rep_inf_ing_ban_vac_sino ||
-            prevData[row].rep_inf_ing_ban_vac_sino) +
-          (updatedRow.rep_inf_ing_con_fis_sino ||
-            prevData[row].rep_inf_ing_con_fis_sino) +
-          (updatedRow.rep_inf_ing_rec_otr_sino ||
-            prevData[row].rep_inf_ing_rec_otr_sino);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_cans" ||
-        input === "rep_inf_ing_con_fis_cans" ||
-        input === "rep_inf_ing_rec_otr_cans"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_cans =
-          (updatedRow.rep_inf_ing_ban_vac_cans ||
-            prevData[row].rep_inf_ing_ban_vac_cans) +
-          (updatedRow.rep_inf_ing_con_fis_cans ||
-            prevData[row].rep_inf_ing_con_fis_cans) +
-          (updatedRow.rep_inf_ing_rec_otr_cans ||
-            prevData[row].rep_inf_ing_rec_otr_cans);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_astr" ||
-        input === "rep_inf_ing_con_fis_astr" ||
-        input === "rep_inf_ing_rec_otr_astr"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_astr =
-          (updatedRow.rep_inf_ing_ban_vac_astr ||
-            prevData[row].rep_inf_ing_ban_vac_astr) +
-          (updatedRow.rep_inf_ing_con_fis_astr ||
-            prevData[row].rep_inf_ing_con_fis_astr) +
-          (updatedRow.rep_inf_ing_rec_otr_astr ||
-            prevData[row].rep_inf_ing_rec_otr_astr);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_modr" ||
-        input === "rep_inf_ing_con_fis_modr" ||
-        input === "rep_inf_ing_rec_otr_modr"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_modr =
-          (updatedRow.rep_inf_ing_ban_vac_modr ||
-            prevData[row].rep_inf_ing_ban_vac_modr) +
-          (updatedRow.rep_inf_ing_con_fis_modr ||
-            prevData[row].rep_inf_ing_con_fis_modr) +
-          (updatedRow.rep_inf_ing_rec_otr_modr ||
-            prevData[row].rep_inf_ing_rec_otr_modr);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_virsim" ||
-        input === "rep_inf_ing_con_fis_virsim" ||
-        input === "rep_inf_ing_rec_otr_virsim"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_virsim =
-          (updatedRow.rep_inf_ing_ban_vac_virsim ||
-            prevData[row].rep_inf_ing_ban_vac_virsim) +
-          (updatedRow.rep_inf_ing_con_fis_virsim ||
-            prevData[row].rep_inf_ing_con_fis_virsim) +
-          (updatedRow.rep_inf_ing_rec_otr_virsim ||
-            prevData[row].rep_inf_ing_rec_otr_virsim);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_vacvphcam" ||
-        input === "rep_inf_ing_con_fis_vacvphcam" ||
-        input === "rep_inf_ing_rec_otr_vacvphcam"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_vacvphcam =
-          (updatedRow.rep_inf_ing_ban_vac_vacvphcam ||
-            prevData[row].rep_inf_ing_ban_vac_vacvphcam) +
-          (updatedRow.rep_inf_ing_con_fis_vacvphcam ||
-            prevData[row].rep_inf_ing_con_fis_vacvphcam) +
-          (updatedRow.rep_inf_ing_rec_otr_vacvphcam ||
-            prevData[row].rep_inf_ing_rec_otr_vacvphcam);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_inm_anti" ||
-        input === "rep_inf_ing_con_fis_inm_anti" ||
-        input === "rep_inf_ing_rec_otr_inm_anti"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_inm_anti =
-          (updatedRow.rep_inf_ing_ban_vac_inm_anti ||
-            prevData[row].rep_inf_ing_ban_vac_inm_anti) +
-          (updatedRow.rep_inf_ing_con_fis_inm_anti ||
-            prevData[row].rep_inf_ing_con_fis_inm_anti) +
-          (updatedRow.rep_inf_ing_rec_otr_inm_anti ||
-            prevData[row].rep_inf_ing_rec_otr_inm_anti);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_inm_ant_hep_b" ||
-        input === "rep_inf_ing_con_fis_inm_ant_hep_b" ||
-        input === "rep_inf_ing_rec_otr_inm_ant_hep_b"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_inm_ant_hep_b =
-          (updatedRow.rep_inf_ing_ban_vac_inm_ant_hep_b ||
-            prevData[row].rep_inf_ing_ban_vac_inm_ant_hep_b) +
-          (updatedRow.rep_inf_ing_con_fis_inm_ant_hep_b ||
-            prevData[row].rep_inf_ing_con_fis_inm_ant_hep_b) +
-          (updatedRow.rep_inf_ing_rec_otr_inm_ant_hep_b ||
-            prevData[row].rep_inf_ing_rec_otr_inm_ant_hep_b);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_inm_ant_rrab" ||
-        input === "rep_inf_ing_con_fis_inm_ant_rrab" ||
-        input === "rep_inf_ing_rec_otr_inm_ant_rrab"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_inm_ant_rrab =
-          (updatedRow.rep_inf_ing_ban_vac_inm_ant_rrab ||
-            prevData[row].rep_inf_ing_ban_vac_inm_ant_rrab) +
-          (updatedRow.rep_inf_ing_con_fis_inm_ant_rrab ||
-            prevData[row].rep_inf_ing_con_fis_inm_ant_rrab) +
-          (updatedRow.rep_inf_ing_rec_otr_inm_ant_rrab ||
-            prevData[row].rep_inf_ing_rec_otr_inm_ant_rrab);
-      }
-      if (
-        input === "rep_inf_ing_ban_vac_caj_bios" ||
-        input === "rep_inf_ing_con_fis_caj_bios" ||
-        input === "rep_inf_ing_rec_otr_caj_bios"
-      ) {
-        updatedRow.rep_inf_ing_tot_ing_caj_bios =
-          (updatedRow.rep_inf_ing_ban_vac_caj_bios ||
-            prevData[row].rep_inf_ing_ban_vac_caj_bios) +
-          (updatedRow.rep_inf_ing_con_fis_caj_bios ||
-            prevData[row].rep_inf_ing_con_fis_caj_bios) +
-          (updatedRow.rep_inf_ing_rec_otr_caj_bios ||
-            prevData[row].rep_inf_ing_rec_otr_caj_bios);
-      }
+      Object.keys(fieldMappings).forEach((totalField) => {
+        updateField(
+          updatedRow,
+          prevData,
+          row,
+          input,
+          fieldMappings[totalField],
+          totalField
+        );
+      });
+
+      updateDependentFields(updatedRow, prevData, row, input);
 
       return {
         ...prevData,
@@ -1376,9 +1562,1078 @@ const CreateReporteENI = () => {
           prevData.row27.rep_inf_egr_per_vac_noa_inm_ant_rrab,
       },
     }));
+
+    setIsInputEstado({
+      row01: {
+        rep_inf_sal_ant_bcg: false,
+        rep_inf_ing_ban_vac_bcg: false,
+        rep_inf_ing_con_fis_bcg: false,
+        rep_inf_ing_rec_otr_bcg: false,
+        rep_inf_ing_tot_ing_bcg: true,
+        rep_inf_tot_dis_bcg: true,
+        rep_inf_egr_apl_mes_bcg: true,
+        rep_inf_egr_per_vac_abi_bcg: true,
+        rep_inf_egr_per_vac_noa_bcg: true,
+        rep_inf_egr_tra_otr_bcg: false,
+        rep_inf_egr_dev_ban_bcg: false,
+        rep_inf_egr_tot_dos_bcg: true,
+        rep_inf_sal_mes_bcg: true,
+        rep_sol_nec_mes_bcg: false,
+        rep_sol_sol_mes_bcg: true,
+        rep_con_lot_bio_bcg: false,
+        rep_con_fec_cad_bcg: false,
+      },
+      row02: {
+        rep_inf_sal_ant_pent: false,
+        rep_inf_ing_ban_vac_pent: false,
+        rep_inf_ing_con_fis_pent: false,
+        rep_inf_ing_rec_otr_pent: false,
+        rep_inf_ing_tot_ing_pent: true,
+        rep_inf_tot_dis_pent: true,
+        rep_inf_egr_apl_mes_pent: true,
+        rep_inf_egr_per_vac_abi_pent: true,
+        rep_inf_egr_per_vac_noa_pent: true,
+        rep_inf_egr_tra_otr_pent: false,
+        rep_inf_egr_dev_ban_pent: false,
+        rep_inf_egr_tot_dos_pent: true,
+        rep_inf_sal_mes_pent: true,
+        rep_sol_nec_mes_pent: false,
+        rep_sol_sol_mes_pent: true,
+        rep_con_lot_bio_pent: false,
+        rep_con_fec_cad_pent: false,
+      },
+      row03: {
+        rep_inf_sal_ant_neum: false,
+        rep_inf_ing_ban_vac_neum: false,
+        rep_inf_ing_con_fis_neum: false,
+        rep_inf_ing_rec_otr_neum: false,
+        rep_inf_ing_tot_ing_neum: true,
+        rep_inf_tot_dis_neum: true,
+        rep_inf_egr_apl_mes_neum: true,
+        rep_inf_egr_per_vac_abi_neum: true,
+        rep_inf_egr_per_vac_noa_neum: true,
+        rep_inf_egr_tra_otr_neum: false,
+        rep_inf_egr_dev_ban_neum: false,
+        rep_inf_egr_tot_dos_neum: true,
+        rep_inf_sal_mes_neum: true,
+        rep_sol_nec_mes_neum: false,
+        rep_sol_sol_mes_neum: true,
+        rep_con_lot_bio_neum: false,
+        rep_con_fec_cad_neum: false,
+      },
+      row04: {
+        rep_inf_sal_ant_anti: false,
+        rep_inf_ing_ban_vac_anti: false,
+        rep_inf_ing_con_fis_anti: false,
+        rep_inf_ing_rec_otr_anti: false,
+        rep_inf_ing_tot_ing_anti: true,
+        rep_inf_tot_dis_anti: true,
+        rep_inf_egr_apl_mes_anti: true,
+        rep_inf_egr_per_vac_abi_anti: true,
+        rep_inf_egr_per_vac_noa_anti: true,
+        rep_inf_egr_tra_otr_anti: false,
+        rep_inf_egr_dev_ban_anti: false,
+        rep_inf_egr_tot_dos_anti: true,
+        rep_inf_sal_mes_anti: true,
+        rep_sol_nec_mes_anti: false,
+        rep_sol_sol_mes_anti: true,
+        rep_con_lot_bio_anti: false,
+        rep_con_fec_cad_anti: false,
+      },
+      row05: {
+        rep_inf_sal_ant_fipv: false,
+        rep_inf_ing_ban_vac_fipv: false,
+        rep_inf_ing_con_fis_fipv: false,
+        rep_inf_ing_rec_otr_fipv: false,
+        rep_inf_ing_tot_ing_fipv: true,
+        rep_inf_tot_dis_fipv: true,
+        rep_inf_egr_apl_mes_fipv: true,
+        rep_inf_egr_per_vac_abi_fipv: true,
+        rep_inf_egr_per_vac_noa_fipv: true,
+        rep_inf_egr_tra_otr_fipv: false,
+        rep_inf_egr_dev_ban_fipv: false,
+        rep_inf_egr_tot_dos_fipv: true,
+        rep_inf_sal_mes_fipv: true,
+        rep_sol_nec_mes_fipv: false,
+        rep_sol_sol_mes_fipv: true,
+        rep_con_lot_bio_fipv: false,
+        rep_con_fec_cad_fipv: false,
+      },
+      row06: {
+        rep_inf_sal_ant_rota: false,
+        rep_inf_ing_ban_vac_rota: false,
+        rep_inf_ing_con_fis_rota: false,
+        rep_inf_ing_rec_otr_rota: false,
+        rep_inf_ing_tot_ing_rota: true,
+        rep_inf_tot_dis_rota: true,
+        rep_inf_egr_apl_mes_rota: true,
+        rep_inf_egr_per_vac_abi_rota: true,
+        rep_inf_egr_per_vac_noa_rota: true,
+        rep_inf_egr_tra_otr_rota: false,
+        rep_inf_egr_dev_ban_rota: false,
+        rep_inf_egr_tot_dos_rota: true,
+        rep_inf_sal_mes_rota: true,
+        rep_sol_nec_mes_rota: false,
+        rep_sol_sol_mes_rota: true,
+        rep_con_lot_bio_rota: false,
+        rep_con_fec_cad_rota: false,
+      },
+      row07: {
+        rep_inf_sal_ant_srp: false,
+        rep_inf_ing_ban_vac_srp: false,
+        rep_inf_ing_con_fis_srp: false,
+        rep_inf_ing_rec_otr_srp: false,
+        rep_inf_ing_tot_ing_srp: true,
+        rep_inf_tot_dis_srp: true,
+        rep_inf_egr_apl_mes_srp: true,
+        rep_inf_egr_per_vac_abi_srp: true,
+        rep_inf_egr_per_vac_noa_srp: true,
+        rep_inf_egr_tra_otr_srp: false,
+        rep_inf_egr_dev_ban_srp: false,
+        rep_inf_egr_tot_dos_srp: true,
+        rep_inf_sal_mes_srp: true,
+        rep_sol_nec_mes_srp: false,
+        rep_sol_sol_mes_srp: true,
+        rep_con_lot_bio_srp: false,
+        rep_con_fec_cad_srp: false,
+      },
+      row08: {
+        rep_inf_sal_ant_fieb: false,
+        rep_inf_ing_ban_vac_fieb: false,
+        rep_inf_ing_con_fis_fieb: false,
+        rep_inf_ing_rec_otr_fieb: false,
+        rep_inf_ing_tot_ing_fieb: true,
+        rep_inf_tot_dis_fieb: true,
+        rep_inf_egr_apl_mes_fieb: true,
+        rep_inf_egr_per_vac_abi_fieb: true,
+        rep_inf_egr_per_vac_noa_fieb: true,
+        rep_inf_egr_tra_otr_fieb: false,
+        rep_inf_egr_dev_ban_fieb: false,
+        rep_inf_egr_tot_dos_fieb: true,
+        rep_inf_sal_mes_fieb: true,
+        rep_sol_nec_mes_fieb: false,
+        rep_sol_sol_mes_fieb: true,
+        rep_con_lot_bio_fieb: false,
+        rep_con_fec_cad_fieb: false,
+      },
+      row09: {
+        rep_inf_sal_ant_vari: false,
+        rep_inf_ing_ban_vac_vari: false,
+        rep_inf_ing_con_fis_vari: false,
+        rep_inf_ing_rec_otr_vari: false,
+        rep_inf_ing_tot_ing_vari: true,
+        rep_inf_tot_dis_vari: true,
+        rep_inf_egr_apl_mes_vari: true,
+        rep_inf_egr_per_vac_abi_vari: true,
+        rep_inf_egr_per_vac_noa_vari: true,
+        rep_inf_egr_tra_otr_vari: false,
+        rep_inf_egr_dev_ban_vari: false,
+        rep_inf_egr_tot_dos_vari: true,
+        rep_inf_sal_mes_vari: true,
+        rep_sol_nec_mes_vari: false,
+        rep_sol_sol_mes_vari: true,
+        rep_con_lot_bio_vari: false,
+        rep_con_fec_cad_vari: false,
+      },
+      row10: {
+        rep_inf_sal_ant_sr: false,
+        rep_inf_ing_ban_vac_sr: false,
+        rep_inf_ing_con_fis_sr: false,
+        rep_inf_ing_rec_otr_sr: false,
+        rep_inf_ing_tot_ing_sr: true,
+        rep_inf_tot_dis_sr: true,
+        rep_inf_egr_apl_mes_sr: true,
+        rep_inf_egr_per_vac_abi_sr: true,
+        rep_inf_egr_per_vac_noa_sr: true,
+        rep_inf_egr_tra_otr_sr: false,
+        rep_inf_egr_dev_ban_sr: false,
+        rep_inf_egr_tot_dos_sr: true,
+        rep_inf_sal_mes_sr: true,
+        rep_sol_nec_mes_sr: false,
+        rep_sol_sol_mes_sr: true,
+        rep_con_lot_bio_sr: false,
+        rep_con_fec_cad_sr: false,
+      },
+      row11: {
+        rep_inf_sal_ant_dift: false,
+        rep_inf_ing_ban_vac_dift: false,
+        rep_inf_ing_con_fis_dift: false,
+        rep_inf_ing_rec_otr_dift: false,
+        rep_inf_ing_tot_ing_dift: true,
+        rep_inf_tot_dis_dift: true,
+        rep_inf_egr_apl_mes_dift: true,
+        rep_inf_egr_per_vac_abi_dift: true,
+        rep_inf_egr_per_vac_noa_dift: true,
+        rep_inf_egr_tra_otr_dift: false,
+        rep_inf_egr_dev_ban_dift: false,
+        rep_inf_egr_tot_dos_dift: true,
+        rep_inf_sal_mes_dift: true,
+        rep_sol_nec_mes_dift: false,
+        rep_sol_sol_mes_dift: true,
+        rep_con_lot_bio_dift: false,
+        rep_con_fec_cad_dift: false,
+      },
+      row12: {
+        rep_inf_sal_ant_dtad: false,
+        rep_inf_ing_ban_vac_dtad: false,
+        rep_inf_ing_con_fis_dtad: false,
+        rep_inf_ing_rec_otr_dtad: false,
+        rep_inf_ing_tot_ing_dtad: true,
+        rep_inf_tot_dis_dtad: true,
+        rep_inf_egr_apl_mes_dtad: true,
+        rep_inf_egr_per_vac_abi_dtad: true,
+        rep_inf_egr_per_vac_noa_dtad: true,
+        rep_inf_egr_tra_otr_dtad: false,
+        rep_inf_egr_dev_ban_dtad: false,
+        rep_inf_egr_tot_dos_dtad: true,
+        rep_inf_sal_mes_dtad: true,
+        rep_sol_nec_mes_dtad: false,
+        rep_sol_sol_mes_dtad: true,
+        rep_con_lot_bio_dtad: false,
+        rep_con_fec_cad_dtad: false,
+      },
+      row13: {
+        rep_inf_sal_ant_hpv: false,
+        rep_inf_ing_ban_vac_hpv: false,
+        rep_inf_ing_con_fis_hpv: false,
+        rep_inf_ing_rec_otr_hpv: false,
+        rep_inf_ing_tot_ing_hpv: true,
+        rep_inf_tot_dis_hpv: true,
+        rep_inf_egr_apl_mes_hpv: true,
+        rep_inf_egr_per_vac_abi_hpv: true,
+        rep_inf_egr_per_vac_noa_hpv: true,
+        rep_inf_egr_tra_otr_hpv: false,
+        rep_inf_egr_dev_ban_hpv: false,
+        rep_inf_egr_tot_dos_hpv: true,
+        rep_inf_sal_mes_hpv: true,
+        rep_sol_nec_mes_hpv: false,
+        rep_sol_sol_mes_hpv: true,
+        rep_con_lot_bio_hpv: false,
+        rep_con_fec_cad_hpv: false,
+      },
+      row14: {
+        rep_inf_sal_ant_hepa: false,
+        rep_inf_ing_ban_vac_hepa: false,
+        rep_inf_ing_con_fis_hepa: false,
+        rep_inf_ing_rec_otr_hepa: false,
+        rep_inf_ing_tot_ing_hepa: true,
+        rep_inf_tot_dis_hepa: true,
+        rep_inf_egr_apl_mes_hepa: true,
+        rep_inf_egr_per_vac_abi_hepa: true,
+        rep_inf_egr_per_vac_noa_hepa: true,
+        rep_inf_egr_tra_otr_hepa: false,
+        rep_inf_egr_dev_ban_hepa: false,
+        rep_inf_egr_tot_dos_hepa: true,
+        rep_inf_sal_mes_hepa: true,
+        rep_sol_nec_mes_hepa: false,
+        rep_sol_sol_mes_hepa: true,
+        rep_con_lot_bio_hepa: false,
+        rep_con_fec_cad_hepa: false,
+      },
+      row15: {
+        rep_inf_sal_ant_hbpe: false,
+        rep_inf_ing_ban_vac_hbpe: false,
+        rep_inf_ing_con_fis_hbpe: false,
+        rep_inf_ing_rec_otr_hbpe: false,
+        rep_inf_ing_tot_ing_hbpe: true,
+        rep_inf_tot_dis_hbpe: true,
+        rep_inf_egr_apl_mes_hbpe: true,
+        rep_inf_egr_per_vac_abi_hbpe: true,
+        rep_inf_egr_per_vac_noa_hbpe: true,
+        rep_inf_egr_tra_otr_hbpe: false,
+        rep_inf_egr_dev_ban_hbpe: false,
+        rep_inf_egr_tot_dos_hbpe: true,
+        rep_inf_sal_mes_hbpe: true,
+        rep_sol_nec_mes_hbpe: false,
+        rep_sol_sol_mes_hbpe: true,
+        rep_con_lot_bio_hbpe: false,
+        rep_con_fec_cad_hbpe: false,
+      },
+      row16: {
+        rep_inf_sal_ant_infped: false,
+        rep_inf_ing_ban_vac_infped: false,
+        rep_inf_ing_con_fis_infped: false,
+        rep_inf_ing_rec_otr_infped: false,
+        rep_inf_ing_tot_ing_infped: true,
+        rep_inf_tot_dis_infped: true,
+        rep_inf_egr_apl_mes_infped: true,
+        rep_inf_egr_per_vac_abi_infped: true,
+        rep_inf_egr_per_vac_noa_infped: true,
+        rep_inf_egr_tra_otr_infped: false,
+        rep_inf_egr_dev_ban_infped: false,
+        rep_inf_egr_tot_dos_infped: true,
+        rep_inf_sal_mes_infped: true,
+        rep_sol_nec_mes_infped: false,
+        rep_sol_sol_mes_infped: true,
+        rep_con_lot_bio_infped: false,
+        rep_con_fec_cad_infped: false,
+      },
+      row17: {
+        rep_inf_sal_ant_infadu: false,
+        rep_inf_ing_ban_vac_infadu: false,
+        rep_inf_ing_con_fis_infadu: false,
+        rep_inf_ing_rec_otr_infadu: false,
+        rep_inf_ing_tot_ing_infadu: true,
+        rep_inf_tot_dis_infadu: true,
+        rep_inf_egr_apl_mes_infadu: true,
+        rep_inf_egr_per_vac_abi_infadu: true,
+        rep_inf_egr_per_vac_noa_infadu: true,
+        rep_inf_egr_tra_otr_infadu: false,
+        rep_inf_egr_dev_ban_infadu: false,
+        rep_inf_egr_tot_dos_infadu: true,
+        rep_inf_sal_mes_infadu: true,
+        rep_sol_nec_mes_infadu: false,
+        rep_sol_sol_mes_infadu: true,
+        rep_con_lot_bio_infadu: false,
+        rep_con_fec_cad_infadu: false,
+      },
+      row18: {
+        rep_inf_sal_ant_pfiz: false,
+        rep_inf_ing_ban_vac_pfiz: false,
+        rep_inf_ing_con_fis_pfiz: false,
+        rep_inf_ing_rec_otr_pfiz: false,
+        rep_inf_ing_tot_ing_pfiz: true,
+        rep_inf_tot_dis_pfiz: true,
+        rep_inf_egr_apl_mes_pfiz: true,
+        rep_inf_egr_per_vac_abi_pfiz: true,
+        rep_inf_egr_per_vac_noa_pfiz: true,
+        rep_inf_egr_tra_otr_pfiz: false,
+        rep_inf_egr_dev_ban_pfiz: false,
+        rep_inf_egr_tot_dos_pfiz: true,
+        rep_inf_sal_mes_pfiz: true,
+        rep_sol_nec_mes_pfiz: false,
+        rep_sol_sol_mes_pfiz: true,
+        rep_con_lot_bio_pfiz: false,
+        rep_con_fec_cad_pfiz: false,
+      },
+      row19: {
+        rep_inf_sal_ant_sino: false,
+        rep_inf_ing_ban_vac_sino: false,
+        rep_inf_ing_con_fis_sino: false,
+        rep_inf_ing_rec_otr_sino: false,
+        rep_inf_ing_tot_ing_sino: true,
+        rep_inf_tot_dis_sino: true,
+        rep_inf_egr_apl_mes_sino: true,
+        rep_inf_egr_per_vac_abi_sino: true,
+        rep_inf_egr_per_vac_noa_sino: true,
+        rep_inf_egr_tra_otr_sino: false,
+        rep_inf_egr_dev_ban_sino: false,
+        rep_inf_egr_tot_dos_sino: true,
+        rep_inf_sal_mes_sino: true,
+        rep_sol_nec_mes_sino: false,
+        rep_sol_sol_mes_sino: true,
+        rep_con_lot_bio_sino: false,
+        rep_con_fec_cad_sino: false,
+      },
+      row20: {
+        rep_inf_sal_ant_cans: false,
+        rep_inf_ing_ban_vac_cans: false,
+        rep_inf_ing_con_fis_cans: false,
+        rep_inf_ing_rec_otr_cans: false,
+        rep_inf_ing_tot_ing_cans: true,
+        rep_inf_tot_dis_cans: true,
+        rep_inf_egr_apl_mes_cans: true,
+        rep_inf_egr_per_vac_abi_cans: true,
+        rep_inf_egr_per_vac_noa_cans: true,
+        rep_inf_egr_tra_otr_cans: false,
+        rep_inf_egr_dev_ban_cans: false,
+        rep_inf_egr_tot_dos_cans: true,
+        rep_inf_sal_mes_cans: true,
+        rep_sol_nec_mes_cans: false,
+        rep_sol_sol_mes_cans: true,
+        rep_con_lot_bio_cans: false,
+        rep_con_fec_cad_cans: false,
+      },
+      row21: {
+        rep_inf_sal_ant_astr: false,
+        rep_inf_ing_ban_vac_astr: false,
+        rep_inf_ing_con_fis_astr: false,
+        rep_inf_ing_rec_otr_astr: false,
+        rep_inf_ing_tot_ing_astr: true,
+        rep_inf_tot_dis_astr: true,
+        rep_inf_egr_apl_mes_astr: true,
+        rep_inf_egr_per_vac_abi_astr: true,
+        rep_inf_egr_per_vac_noa_astr: true,
+        rep_inf_egr_tra_otr_astr: false,
+        rep_inf_egr_dev_ban_astr: false,
+        rep_inf_egr_tot_dos_astr: true,
+        rep_inf_sal_mes_astr: true,
+        rep_sol_nec_mes_astr: false,
+        rep_sol_sol_mes_astr: true,
+        rep_con_lot_bio_astr: false,
+        rep_con_fec_cad_astr: false,
+      },
+      row22: {
+        rep_inf_sal_ant_modr: false,
+        rep_inf_ing_ban_vac_modr: false,
+        rep_inf_ing_con_fis_modr: false,
+        rep_inf_ing_rec_otr_modr: false,
+        rep_inf_ing_tot_ing_modr: true,
+        rep_inf_tot_dis_modr: true,
+        rep_inf_egr_apl_mes_modr: true,
+        rep_inf_egr_per_vac_abi_modr: true,
+        rep_inf_egr_per_vac_noa_modr: true,
+        rep_inf_egr_tra_otr_modr: false,
+        rep_inf_egr_dev_ban_modr: false,
+        rep_inf_egr_tot_dos_modr: true,
+        rep_inf_sal_mes_modr: true,
+        rep_sol_nec_mes_modr: false,
+        rep_sol_sol_mes_modr: true,
+        rep_con_lot_bio_modr: false,
+        rep_con_fec_cad_modr: false,
+      },
+      row23: {
+        rep_inf_sal_ant_virsim: false,
+        rep_inf_ing_ban_vac_virsim: false,
+        rep_inf_ing_con_fis_virsim: false,
+        rep_inf_ing_rec_otr_virsim: false,
+        rep_inf_ing_tot_ing_virsim: true,
+        rep_inf_tot_dis_virsim: true,
+        rep_inf_egr_apl_mes_virsim: true,
+        rep_inf_egr_per_vac_abi_virsim: true,
+        rep_inf_egr_per_vac_noa_virsim: true,
+        rep_inf_egr_tra_otr_virsim: false,
+        rep_inf_egr_dev_ban_virsim: false,
+        rep_inf_egr_tot_dos_virsim: true,
+        rep_inf_sal_mes_virsim: true,
+        rep_sol_nec_mes_virsim: false,
+        rep_sol_sol_mes_virsim: true,
+        rep_con_lot_bio_virsim: false,
+        rep_con_fec_cad_virsim: false,
+      },
+      row24: {
+        rep_inf_sal_ant_vacvphcam: false,
+        rep_inf_ing_ban_vac_vacvphcam: false,
+        rep_inf_ing_con_fis_vacvphcam: false,
+        rep_inf_ing_rec_otr_vacvphcam: false,
+        rep_inf_ing_tot_ing_vacvphcam: true,
+        rep_inf_tot_dis_vacvphcam: true,
+        rep_inf_egr_apl_mes_vacvphcam: true,
+        rep_inf_egr_per_vac_abi_vacvphcam: true,
+        rep_inf_egr_per_vac_noa_vacvphcam: true,
+        rep_inf_egr_tra_otr_vacvphcam: false,
+        rep_inf_egr_dev_ban_vacvphcam: false,
+        rep_inf_egr_tot_dos_vacvphcam: true,
+        rep_inf_sal_mes_vacvphcam: true,
+        rep_sol_nec_mes_vacvphcam: false,
+        rep_sol_sol_mes_vacvphcam: true,
+        rep_con_lot_bio_vacvphcam: false,
+        rep_con_fec_cad_vacvphcam: false,
+      },
+      row25: {
+        rep_inf_sal_ant_inm_anti: false,
+        rep_inf_ing_ban_vac_inm_anti: false,
+        rep_inf_ing_con_fis_inm_anti: false,
+        rep_inf_ing_rec_otr_inm_anti: false,
+        rep_inf_ing_tot_ing_inm_anti: true,
+        rep_inf_tot_dis_inm_anti: true,
+        rep_inf_egr_apl_mes_inm_anti: true,
+        rep_inf_egr_per_vac_abi_inm_anti: true,
+        rep_inf_egr_per_vac_noa_inm_anti: true,
+        rep_inf_egr_tra_otr_inm_anti: false,
+        rep_inf_egr_dev_ban_inm_anti: false,
+        rep_inf_egr_tot_dos_inm_anti: true,
+        rep_inf_sal_mes_inm_anti: true,
+        rep_sol_nec_mes_inm_anti: false,
+        rep_sol_sol_mes_inm_anti: true,
+        rep_con_lot_bio_inm_anti: false,
+        rep_con_fec_cad_inm_anti: false,
+      },
+      row26: {
+        rep_inf_sal_ant_inm_ant_hep_b: false,
+        rep_inf_ing_ban_vac_inm_ant_hep_b: false,
+        rep_inf_ing_con_fis_inm_ant_hep_b: false,
+        rep_inf_ing_rec_otr_inm_ant_hep_b: false,
+        rep_inf_ing_tot_ing_inm_ant_hep_b: true,
+        rep_inf_tot_dis_inm_ant_hep_b: true,
+        rep_inf_egr_apl_mes_inm_ant_hep_b: true,
+        rep_inf_egr_per_vac_abi_inm_ant_hep_b: true,
+        rep_inf_egr_per_vac_noa_inm_ant_hep_b: true,
+        rep_inf_egr_tra_otr_inm_ant_hep_b: false,
+        rep_inf_egr_dev_ban_inm_ant_hep_b: false,
+        rep_inf_egr_tot_dos_inm_ant_hep_b: true,
+        rep_inf_sal_mes_inm_ant_hep_b: true,
+        rep_sol_nec_mes_inm_ant_hep_b: false,
+        rep_sol_sol_mes_inm_ant_hep_b: true,
+        rep_con_lot_bio_inm_ant_hep_b: false,
+        rep_con_fec_cad_inm_ant_hep_b: false,
+      },
+      row27: {
+        rep_inf_sal_ant_inm_ant_rrab: false,
+        rep_inf_ing_ban_vac_inm_ant_rrab: false,
+        rep_inf_ing_con_fis_inm_ant_rrab: false,
+        rep_inf_ing_rec_otr_inm_ant_rrab: false,
+        rep_inf_ing_tot_ing_inm_ant_rrab: true,
+        rep_inf_tot_dis_inm_ant_rrab: true,
+        rep_inf_egr_apl_mes_inm_ant_rrab: true,
+        rep_inf_egr_per_vac_abi_inm_ant_rrab: true,
+        rep_inf_egr_per_vac_noa_inm_ant_rrab: true,
+        rep_inf_egr_tra_otr_inm_ant_rrab: false,
+        rep_inf_egr_dev_ban_inm_ant_rrab: false,
+        rep_inf_egr_tot_dos_inm_ant_rrab: true,
+        rep_inf_sal_mes_inm_ant_rrab: true,
+        rep_sol_nec_mes_inm_ant_rrab: false,
+        rep_sol_sol_mes_inm_ant_rrab: true,
+        rep_con_lot_bio_inm_ant_rrab: false,
+        rep_con_fec_cad_inm_ant_rrab: false,
+      },
+      row28: {
+        rep_inf_sal_ant_caj_bios: false,
+        rep_inf_ing_ban_vac_caj_bios: false,
+        rep_inf_ing_con_fis_caj_bios: false,
+        rep_inf_ing_rec_otr_caj_bios: false,
+        rep_inf_ing_tot_ing_caj_bios: true,
+        rep_inf_tot_dis_caj_bios: true,
+        rep_inf_egr_apl_mes_caj_bios: true,
+        rep_inf_egr_per_vac_abi_caj_bios: true,
+        rep_inf_egr_per_vac_noa_caj_bios: true,
+        rep_inf_egr_tra_otr_caj_bios: false,
+        rep_inf_egr_dev_ban_caj_bios: false,
+        rep_inf_egr_tot_dos_caj_bios: true,
+        rep_inf_sal_mes_caj_bios: true,
+        rep_sol_nec_mes_caj_bios: false,
+        rep_sol_sol_mes_caj_bios: true,
+        rep_con_lot_bio_caj_bios: false,
+        rep_con_fec_cad_caj_bios: false,
+      },
+    });
   };
 
   const limpiarVariables = () => {
+    setIsInputEstado({
+      row01: {
+        rep_inf_sal_ant_bcg: true,
+        rep_inf_ing_ban_vac_bcg: true,
+        rep_inf_ing_con_fis_bcg: true,
+        rep_inf_ing_rec_otr_bcg: true,
+        rep_inf_ing_tot_ing_bcg: true,
+        rep_inf_tot_dis_bcg: true,
+        rep_inf_egr_apl_mes_bcg: true,
+        rep_inf_egr_per_vac_abi_bcg: true,
+        rep_inf_egr_per_vac_noa_bcg: true,
+        rep_inf_egr_tra_otr_bcg: true,
+        rep_inf_egr_dev_ban_bcg: true,
+        rep_inf_egr_tot_dos_bcg: true,
+        rep_inf_sal_mes_bcg: true,
+        rep_sol_nec_mes_bcg: true,
+        rep_sol_sol_mes_bcg: true,
+        rep_con_lot_bio_bcg: true,
+        rep_con_fec_cad_bcg: true,
+      },
+      row02: {
+        rep_inf_sal_ant_pent: true,
+        rep_inf_ing_ban_vac_pent: true,
+        rep_inf_ing_con_fis_pent: true,
+        rep_inf_ing_rec_otr_pent: true,
+        rep_inf_ing_tot_ing_pent: true,
+        rep_inf_tot_dis_pent: true,
+        rep_inf_egr_apl_mes_pent: true,
+        rep_inf_egr_per_vac_abi_pent: true,
+        rep_inf_egr_per_vac_noa_pent: true,
+        rep_inf_egr_tra_otr_pent: true,
+        rep_inf_egr_dev_ban_pent: true,
+        rep_inf_egr_tot_dos_pent: true,
+        rep_inf_sal_mes_pent: true,
+        rep_sol_nec_mes_pent: true,
+        rep_sol_sol_mes_pent: true,
+        rep_con_lot_bio_pent: true,
+        rep_con_fec_cad_pent: true,
+      },
+      row03: {
+        rep_inf_sal_ant_neum: true,
+        rep_inf_ing_ban_vac_neum: true,
+        rep_inf_ing_con_fis_neum: true,
+        rep_inf_ing_rec_otr_neum: true,
+        rep_inf_ing_tot_ing_neum: true,
+        rep_inf_tot_dis_neum: true,
+        rep_inf_egr_apl_mes_neum: true,
+        rep_inf_egr_per_vac_abi_neum: true,
+        rep_inf_egr_per_vac_noa_neum: true,
+        rep_inf_egr_tra_otr_neum: true,
+        rep_inf_egr_dev_ban_neum: true,
+        rep_inf_egr_tot_dos_neum: true,
+        rep_inf_sal_mes_neum: true,
+        rep_sol_nec_mes_neum: true,
+        rep_sol_sol_mes_neum: true,
+        rep_con_lot_bio_neum: true,
+        rep_con_fec_cad_neum: true,
+      },
+      row04: {
+        rep_inf_sal_ant_anti: true,
+        rep_inf_ing_ban_vac_anti: true,
+        rep_inf_ing_con_fis_anti: true,
+        rep_inf_ing_rec_otr_anti: true,
+        rep_inf_ing_tot_ing_anti: true,
+        rep_inf_tot_dis_anti: true,
+        rep_inf_egr_apl_mes_anti: true,
+        rep_inf_egr_per_vac_abi_anti: true,
+        rep_inf_egr_per_vac_noa_anti: true,
+        rep_inf_egr_tra_otr_anti: true,
+        rep_inf_egr_dev_ban_anti: true,
+        rep_inf_egr_tot_dos_anti: true,
+        rep_inf_sal_mes_anti: true,
+        rep_sol_nec_mes_anti: true,
+        rep_sol_sol_mes_anti: true,
+        rep_con_lot_bio_anti: true,
+        rep_con_fec_cad_anti: true,
+      },
+      row05: {
+        rep_inf_sal_ant_fipv: true,
+        rep_inf_ing_ban_vac_fipv: true,
+        rep_inf_ing_con_fis_fipv: true,
+        rep_inf_ing_rec_otr_fipv: true,
+        rep_inf_ing_tot_ing_fipv: true,
+        rep_inf_tot_dis_fipv: true,
+        rep_inf_egr_apl_mes_fipv: true,
+        rep_inf_egr_per_vac_abi_fipv: true,
+        rep_inf_egr_per_vac_noa_fipv: true,
+        rep_inf_egr_tra_otr_fipv: true,
+        rep_inf_egr_dev_ban_fipv: true,
+        rep_inf_egr_tot_dos_fipv: true,
+        rep_inf_sal_mes_fipv: true,
+        rep_sol_nec_mes_fipv: true,
+        rep_sol_sol_mes_fipv: true,
+        rep_con_lot_bio_fipv: true,
+        rep_con_fec_cad_fipv: true,
+      },
+      row06: {
+        rep_inf_sal_ant_rota: true,
+        rep_inf_ing_ban_vac_rota: true,
+        rep_inf_ing_con_fis_rota: true,
+        rep_inf_ing_rec_otr_rota: true,
+        rep_inf_ing_tot_ing_rota: true,
+        rep_inf_tot_dis_rota: true,
+        rep_inf_egr_apl_mes_rota: true,
+        rep_inf_egr_per_vac_abi_rota: true,
+        rep_inf_egr_per_vac_noa_rota: true,
+        rep_inf_egr_tra_otr_rota: true,
+        rep_inf_egr_dev_ban_rota: true,
+        rep_inf_egr_tot_dos_rota: true,
+        rep_inf_sal_mes_rota: true,
+        rep_sol_nec_mes_rota: true,
+        rep_sol_sol_mes_rota: true,
+        rep_con_lot_bio_rota: true,
+        rep_con_fec_cad_rota: true,
+      },
+      row07: {
+        rep_inf_sal_ant_srp: true,
+        rep_inf_ing_ban_vac_srp: true,
+        rep_inf_ing_con_fis_srp: true,
+        rep_inf_ing_rec_otr_srp: true,
+        rep_inf_ing_tot_ing_srp: true,
+        rep_inf_tot_dis_srp: true,
+        rep_inf_egr_apl_mes_srp: true,
+        rep_inf_egr_per_vac_abi_srp: true,
+        rep_inf_egr_per_vac_noa_srp: true,
+        rep_inf_egr_tra_otr_srp: true,
+        rep_inf_egr_dev_ban_srp: true,
+        rep_inf_egr_tot_dos_srp: true,
+        rep_inf_sal_mes_srp: true,
+        rep_sol_nec_mes_srp: true,
+        rep_sol_sol_mes_srp: true,
+        rep_con_lot_bio_srp: true,
+        rep_con_fec_cad_srp: true,
+      },
+      row08: {
+        rep_inf_sal_ant_fieb: true,
+        rep_inf_ing_ban_vac_fieb: true,
+        rep_inf_ing_con_fis_fieb: true,
+        rep_inf_ing_rec_otr_fieb: true,
+        rep_inf_ing_tot_ing_fieb: true,
+        rep_inf_tot_dis_fieb: true,
+        rep_inf_egr_apl_mes_fieb: true,
+        rep_inf_egr_per_vac_abi_fieb: true,
+        rep_inf_egr_per_vac_noa_fieb: true,
+        rep_inf_egr_tra_otr_fieb: true,
+        rep_inf_egr_dev_ban_fieb: true,
+        rep_inf_egr_tot_dos_fieb: true,
+        rep_inf_sal_mes_fieb: true,
+        rep_sol_nec_mes_fieb: true,
+        rep_sol_sol_mes_fieb: true,
+        rep_con_lot_bio_fieb: true,
+        rep_con_fec_cad_fieb: true,
+      },
+      row09: {
+        rep_inf_sal_ant_vari: true,
+        rep_inf_ing_ban_vac_vari: true,
+        rep_inf_ing_con_fis_vari: true,
+        rep_inf_ing_rec_otr_vari: true,
+        rep_inf_ing_tot_ing_vari: true,
+        rep_inf_tot_dis_vari: true,
+        rep_inf_egr_apl_mes_vari: true,
+        rep_inf_egr_per_vac_abi_vari: true,
+        rep_inf_egr_per_vac_noa_vari: true,
+        rep_inf_egr_tra_otr_vari: true,
+        rep_inf_egr_dev_ban_vari: true,
+        rep_inf_egr_tot_dos_vari: true,
+        rep_inf_sal_mes_vari: true,
+        rep_sol_nec_mes_vari: true,
+        rep_sol_sol_mes_vari: true,
+        rep_con_lot_bio_vari: true,
+        rep_con_fec_cad_vari: true,
+      },
+      row10: {
+        rep_inf_sal_ant_sr: true,
+        rep_inf_ing_ban_vac_sr: true,
+        rep_inf_ing_con_fis_sr: true,
+        rep_inf_ing_rec_otr_sr: true,
+        rep_inf_ing_tot_ing_sr: true,
+        rep_inf_tot_dis_sr: true,
+        rep_inf_egr_apl_mes_sr: true,
+        rep_inf_egr_per_vac_abi_sr: true,
+        rep_inf_egr_per_vac_noa_sr: true,
+        rep_inf_egr_tra_otr_sr: true,
+        rep_inf_egr_dev_ban_sr: true,
+        rep_inf_egr_tot_dos_sr: true,
+        rep_inf_sal_mes_sr: true,
+        rep_sol_nec_mes_sr: true,
+        rep_sol_sol_mes_sr: true,
+        rep_con_lot_bio_sr: true,
+        rep_con_fec_cad_sr: true,
+      },
+      row11: {
+        rep_inf_sal_ant_dift: true,
+        rep_inf_ing_ban_vac_dift: true,
+        rep_inf_ing_con_fis_dift: true,
+        rep_inf_ing_rec_otr_dift: true,
+        rep_inf_ing_tot_ing_dift: true,
+        rep_inf_tot_dis_dift: true,
+        rep_inf_egr_apl_mes_dift: true,
+        rep_inf_egr_per_vac_abi_dift: true,
+        rep_inf_egr_per_vac_noa_dift: true,
+        rep_inf_egr_tra_otr_dift: true,
+        rep_inf_egr_dev_ban_dift: true,
+        rep_inf_egr_tot_dos_dift: true,
+        rep_inf_sal_mes_dift: true,
+        rep_sol_nec_mes_dift: true,
+        rep_sol_sol_mes_dift: true,
+        rep_con_lot_bio_dift: true,
+        rep_con_fec_cad_dift: true,
+      },
+      row12: {
+        rep_inf_sal_ant_dtad: true,
+        rep_inf_ing_ban_vac_dtad: true,
+        rep_inf_ing_con_fis_dtad: true,
+        rep_inf_ing_rec_otr_dtad: true,
+        rep_inf_ing_tot_ing_dtad: true,
+        rep_inf_tot_dis_dtad: true,
+        rep_inf_egr_apl_mes_dtad: true,
+        rep_inf_egr_per_vac_abi_dtad: true,
+        rep_inf_egr_per_vac_noa_dtad: true,
+        rep_inf_egr_tra_otr_dtad: true,
+        rep_inf_egr_dev_ban_dtad: true,
+        rep_inf_egr_tot_dos_dtad: true,
+        rep_inf_sal_mes_dtad: true,
+        rep_sol_nec_mes_dtad: true,
+        rep_sol_sol_mes_dtad: true,
+        rep_con_lot_bio_dtad: true,
+        rep_con_fec_cad_dtad: true,
+      },
+      row13: {
+        rep_inf_sal_ant_hpv: true,
+        rep_inf_ing_ban_vac_hpv: true,
+        rep_inf_ing_con_fis_hpv: true,
+        rep_inf_ing_rec_otr_hpv: true,
+        rep_inf_ing_tot_ing_hpv: true,
+        rep_inf_tot_dis_hpv: true,
+        rep_inf_egr_apl_mes_hpv: true,
+        rep_inf_egr_per_vac_abi_hpv: true,
+        rep_inf_egr_per_vac_noa_hpv: true,
+        rep_inf_egr_tra_otr_hpv: true,
+        rep_inf_egr_dev_ban_hpv: true,
+        rep_inf_egr_tot_dos_hpv: true,
+        rep_inf_sal_mes_hpv: true,
+        rep_sol_nec_mes_hpv: true,
+        rep_sol_sol_mes_hpv: true,
+        rep_con_lot_bio_hpv: true,
+        rep_con_fec_cad_hpv: true,
+      },
+      row14: {
+        rep_inf_sal_ant_hepa: true,
+        rep_inf_ing_ban_vac_hepa: true,
+        rep_inf_ing_con_fis_hepa: true,
+        rep_inf_ing_rec_otr_hepa: true,
+        rep_inf_ing_tot_ing_hepa: true,
+        rep_inf_tot_dis_hepa: true,
+        rep_inf_egr_apl_mes_hepa: true,
+        rep_inf_egr_per_vac_abi_hepa: true,
+        rep_inf_egr_per_vac_noa_hepa: true,
+        rep_inf_egr_tra_otr_hepa: true,
+        rep_inf_egr_dev_ban_hepa: true,
+        rep_inf_egr_tot_dos_hepa: true,
+        rep_inf_sal_mes_hepa: true,
+        rep_sol_nec_mes_hepa: true,
+        rep_sol_sol_mes_hepa: true,
+        rep_con_lot_bio_hepa: true,
+        rep_con_fec_cad_hepa: true,
+      },
+      row15: {
+        rep_inf_sal_ant_hbpe: true,
+        rep_inf_ing_ban_vac_hbpe: true,
+        rep_inf_ing_con_fis_hbpe: true,
+        rep_inf_ing_rec_otr_hbpe: true,
+        rep_inf_ing_tot_ing_hbpe: true,
+        rep_inf_tot_dis_hbpe: true,
+        rep_inf_egr_apl_mes_hbpe: true,
+        rep_inf_egr_per_vac_abi_hbpe: true,
+        rep_inf_egr_per_vac_noa_hbpe: true,
+        rep_inf_egr_tra_otr_hbpe: true,
+        rep_inf_egr_dev_ban_hbpe: true,
+        rep_inf_egr_tot_dos_hbpe: true,
+        rep_inf_sal_mes_hbpe: true,
+        rep_sol_nec_mes_hbpe: true,
+        rep_sol_sol_mes_hbpe: true,
+        rep_con_lot_bio_hbpe: true,
+        rep_con_fec_cad_hbpe: true,
+      },
+      row16: {
+        rep_inf_sal_ant_infped: true,
+        rep_inf_ing_ban_vac_infped: true,
+        rep_inf_ing_con_fis_infped: true,
+        rep_inf_ing_rec_otr_infped: true,
+        rep_inf_ing_tot_ing_infped: true,
+        rep_inf_tot_dis_infped: true,
+        rep_inf_egr_apl_mes_infped: true,
+        rep_inf_egr_per_vac_abi_infped: true,
+        rep_inf_egr_per_vac_noa_infped: true,
+        rep_inf_egr_tra_otr_infped: true,
+        rep_inf_egr_dev_ban_infped: true,
+        rep_inf_egr_tot_dos_infped: true,
+        rep_inf_sal_mes_infped: true,
+        rep_sol_nec_mes_infped: true,
+        rep_sol_sol_mes_infped: true,
+        rep_con_lot_bio_infped: true,
+        rep_con_fec_cad_infped: true,
+      },
+      row17: {
+        rep_inf_sal_ant_infadu: true,
+        rep_inf_ing_ban_vac_infadu: true,
+        rep_inf_ing_con_fis_infadu: true,
+        rep_inf_ing_rec_otr_infadu: true,
+        rep_inf_ing_tot_ing_infadu: true,
+        rep_inf_tot_dis_infadu: true,
+        rep_inf_egr_apl_mes_infadu: true,
+        rep_inf_egr_per_vac_abi_infadu: true,
+        rep_inf_egr_per_vac_noa_infadu: true,
+        rep_inf_egr_tra_otr_infadu: true,
+        rep_inf_egr_dev_ban_infadu: true,
+        rep_inf_egr_tot_dos_infadu: true,
+        rep_inf_sal_mes_infadu: true,
+        rep_sol_nec_mes_infadu: true,
+        rep_sol_sol_mes_infadu: true,
+        rep_con_lot_bio_infadu: true,
+        rep_con_fec_cad_infadu: true,
+      },
+      row18: {
+        rep_inf_sal_ant_pfiz: true,
+        rep_inf_ing_ban_vac_pfiz: true,
+        rep_inf_ing_con_fis_pfiz: true,
+        rep_inf_ing_rec_otr_pfiz: true,
+        rep_inf_ing_tot_ing_pfiz: true,
+        rep_inf_tot_dis_pfiz: true,
+        rep_inf_egr_apl_mes_pfiz: true,
+        rep_inf_egr_per_vac_abi_pfiz: true,
+        rep_inf_egr_per_vac_noa_pfiz: true,
+        rep_inf_egr_tra_otr_pfiz: true,
+        rep_inf_egr_dev_ban_pfiz: true,
+        rep_inf_egr_tot_dos_pfiz: true,
+        rep_inf_sal_mes_pfiz: true,
+        rep_sol_nec_mes_pfiz: true,
+        rep_sol_sol_mes_pfiz: true,
+        rep_con_lot_bio_pfiz: true,
+        rep_con_fec_cad_pfiz: true,
+      },
+      row19: {
+        rep_inf_sal_ant_sino: true,
+        rep_inf_ing_ban_vac_sino: true,
+        rep_inf_ing_con_fis_sino: true,
+        rep_inf_ing_rec_otr_sino: true,
+        rep_inf_ing_tot_ing_sino: true,
+        rep_inf_tot_dis_sino: true,
+        rep_inf_egr_apl_mes_sino: true,
+        rep_inf_egr_per_vac_abi_sino: true,
+        rep_inf_egr_per_vac_noa_sino: true,
+        rep_inf_egr_tra_otr_sino: true,
+        rep_inf_egr_dev_ban_sino: true,
+        rep_inf_egr_tot_dos_sino: true,
+        rep_inf_sal_mes_sino: true,
+        rep_sol_nec_mes_sino: true,
+        rep_sol_sol_mes_sino: true,
+        rep_con_lot_bio_sino: true,
+        rep_con_fec_cad_sino: true,
+      },
+      row20: {
+        rep_inf_sal_ant_cans: true,
+        rep_inf_ing_ban_vac_cans: true,
+        rep_inf_ing_con_fis_cans: true,
+        rep_inf_ing_rec_otr_cans: true,
+        rep_inf_ing_tot_ing_cans: true,
+        rep_inf_tot_dis_cans: true,
+        rep_inf_egr_apl_mes_cans: true,
+        rep_inf_egr_per_vac_abi_cans: true,
+        rep_inf_egr_per_vac_noa_cans: true,
+        rep_inf_egr_tra_otr_cans: true,
+        rep_inf_egr_dev_ban_cans: true,
+        rep_inf_egr_tot_dos_cans: true,
+        rep_inf_sal_mes_cans: true,
+        rep_sol_nec_mes_cans: true,
+        rep_sol_sol_mes_cans: true,
+        rep_con_lot_bio_cans: true,
+        rep_con_fec_cad_cans: true,
+      },
+      row21: {
+        rep_inf_sal_ant_astr: true,
+        rep_inf_ing_ban_vac_astr: true,
+        rep_inf_ing_con_fis_astr: true,
+        rep_inf_ing_rec_otr_astr: true,
+        rep_inf_ing_tot_ing_astr: true,
+        rep_inf_tot_dis_astr: true,
+        rep_inf_egr_apl_mes_astr: true,
+        rep_inf_egr_per_vac_abi_astr: true,
+        rep_inf_egr_per_vac_noa_astr: true,
+        rep_inf_egr_tra_otr_astr: true,
+        rep_inf_egr_dev_ban_astr: true,
+        rep_inf_egr_tot_dos_astr: true,
+        rep_inf_sal_mes_astr: true,
+        rep_sol_nec_mes_astr: true,
+        rep_sol_sol_mes_astr: true,
+        rep_con_lot_bio_astr: true,
+        rep_con_fec_cad_astr: true,
+      },
+      row22: {
+        rep_inf_sal_ant_modr: true,
+        rep_inf_ing_ban_vac_modr: true,
+        rep_inf_ing_con_fis_modr: true,
+        rep_inf_ing_rec_otr_modr: true,
+        rep_inf_ing_tot_ing_modr: true,
+        rep_inf_tot_dis_modr: true,
+        rep_inf_egr_apl_mes_modr: true,
+        rep_inf_egr_per_vac_abi_modr: true,
+        rep_inf_egr_per_vac_noa_modr: true,
+        rep_inf_egr_tra_otr_modr: true,
+        rep_inf_egr_dev_ban_modr: true,
+        rep_inf_egr_tot_dos_modr: true,
+        rep_inf_sal_mes_modr: true,
+        rep_sol_nec_mes_modr: true,
+        rep_sol_sol_mes_modr: true,
+        rep_con_lot_bio_modr: true,
+        rep_con_fec_cad_modr: true,
+      },
+      row23: {
+        rep_inf_sal_ant_virsim: true,
+        rep_inf_ing_ban_vac_virsim: true,
+        rep_inf_ing_con_fis_virsim: true,
+        rep_inf_ing_rec_otr_virsim: true,
+        rep_inf_ing_tot_ing_virsim: true,
+        rep_inf_tot_dis_virsim: true,
+        rep_inf_egr_apl_mes_virsim: true,
+        rep_inf_egr_per_vac_abi_virsim: true,
+        rep_inf_egr_per_vac_noa_virsim: true,
+        rep_inf_egr_tra_otr_virsim: true,
+        rep_inf_egr_dev_ban_virsim: true,
+        rep_inf_egr_tot_dos_virsim: true,
+        rep_inf_sal_mes_virsim: true,
+        rep_sol_nec_mes_virsim: true,
+        rep_sol_sol_mes_virsim: true,
+        rep_con_lot_bio_virsim: true,
+        rep_con_fec_cad_virsim: true,
+      },
+      row24: {
+        rep_inf_sal_ant_vacvphcam: true,
+        rep_inf_ing_ban_vac_vacvphcam: true,
+        rep_inf_ing_con_fis_vacvphcam: true,
+        rep_inf_ing_rec_otr_vacvphcam: true,
+        rep_inf_ing_tot_ing_vacvphcam: true,
+        rep_inf_tot_dis_vacvphcam: true,
+        rep_inf_egr_apl_mes_vacvphcam: true,
+        rep_inf_egr_per_vac_abi_vacvphcam: true,
+        rep_inf_egr_per_vac_noa_vacvphcam: true,
+        rep_inf_egr_tra_otr_vacvphcam: true,
+        rep_inf_egr_dev_ban_vacvphcam: true,
+        rep_inf_egr_tot_dos_vacvphcam: true,
+        rep_inf_sal_mes_vacvphcam: true,
+        rep_sol_nec_mes_vacvphcam: true,
+        rep_sol_sol_mes_vacvphcam: true,
+        rep_con_lot_bio_vacvphcam: true,
+        rep_con_fec_cad_vacvphcam: true,
+      },
+      row25: {
+        rep_inf_sal_ant_inm_anti: true,
+        rep_inf_ing_ban_vac_inm_anti: true,
+        rep_inf_ing_con_fis_inm_anti: true,
+        rep_inf_ing_rec_otr_inm_anti: true,
+        rep_inf_ing_tot_ing_inm_anti: true,
+        rep_inf_tot_dis_inm_anti: true,
+        rep_inf_egr_apl_mes_inm_anti: true,
+        rep_inf_egr_per_vac_abi_inm_anti: true,
+        rep_inf_egr_per_vac_noa_inm_anti: true,
+        rep_inf_egr_tra_otr_inm_anti: true,
+        rep_inf_egr_dev_ban_inm_anti: true,
+        rep_inf_egr_tot_dos_inm_anti: true,
+        rep_inf_sal_mes_inm_anti: true,
+        rep_sol_nec_mes_inm_anti: true,
+        rep_sol_sol_mes_inm_anti: true,
+        rep_con_lot_bio_inm_anti: true,
+        rep_con_fec_cad_inm_anti: true,
+      },
+      row26: {
+        rep_inf_sal_ant_inm_ant_hep_b: true,
+        rep_inf_ing_ban_vac_inm_ant_hep_b: true,
+        rep_inf_ing_con_fis_inm_ant_hep_b: true,
+        rep_inf_ing_rec_otr_inm_ant_hep_b: true,
+        rep_inf_ing_tot_ing_inm_ant_hep_b: true,
+        rep_inf_tot_dis_inm_ant_hep_b: true,
+        rep_inf_egr_apl_mes_inm_ant_hep_b: true,
+        rep_inf_egr_per_vac_abi_inm_ant_hep_b: true,
+        rep_inf_egr_per_vac_noa_inm_ant_hep_b: true,
+        rep_inf_egr_tra_otr_inm_ant_hep_b: true,
+        rep_inf_egr_dev_ban_inm_ant_hep_b: true,
+        rep_inf_egr_tot_dos_inm_ant_hep_b: true,
+        rep_inf_sal_mes_inm_ant_hep_b: true,
+        rep_sol_nec_mes_inm_ant_hep_b: true,
+        rep_sol_sol_mes_inm_ant_hep_b: true,
+        rep_con_lot_bio_inm_ant_hep_b: true,
+        rep_con_fec_cad_inm_ant_hep_b: true,
+      },
+      row27: {
+        rep_inf_sal_ant_inm_ant_rrab: true,
+        rep_inf_ing_ban_vac_inm_ant_rrab: true,
+        rep_inf_ing_con_fis_inm_ant_rrab: true,
+        rep_inf_ing_rec_otr_inm_ant_rrab: true,
+        rep_inf_ing_tot_ing_inm_ant_rrab: true,
+        rep_inf_tot_dis_inm_ant_rrab: true,
+        rep_inf_egr_apl_mes_inm_ant_rrab: true,
+        rep_inf_egr_per_vac_abi_inm_ant_rrab: true,
+        rep_inf_egr_per_vac_noa_inm_ant_rrab: true,
+        rep_inf_egr_tra_otr_inm_ant_rrab: true,
+        rep_inf_egr_dev_ban_inm_ant_rrab: true,
+        rep_inf_egr_tot_dos_inm_ant_rrab: true,
+        rep_inf_sal_mes_inm_ant_rrab: true,
+        rep_sol_nec_mes_inm_ant_rrab: true,
+        rep_sol_sol_mes_inm_ant_rrab: true,
+        rep_con_lot_bio_inm_ant_rrab: true,
+        rep_con_fec_cad_inm_ant_rrab: true,
+      },
+      row28: {
+        rep_inf_sal_ant_caj_bios: true,
+        rep_inf_ing_ban_vac_caj_bios: true,
+        rep_inf_ing_con_fis_caj_bios: true,
+        rep_inf_ing_rec_otr_caj_bios: true,
+        rep_inf_ing_tot_ing_caj_bios: true,
+        rep_inf_tot_dis_caj_bios: true,
+        rep_inf_egr_apl_mes_caj_bios: true,
+        rep_inf_egr_per_vac_abi_caj_bios: true,
+        rep_inf_egr_per_vac_noa_caj_bios: true,
+        rep_inf_egr_tra_otr_caj_bios: true,
+        rep_inf_egr_dev_ban_caj_bios: true,
+        rep_inf_egr_tot_dos_caj_bios: true,
+        rep_inf_sal_mes_caj_bios: true,
+        rep_sol_nec_mes_caj_bios: true,
+        rep_sol_sol_mes_caj_bios: true,
+        rep_con_lot_bio_caj_bios: true,
+        rep_con_fec_cad_caj_bios: true,
+      },
+    });
     setFormData({
       row01: {
         rep_inf_sal_ant_bcg: 0,
@@ -1915,6 +3170,10 @@ const CreateReporteENI = () => {
     });
   };
 
+  const txtBtnRegAct = isInputEstado.input
+    ? "Actualizar Registro"
+    : "Registrar";
+
   return (
     <div className="container">
       <div className="max-w-max m-auto mt-5">
@@ -1992,7 +3251,20 @@ const CreateReporteENI = () => {
                   </td>
                   <td></td>
                   <td>
-                    <button>Enivar</button>
+                    <button
+                      type="submit"
+                      id="btnRegistrarRep"
+                      name="btnRegistrarRep"
+                      className={`${buttonStylePrimario} ${
+                        botonEstado.btnRegistrarRep
+                          ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                          : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+                      }`}
+                      disabled={botonEstado.btnRegistrarRep}
+                      onClick={handleSubmit}
+                    >
+                      {txtBtnRegAct}
+                    </button>
                   </td>
                   <td>
                     <button
@@ -2091,11 +3363,11 @@ const CreateReporteENI = () => {
                             onChange={(e) => handleChange(e, rowKey, key)}
                             placeholder="Información es requerida"
                             className={`${inputStyle} ${
-                              isInputEstado[key]
+                              isInputEstado[rowKey][key]
                                 ? "bg-gray-200 text-gray-700 cursor-no-drop"
                                 : "bg-white text-gray-700 cursor-pointer"
                             }`}
-                            disabled={isInputEstado[key]}
+                            disabled={isInputEstado[rowKey][key]}
                             min="0"
                             max=""
                             required
