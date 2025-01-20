@@ -1802,43 +1802,52 @@ const CreateReporteENI = () => {
   };
 
   const getUpdatedData = (prevData, dataDesperdicioMes) => {
+    const updatedRow01 = {
+      ...prevData.row01,
+      rep_inf_egr_apl_mes_bcg:
+        dataDesperdicioMes?.des_bcg_dosapli ||
+        prevData.row01.rep_inf_egr_apl_mes_bcg,
+      rep_inf_egr_per_vac_abi_bcg:
+        dataDesperdicioMes?.des_bcg_pervacenfabi ||
+        prevData.row01.rep_inf_egr_per_vac_abi_bcg,
+      rep_inf_egr_per_vac_noa_bcg:
+        dataDesperdicioMes?.des_bcg_pervacfrasnoabi ||
+        prevData.row01.rep_inf_egr_per_vac_noa_bcg,
+      rep_inf_egr_tra_otr_bcg:
+        dataDesperdicioMes?.des_bcg_traotr ||
+        prevData.row01.rep_inf_egr_tra_otr_bcg,
+      rep_inf_egr_dev_ban_bcg:
+        dataDesperdicioMes?.des_bcg_devban ||
+        prevData.row01.rep_inf_egr_dev_ban_bcg,
+    };
+
+    updatedRow01.rep_inf_egr_tot_dos_bcg = calculateTotalDos(
+      dataDesperdicioMes,
+      updatedRow01
+    );
+    updatedRow01.rep_inf_sal_mes_bcg =
+      updatedRow01.rep_inf_tot_dis_bcg - updatedRow01.rep_inf_egr_tot_dos_bcg;
+    updatedRow01.rep_sol_sol_mes_bcg =
+      updatedRow01.rep_inf_sal_mes_bcg - updatedRow01.rep_sol_nec_mes_bcg;
+
     return {
       ...prevData,
-      row01: {
-        ...prevData.row01,
-        rep_inf_egr_apl_mes_bcg:
-          dataDesperdicioMes?.des_bcg_dosapli ||
-          prevData.row01.rep_inf_egr_apl_mes_bcg,
-        rep_inf_egr_per_vac_abi_bcg:
-          dataDesperdicioMes?.des_bcg_pervacenfabi ||
-          prevData.row01.rep_inf_egr_per_vac_abi_bcg,
-        rep_inf_egr_per_vac_noa_bcg:
-          dataDesperdicioMes?.des_bcg_pervacfrasnoabi ||
-          prevData.row01.rep_inf_egr_per_vac_noa_bcg,
-        rep_inf_egr_tra_otr_bcg:
-          dataDesperdicioMes?.des_bcg_traotr ||
-          prevData.row01.rep_inf_egr_tra_otr_bcg,
-        rep_inf_egr_dev_ban_bcg:
-          dataDesperdicioMes?.des_bcg_devban ||
-          prevData.row01.rep_inf_egr_dev_ban_bcg,
-        rep_inf_egr_tot_dos_bcg: calculateTotalDos(
-          dataDesperdicioMes,
-          prevData.row01
-        ),
-      },
+      row01: updatedRow01,
     };
   };
 
   const calculateTotalDos = (dataDesperdicioMes, row) => {
-    return (
-      (dataDesperdicioMes?.des_bcg_dosapli || row.rep_inf_egr_apl_mes_bcg) +
-      (dataDesperdicioMes?.des_bcg_pervacenfabi ||
-        row.rep_inf_egr_per_vac_abi_bcg) +
-      (dataDesperdicioMes?.des_bcg_pervacfrasnoabi ||
-        row.rep_inf_egr_per_vac_noa_bcg) +
-      (dataDesperdicioMes?.des_bcg_traotr || row.rep_inf_egr_tra_otr_bcg) +
-      (dataDesperdicioMes?.des_bcg_devban || row.rep_inf_egr_dev_ban_bcg)
-    );
+    const fieldsToSum = [
+      "rep_inf_egr_apl_mes_bcg",
+      "rep_inf_egr_per_vac_abi_bcg",
+      "rep_inf_egr_per_vac_noa_bcg",
+      "rep_inf_egr_tra_otr_bcg",
+      "rep_inf_egr_dev_ban_bcg",
+    ];
+
+    return fieldsToSum.reduce((total, field) => {
+      return total + (parseFloat(row[field]) || 0);
+    }, 0);
   };
 
   const applyTotalsAndDependentFields = (updatedData, prevData) => {
