@@ -1843,6 +1843,7 @@ const CreateReporteENI = () => {
       "rep_inf_egr_per_vac_noa_bcg",
       "rep_inf_egr_tra_otr_bcg",
       "rep_inf_egr_dev_ban_bcg",
+      "rep_inf_egr_dev_ban_dpt",
     ];
 
     return fieldsToSum.reduce((total, field) => {
