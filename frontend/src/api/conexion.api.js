@@ -180,6 +180,21 @@ export const buscarUsuarioEni = async (tipo, identificacion) => {
   }
 };
 
+export const olvidoClave = async (identificacion) => {
+  try {
+    const response = await axios.get(`${API_URL}/eni-user/buscar-usuario/`, {
+      params: { tipo, identificacion },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching user admission data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
 //Funciones para los registros de vacunación
 const eniUser_id = 1;
 

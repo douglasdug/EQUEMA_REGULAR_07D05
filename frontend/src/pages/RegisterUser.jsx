@@ -8,6 +8,7 @@ import {
   buttonStylePrimario,
   buttonStyleSecundario,
 } from "../components/EstilosCustom.jsx";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 const getInputTypeAndAutoComplete = (key) => {
@@ -42,6 +43,7 @@ const RegisterUser = () => {
   const [error, setError] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
+  const navigate = useNavigate();
 
   const initialVariableEstado = {
     fun_tipo_iden: false,
@@ -466,6 +468,13 @@ const RegisterUser = () => {
               onClick={handleButtonClick}
             >
               Registrar
+            </button>
+            <button
+              type="button"
+              className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+              onClick={() => navigate("/login")}
+            >
+              Cancelar
             </button>
           </div>
         </form>

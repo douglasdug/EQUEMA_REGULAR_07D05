@@ -296,6 +296,29 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         user.delete()
         return Response({"message": "Usuario eliminado exitosamente!"}, status=status.HTTP_204_NO_CONTENT)
 
+    @action(detail=False, methods=['get'], url_path='olvido-clave')
+    def olvido_clave(self, request):
+        username = request.data.get('username')
+        if not username:
+            return Response({'error': 'El identificador es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = eniUser.objects.get(username=username)
+            email = user.email
+            # Censurar el email: mostrar solo los primeros 3 caracteres y el dominio
+            if '@' in email:
+                local, domain = email.split('@', 1)
+                if len(local) > 3:
+                    censored_local = local[:3] + '*' * (len(local) - 3)
+                else:
+                    censored_local = local + '*' * (3 - len(local))
+                censored_email = f"{censored_local}@{domain}"
+            else:
+                censored_email = '*' * len(email)
+            return Response({'email': censored_email}, status=status.HTTP_200_OK)
+        except eniUser.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
 
 class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = UnidadSaludRegistrationSerializer
@@ -7279,7 +7302,7 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response({"message": Dato_Create_Correcto, "data": serializer.data}, status=status.HTTP_201_CREATED, headers=headers)
 
-    @ action(detail=False, methods=['get'], url_path='descargar-csv')
+    @action(detail=False, methods=['get'], url_path='descargar-csv')
     def get_descargar_csv(self, request, *args, **kwargs):
         # Obtener las fechas de inicio y fin de los parámetros de la solicitud
         fecha_inicio = request.query_params.get('fecha_inicio')

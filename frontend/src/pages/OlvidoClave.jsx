@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 // Importa tu función para enviar la solicitud de recuperación
 // import { solicitarRecuperacionClave } from "../api/conexion.api.js";
 
@@ -8,6 +9,7 @@ const OlvidoClave = () => {
   const [username, setUsername] = useState("");
   const [recaptchaValue, setRecaptchaValue] = useState(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleRecaptcha = (value) => {
     setRecaptchaValue(value);
@@ -75,7 +77,7 @@ const OlvidoClave = () => {
           </div>
           <div className="mb-4 flex justify-center">
             <ReCAPTCHA
-              sitekey="6Lepnj8rAAAAAFQYNYjiT_w6K7XWyO26Sc8h816A" // Reemplaza con tu clave de sitio reCAPTCHA
+              sitekey="6LeZMEArAAAAAG9MbletVs1qO75OXYujGaUTVO8p" // Reemplaza con tu clave de sitio reCAPTCHA
               onChange={handleRecaptcha}
             />
           </div>
@@ -83,11 +85,20 @@ const OlvidoClave = () => {
             <button
               type="submit"
               className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ${
-                loading ? "opacity-50 cursor-not-allowed" : ""
+                loading || !username || !recaptchaValue
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
               }`}
-              disabled={loading}
+              disabled={loading || !username || !recaptchaValue}
             >
               Buscar
+            </button>
+            <button
+              type="button"
+              className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+              onClick={() => navigate("/login")}
+            >
+              Cancelar
             </button>
           </div>
         </form>
