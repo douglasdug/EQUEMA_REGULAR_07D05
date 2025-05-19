@@ -184,12 +184,15 @@ export default function Login() {
               <p className="text-sm text-gray-700">
                 No tienes cuenta?
                 <br />
-                <Link to="/register/" className="text-blue-500 underline ml-1">
+                <Link
+                  to="/register-user/"
+                  className="text-blue-500 underline ml-1"
+                >
                   Regístrese
                 </Link>
               </p>
               <p className="text-sm text-blue-500">
-                <Link to="/reiniciar-clave/" className="underline ml-1">
+                <Link to="/olvido-clave/" className="underline ml-1">
                   Olvido su contraseña?
                 </Link>
               </p>
