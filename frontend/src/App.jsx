@@ -6,6 +6,7 @@ import Home from "./pages/Home.jsx";
 import RegisterUser from "./pages/RegisterUser.jsx";
 import Login from "./pages/Login.jsx";
 import OlvidoClave from "./pages/OlvidoClave.jsx";
+import NewPassword from "./pages/newPassword.jsx";
 import AvisoUser from "./pages/AvisoUser.jsx";
 import AdminUser from "./pages/AdminUser.jsx";
 import CreateTemprano from "./pages/CreateTemprano.jsx";
@@ -28,6 +29,7 @@ function App() {
             <Route path="/home/" element={<Home />} />
             <Route path="/login/" element={<Login />} />
             <Route path="/olvido-clave/" element={<OlvidoClave />} />
+            <Route path="/new-password/" element={<NewPassword />} />
             <Route path="/register-user/" element={<RegisterUser />} />
             <Route path="/aviso-user/" element={<AvisoUser />} />
             <Route path="/admin-user/" element={<AdminUser />} />
