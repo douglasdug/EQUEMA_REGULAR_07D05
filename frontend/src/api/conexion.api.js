@@ -180,10 +180,10 @@ export const buscarUsuarioEni = async (tipo, identificacion) => {
   }
 };
 
-export const olvidoClave = async (identificacion) => {
+export const olvidoClave = async ({ username }) => {
   try {
-    const response = await axios.get(`${API_URL}/eni-user/buscar-usuario/`, {
-      params: { tipo, identificacion },
+    const response = await axios.post(`${API_URL}/eni-user/olvido-clave/`, {
+      username,
     });
     return response.data;
   } catch (error) {

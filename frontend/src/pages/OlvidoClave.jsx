@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { olvidoClave } from "../api/conexion.api.js";
 import ReCAPTCHA from "react-google-recaptcha";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +10,7 @@ const OlvidoClave = () => {
   const [username, setUsername] = useState("");
   const [recaptchaValue, setRecaptchaValue] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [emailRecuperacion, setEmailRecuperacion] = useState(""); // Nuevo estado
   const navigate = useNavigate();
 
   const handleRecaptcha = (value) => {
@@ -33,13 +35,21 @@ const OlvidoClave = () => {
     try {
       // Aquí deberías llamar a tu API para enviar el correo de recuperación
       // await solicitarRecuperacionClave({ username, recaptcha: recaptchaValue });
-      toast.success(
-        "Si el usuario existe, se enviará un correo para restablecer la contraseña.",
-        { position: "bottom-right" }
-      );
+      // Envía el parámetro como identificacion[username]
+      const data = await olvidoClave({ username });
+      if (data.email) {
+        setEmailRecuperacion(data.email);
+      } else {
+        setEmailRecuperacion("");
+        toast.success(
+          "Si el usuario existe, se enviará un correo para restablecer la contraseña.",
+          { position: "bottom-right" }
+        );
+      }
       setUsername("");
       setRecaptchaValue(null);
     } catch (error) {
+      setEmailRecuperacion("");
       toast.error("Error al procesar la solicitud.", {
         position: "bottom-right",
       });
@@ -54,6 +64,19 @@ const OlvidoClave = () => {
         <h2 className="text-center text-2xl font-bold mb-4">
           Recuperar contraseña
         </h2>
+        {emailRecuperacion && (
+          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-6 rounded mb-6 text-center text-lg">
+            <p>
+              Se ha enviado un correo de recuperación a: <br />
+              <span className="font-bold">{emailRecuperacion}</span>
+            </p>
+            <p className="mt-4">
+              Por favor, revisa tu bandeja de entrada y sigue las instrucciones
+              para restablecer tu contraseña. Si no ves el correo, revisa
+              también la carpeta de spam o correo no deseado.
+            </p>
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label

@@ -296,7 +296,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         user.delete()
         return Response({"message": "Usuario eliminado exitosamente!"}, status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=['get'], url_path='olvido-clave')
+    @action(detail=False, methods=['post'], url_path='olvido-clave')
     def olvido_clave(self, request):
         username = request.data.get('username')
         if not username:
@@ -305,11 +305,15 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         try:
             user = eniUser.objects.get(username=username)
             email = user.email
-            # Censurar el email: mostrar solo los primeros 3 caracteres y el dominio
+            # Censurar el email: mostrar los primeros 3 caracteres, el último antes del @ y el dominio
             if '@' in email:
                 local, domain = email.split('@', 1)
-                if len(local) > 3:
-                    censored_local = local[:3] + '*' * (len(local) - 3)
+                if len(local) > 4:
+                    censored_local = local[:3] + '*' * \
+                        (len(local) - 4) + local[-1]
+                elif len(local) > 1:
+                    censored_local = local[0] + '*' * \
+                        (len(local) - 2) + local[-1]
                 else:
                     censored_local = local + '*' * (3 - len(local))
                 censored_email = f"{censored_local}@{domain}"
