@@ -3,6 +3,8 @@ from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework import status
 from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, registro_vacunado
 from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 
@@ -13,6 +15,14 @@ from django.http import HttpResponse
 import csv
 from rest_framework.decorators import action
 from datetime import datetime
+
+from django.contrib.auth.models import User
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.utils import timezone
+from rest_framework.views import APIView
+from itsdangerous import URLSafeTimedSerializer
 
 
 # Create your views here.
@@ -296,29 +306,46 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         user.delete()
         return Response({"message": "Usuario eliminado exitosamente!"}, status=status.HTTP_204_NO_CONTENT)
 
+    @staticmethod
+    def censurar_email(email):
+        """
+        Censura el email mostrando los primeros 3 caracteres, el último antes del @ y el dominio.
+        Ejemplo: juanperez@gmail.com -> jua****z@gmail.com
+        """
+        if '@' not in email:
+            return '*' * len(email)
+        local, domain = email.split('@', 1)
+        if len(local) > 4:
+            censored_local = local[:3] + '*' * (len(local) - 4) + local[-1]
+        elif len(local) > 1:
+            censored_local = local[0] + '*' * (len(local) - 2) + local[-1]
+        else:
+            censored_local = local + '*' * (3 - len(local))
+        return f"{censored_local}@{domain}"
+
     @action(detail=False, methods=['post'], url_path='olvido-clave')
     def olvido_clave(self, request):
-        username = request.data.get('username')
+        username = request.data.get('username', '').strip()
         if not username:
             return Response({'error': 'El identificador es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = eniUser.objects.get(username=username)
-            email = user.email
-            # Censurar el email: mostrar los primeros 3 caracteres, el último antes del @ y el dominio
-            if '@' in email:
-                local, domain = email.split('@', 1)
-                if len(local) > 4:
-                    censored_local = local[:3] + '*' * \
-                        (len(local) - 4) + local[-1]
-                elif len(local) > 1:
-                    censored_local = local[0] + '*' * \
-                        (len(local) - 2) + local[-1]
-                else:
-                    censored_local = local + '*' * (3 - len(local))
-                censored_email = f"{censored_local}@{domain}"
-            else:
-                censored_email = '*' * len(email)
+            email = user.email or ''
+            if not email:
+                return Response({'error': 'No existe un correo registrado con el Usuario. Por favor, comuníquese con el Administrador.'}, status=status.HTTP_404_NOT_FOUND)
+            censored_email = EniUserRegistrationAPIView.censurar_email(email)
+
+            serializer = URLSafeTimedSerializer('tu-secret-key')
+            token = serializer.dumps(user.pk)
+            reset_url = request.build_absolute_uri(
+                reverse('password_reset_confirm', kwargs={'token': token})
+            )
+
+            subject = 'Recuperación de contraseña'
+            message = f'Hola {user.username},\n\nPara restablecer tu contraseña haz clic en el siguiente enlace (válido por 30 minutos):\n{reset_url}\n\nSi no solicitaste este cambio, ignora este correo.'
+            send_mail(subject, message, None, [user.email])
+
             return Response({'email': censored_email}, status=status.HTTP_200_OK)
         except eniUser.DoesNotExist:
             return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
