@@ -4,7 +4,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework import status
 from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, registro_vacunado
 from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 
@@ -14,15 +13,18 @@ from datetime import datetime, timedelta
 from django.http import HttpResponse
 import csv
 from rest_framework.decorators import action
-from datetime import datetime
 
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import send_mail
 from django.urls import reverse
-from django.utils import timezone
 from rest_framework.views import APIView
-from itsdangerous import URLSafeTimedSerializer
+from django.conf import settings
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from django.core.mail import EmailMultiAlternatives
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
 
 
 # Create your views here.
@@ -80,9 +82,130 @@ class UserInfoAPIView(RetrieveAPIView):
         return self.request.user
 
 
+class NewPasswordResetAPIView(APIView):
+    # Constante para la URL del frontend
+    FRONTEND_URL = "http://localhost:5173/new-password"
+
+    @staticmethod
+    def censurar_email(email):
+        if '@' not in email:
+            return '*' * len(email)
+        local, domain = email.split('@', 1)
+        if len(local) > 4:
+            censored_local = local[:3] + '*' * (len(local) - 4) + local[-1]
+        elif len(local) > 1:
+            censored_local = local[0] + '*' * (len(local) - 2) + local[-1]
+        else:
+            censored_local = local + '*' * (3 - len(local))
+        return f"{censored_local}@{domain}"
+
+    def post(self, request):
+        username = request.data.get('username', '').strip()
+        if not username:
+            return Response({'error': 'El identificador es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = eniUser.objects.get(username=username)
+            email = user.email or ''
+            if not email:
+                return Response({'error': 'No existe un correo registrado con el Usuario. Por favor, comuníquese con el Administrador.'}, status=status.HTTP_404_NOT_FOUND)
+
+            censored_email = self.censurar_email(email)
+
+            # Generar token con tiempo de expiración
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+            # Construir URL del frontend
+            reset_url = f"{self.FRONTEND_URL}/{uid}/{token}"
+
+            subject = 'Recuperación de contraseña SIRA-07D05'
+            text_content = (
+                f'Estimado/a {user.last_name} {user.first_name},\n\n'
+                f'Para confirmar esta petición, y establecer una nueva contraseña para su cuenta, por favor vaya a la siguiente dirección de Internet:\n\n'
+                f'{reset_url}\n\n'
+                f'(Este enlace es válido durante 30 minutos desde el momento en que hizo la solicitud por primera vez.)\n'
+                f'Si no solicitaste este cambio, ignora este correo.\n'
+                'Este correo es informativo, favor no responder a esta direccion de correo.'
+            )
+
+            html_content = (
+                f'<h3>Estimado/a "{user.last_name} {user.first_name}",</h3><br><br>'
+                f'Para confirmar esta petición, y establecer una nueva contraseña para su cuenta, por favor vaya a la siguiente dirección de Internet:<br><br>'
+                f'<a href="{reset_url}">LINK para Restablecer la contraseña</a><br><br>'
+                f'(Este enlace es válido durante 30 minutos desde el momento en que hizo la solicitud por primera vez.)<br>'
+                f'Si no solicitaste este cambio, ignora este correo.<br>'
+                '<p style="color: red;"><strong>Este correo es informativo, favor no responder a esta direccion de correo.</strong></p>'
+            )
+
+            try:
+                msg = EmailMultiAlternatives(
+                    subject,
+                    text_content,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email]
+                )
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
+            except Exception as e:
+                return Response({'error': 'No se pudo enviar el correo. Intente más tarde.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            return Response({'email': censored_email}, status=status.HTTP_200_OK)
+        except eniUser.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+    def get(self, request, token=None):
+        """Verificar token y permitir cambio de contraseña"""
+        if not token:
+            return Response({'error': 'Token no proporcionado'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+        try:
+            # Verificar token con tiempo máximo de 30 minutos (1800 segundos)
+            user_pk = serializer.loads(
+                token, salt='password-reset', max_age=1800)
+            user = eniUser.objects.get(pk=user_pk)
+            return Response({'message': 'Token válido', 'username': user.username})
+        except SignatureExpired:
+            return Response({'error': 'El enlace ha expirado'}, status=status.HTTP_400_BAD_REQUEST)
+        except (BadSignature, eniUser.DoesNotExist):
+            return Response({'error': 'Token inválido'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChangePasswordTokenAPIView(APIView):
+    """
+    Cambia la contraseña de un usuario usando username y token válido.
+    """
+
+    def post(self, request, uid, token):
+        new_password = request.data.get('new_password')
+
+        if not new_password:
+            return Response({'error': 'Falta la nueva contraseña.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Decodifica el uidb64 para obtener el id del usuario
+            uid = urlsafe_base64_decode(uid).decode()
+            user = eniUser.objects.get(pk=uid)
+        except (eniUser.DoesNotExist, ValueError, TypeError, OverflowError):
+            return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validar el token
+        if not default_token_generator.check_token(user, token):
+            return Response({'error': 'Token inválido o expirado.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Cambiar la contraseña
+        user.set_password(new_password)
+        user.save()
+
+        return Response({'success': 'Contraseña cambiada exitosamente.'}, status=status.HTTP_200_OK)
+
+
 class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = EniUserRegistrationSerializer
+    serializer_class = AdmisionDatosRegistrationSerializer
     queryset = eniUser.objects.prefetch_related('unidades_salud').all()
+    queryset = admision_datos.objects.all()
     permission_classes = [permissions.AllowAny]
 
     def list(self, request, *args, **kwargs):
@@ -94,6 +217,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     def buscar_usuario(self, request):
         tipo = request.query_params.get('tipo')
         identificacion = request.query_params.get('identificacion')
+
         if not tipo or not identificacion:
             return Response({"error": "El parámetro identificacion es requerido."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -120,39 +244,72 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         except eniUser.DoesNotExist:
             pass
 
-        # Segunda búsqueda en admision_datos
+        # Segundo búsqueda en admision_datos
         try:
             user_data = admision_datos.objects.get(
                 adm_dato_pers_tipo_iden=tipo, adm_dato_pers_nume_iden=identificacion
             )
             data = {
-                "adm_dato_pers_apel": user_data.adm_dato_pers_apel,
-                "adm_dato_pers_nomb": user_data.adm_dato_pers_nomb,
+                "adm_dato_pers_apel_prim": user_data.adm_dato_pers_apel_prim,
+                "adm_dato_pers_apel_segu": user_data.adm_dato_pers_apel_segu,
+                "adm_dato_pers_nomb_prim": user_data.adm_dato_pers_nomb_prim,
+                "adm_dato_pers_nomb_segu": user_data.adm_dato_pers_nomb_segu,
                 "adm_dato_pers_sexo": user_data.adm_dato_pers_sexo,
-                "adm_dato_pers_corr_elec": user_data.adm_dato_pers_corr_elec,
             }
-            return Response({"message": "El usuario está registrado en el sistema!", "data": data}, status=status.HTTP_200_OK)
+            return Response({"message": "El usuario está registrado en admision!", "data": data}, status=status.HTTP_200_OK)
         except admision_datos.DoesNotExist:
-            return Response({"error": "Usuario no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Usuario no encontrado en admision!"}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        # Asigna la fecha actual en formato YYYY-MM-DD
+        data['adm_dato_admi_fech_admi'] = datetime.now().strftime('%Y-%m-%d')
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        # 1. Extracción homogénea de campos
+        tipo = request.data.get('fun_tipo_iden')
+        identificacion = request.data.get('username')
+        first_name = request.data.get('first_name', '').strip()
+        last_name = request.data.get('last_name', '').strip()
+        email = request.data.get('email', '').strip()
+        uni_unic_list = request.data.get(
+            'uni_unic')  # puede ser lista o string
+        print("Datos recibidos: ", tipo, identificacion,
+              first_name, last_name, email, uni_unic_list)
+        # 2. Verificar existencia
+        if admision_datos.objects.filter(
+            adm_dato_pers_tipo_iden=tipo,
+            adm_dato_pers_nume_iden=identificacion
+        ).exists():
+            return Response(
+                {'detail': 'Ya existe un registro con ese tipo e identificación.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3. Guardar usuario
         user = serializer.save()
 
-        # Guardar en admision_datos
+        # 4. Separar apellidos y nombres
+        apellidos = last_name.split(' ', 1)
+        nombres = first_name.split(' ', 1)
+
+        # 5. Crear registro en admision_datos
         admision_datos.objects.create(
-            adm_dato_fech=datetime.now(),
-            adm_dato_pers_tipo_iden=request.data.get('fun_tipo_iden'),
-            adm_dato_pers_nume_iden=request.data.get('username'),
-            adm_dato_pers_apel=request.data.get('last_name'),
-            adm_dato_pers_nomb=request.data.get('first_name'),
+            adm_dato_admi_fech_admi=datetime.now(),
+            adm_dato_pers_tipo_iden=tipo,
+            adm_dato_pers_nume_iden=identificacion,
+            adm_dato_pers_apel_prim=apellidos[0] if apellidos else '',
+            adm_dato_pers_apel_segu=apellidos[1] if len(apellidos) > 1 else '',
+            adm_dato_pers_nomb_prim=nombres[0] if nombres else '',
+            adm_dato_pers_nomb_segu=nombres[1] if len(nombres) > 1 else '',
             adm_dato_pers_sexo=request.data.get('fun_sex'),
-            adm_dato_pers_corr_elec=request.data.get('email') or ''
+            adm_dato_pers_corr_elec=email
         )
 
+        # 6 Buscar en la matriz y registrar en eni_unidad_salud
         # Buscar en la matriz y registrar en eni_unidad_salud
-        uni_unic_list = request.data.get('uni_unic')
         print("Unic " + str(uni_unic_list))
         if isinstance(uni_unic_list, list) and len(uni_unic_list) > 0:
             for uni_unic_item in uni_unic_list:
@@ -190,6 +347,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                     uni_nive=unidad_salud_data['uni_nive'],
                 )
 
+        # 7. Generar token manualmente
         token = RefreshToken.for_user(user)
         data = serializer.data
         data["tokens"] = {
@@ -305,50 +463,6 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
 
         user.delete()
         return Response({"message": "Usuario eliminado exitosamente!"}, status=status.HTTP_204_NO_CONTENT)
-
-    @staticmethod
-    def censurar_email(email):
-        """
-        Censura el email mostrando los primeros 3 caracteres, el último antes del @ y el dominio.
-        Ejemplo: juanperez@gmail.com -> jua****z@gmail.com
-        """
-        if '@' not in email:
-            return '*' * len(email)
-        local, domain = email.split('@', 1)
-        if len(local) > 4:
-            censored_local = local[:3] + '*' * (len(local) - 4) + local[-1]
-        elif len(local) > 1:
-            censored_local = local[0] + '*' * (len(local) - 2) + local[-1]
-        else:
-            censored_local = local + '*' * (3 - len(local))
-        return f"{censored_local}@{domain}"
-
-    @action(detail=False, methods=['post'], url_path='olvido-clave')
-    def olvido_clave(self, request):
-        username = request.data.get('username', '').strip()
-        if not username:
-            return Response({'error': 'El identificador es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = eniUser.objects.get(username=username)
-            email = user.email or ''
-            if not email:
-                return Response({'error': 'No existe un correo registrado con el Usuario. Por favor, comuníquese con el Administrador.'}, status=status.HTTP_404_NOT_FOUND)
-            censored_email = EniUserRegistrationAPIView.censurar_email(email)
-
-            serializer = URLSafeTimedSerializer('tu-secret-key')
-            token = serializer.dumps(user.pk)
-            reset_url = request.build_absolute_uri(
-                reverse('password_reset_confirm', kwargs={'token': token})
-            )
-
-            subject = 'Recuperación de contraseña'
-            message = f'Hola {user.username},\n\nPara restablecer tu contraseña haz clic en el siguiente enlace (válido por 30 minutos):\n{reset_url}\n\nSi no solicitaste este cambio, ignora este correo.'
-            send_mail(subject, message, None, [user.email])
-
-            return Response({'email': censored_email}, status=status.HTTP_200_OK)
-        except eniUser.DoesNotExist:
-            return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
@@ -7221,9 +7335,9 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
 
         if month is not None and year is not None:
             queryset = queryset.filter(
-                adm_dato_fech__year=year, adm_dato_fech__month=month)
+                adm_dato_admi_fech_admi__year=year, adm_dato_admi_fech_admi__month=month)
 
-        return queryset.order_by('adm_dato_fech')
+        return queryset.order_by('adm_dato_admi_fech_admi')
 
     def create_admision_datos(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -7242,8 +7356,10 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 adm_dato_pers_tipo_iden=tipo, adm_dato_pers_nume_iden=identificacion
             )
             data = {
-                "adm_dato_pers_apel": user_data.adm_dato_pers_apel,
-                "adm_dato_pers_nomb": user_data.adm_dato_pers_nomb,
+                "adm_dato_pers_apel_prim": user_data.adm_dato_pers_apel_prim,
+                "adm_dato_pers_apel_segu": user_data.adm_dato_pers_apel_segu,
+                "adm_dato_pers_nomb_prim": user_data.adm_dato_pers_nomb_prim,
+                "adm_dato_pers_nomb_segu": user_data.adm_dato_pers_nomb_segu,
                 "adm_dato_pers_sexo": user_data.adm_dato_pers_sexo,
                 "adm_dato_pers_corr_elec": user_data.adm_dato_pers_corr_elec,
             }

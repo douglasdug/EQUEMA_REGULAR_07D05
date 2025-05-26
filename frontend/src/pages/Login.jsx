@@ -111,7 +111,6 @@ export default function Login() {
       let errorMsg = "Hubo un error en la operación";
       if (error.response) {
         const data = error.response.data;
-        //console.log("Datos de error:", data);
         if (data.error && Array.isArray(data.error)) {
           setErrorMessage(data.error[0]);
           errorMsg = data.error[0];
@@ -144,7 +143,7 @@ export default function Login() {
   };
 
   return (
-    <section className="container">
+    <section className="container min-h-screen items-start justify-center">
       <div className="mx-auto max-w-lg text-center">
         {errorMessage && <FormMessage message={errorMessage} type="error" />}
         {successMessage && (

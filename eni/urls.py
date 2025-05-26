@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, RegistroVacunadoRegistrationAPIView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, NewPasswordResetAPIView, ChangePasswordTokenAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, RegistroVacunadoRegistrationAPIView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -33,5 +33,9 @@ urlpatterns = [
     path('v1/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('v1/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('v1/user/', UserInfoAPIView.as_view(), name='user-info'),
+    path('v1/new-password/',
+         NewPasswordResetAPIView.as_view(), name='new_password'),
+    path('v1/new-password/<str:uid>/<str:token>/',
+         ChangePasswordTokenAPIView.as_view(), name='new_password_reset'),
     path('v1/reporte/pdf/', reporteTempranoPDF, name='reporte-temprano-pdf'),
 ]

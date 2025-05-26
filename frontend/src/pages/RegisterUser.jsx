@@ -201,8 +201,12 @@ const RegisterUser = () => {
       }
       setFormData((prevData) => ({
         ...formData,
-        last_name: data.adm_dato_pers_apel || "",
-        first_name: data.adm_dato_pers_nomb || "",
+        first_name: [data.adm_dato_pers_apel_prim, data.adm_dato_pers_apel_segu]
+          .filter(Boolean)
+          .join(" "),
+        last_name: [data.adm_dato_pers_nomb_prim, data.adm_dato_pers_nomb_segu]
+          .filter(Boolean)
+          .join(" "),
         fun_sex: data.adm_dato_pers_sexo || "",
       }));
       setVariableEstado((prevState) => ({
@@ -337,7 +341,7 @@ const RegisterUser = () => {
             Registro de Funcionario
           </h2>
           <p className="text-center text-lg text-black">
-            ¡La contraseña debe tener de 8 a 15 caracteres y tener una
+            ¡La contraseña debe tener de 10 a 20 caracteres y tener una
             combinación entre Mayúsculas, Minúsculas y números!
             <br />
             <strong>Nota: </strong>

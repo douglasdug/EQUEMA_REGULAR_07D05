@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import { resetPasswordWithToken } from "../api/conexion.api.js"; // Debes crear esta función
 import PropTypes from "prop-types";
-import { useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const passwordRules = [
   {
@@ -28,12 +29,12 @@ const passwordRules = [
 const isPasswordValid = (pw) => passwordRules.every((rule) => rule.test(pw));
 
 const NewPassword = () => {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
+  const { uid, token } = useParams();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Estado para mostrar/ocultar claves
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -42,21 +43,11 @@ const NewPassword = () => {
   const passwordsMatch =
     newPassword && confirmPassword && newPassword === confirmPassword;
 
-  const resetPassword = async (token, newPassword) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (token === "tokendemuestra") {
-          resolve({ success: true });
-        } else {
-          reject({ message: "El enlace es inválido o ha expirado." });
-        }
-      }, 1000);
-    });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
+    setNewPassword("");
+    setConfirmPassword("");
 
     if (!newPassword || !confirmPassword) {
       setMessage("Por favor, completa todos los campos.");
@@ -80,15 +71,27 @@ const NewPassword = () => {
 
     setLoading(true);
     try {
-      await resetPassword(token, newPassword);
+      await resetPasswordWithToken({ uid, token, password: newPassword });
       setMessage("¡Clave cambiada exitosamente!");
-      setNewPassword("");
-      setConfirmPassword("");
     } catch (error) {
-      setMessage(error.message || "Error al cambiar la clave.");
+      // Si hay respuesta del backend y tiene un mensaje de error, muéstralo
+      if (error.response?.data?.error) {
+        setMessage(error.response.data.error);
+      } else {
+        setMessage(error.message || "Error al cambiar la clave.");
+      }
     }
     setLoading(false);
   };
+
+  React.useEffect(() => {
+    if (message === "¡Clave cambiada exitosamente!") {
+      const timer = setTimeout(() => {
+        navigate("/login");
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [message, navigate]);
 
   const canSubmit =
     !loading &&
@@ -154,6 +157,7 @@ const NewPassword = () => {
               type={showNewPassword ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Ingrese su nueva clave"
               autoComplete="new-password"
               required
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400 pr-10"
@@ -214,6 +218,7 @@ const NewPassword = () => {
               type={showConfirmPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirme su clave"
               autoComplete="new-password"
               required
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-400 pr-10"
@@ -263,13 +268,22 @@ const NewPassword = () => {
             </div>
           </div>
         </div>
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition disabled:opacity-60"
-        >
-          {loading ? "Cambiando..." : "Cambiar Clave"}
-        </button>
+        <div className="flex items-center justify-center">
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition disabled:opacity-60"
+          >
+            {loading ? "Cambiando..." : "Cambiar Clave"}
+          </button>
+          <button
+            type="button"
+            className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+            onClick={() => navigate("/login")}
+          >
+            Cancelar
+          </button>
+        </div>
         {message && (
           <div
             className={`mt-4 text-center font-medium ${

@@ -154,7 +154,7 @@ class ReporteENIRegistrationSerializer(serializers.ModelSerializer):
 
 
 class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
-    adm_dato_fech = serializers.DateField(
+    adm_dato_admi_fech_admi = serializers.DateField(
         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
     class Meta:

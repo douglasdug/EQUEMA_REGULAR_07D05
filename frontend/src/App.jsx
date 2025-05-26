@@ -29,7 +29,7 @@ function App() {
             <Route path="/home/" element={<Home />} />
             <Route path="/login/" element={<Login />} />
             <Route path="/olvido-clave/" element={<OlvidoClave />} />
-            <Route path="/new-password/" element={<NewPassword />} />
+            <Route path="/new-password/:uid/:token" element={<NewPassword />} />
             <Route path="/register-user/" element={<RegisterUser />} />
             <Route path="/aviso-user/" element={<AvisoUser />} />
             <Route path="/admin-user/" element={<AdminUser />} />

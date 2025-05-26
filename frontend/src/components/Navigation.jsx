@@ -49,7 +49,7 @@ export function Navigation() {
         <div className="flex">
           <a href="/">
             <h1 className="my-auto font-bold text-[22px] lg:text-3xl pr-2 mr-2 border-r-2 border-blue-600 lg:pr-5 lg:mr-5">
-              ENIapp
+              SIRA-07D05
             </h1>
           </a>
           <button className="my-auto mr-2 lg:hidden" onClick={toggleNav}>

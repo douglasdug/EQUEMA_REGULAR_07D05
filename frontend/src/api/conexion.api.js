@@ -182,13 +182,29 @@ export const buscarUsuarioEni = async (tipo, identificacion) => {
 
 export const olvidoClave = async ({ username }) => {
   try {
-    const response = await axios.post(`${API_URL}/eni-user/olvido-clave/`, {
+    const response = await axios.post(`${API_URL}/new-password/`, {
       username,
     });
     return response.data;
   } catch (error) {
     console.error(
       "Error fetching user admission data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const resetPasswordWithToken = async ({ uid, token, password }) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/new-password/${uid}/${token}/`, // El backend debe tener esta ruta
+      { new_password: password }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error resetting password with token:",
       error.response ? error.response.data : error.message
     );
     throw error;
