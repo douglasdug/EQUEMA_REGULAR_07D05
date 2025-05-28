@@ -25,6 +25,7 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from django.core.mail import EmailMultiAlternatives
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
+from django.utils import timezone
 
 
 # Create your views here.
@@ -203,9 +204,7 @@ class ChangePasswordTokenAPIView(APIView):
 
 class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = EniUserRegistrationSerializer
-    serializer_class = AdmisionDatosRegistrationSerializer
-    queryset = eniUser.objects.prefetch_related('unidades_salud').all()
-    queryset = admision_datos.objects.all()
+    queryset = eniUser.objects.all()
     permission_classes = [permissions.AllowAny]
 
     def list(self, request, *args, **kwargs):
@@ -262,23 +261,12 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        # Asigna la fecha actual en formato YYYY-MM-DD
-        data['adm_dato_admi_fech_admi'] = datetime.now().strftime('%Y-%m-%d')
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        data['adm_dato_admi_fech_admi'] = timezone.now().strftime('%Y-%m-%d')
 
-        # 1. Extracción homogénea de campos
-        tipo = request.data.get('fun_tipo_iden')
-        identificacion = request.data.get('username')
-        first_name = request.data.get('first_name', '').strip()
-        last_name = request.data.get('last_name', '').strip()
-        email = request.data.get('email', '').strip()
-        uni_unic_list = request.data.get(
-            'uni_unic')  # puede ser lista o string
-        print("Datos recibidos: ", tipo, identificacion,
-              first_name, last_name, email, uni_unic_list)
-        # 2. Verificar existencia
+        tipo = data.get('fun_tipo_iden')
+        identificacion = data.get('username')
+
+        # Validación antes de crear usuario
         if admision_datos.objects.filter(
             adm_dato_pers_tipo_iden=tipo,
             adm_dato_pers_nume_iden=identificacion
@@ -288,73 +276,56 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 3. Guardar usuario
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # 4. Separar apellidos y nombres
+        # Procesar nombres y apellidos
+        first_name = data.get('first_name', '').strip()
+        last_name = data.get('last_name', '').strip()
         apellidos = last_name.split(' ', 1)
         nombres = first_name.split(' ', 1)
+        email = data.get('email', '').strip()
 
-        # 5. Crear registro en admision_datos
         admision_datos.objects.create(
-            adm_dato_admi_fech_admi=datetime.now(),
+            adm_dato_admi_fech_admi=timezone.now(),
             adm_dato_pers_tipo_iden=tipo,
             adm_dato_pers_nume_iden=identificacion,
             adm_dato_pers_apel_prim=apellidos[0] if apellidos else '',
             adm_dato_pers_apel_segu=apellidos[1] if len(apellidos) > 1 else '',
             adm_dato_pers_nomb_prim=nombres[0] if nombres else '',
             adm_dato_pers_nomb_segu=nombres[1] if len(nombres) > 1 else '',
-            adm_dato_pers_sexo=request.data.get('fun_sex'),
+            adm_dato_pers_sexo=data.get('fun_sex'),
             adm_dato_pers_corr_elec=email
         )
 
-        # 6 Buscar en la matriz y registrar en eni_unidad_salud
-        # Buscar en la matriz y registrar en eni_unidad_salud
-        print("Unic " + str(uni_unic_list))
-        if isinstance(uni_unic_list, list) and len(uni_unic_list) > 0:
+        # Procesar unidades de salud
+        uni_unic_list = data.get('uni_unic')
+        if isinstance(uni_unic_list, list):
             for uni_unic_item in uni_unic_list:
                 uni_unic = uni_unic_item.get('value')
                 unidad_salud_data = self.get_unidad_salud_data(uni_unic)
-                # Registro de depuración
                 if unidad_salud_data:
                     unidad_salud.objects.create(
                         eniUser=user,
-                        uni_zona=unidad_salud_data['uni_zona'],
-                        uni_dist=unidad_salud_data['uni_dist'],
-                        uni_prov=unidad_salud_data['uni_prov'],
-                        uni_cant=unidad_salud_data['uni_cant'],
-                        uni_parr=unidad_salud_data['uni_parr'],
-                        uni_unic=unidad_salud_data['uni_unic'],
-                        uni_unid=unidad_salud_data['uni_unid'],
-                        uni_tipo=unidad_salud_data['uni_tipo'],
-                        uni_nive=unidad_salud_data['uni_nive'],
+                        **unidad_salud_data
                     )
-
         elif isinstance(uni_unic_list, str):
-            uni_unic = uni_unic_list
-            unidad_salud_data = self.get_unidad_salud_data(uni_unic)
+            unidad_salud_data = self.get_unidad_salud_data(uni_unic_list)
             if unidad_salud_data:
                 unidad_salud.objects.create(
                     eniUser=user,
-                    uni_zona=unidad_salud_data['uni_zona'],
-                    uni_dist=unidad_salud_data['uni_dist'],
-                    uni_prov=unidad_salud_data['uni_prov'],
-                    uni_cant=unidad_salud_data['uni_cant'],
-                    uni_parr=unidad_salud_data['uni_parr'],
-                    uni_unic=unidad_salud_data['uni_unic'],
-                    uni_unid=unidad_salud_data['uni_unid'],
-                    uni_tipo=unidad_salud_data['uni_tipo'],
-                    uni_nive=unidad_salud_data['uni_nive'],
+                    **unidad_salud_data
                 )
 
-        # 7. Generar token manualmente
+        # Generar token
         token = RefreshToken.for_user(user)
-        data = serializer.data
-        data["tokens"] = {
+        response_data = serializer.data
+        response_data["tokens"] = {
             "refresh": str(token),
             "access": str(token.access_token)
         }
-        return Response({"message": "El usuario fue creado exitosamente!", "data": data}, status=status.HTTP_201_CREATED)
+        return Response({"message": "El usuario fue creado exitosamente!", "data": response_data}, status=status.HTTP_201_CREATED)
 
     def get_unidad_salud_data(self, uni_unic):
         matriz = [
