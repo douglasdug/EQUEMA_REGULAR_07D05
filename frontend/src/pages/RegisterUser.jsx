@@ -124,7 +124,10 @@ const RegisterUser = () => {
           fun_titu: formData.fun_titu,
         })
       );
-      window.location.href = "/aviso-user/";
+      const timer = setTimeout(() => {
+        navigate("/aviso-user/");
+      }, 5000);
+      return () => clearTimeout(timer);
     } catch (error) {
       const errorMessage = parseErrorMessage(error);
       setError(errorMessage);

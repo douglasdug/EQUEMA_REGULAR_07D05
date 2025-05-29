@@ -9,6 +9,7 @@ import OlvidoClave from "./pages/OlvidoClave.jsx";
 import NewPassword from "./pages/newPassword.jsx";
 import AvisoUser from "./pages/AvisoUser.jsx";
 import AdminUser from "./pages/AdminUser.jsx";
+import Admision from "./pages/Admision.jsx";
 import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
@@ -33,6 +34,7 @@ function App() {
             <Route path="/register-user/" element={<RegisterUser />} />
             <Route path="/aviso-user/" element={<AvisoUser />} />
             <Route path="/admin-user/" element={<AdminUser />} />
+            <Route path="/admision/" element={<Admision />} />
             <Route path="/create-temprano/" element={<CreateTemprano />} />
             <Route path="/create-tardio/" element={<CreateTardio />} />
             <Route
