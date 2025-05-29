@@ -26,6 +26,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.utils import timezone
+from django.db import transaction
 
 
 # Create your views here.
@@ -261,23 +262,11 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        data['adm_dato_admi_fech_admi'] = timezone.now().strftime('%Y-%m-%d')
+        now = timezone.now()
+        data['adm_dato_admi_fech_admi'] = now.strftime('%Y-%m-%d')
 
         tipo = data.get('fun_tipo_iden')
         identificacion = data.get('username')
-
-        # Buscar registros en admision_datos
-        registros_admision = admision_datos.objects.filter(
-            adm_dato_pers_tipo_iden=tipo,
-            adm_dato_pers_nume_iden=identificacion
-        )
-
-        # Guardar SIEMPRE en eniUser
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-        else:
-            return Response(eniuser_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # Procesar nombres y apellidos
         first_name = data.get('first_name', '').strip()
@@ -286,51 +275,70 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         nombres = first_name.split(' ', 1)
         email = data.get('email', '').strip()
 
-        # Si NO hay registros en admision_datos, guardar también ahí
-        if not registros_admision.exists():
-            admision_datos.objects.create(
-                adm_dato_admi_fech_admi=timezone.now(),
-                adm_dato_pers_tipo_iden=tipo,
-                adm_dato_pers_nume_iden=identificacion,
-                adm_dato_pers_apel_prim=apellidos[0] if apellidos else '',
-                adm_dato_pers_apel_segu=apellidos[1] if len(
-                    apellidos) > 1 else '',
-                adm_dato_pers_nomb_prim=nombres[0] if nombres else '',
-                adm_dato_pers_nomb_segu=nombres[1] if len(nombres) > 1 else '',
-                adm_dato_pers_sexo=data.get('fun_sex'),
-                adm_dato_pers_corr_elec=email
-            )
-        else:
-            # Si hay error en admision, puedes decidir si revertir eniUser o solo reportar el error
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            with transaction.atomic():
+                # Guardar SIEMPRE en eniUser
+                serializer = self.get_serializer(data=data)
+                serializer.is_valid(raise_exception=True)
+                user = serializer.save()
 
-        # Procesar unidades de salud
-        uni_unic_list = data.get('uni_unic')
-        if isinstance(uni_unic_list, list):
-            for uni_unic_item in uni_unic_list:
-                uni_unic = uni_unic_item.get('value')
-                unidad_salud_data = self.get_unidad_salud_data(uni_unic)
-                if unidad_salud_data:
-                    unidad_salud.objects.create(
-                        eniUser=user,
-                        **unidad_salud_data
+                # Buscar registros en admision_datos
+                if not admision_datos.objects.filter(
+                    adm_dato_pers_tipo_iden=tipo,
+                    adm_dato_pers_nume_iden=identificacion
+                ).exists():
+                    admision_datos.objects.create(
+                        adm_dato_admi_fech_admi=now,
+                        adm_dato_pers_tipo_iden=tipo,
+                        adm_dato_pers_nume_iden=identificacion,
+                        adm_dato_pers_apel_prim=apellidos[0] if apellidos else '',
+                        adm_dato_pers_apel_segu=apellidos[1] if len(
+                            apellidos) > 1 else '',
+                        adm_dato_pers_nomb_prim=nombres[0] if nombres else '',
+                        adm_dato_pers_nomb_segu=nombres[1] if len(
+                            nombres) > 1 else '',
+                        adm_dato_pers_sexo=data.get('fun_sex'),
+                        adm_dato_pers_corr_elec=email
                     )
-        elif isinstance(uni_unic_list, str):
-            unidad_salud_data = self.get_unidad_salud_data(uni_unic_list)
-            if unidad_salud_data:
-                unidad_salud.objects.create(
-                    eniUser=user,
-                    **unidad_salud_data
+
+                # Procesar unidades de salud
+                uni_unic_list = data.get('uni_unic')
+                if uni_unic_list:
+                    # Asegurarse de que sea lista
+                    if isinstance(uni_unic_list, (str, dict)):
+                        uni_unic_list = [uni_unic_list]
+                    # Si es lista de dicts o strings
+                    for item in uni_unic_list:
+                        if isinstance(item, dict):
+                            uni_unic = item.get('value')
+                        else:
+                            uni_unic = item
+                        unidad_salud_data = self.get_unidad_salud_data(
+                            uni_unic)
+                        if unidad_salud_data:
+                            unidad_salud.objects.create(
+                                eniUser=user,
+                                **unidad_salud_data
+                            )
+
+                # Generar token
+                token = RefreshToken.for_user(user)
+                response_data = serializer.data
+                response_data["tokens"] = {
+                    "refresh": str(token),
+                    "access": str(token.access_token)
+                }
+                return Response(
+                    {"message": "El usuario fue creado exitosamente!",
+                        "data": response_data},
+                    status=status.HTTP_201_CREATED
                 )
 
-        # Generar token
-        token = RefreshToken.for_user(user)
-        response_data = serializer.data
-        response_data["tokens"] = {
-            "refresh": str(token),
-            "access": str(token.access_token)
-        }
-        return Response({"message": "El usuario fue creado exitosamente!", "data": response_data}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {"message": "Error al crear el usuario", "error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     def get_unidad_salud_data(self, uni_unic):
         matriz = [
