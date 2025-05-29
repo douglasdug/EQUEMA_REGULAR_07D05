@@ -239,7 +239,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                 "fun_esta": user_data.fun_esta,
                 "uni_unic": uni_unic,
             }
-            return Response({"message": "El usuario está registrado en el sistema!", "data": data}, status=status.HTTP_200_OK)
+            return Response({"message": "El usuario ya se encuentra registrado. Por favor, comuníquese con el Administrador!", "data": data}, status=status.HTTP_200_OK)
         except eniUser.DoesNotExist:
             pass
 
@@ -266,19 +266,18 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         tipo = data.get('fun_tipo_iden')
         identificacion = data.get('username')
 
-        # Validación antes de crear usuario
-        if admision_datos.objects.filter(
+        # Buscar registros en admision_datos
+        registros_admision = admision_datos.objects.filter(
             adm_dato_pers_tipo_iden=tipo,
             adm_dato_pers_nume_iden=identificacion
-        ).exists():
-            return Response(
-                {'detail': 'Ya existe un registro con ese tipo e identificación.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        )
 
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        # Guardar SIEMPRE en eniUser
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+        else:
+            return Response(eniuser_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # Procesar nombres y apellidos
         first_name = data.get('first_name', '').strip()
@@ -287,17 +286,23 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         nombres = first_name.split(' ', 1)
         email = data.get('email', '').strip()
 
-        admision_datos.objects.create(
-            adm_dato_admi_fech_admi=timezone.now(),
-            adm_dato_pers_tipo_iden=tipo,
-            adm_dato_pers_nume_iden=identificacion,
-            adm_dato_pers_apel_prim=apellidos[0] if apellidos else '',
-            adm_dato_pers_apel_segu=apellidos[1] if len(apellidos) > 1 else '',
-            adm_dato_pers_nomb_prim=nombres[0] if nombres else '',
-            adm_dato_pers_nomb_segu=nombres[1] if len(nombres) > 1 else '',
-            adm_dato_pers_sexo=data.get('fun_sex'),
-            adm_dato_pers_corr_elec=email
-        )
+        # Si NO hay registros en admision_datos, guardar también ahí
+        if not registros_admision.exists():
+            admision_datos.objects.create(
+                adm_dato_admi_fech_admi=timezone.now(),
+                adm_dato_pers_tipo_iden=tipo,
+                adm_dato_pers_nume_iden=identificacion,
+                adm_dato_pers_apel_prim=apellidos[0] if apellidos else '',
+                adm_dato_pers_apel_segu=apellidos[1] if len(
+                    apellidos) > 1 else '',
+                adm_dato_pers_nomb_prim=nombres[0] if nombres else '',
+                adm_dato_pers_nomb_segu=nombres[1] if len(nombres) > 1 else '',
+                adm_dato_pers_sexo=data.get('fun_sex'),
+                adm_dato_pers_corr_elec=email
+            )
+        else:
+            # Si hay error en admision, puedes decidir si revertir eniUser o solo reportar el error
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # Procesar unidades de salud
         uni_unic_list = data.get('uni_unic')

@@ -77,6 +77,31 @@ const RegisterUser = () => {
     "password2",
   ];
 
+  // Helper function to parse error messages
+  const parseErrorMessage = (error) => {
+    let errorMessage = "Hubo un error en la operación";
+    if (error.response && error.response.data) {
+      const data = error.response.data;
+      if (typeof data === "object") {
+        const firstKey = Object.keys(data)[0];
+        const firstErrorArray = data[firstKey];
+        if (firstKey === "username") {
+          errorMessage = "El usuario ya está registrado";
+        } else if (
+          Array.isArray(firstErrorArray) &&
+          firstErrorArray.length > 0
+        ) {
+          errorMessage = firstErrorArray[0];
+        } else if (typeof firstErrorArray === "string") {
+          errorMessage = firstErrorArray;
+        }
+      } else if (typeof data === "string") {
+        errorMessage = data;
+      }
+    }
+    return errorMessage;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
@@ -101,26 +126,7 @@ const RegisterUser = () => {
       );
       window.location.href = "/aviso-user/";
     } catch (error) {
-      let errorMessage = "Hubo un error en la operación";
-      if (error.response && error.response.data) {
-        const data = error.response.data;
-        if (typeof data === "object") {
-          const firstKey = Object.keys(data)[0];
-          const firstErrorArray = data[firstKey];
-          if (firstKey === "username") {
-            errorMessage = "El usuario ya está registrado";
-          } else if (
-            Array.isArray(firstErrorArray) &&
-            firstErrorArray.length > 0
-          ) {
-            errorMessage = firstErrorArray[0];
-          } else if (typeof firstErrorArray === "string") {
-            errorMessage = firstErrorArray;
-          }
-        } else if (typeof data === "string") {
-          errorMessage = data;
-        }
-      }
+      const errorMessage = parseErrorMessage(error);
       setError(errorMessage);
       toast.error(errorMessage, { position: "bottom-right" });
     } finally {
@@ -185,13 +191,10 @@ const RegisterUser = () => {
           first_name: true,
           last_name: true,
           fun_sex: true,
-          email: true,
           fun_titu: true,
+          uni_unic: true,
           password1: true,
           password2: true,
-          fun_admi_rol: true,
-          uni_unic: true,
-          fun_esta: true,
         }));
         setBotonEstado((prevState) => ({
           btnBuscar: true,
@@ -199,38 +202,60 @@ const RegisterUser = () => {
         }));
         return;
       }
+
+      // Solo se toma en cuenta data.first_name y data.last_name
+      const firstName = data.first_name || "";
+      const lastName = data.last_name || "";
+      const funSex = data.fun_sex || "";
+
       setFormData((prevData) => ({
         ...formData,
-        first_name: [data.adm_dato_pers_apel_prim, data.adm_dato_pers_apel_segu]
-          .filter(Boolean)
-          .join(" "),
-        last_name: [data.adm_dato_pers_nomb_prim, data.adm_dato_pers_nomb_segu]
-          .filter(Boolean)
-          .join(" "),
-        fun_sex: data.adm_dato_pers_sexo || "",
+        first_name:
+          firstName ||
+          [
+            data.adm_dato_pers_apel_prim || "",
+            data.adm_dato_pers_apel_segu || "",
+          ]
+            .filter(Boolean)
+            .join(" "),
+        last_name:
+          lastName ||
+          [
+            data.adm_dato_pers_nomb_prim || "",
+            data.adm_dato_pers_nomb_segu || "",
+          ]
+            .filter(Boolean)
+            .join(" "),
+        fun_sex: funSex || data.adm_dato_pers_sexo || "",
       }));
+
+      const ambosLlenos = firstName.trim() !== "" && lastName.trim() !== "";
+
       setVariableEstado((prevState) => ({
         ...prevState,
         fun_tipo_iden: true,
         username: true,
         first_name: true,
         last_name: true,
-        fun_sex: false,
-        fun_titu: false,
-        uni_unic: false,
-        password1: false,
-        password2: false,
+        fun_sex: true,
+        fun_titu: ambosLlenos,
+        uni_unic: ambosLlenos,
+        password1: ambosLlenos,
+        password2: ambosLlenos,
       }));
+
       setBotonEstado((prevState) => ({
+        ...prevState,
         btnBuscar: true,
       }));
+
       toast.success(message, {
         position: "bottom-right",
       });
       checkFormValidity();
     } catch (error) {
       let errorMessage = "Hubo un error en la operación";
-      if (error.response && error.response.data) {
+      if (error.response?.data) {
         const data = error.response.data;
         if (typeof data === "object") {
           const firstKey = Object.keys(data)[0];
