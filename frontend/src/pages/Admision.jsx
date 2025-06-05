@@ -1,4 +1,11 @@
 import React, { useState } from "react";
+import { listaSelectUser } from "../components/AllList.jsx";
+import {
+  CustomSelect,
+  inputStyle,
+  buttonStylePrimario,
+  buttonStyleSecundario,
+} from "../components/EstilosCustom.jsx";
 
 const initialState = {
   adm_dato_pers_tipo_iden: "",
@@ -59,6 +66,141 @@ const Admision = () => {
   const [form, setForm] = useState(initialState);
   const [activeTab, setActiveTab] = useState("personales");
 
+  const initialBotonEstado = {
+    btnBuscar: true,
+    btnLimpiar: false,
+    btnRegistrar: true,
+  };
+  const [botonEstado, setBotonEstado] = useState(initialBotonEstado);
+
+  const handleSearch = async () => {
+    const { fun_tipo_iden, username } = formData;
+    if (!username) {
+      toast.error("Por favor, ingrese una identificación.", {
+        position: "bottom-right",
+      });
+      return;
+    }
+    if (!validarIdentificacion(fun_tipo_iden, username)) {
+      return;
+    }
+    try {
+      const response = await buscarUsuarioEni(formData.fun_tipo_iden, username);
+      if (!response)
+        throw new Error("No se pudo obtener una respuesta de la API.");
+      const data = response.data;
+      const message = response.message || "Operación exitosa";
+      if (data.fun_esta > 0) {
+        let errorMessage =
+          "El usuario ya se encuentra registrado. Por favor, comuníquese con el Administrador!";
+        setError(errorMessage);
+        toast.error(errorMessage, { position: "bottom-right" });
+        setVariableEstado((prevState) => ({
+          ...prevState,
+          fun_tipo_iden: true,
+          username: true,
+          first_name: true,
+          last_name: true,
+          fun_sex: true,
+          fun_titu: true,
+          uni_unic: true,
+          password1: true,
+          password2: true,
+        }));
+        setBotonEstado((prevState) => ({
+          btnBuscar: true,
+          btnRegistrar: true,
+        }));
+        return;
+      }
+
+      // Solo se toma en cuenta data.first_name y data.last_name
+      const firstName = data.first_name || "";
+      const lastName = data.last_name || "";
+      const funSex = data.fun_sex || "";
+
+      setFormData((prevData) => ({
+        ...formData,
+        first_name:
+          firstName ||
+          [
+            data.adm_dato_pers_apel_prim || "",
+            data.adm_dato_pers_apel_segu || "",
+          ]
+            .filter(Boolean)
+            .join(" "),
+        last_name:
+          lastName ||
+          [
+            data.adm_dato_pers_nomb_prim || "",
+            data.adm_dato_pers_nomb_segu || "",
+          ]
+            .filter(Boolean)
+            .join(" "),
+        fun_sex: funSex || data.adm_dato_pers_sexo || "",
+      }));
+
+      const ambosLlenos = firstName.trim() !== "" && lastName.trim() !== "";
+
+      setVariableEstado((prevState) => ({
+        ...prevState,
+        fun_tipo_iden: true,
+        username: true,
+        first_name: true,
+        last_name: true,
+        fun_sex: true,
+        fun_titu: ambosLlenos,
+        uni_unic: ambosLlenos,
+        password1: ambosLlenos,
+        password2: ambosLlenos,
+      }));
+
+      setBotonEstado((prevState) => ({
+        ...prevState,
+        btnBuscar: true,
+      }));
+
+      toast.success(message, {
+        position: "bottom-right",
+      });
+      checkFormValidity();
+    } catch (error) {
+      let errorMessage = "Hubo un error en la operación";
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === "object") {
+          const firstKey = Object.keys(data)[0];
+          const firstErrorArray = data[firstKey];
+          if (Array.isArray(firstErrorArray) && firstErrorArray.length > 0) {
+            errorMessage = firstErrorArray[0];
+          } else if (typeof firstErrorArray === "string") {
+            errorMessage = firstErrorArray;
+          }
+        } else if (typeof data === "string") {
+          errorMessage = data;
+        }
+      }
+      setVariableEstado((prevState) => ({
+        ...prevState,
+        fun_tipo_iden: true,
+        username: true,
+        first_name: false,
+        last_name: false,
+        fun_sex: false,
+        fun_titu: false,
+        uni_unic: false,
+        password1: false,
+        password2: false,
+      }));
+      setBotonEstado((prevState) => ({
+        btnBuscar: true,
+        btnRegistrar: true,
+      }));
+      setError(errorMessage);
+      toast.error(errorMessage, { position: "bottom-right" });
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
@@ -67,6 +209,24 @@ const Admision = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log(form);
+  };
+
+  const limpiarVariables = (e) => {
+    setFormData({
+      fun_tipo_iden: "",
+      username: "",
+      first_name: "",
+      last_name: "",
+      fun_sex: "",
+      fun_titu: "",
+      uni_unic: [],
+      password1: "",
+      password2: "",
+    });
+    setError({});
+    setSuccessMessage(null);
+    setVariableEstado(initialVariableEstado);
+    setBotonEstado(initialBotonEstado);
   };
 
   const fieldClass = "mb-4 flex flex-col";
@@ -112,14 +272,14 @@ const Admision = () => {
                   <span className="text-red-600">* </span>Tipo de
                   Identificación:
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_pers_tipo_iden"
                   name="adm_dato_pers_tipo_iden"
                   value={form.adm_dato_pers_tipo_iden}
                   onChange={handleChange}
-                  required
-                  className={inputClass}
+                  options={listaSelectUser[adm_dato_pers_tipo_iden]}
+                  disabled={variableEstado[adm_dato_pers_tipo_iden]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
@@ -136,6 +296,33 @@ const Admision = () => {
                   required
                   className={inputClass}
                 />
+              </div>
+              {/* BOTON BUSCAR */}
+              {/* BOTON LIMPIAR */}
+              <div className="flex">
+                <button
+                  type="button"
+                  id="btnBuscar"
+                  name="btnBuscar"
+                  className={`${buttonStylePrimario} ${
+                    botonEstado.btnBuscar
+                      ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+                  }`}
+                  onClick={handleSearch}
+                  disabled={botonEstado.btnBuscar}
+                >
+                  Buscar
+                </button>
+                <button
+                  type="button"
+                  id="btnLimpiar"
+                  name="btnLimpiar"
+                  className={buttonStyleSecundario}
+                  onClick={limpiarVariables}
+                >
+                  Limpiar
+                </button>
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_pers_apel_prim">
