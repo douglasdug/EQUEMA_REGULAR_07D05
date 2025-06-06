@@ -7328,8 +7328,8 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
 
-    @action(detail=False, methods=['get'], url_path='buscar-usuario')
-    def buscar_usuario(self, request):
+    @action(detail=False, methods=['get'], url_path='buscar-admision')
+    def buscar_admision(self, request):
         tipo = request.query_params.get('tipo')
         identificacion = request.query_params.get('identificacion')
         if not tipo or not identificacion:
@@ -7344,10 +7344,11 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 "adm_dato_pers_apel_segu": user_data.adm_dato_pers_apel_segu,
                 "adm_dato_pers_nomb_prim": user_data.adm_dato_pers_nomb_prim,
                 "adm_dato_pers_nomb_segu": user_data.adm_dato_pers_nomb_segu,
+                "adm_dato_pers_esta_civi": user_data.adm_dato_pers_esta_civi,
                 "adm_dato_pers_sexo": user_data.adm_dato_pers_sexo,
                 "adm_dato_pers_corr_elec": user_data.adm_dato_pers_corr_elec,
             }
-            return Response({"message": "El usuario está registrado en el sistema!", "data": data}, status=status.HTTP_200_OK)
+            return Response({"message": "El usuario está registrado en admision!", "data": data}, status=status.HTTP_200_OK)
         except admision_datos.DoesNotExist:
             return Response({"error": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 

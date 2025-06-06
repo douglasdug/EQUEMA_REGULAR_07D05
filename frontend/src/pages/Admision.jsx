@@ -1,11 +1,14 @@
-import React, { useState } from "react";
-import { listaSelectUser } from "../components/AllList.jsx";
+import React, { useState, useEffect } from "react";
+import { registerUser, buscarUsuarioAdmision } from "../api/conexion.api.js";
+import { listaSelectAdmision } from "../components/AllList.jsx";
+import { validarDato, validarIdenAdmision } from "../api/validadorUtil.js";
 import {
   CustomSelect,
   inputStyle,
   buttonStylePrimario,
   buttonStyleSecundario,
 } from "../components/EstilosCustom.jsx";
+import { toast } from "react-hot-toast";
 
 const initialState = {
   adm_dato_pers_tipo_iden: "",
@@ -63,96 +66,91 @@ const tabs = [
 ];
 
 const Admision = () => {
+  const [formData, setFormData] = useState({
+    adm_dato_pers_tipo_iden: "",
+    adm_dato_pers_nume_iden: "",
+    adm_dato_pers_apel_prim: "",
+    adm_dato_pers_apel_segu: "",
+    adm_dato_pers_nomb_prim: "",
+    adm_dato_pers_nomb_segu: "",
+    adm_dato_pers_esta_civi: "",
+    adm_dato_pers_sexo: "",
+    adm_dato_pers_corr_elec: "",
+  });
+
+  const [error, setError] = useState({});
+  const [successMessage, setSuccessMessage] = useState(null);
   const [form, setForm] = useState(initialState);
   const [activeTab, setActiveTab] = useState("personales");
 
+  const initialVariableEstado = {
+    adm_dato_pers_tipo_iden: false,
+    adm_dato_pers_nume_iden: true,
+  };
   const initialBotonEstado = {
     btnBuscar: true,
     btnLimpiar: false,
     btnRegistrar: true,
   };
+
+  const [variableEstado, setVariableEstado] = useState(initialVariableEstado);
   const [botonEstado, setBotonEstado] = useState(initialBotonEstado);
 
+  const requiredFields = [
+    "adm_dato_pers_tipo_iden",
+    "adm_dato_pers_nume_iden",
+    "adm_dato_pers_apel_prim",
+    "adm_dato_pers_nomb_prim",
+  ];
+
   const handleSearch = async () => {
-    const { fun_tipo_iden, username } = formData;
-    if (!username) {
+    const { adm_dato_pers_tipo_iden, adm_dato_pers_nume_iden } = formData;
+    if (!adm_dato_pers_nume_iden) {
       toast.error("Por favor, ingrese una identificación.", {
         position: "bottom-right",
       });
       return;
     }
-    if (!validarIdentificacion(fun_tipo_iden, username)) {
+    if (
+      !validarIdenAdmision(adm_dato_pers_tipo_iden, adm_dato_pers_nume_iden)
+    ) {
       return;
     }
     try {
-      const response = await buscarUsuarioEni(formData.fun_tipo_iden, username);
+      const response = await buscarUsuarioAdmision(
+        formData.adm_dato_pers_tipo_iden,
+        adm_dato_pers_nume_iden
+      );
       if (!response)
         throw new Error("No se pudo obtener una respuesta de la API.");
       const data = response.data;
       const message = response.message || "Operación exitosa";
-      if (data.fun_esta > 0) {
-        let errorMessage =
-          "El usuario ya se encuentra registrado. Por favor, comuníquese con el Administrador!";
-        setError(errorMessage);
-        toast.error(errorMessage, { position: "bottom-right" });
-        setVariableEstado((prevState) => ({
-          ...prevState,
-          fun_tipo_iden: true,
-          username: true,
-          first_name: true,
-          last_name: true,
-          fun_sex: true,
-          fun_titu: true,
-          uni_unic: true,
-          password1: true,
-          password2: true,
-        }));
-        setBotonEstado((prevState) => ({
-          btnBuscar: true,
-          btnRegistrar: true,
-        }));
-        return;
-      }
-
-      // Solo se toma en cuenta data.first_name y data.last_name
-      const firstName = data.first_name || "";
-      const lastName = data.last_name || "";
-      const funSex = data.fun_sex || "";
 
       setFormData((prevData) => ({
         ...formData,
-        first_name:
-          firstName ||
-          [
-            data.adm_dato_pers_apel_prim || "",
-            data.adm_dato_pers_apel_segu || "",
-          ]
-            .filter(Boolean)
-            .join(" "),
-        last_name:
-          lastName ||
-          [
-            data.adm_dato_pers_nomb_prim || "",
-            data.adm_dato_pers_nomb_segu || "",
-          ]
-            .filter(Boolean)
-            .join(" "),
-        fun_sex: funSex || data.adm_dato_pers_sexo || "",
+        adm_dato_pers_apel_prim: [
+          data.adm_dato_pers_apel_prim || "",
+          data.adm_dato_pers_apel_segu || "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        adm_dato_pers_nomb_prim: [
+          data.adm_dato_pers_nomb_prim || "",
+          data.adm_dato_pers_nomb_segu || "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        adm_dato_pers_esta_civi: data.adm_dato_pers_esta_civi || "",
+        adm_dato_pers_sexo: data.adm_dato_pers_sexo || "",
+        adm_dato_pers_corr_elec: data.adm_dato_pers_corr_elec || "",
       }));
-
-      const ambosLlenos = firstName.trim() !== "" && lastName.trim() !== "";
 
       setVariableEstado((prevState) => ({
         ...prevState,
-        fun_tipo_iden: true,
-        username: true,
-        first_name: true,
-        last_name: true,
-        fun_sex: true,
-        fun_titu: ambosLlenos,
-        uni_unic: ambosLlenos,
-        password1: ambosLlenos,
-        password2: ambosLlenos,
+        adm_dato_pers_tipo_iden: true,
+        adm_dato_pers_nume_iden: true,
+        adm_dato_pers_apel_prim: true,
+        adm_dato_pers_nomb_prim: true,
       }));
 
       setBotonEstado((prevState) => ({
@@ -182,15 +180,10 @@ const Admision = () => {
       }
       setVariableEstado((prevState) => ({
         ...prevState,
-        fun_tipo_iden: true,
-        username: true,
-        first_name: false,
-        last_name: false,
-        fun_sex: false,
-        fun_titu: false,
-        uni_unic: false,
-        password1: false,
-        password2: false,
+        adm_dato_pers_tipo_iden: true,
+        adm_dato_pers_nume_iden: true,
+        adm_dato_pers_apel_prim: false,
+        adm_dato_pers_nomb_prim: false,
       }));
       setBotonEstado((prevState) => ({
         btnBuscar: true,
@@ -202,8 +195,44 @@ const Admision = () => {
   };
 
   const handleChange = (e) => {
+    validarDato(e, formData, setFormData);
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+
+    if (name === "adm_dato_pers_tipo_iden") {
+      setVariableEstado((prevState) => ({
+        ...prevState,
+        adm_dato_pers_nume_iden: !value,
+      }));
+      if (!value) {
+        setFormData({
+          adm_dato_pers_tipo_iden: value,
+          adm_dato_pers_nume_iden: "",
+          adm_dato_pers_apel_prim: "",
+          adm_dato_pers_nomb_prim: "",
+        });
+        setVariableEstado(initialVariableEstado);
+        setBotonEstado(initialBotonEstado);
+      }
+    } else if (name === "adm_dato_pers_nume_iden") {
+      setBotonEstado((prevState) => ({
+        ...prevState,
+        btnBuscar: !value,
+      }));
+    }
+    checkFormValidity();
+  };
+
+  const checkFormValidity = () => {
+    const isValid = requiredFields.every((field) => {
+      if (Array.isArray(formData[field])) {
+        return formData[field].length > 0;
+      }
+      return formData[field];
+    });
+    setBotonEstado((prevState) => ({
+      ...prevState,
+      btnRegistrar: !isValid,
+    }));
   };
 
   const handleSubmit = (e) => {
@@ -213,21 +242,23 @@ const Admision = () => {
 
   const limpiarVariables = (e) => {
     setFormData({
-      fun_tipo_iden: "",
-      username: "",
-      first_name: "",
-      last_name: "",
-      fun_sex: "",
-      fun_titu: "",
-      uni_unic: [],
-      password1: "",
-      password2: "",
+      adm_dato_pers_tipo_iden: "",
+      adm_dato_pers_nume_iden: "",
+      adm_dato_pers_apel_prim: "",
+      adm_dato_pers_nomb_prim: "",
+      adm_dato_pers_esta_civi: "",
+      adm_dato_pers_sexo: "",
+      adm_dato_pers_corr_elec: "",
     });
     setError({});
     setSuccessMessage(null);
     setVariableEstado(initialVariableEstado);
     setBotonEstado(initialBotonEstado);
   };
+
+  useEffect(() => {
+    checkFormValidity();
+  }, [formData]);
 
   const fieldClass = "mb-4 flex flex-col";
   const labelClass = "mb-1 font-medium text-gray-700";
@@ -260,6 +291,14 @@ const Admision = () => {
             </button>
           ))}
         </nav>
+        <div className="bg-white rounded-lg shadow-md">
+          {error && (
+            <p style={{ color: "red" }}>
+              {Object.keys(error).length > 0 ? JSON.stringify(error) : ""}
+            </p>
+          )}
+          {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
+        </div>
         <form onSubmit={handleSubmit}>
           {/* DATOS PERSONALES */}
           {activeTab === "personales" && (
@@ -275,10 +314,10 @@ const Admision = () => {
                 <CustomSelect
                   id="adm_dato_pers_tipo_iden"
                   name="adm_dato_pers_tipo_iden"
-                  value={form.adm_dato_pers_tipo_iden}
+                  value={formData["adm_dato_pers_tipo_iden"]}
                   onChange={handleChange}
-                  options={listaSelectUser[adm_dato_pers_tipo_iden]}
-                  disabled={variableEstado[adm_dato_pers_tipo_iden]}
+                  options={listaSelectAdmision["adm_dato_pers_tipo_iden"]}
+                  disabled={variableEstado["adm_dato_pers_tipo_iden"]}
                   variableEstado={variableEstado}
                 />
               </div>
@@ -291,7 +330,7 @@ const Admision = () => {
                   type="text"
                   id="adm_dato_pers_nume_iden"
                   name="adm_dato_pers_nume_iden"
-                  value={form.adm_dato_pers_nume_iden}
+                  value={formData["adm_dato_pers_nume_iden"]}
                   onChange={handleChange}
                   required
                   className={inputClass}
@@ -332,7 +371,7 @@ const Admision = () => {
                   type="text"
                   id="adm_dato_pers_apel_prim"
                   name="adm_dato_pers_apel_prim"
-                  value={form.adm_dato_pers_apel_prim}
+                  value={formData["adm_dato_pers_apel_prim"]}
                   onChange={handleChange}
                   required
                   className={inputClass}
@@ -360,7 +399,7 @@ const Admision = () => {
                   type="text"
                   id="adm_dato_pers_nomb_prim"
                   name="adm_dato_pers_nomb_prim"
-                  value={form.adm_dato_pers_nomb_prim}
+                  value={formData["adm_dato_pers_nomb_prim"]}
                   onChange={handleChange}
                   required
                   className={inputClass}
@@ -388,7 +427,7 @@ const Admision = () => {
                   type="text"
                   id="adm_dato_pers_esta_civi"
                   name="adm_dato_pers_esta_civi"
-                  value={form.adm_dato_pers_esta_civi}
+                  value={formData["adm_dato_pers_esta_civi"]}
                   onChange={handleChange}
                   className={inputClass}
                 />
@@ -401,7 +440,7 @@ const Admision = () => {
                   type="text"
                   id="adm_dato_pers_sexo"
                   name="adm_dato_pers_sexo"
-                  value={form.adm_dato_pers_sexo}
+                  value={formData["adm_dato_pers_sexo"]}
                   onChange={handleChange}
                   required
                   className={inputClass}
@@ -442,7 +481,7 @@ const Admision = () => {
                   type="email"
                   id="adm_dato_pers_corr_elec"
                   name="adm_dato_pers_corr_elec"
-                  value={form.adm_dato_pers_corr_elec}
+                  value={formData["adm_dato_pers_corr_elec"]}
                   onChange={handleChange}
                   required
                   className={inputClass}

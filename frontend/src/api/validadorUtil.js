@@ -247,6 +247,23 @@ export const validarIdentificacion = (fun_tipo_iden, username) => {
   }
 };
 
+export const validarIdenAdmision = (fun_tipo_iden, username) => {
+  switch (fun_tipo_iden) {
+    case "NO IDENTIFICADO":
+      return validarNoIdentificado(username);
+    case "CÉDULA DE IDENTIDAD":
+      return validarCedula(username);
+    case "PASAPORTE":
+      return validarPasaporte(username);
+    case "VISA":
+      return validarVisa(username);
+    case "CARNÉT DE REFUGIADO":
+      return validarCarnetRefugiado(username);
+    default:
+      return false;
+  }
+};
+
 const sumarCampos = (formData, campos) =>
   campos.reduce((total, campo) => total + Number(formData[campo] || 0), 0);
 

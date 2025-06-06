@@ -246,7 +246,7 @@ export const getAllEniUsers = async () => {
 export const buscarUsuarioAdmision = async (tipo, identificacion) => {
   try {
     const response = await axios.get(
-      `${API_URL}/admision-datos/buscar-usuario/`,
+      `${API_URL}/admision-datos/buscar-admision/`,
       {
         params: { tipo, identificacion },
       }
