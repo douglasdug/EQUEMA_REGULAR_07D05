@@ -21,6 +21,7 @@ import {
   buttonStyleEliminar,
 } from "../components/EstilosCustom.jsx";
 import TablaUsers from "../components/TablaUsers.jsx";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 const getInputTypeAndAutoComplete = (key) => {
@@ -60,6 +61,7 @@ const AdminUser = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
 
   const initialVariableEstado = {
     fun_tipo_iden: false,
@@ -214,18 +216,18 @@ const AdminUser = () => {
   };
 
   const labelMap = {
-    fun_tipo_iden: "Tipo de Identificacion",
-    username: "Cédula de Identidad",
-    first_name: "Apellidos completos",
-    last_name: "Nombres completos",
-    fun_sex: "Sexo",
-    email: "Correo Electrónico",
-    fun_titu: "Titulo del Funcionario",
-    password1: "Clave",
-    password2: "Confirmar Clave",
-    fun_admi_rol: "Rol del Funcionario",
-    uni_unic: "Unidad de Salud",
-    fun_esta: "Activar la cuenta",
+    fun_tipo_iden: "Tipo de Identificacion:",
+    username: "Cédula de Identidad:",
+    first_name: "Apellidos completos:",
+    last_name: "Nombres completos:",
+    fun_sex: "Sexo:",
+    email: "Correo Electrónico:",
+    fun_titu: "Titulo del Funcionario:",
+    password1: "Clave:",
+    password2: "Confirmar Clave:",
+    fun_admi_rol: "Rol del Funcionario:",
+    uni_unic: "Unidad de Salud:",
+    fun_esta: "Activar la cuenta:",
   };
 
   const groupedFields = [];
@@ -543,10 +545,10 @@ const AdminUser = () => {
                       className="block text-gray-700 text-sm font-bold mb-2"
                       htmlFor={key}
                     >
-                      {labelMap[key]}
                       {requiredFields.includes(key) && (
-                        <span className="text-red-500"> *</span>
+                        <span className="text-red-500">* </span>
                       )}
+                      {labelMap[key]}
                     </label>
                     {inputElement}
                     {error[key] && (
@@ -585,6 +587,13 @@ const AdminUser = () => {
                 Eliminar registro
               </button>
             )}
+            <button
+              type="button"
+              className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+              onClick={() => navigate("/")}
+            >
+              Cancelar
+            </button>
           </div>
         </form>
       </div>

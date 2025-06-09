@@ -147,15 +147,15 @@ const RegisterUser = () => {
   };
 
   const labelMap = {
-    fun_tipo_iden: "Tipo de Identificacion",
-    username: "Cédula de Identidad",
-    first_name: "Apellidos completos",
-    last_name: "Nombres completos",
-    fun_sex: "Sexo",
-    fun_titu: "Titulo del Funcionario",
-    uni_unic: "Unidad de Salud",
-    password1: "Clave",
-    password2: "Confirmar Clave",
+    fun_tipo_iden: "Tipo de Identificacion:",
+    username: "Cédula de Identidad:",
+    first_name: "Apellidos completos:",
+    last_name: "Nombres completos:",
+    fun_sex: "Sexo:",
+    fun_titu: "Titulo del Funcionario:",
+    uni_unic: "Unidad de Salud:",
+    password1: "Clave:",
+    password2: "Confirmar Clave:",
   };
 
   const groupedFields = [];
@@ -475,10 +475,10 @@ const RegisterUser = () => {
                       className="block text-gray-700 text-sm font-bold mb-2"
                       htmlFor={key}
                     >
-                      {labelMap[key]}
                       {requiredFields.includes(key) && (
-                        <span className="text-red-500"> *</span>
+                        <span className="text-red-500">* </span>
                       )}
+                      {labelMap[key]}
                     </label>
                     {inputElement}
                   </div>

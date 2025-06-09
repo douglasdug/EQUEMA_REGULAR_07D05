@@ -7323,10 +7323,17 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('adm_dato_admi_fech_admi')
 
-    def create_admision_datos(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        fecha_admision = datetime.now()
+        data['adm_dato_admi_fech_admi'] = fecha_admision.strftime('%Y-%m-%d')
+        print(f"Fecha de admisión: {data['adm_dato_admi_fech_admi']}")
+
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'], url_path='buscar-admision')
     def buscar_admision(self, request):
@@ -7344,9 +7351,42 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 "adm_dato_pers_apel_segu": user_data.adm_dato_pers_apel_segu,
                 "adm_dato_pers_nomb_prim": user_data.adm_dato_pers_nomb_prim,
                 "adm_dato_pers_nomb_segu": user_data.adm_dato_pers_nomb_segu,
-                "adm_dato_pers_esta_civi": user_data.adm_dato_pers_esta_civi,
-                "adm_dato_pers_sexo": user_data.adm_dato_pers_sexo,
-                "adm_dato_pers_corr_elec": user_data.adm_dato_pers_corr_elec,
+                'adm_dato_pers_esta_civi': user_data.adm_dato_pers_esta_civi,
+                'adm_dato_pers_sexo': user_data.adm_dato_pers_sexo,
+                'adm_dato_pers_tele': user_data.adm_dato_pers_tele,
+                'adm_dato_pers_celu': user_data.adm_dato_pers_celu,
+                'adm_dato_pers_corr_elec': user_data.adm_dato_pers_corr_elec,
+                'adm_dato_naci_luga_naci': user_data.adm_dato_naci_luga_naci,
+                'adm_dato_naci_naci': user_data.adm_dato_naci_naci,
+                'adm_dato_naci_fech_naci': user_data.adm_dato_naci_fech_naci,
+                'adm_dato_resi_pais_resi': user_data.adm_dato_resi_pais_resi,
+                'adm_dato_resi_prov': user_data.adm_dato_resi_prov,
+                'adm_dato_resi_cant': user_data.adm_dato_resi_cant,
+                'adm_dato_resi_parr': user_data.adm_dato_resi_parr,
+                'adm_dato_resi_barr_sect': user_data.adm_dato_resi_barr_sect,
+                'adm_dato_resi_call_prin': user_data.adm_dato_resi_call_prin,
+                'adm_dato_resi_call_secu': user_data.adm_dato_resi_call_secu,
+                'adm_dato_resi_refe_resi': user_data.adm_dato_resi_refe_resi,
+                'adm_dato_auto_auto_etni': user_data.adm_dato_auto_auto_etni,
+                'adm_dato_auto_naci_etni': user_data.adm_dato_auto_naci_etni,
+                'adm_dato_auto_pueb_kich': user_data.adm_dato_auto_pueb_kich,
+                'adm_dato_adic_grup_prio': user_data.adm_dato_adic_grup_prio,
+                'adm_dato_adic_nive_educ': user_data.adm_dato_adic_nive_educ,
+                'adm_dato_adic_esta_nive_educ': user_data.adm_dato_adic_esta_nive_educ,
+                'adm_dato_adic_tipo_empr_trab': user_data.adm_dato_adic_tipo_empr_trab,
+                'adm_dato_adic_ocup_prof_prin': user_data.adm_dato_adic_ocup_prof_prin,
+                'adm_dato_adic_tipo_segu': user_data.adm_dato_adic_tipo_segu,
+                'adm_dato_adic_tien_disc': user_data.adm_dato_adic_tien_disc,
+                'adm_dato_repr_tipo_iden': user_data.adm_dato_repr_tipo_iden,
+                'adm_dato_repr_nume_iden': user_data.adm_dato_repr_nume_iden,
+                'adm_dato_repr_apel': user_data.adm_dato_repr_apel,
+                'adm_dato_repr_nomb': user_data.adm_dato_repr_nomb,
+                'adm_dato_repr_pare': user_data.adm_dato_repr_pare,
+                'adm_dato_repr_nume_tele': user_data.adm_dato_repr_nume_tele,
+                'adm_dato_cont_enca_nece_llam': user_data.adm_dato_cont_enca_nece_llam,
+                'adm_dato_cont_pare': user_data.adm_dato_cont_pare,
+                'adm_dato_cont_dire': user_data.adm_dato_cont_dire,
+                'adm_dato_cont_tele': user_data.adm_dato_cont_tele,
             }
             return Response({"message": "El usuario está registrado en admision!", "data": data}, status=status.HTTP_200_OK)
         except admision_datos.DoesNotExist:

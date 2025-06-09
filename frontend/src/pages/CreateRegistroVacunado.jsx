@@ -784,7 +784,7 @@ const CreateRegistroVacunado = () => {
         </form>
       </div>
       <div className="mt-5">
-        <h1>Provincias</h1>
+        <h1>Provincias lista</h1>
         <AllList />
       </div>
       <div className="mt-5">

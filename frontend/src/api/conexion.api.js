@@ -261,6 +261,35 @@ export const buscarUsuarioAdmision = async (tipo, identificacion) => {
   }
 };
 
+export const registerAdmision = async (formData) => {
+  try {
+    const response = await axios.post(`${API_URL}/admision-datos/`, formData);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error registering admision data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const updateAdmision = async (formData) => {
+  try {
+    const response = await axios.patch(
+      `${API_URL}/admision-datos/actualizar-usuario/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating admision data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
 //Funciones de Temprano
 export const getMesTemprano = async (user_id, month, year) => {
   try {
