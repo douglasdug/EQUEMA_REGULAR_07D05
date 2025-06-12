@@ -7327,13 +7327,24 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         data = request.data.copy()
         fecha_admision = datetime.now()
         data['adm_dato_admi_fech_admi'] = fecha_admision.strftime('%Y-%m-%d')
-        print(f"Fecha de admisión: {data['adm_dato_admi_fech_admi']}")
+
+        # Procesar nombres y apellidos correctamente
+        apellidos = data.get('adm_dato_pers_apel_prim',
+                             '').strip().split(' ', 1)
+        nombres = data.get('adm_dato_pers_nomb_prim', '').strip().split(' ', 1)
+
+        data['adm_dato_pers_apel_prim'] = apellidos[0] if apellidos else ''
+        data['adm_dato_pers_apel_segu'] = apellidos[1] if len(
+            apellidos) > 1 else ''
+        data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
+        data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
+            nombres) > 1 else ''
 
         serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Se creo la admision del usuario exitosamente!", "data": serializer.data}, status=status.HTTP_201_CREATED)
+        return Response({"message": "Error al crear la admision", "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'], url_path='buscar-admision')
     def buscar_admision(self, request):

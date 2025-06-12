@@ -19,9 +19,7 @@ const initialState = {
   adm_dato_pers_tipo_iden: "",
   adm_dato_pers_nume_iden: "",
   adm_dato_pers_apel_prim: "",
-  adm_dato_pers_apel_segu: "",
   adm_dato_pers_nomb_prim: "",
-  adm_dato_pers_nomb_segu: "",
   adm_dato_pers_esta_civi: "",
   adm_dato_pers_sexo: "",
   adm_dato_pers_tele: "",
@@ -141,10 +139,8 @@ const Admision = () => {
   const labelMap = {
     adm_dato_pers_tipo_iden: "Tipo de Identificación:",
     adm_dato_pers_nume_iden: "Número de Identificación:",
-    adm_dato_pers_apel_prim: "Apellido Primero:",
-    adm_dato_pers_apel_segu: "Apellido Segundo:",
-    adm_dato_pers_nomb_prim: "Nombre Primero:",
-    adm_dato_pers_nomb_segu: "Nombre Segundo:",
+    adm_dato_pers_apel_prim: "Apellidos:",
+    adm_dato_pers_nomb_prim: "Nombres:",
     adm_dato_pers_esta_civi: "Estado Civil:",
     adm_dato_pers_sexo: "Sexo:",
     adm_dato_pers_tele: "Teléfono:",
@@ -299,9 +295,7 @@ const Admision = () => {
         adm_dato_pers_tipo_iden: true,
         adm_dato_pers_nume_iden: true,
         adm_dato_pers_apel_prim: false,
-        adm_dato_pers_apel_segu: false,
         adm_dato_pers_nomb_prim: false,
-        adm_dato_pers_nomb_segu: false,
         adm_dato_pers_esta_civi: false,
         adm_dato_pers_sexo: false,
         adm_dato_pers_tele: false,
@@ -379,23 +373,27 @@ const Admision = () => {
         btnBuscar: !value,
       }));
     }
+  };
 
-    setFormData((prev) => {
-      let updated = { ...prev, [name]: value };
-      if (name === "adm_dato_naci_naci") {
-        updated.adm_dato_resi_prov = "";
-        updated.adm_dato_resi_cant = "";
-        updated.adm_dato_resi_parr = "";
-      }
-      if (name === "adm_dato_resi_prov") {
-        updated.adm_dato_resi_cant = "";
-        updated.adm_dato_resi_parr = "";
-      }
-      if (name === "adm_dato_resi_cant") {
-        updated.adm_dato_resi_parr = "";
-      }
-      return updated;
-    });
+  const handleSelectChange = (e) => {
+    const { name, value } = e.target;
+    let nuevoFormData = { ...formData, [name]: value };
+
+    // Lógica especial para selects dependientes
+    if (name === "adm_dato_naci_naci") {
+      nuevoFormData.adm_dato_resi_prov = "";
+      nuevoFormData.adm_dato_resi_cant = "";
+      nuevoFormData.adm_dato_resi_parr = "";
+    }
+    if (name === "adm_dato_resi_prov") {
+      nuevoFormData.adm_dato_resi_cant = "";
+      nuevoFormData.adm_dato_resi_parr = "";
+    }
+    if (name === "adm_dato_resi_cant") {
+      nuevoFormData.adm_dato_resi_parr = "";
+    }
+
+    setFormData(nuevoFormData);
     checkFormValidity();
   };
 
@@ -656,19 +654,6 @@ const Admision = () => {
                 />
               </div>
               <div className={fieldClass}>
-                <label className={labelClass} htmlFor="adm_dato_pers_apel_segu">
-                  <span className="text-red-600">* </span> Apellido Segundo:
-                </label>
-                <input
-                  type="text"
-                  id="adm_dato_pers_apel_segu"
-                  name="adm_dato_pers_apel_segu"
-                  value={formData["adm_dato_pers_apel_segu"]}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-              <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_pers_nomb_prim">
                   {requiredFields.includes("adm_dato_pers_nomb_prim") && (
                     <span className="text-red-500">* </span>
@@ -692,19 +677,6 @@ const Admision = () => {
                 />
               </div>
               <div className={fieldClass}>
-                <label className={labelClass} htmlFor="adm_dato_pers_nomb_segu">
-                  <span className="text-red-600">* </span> Nombre Segundo:
-                </label>
-                <input
-                  type="text"
-                  id="adm_dato_pers_nomb_segu"
-                  name="adm_dato_pers_nomb_segu"
-                  value={formData["adm_dato_pers_nomb_segu"]}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-              <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_naci_fech_naci">
                   <span className="text-red-600">* </span>Fecha de Nacimiento:
                 </label>
@@ -725,7 +697,7 @@ const Admision = () => {
                   id="adm_dato_pers_esta_civi"
                   name="adm_dato_pers_esta_civi"
                   value={formData["adm_dato_pers_esta_civi"]}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   options={listaSelectAdmision["adm_dato_pers_esta_civi"]}
                   disabled={variableEstado["adm_dato_pers_esta_civi"]}
                   variableEstado={variableEstado}
@@ -739,7 +711,7 @@ const Admision = () => {
                   id="adm_dato_pers_sexo"
                   name="adm_dato_pers_sexo"
                   value={formData["adm_dato_pers_sexo"]}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   options={listaSelectAdmision["adm_dato_pers_sexo"]}
                   disabled={variableEstado["adm_dato_pers_sexo"]}
                   variableEstado={variableEstado}
@@ -813,7 +785,7 @@ const Admision = () => {
                   id="adm_dato_naci_naci"
                   name="adm_dato_naci_naci"
                   value={formData["adm_dato_naci_naci"]}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   options={listaSelectAdmision["adm_dato_naci_naci"]}
                   disabled={variableEstado["adm_dato_naci_naci"]}
                   variableEstado={variableEstado}
@@ -840,7 +812,7 @@ const Admision = () => {
                   id="adm_dato_resi_prov"
                   name="adm_dato_resi_prov"
                   value={formData["adm_dato_resi_prov"]}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   options={provinciasOptions}
                   disabled={variableEstado["adm_dato_resi_prov"]}
                   variableEstado={variableEstado}
@@ -854,7 +826,7 @@ const Admision = () => {
                   id="adm_dato_resi_cant"
                   name="adm_dato_resi_cant"
                   value={formData["adm_dato_resi_cant"]}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   options={cantonesOptions}
                   disabled={variableEstado["adm_dato_resi_cant"]}
                   variableEstado={variableEstado}
@@ -868,7 +840,7 @@ const Admision = () => {
                   id="adm_dato_resi_parr"
                   name="adm_dato_resi_parr"
                   value={formData["adm_dato_resi_parr"]}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   options={parroquiasOptions}
                   disabled={variableEstado["adm_dato_resi_parr"]}
                   variableEstado={variableEstado}
