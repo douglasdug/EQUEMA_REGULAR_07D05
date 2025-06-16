@@ -4,7 +4,10 @@ import {
   updateAdmision,
   buscarUsuarioAdmision,
 } from "../api/conexion.api.js";
-import { listaSelectAdmision } from "../components/AllList.jsx";
+import {
+  listaSelectAdmision,
+  nacionalidadAPais,
+} from "../components/AllList.jsx";
 import { validarDato, validarIdenAdmision } from "../api/validadorUtil.js";
 import {
   CustomSelect,
@@ -66,6 +69,39 @@ const tabs = [
   { label: "Datos de Contacto", key: "contacto" },
 ];
 
+function calcularEdad(fechaNacimientoStr) {
+  if (!fechaNacimientoStr) return "";
+  const [year, month, day] = fechaNacimientoStr.split("-").map(Number);
+  const fechaNacimiento = new Date(year, month - 1, day);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  if (fechaNacimiento > hoy) {
+    return "ERROR La fecha de nacimiento no puede ser mayor a la fecha actual";
+  }
+
+  let años = hoy.getFullYear() - fechaNacimiento.getFullYear();
+  let meses = hoy.getMonth() - fechaNacimiento.getMonth();
+  let dias = hoy.getDate() - fechaNacimiento.getDate();
+
+  if (dias < 0) {
+    meses--;
+    dias += new Date(hoy.getFullYear(), hoy.getMonth(), 0).getDate();
+  }
+  if (meses < 0) {
+    años--;
+    meses += 12;
+  }
+
+  let textoEdad = "";
+  if (años > 0) textoEdad += años + (años === 1 ? " AÑO " : " AÑOS ");
+  if (meses > 0) textoEdad += meses + (meses === 1 ? " MES " : " MESES ");
+  if (dias > 0) textoEdad += dias + (dias === 1 ? " DÍA" : " DÍAS");
+  if (!textoEdad) textoEdad = "0 DÍAS";
+
+  return textoEdad.trim();
+}
+
 const Admision = () => {
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState({});
@@ -76,6 +112,12 @@ const Admision = () => {
   const [provinciasOptions, setProvinciasOptions] = useState([]);
   const [cantonesOptions, setCantonesOptions] = useState([]);
   const [parroquiasOptions, setParroquiasOptions] = useState([]);
+  const [naciEtnicaPuebloOptions, setNaciEtnicaPuebloOptions] = useState([]);
+  const [puebKichwaOptions, setPuebKichwaOptions] = useState([]);
+  const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [edad, setEdad] = useState("");
+  const [nacionalidad, setNacionalidad] = useState("");
+  const [lugarNaci, setLugarNaci] = useState("");
   const navigate = useNavigate();
 
   const initialVariableEstado = {
@@ -134,6 +176,16 @@ const Admision = () => {
     "adm_dato_pers_nume_iden",
     "adm_dato_pers_apel_prim",
     "adm_dato_pers_nomb_prim",
+    "adm_dato_naci_fech_naci",
+    "adm_dato_pers_sexo",
+    "adm_dato_naci_naci",
+    "adm_dato_resi_pais_resi",
+    "adm_dato_resi_prov",
+    "adm_dato_resi_cant",
+    "adm_dato_resi_parr",
+    "adm_dato_auto_auto_etni",
+    "adm_dato_adic_grup_prio",
+    "adm_dato_adic_tipo_segu",
   ];
 
   const labelMap = {
@@ -221,11 +273,14 @@ const Admision = () => {
         adm_dato_pers_tele: data.adm_dato_pers_tele || "",
         adm_dato_pers_celu: data.adm_dato_pers_celu || "",
         adm_dato_pers_corr_elec: data.adm_dato_pers_corr_elec || "",
-        adm_dato_naci_luga_naci: data.adm_dato_naci_luga_naci || "",
-        adm_dato_naci_naci: data.adm_dato_naci_naci || "",
-        adm_dato_naci_fech_naci: data.adm_dato_naci_fech_naci
-          ? data.adm_dato_naci_fech_naci.slice(0, 10)
-          : "",
+        adm_dato_naci_luga_naci: setLugarNaci(
+          data.adm_dato_naci_luga_naci || ""
+        ),
+        adm_dato_naci_naci: setNacionalidad(data.adm_dato_naci_naci || ""),
+        adm_dato_naci_fech_naci: setFechaNacimiento(
+          new Date(data.adm_dato_naci_fech_naci).toISOString().slice(0, 10) ||
+            ""
+        ),
         adm_dato_resi_pais_resi: data.adm_dato_resi_pais_resi || "",
         adm_dato_resi_prov: data.adm_dato_resi_prov || "",
         adm_dato_resi_cant: data.adm_dato_resi_cant || "",
@@ -350,6 +405,8 @@ const Admision = () => {
         ...prev,
         [name]: value,
       }));
+      setFechaNacimiento(value);
+      setEdad(calcularEdad(value));
     }
 
     if (name === "adm_dato_pers_tipo_iden") {
@@ -380,7 +437,7 @@ const Admision = () => {
     let nuevoFormData = { ...formData, [name]: value };
 
     // Lógica especial para selects dependientes
-    if (name === "adm_dato_naci_naci") {
+    if (name === "adm_dato_resi_pais_resi") {
       nuevoFormData.adm_dato_resi_prov = "";
       nuevoFormData.adm_dato_resi_cant = "";
       nuevoFormData.adm_dato_resi_parr = "";
@@ -392,7 +449,17 @@ const Admision = () => {
     if (name === "adm_dato_resi_cant") {
       nuevoFormData.adm_dato_resi_parr = "";
     }
-
+    if (name === "adm_dato_auto_auto_etni") {
+      nuevoFormData.adm_dato_auto_naci_etni = "";
+      nuevoFormData.adm_dato_auto_pueb_kich = "";
+    }
+    if (name === "adm_dato_auto_naci_etni") {
+      nuevoFormData.adm_dato_auto_pueb_kich = "";
+    }
+    if (name === "adm_dato_naci_naci") {
+      setNacionalidad(value);
+      setLugarNaci(nacionalidadAPais[value] || "");
+    }
     setFormData(nuevoFormData);
     checkFormValidity();
   };
@@ -433,6 +500,7 @@ const Admision = () => {
         });
       }
       navigate("/admision");
+      limpiarVariables();
     } catch (error) {
       const getErrorMessage = (error) => {
         if (error.response?.data) {
@@ -483,6 +551,9 @@ const Admision = () => {
     setSuccessMessage(null);
     setVariableEstado(initialVariableEstado);
     setBotonEstado(initialBotonEstado);
+    setFechaNacimiento("");
+    setNacionalidad("");
+    setLugarNaci("");
     setIsEditing(false);
   };
 
@@ -492,13 +563,13 @@ const Admision = () => {
 
   // Provincias dinámicas
   useEffect(() => {
-    const nacionalidad = formData.adm_dato_naci_naci;
+    const pais = formData.adm_dato_resi_pais_resi;
     setProvinciasOptions(
-      nacionalidad && listaSelectAdmision.adm_dato_resi_prov[nacionalidad]
-        ? listaSelectAdmision.adm_dato_resi_prov[nacionalidad]
+      pais && listaSelectAdmision.adm_dato_resi_prov[pais]
+        ? listaSelectAdmision.adm_dato_resi_prov[pais]
         : []
     );
-  }, [formData.adm_dato_naci_naci]);
+  }, [formData.adm_dato_resi_pais_resi]);
 
   useEffect(() => {
     const provincia = formData.adm_dato_resi_prov;
@@ -518,6 +589,25 @@ const Admision = () => {
     );
   }, [formData.adm_dato_resi_cant]);
 
+  useEffect(() => {
+    const autoEtnica = formData.adm_dato_auto_auto_etni;
+    setNaciEtnicaPuebloOptions(
+      autoEtnica && listaSelectAdmision.adm_dato_auto_naci_etni[autoEtnica]
+        ? listaSelectAdmision.adm_dato_auto_naci_etni[autoEtnica]
+        : []
+    );
+  }, [formData.adm_dato_auto_auto_etni]);
+
+  useEffect(() => {
+    const naciEtnicaPueblo = formData.adm_dato_auto_naci_etni;
+    setPuebKichwaOptions(
+      naciEtnicaPueblo &&
+        listaSelectAdmision.adm_dato_auto_pueb_kich[naciEtnicaPueblo]
+        ? listaSelectAdmision.adm_dato_auto_pueb_kich[naciEtnicaPueblo]
+        : []
+    );
+  }, [formData.adm_dato_auto_naci_etni]);
+
   const fieldClass = "mb-4 flex flex-col";
   const labelClass = "block text-gray-700 text-sm font-bold mb-2";
   const inputClass =
@@ -532,21 +622,24 @@ const Admision = () => {
         </h2>
         {/* NAV TABS */}
         <nav className="flex border-b border-blue-200 mb-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 -mb-px font-semibold border-b-2 transition-colors duration-200
-                            ${
-                              activeTab === tab.key
-                                ? "border-blue-600 text-blue-600"
-                                : "border-transparent text-gray-500 hover:text-blue-600"
-                            }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {tabs.map((tab) =>
+            tab.key === "representante" &&
+            !(edad !== null && parseInt(edad) < 18) ? null : (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 -mb-px font-semibold border-b-2 transition-colors duration-200
+                              ${
+                                activeTab === tab.key
+                                  ? "border-blue-600 text-blue-600"
+                                  : "border-transparent text-gray-500 hover:text-blue-600"
+                              }`}
+              >
+                {tab.label}
+              </button>
+            )
+          )}
         </nav>
         <div className="bg-white rounded-lg shadow-md">
           {error && (
@@ -619,16 +712,6 @@ const Admision = () => {
                 >
                   Buscar
                 </button>
-                {/* BOTON LIMPIAR */}
-                <button
-                  type="button"
-                  id="btnLimpiar"
-                  name="btnLimpiar"
-                  className={buttonStyleSecundario}
-                  onClick={limpiarVariables}
-                >
-                  Limpiar
-                </button>
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_pers_apel_prim">
@@ -678,20 +761,36 @@ const Admision = () => {
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_naci_fech_naci">
-                  <span className="text-red-600">* </span>Fecha de Nacimiento:
+                  {requiredFields.includes("adm_dato_naci_fech_naci") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_naci_fech_naci"]}
                 </label>
                 <input
                   type="date"
                   id="adm_dato_naci_fech_naci"
                   name="adm_dato_naci_fech_naci"
-                  value={formData["adm_dato_naci_fech_naci"]}
+                  value={fechaNacimiento}
                   onChange={handleChange}
-                  className={inputClass}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_naci_fech_naci"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_naci_fech_naci"]}
                 />
+                <label id="edad_paciente" style={{ marginLeft: "10px" }}>
+                  {edad}
+                </label>
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_pers_esta_civi">
-                  Estado Civil:
+                  {requiredFields.includes("adm_dato_pers_esta_civi") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_pers_esta_civi"]}
                 </label>
                 <CustomSelect
                   id="adm_dato_pers_esta_civi"
@@ -705,7 +804,10 @@ const Admision = () => {
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_pers_sexo">
-                  <span className="text-red-600">* </span> Sexo:
+                  {requiredFields.includes("adm_dato_pers_sexo") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_pers_sexo"]}
                 </label>
                 <CustomSelect
                   id="adm_dato_pers_sexo"
@@ -719,7 +821,10 @@ const Admision = () => {
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_pers_tele">
-                  Teléfono:
+                  {requiredFields.includes("adm_dato_pers_tele") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_pers_tele"]}
                 </label>
                 <input
                   type="text"
@@ -727,12 +832,20 @@ const Admision = () => {
                   name="adm_dato_pers_tele"
                   value={formData["adm_dato_pers_tele"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_pers_tele"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_pers_tele"]}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_pers_celu">
-                  <span className="text-red-600">* </span> Celular:
+                  {requiredFields.includes("adm_dato_pers_celu") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_pers_celu"]}
                 </label>
                 <input
                   type="text"
@@ -740,12 +853,20 @@ const Admision = () => {
                   name="adm_dato_pers_celu"
                   value={formData["adm_dato_pers_celu"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_pers_celu"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_pers_celu"]}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_pers_corr_elec">
-                  <span className="text-red-600">* </span> Correo electrónico:
+                  {requiredFields.includes("adm_dato_pers_corr_elec") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_pers_corr_elec"]}
                 </label>
                 <input
                   type="email"
@@ -753,7 +874,12 @@ const Admision = () => {
                   name="adm_dato_pers_corr_elec"
                   value={formData["adm_dato_pers_corr_elec"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_pers_corr_elec"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_pers_corr_elec"]}
                 />
               </div>
             </fieldset>
@@ -766,25 +892,32 @@ const Admision = () => {
               </legend>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_naci_luga_naci">
-                  Lugar de Nacimiento:
+                  {requiredFields.includes("adm_dato_naci_luga_naci") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_naci_luga_naci"]}
                 </label>
                 <input
                   type="text"
                   id="adm_dato_naci_luga_naci"
                   name="adm_dato_naci_luga_naci"
-                  value={formData["adm_dato_naci_luga_naci"]}
+                  value={lugarNaci}
                   onChange={handleChange}
-                  className={inputClass}
+                  className={`${inputStyle} ${"bg-gray-200 text-gray-700 cursor-no-drop"}`}
+                  disabled
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_naci_naci">
-                  <span className="text-red-600">* </span>Nacionalidad:
+                  {requiredFields.includes("adm_dato_naci_naci") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_naci_naci"]}
                 </label>
                 <CustomSelect
                   id="adm_dato_naci_naci"
                   name="adm_dato_naci_naci"
-                  value={formData["adm_dato_naci_naci"]}
+                  value={nacionalidad}
                   onChange={handleSelectChange}
                   options={listaSelectAdmision["adm_dato_naci_naci"]}
                   disabled={variableEstado["adm_dato_naci_naci"]}
@@ -793,20 +926,27 @@ const Admision = () => {
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_resi_pais_resi">
-                  <span className="text-red-600">* </span>País de Residencia:
+                  {requiredFields.includes("adm_dato_resi_pais_resi") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_resi_pais_resi"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_resi_pais_resi"
                   name="adm_dato_resi_pais_resi"
                   value={formData["adm_dato_resi_pais_resi"]}
-                  onChange={handleChange}
-                  className={inputClass}
+                  onChange={handleSelectChange}
+                  options={listaSelectAdmision["adm_dato_resi_pais_resi"]}
+                  disabled={variableEstado["adm_dato_resi_pais_resi"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_resi_prov">
-                  <span className="text-red-600">* </span>Provincia:
+                  {requiredFields.includes("adm_dato_resi_prov") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_resi_prov"]}
                 </label>
                 <CustomSelect
                   id="adm_dato_resi_prov"
@@ -820,7 +960,10 @@ const Admision = () => {
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_resi_cant">
-                  <span className="text-red-600">* </span>Cantón:
+                  {requiredFields.includes("adm_dato_resi_cant") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_resi_cant"]}
                 </label>
                 <CustomSelect
                   id="adm_dato_resi_cant"
@@ -834,7 +977,10 @@ const Admision = () => {
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_resi_parr">
-                  <span className="text-red-600">* </span>Parroquia:
+                  {requiredFields.includes("adm_dato_resi_parr") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_resi_parr"]}
                 </label>
                 <CustomSelect
                   id="adm_dato_resi_parr"
@@ -848,7 +994,10 @@ const Admision = () => {
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_resi_barr_sect">
-                  <span className="text-red-600">* </span>Barrio o Sector:
+                  {requiredFields.includes("adm_dato_resi_barr_sect") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_resi_barr_sect"]}
                 </label>
                 <input
                   type="text"
@@ -856,12 +1005,21 @@ const Admision = () => {
                   name="adm_dato_resi_barr_sect"
                   value={formData["adm_dato_resi_barr_sect"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  placeholder="Información es requerida"
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_resi_barr_sect"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_resi_barr_sect"]}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_resi_call_prin">
-                  <span className="text-red-600">* </span>Calle Principal:
+                  {requiredFields.includes("adm_dato_resi_call_prin") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_resi_call_prin"]}
                 </label>
                 <input
                   type="text"
@@ -869,12 +1027,21 @@ const Admision = () => {
                   name="adm_dato_resi_call_prin"
                   value={formData["adm_dato_resi_call_prin"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  placeholder="Información es requerida"
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_resi_call_prin"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_resi_call_prin"]}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_resi_call_secu">
-                  Calle Secundaria:
+                  {requiredFields.includes("adm_dato_resi_call_secu") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_resi_call_secu"]}
                 </label>
                 <input
                   type="text"
@@ -882,12 +1049,21 @@ const Admision = () => {
                   name="adm_dato_resi_call_secu"
                   value={formData["adm_dato_resi_call_secu"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  placeholder="Información es requerida"
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_resi_call_secu"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_resi_call_secu"]}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_resi_refe_resi">
-                  Referencia de Residencia:
+                  {requiredFields.includes("adm_dato_resi_refe_resi") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_resi_refe_resi"]}
                 </label>
                 <input
                   type="text"
@@ -895,7 +1071,13 @@ const Admision = () => {
                   name="adm_dato_resi_refe_resi"
                   value={formData["adm_dato_resi_refe_resi"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  placeholder="Información es requerida"
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_resi_refe_resi"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_resi_refe_resi"]}
                 />
               </div>
             </fieldset>
@@ -909,68 +1091,87 @@ const Admision = () => {
               {/* DATOS AUTOIDENTIFICACION */}
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_auto_auto_etni">
-                  <span className="text-red-600">* </span>Autoidentificación
-                  Étnica:
+                  {requiredFields.includes("adm_dato_auto_auto_etni") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_auto_auto_etni"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_auto_auto_etni"
                   name="adm_dato_auto_auto_etni"
                   value={formData["adm_dato_auto_auto_etni"]}
-                  onChange={handleChange}
-                  className={inputClass}
+                  onChange={handleSelectChange}
+                  options={listaSelectAdmision["adm_dato_auto_auto_etni"]}
+                  disabled={variableEstado["adm_dato_auto_auto_etni"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_auto_naci_etni">
-                  Nacionalidad Étnica/Pueblos:
+                  {requiredFields.includes("adm_dato_auto_naci_etni") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_auto_naci_etni"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_auto_naci_etni"
                   name="adm_dato_auto_naci_etni"
                   value={formData["adm_dato_auto_naci_etni"]}
-                  onChange={handleChange}
-                  className={inputClass}
+                  onChange={handleSelectChange}
+                  options={naciEtnicaPuebloOptions}
+                  disabled={variableEstado["adm_dato_auto_naci_etni"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_auto_pueb_kich">
-                  Pueblos Kichwa:
+                  {requiredFields.includes("adm_dato_auto_pueb_kich") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_auto_pueb_kich"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_auto_pueb_kich"
                   name="adm_dato_auto_pueb_kich"
                   value={formData["adm_dato_auto_pueb_kich"]}
-                  onChange={handleChange}
-                  className={inputClass}
+                  onChange={handleSelectChange}
+                  options={puebKichwaOptions}
+                  disabled={variableEstado["adm_dato_auto_pueb_kich"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_adic_grup_prio">
-                  Grupo Prioritario:
+                  {requiredFields.includes("adm_dato_adic_grup_prio") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_adic_grup_prio"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_adic_grup_prio"
                   name="adm_dato_adic_grup_prio"
                   value={formData["adm_dato_adic_grup_prio"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  options={listaSelectAdmision["adm_dato_adic_grup_prio"]}
+                  disabled={variableEstado["adm_dato_adic_grup_prio"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_adic_nive_educ">
-                  Nivel de Educación:
+                  {requiredFields.includes("adm_dato_adic_nive_educ") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_adic_nive_educ"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_adic_nive_educ"
                   name="adm_dato_adic_nive_educ"
                   value={formData["adm_dato_adic_nive_educ"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  options={listaSelectAdmision["adm_dato_adic_nive_educ"]}
+                  disabled={variableEstado["adm_dato_adic_nive_educ"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
@@ -978,15 +1179,19 @@ const Admision = () => {
                   className={labelClass}
                   htmlFor="adm_dato_adic_esta_nive_educ"
                 >
-                  Estado de Nivel de Educación:
+                  {requiredFields.includes("adm_dato_adic_esta_nive_educ") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_adic_esta_nive_educ"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_adic_esta_nive_educ"
                   name="adm_dato_adic_esta_nive_educ"
                   value={formData["adm_dato_adic_esta_nive_educ"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  options={listaSelectAdmision["adm_dato_adic_esta_nive_educ"]}
+                  disabled={variableEstado["adm_dato_adic_esta_nive_educ"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
@@ -994,15 +1199,19 @@ const Admision = () => {
                   className={labelClass}
                   htmlFor="adm_dato_adic_tipo_empr_trab"
                 >
-                  Tipo de Empresa de Trabajo:
+                  {requiredFields.includes("adm_dato_adic_tipo_empr_trab") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_adic_tipo_empr_trab"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_adic_tipo_empr_trab"
                   name="adm_dato_adic_tipo_empr_trab"
                   value={formData["adm_dato_adic_tipo_empr_trab"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  options={listaSelectAdmision["adm_dato_adic_tipo_empr_trab"]}
+                  disabled={variableEstado["adm_dato_adic_tipo_empr_trab"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
@@ -1010,131 +1219,198 @@ const Admision = () => {
                   className={labelClass}
                   htmlFor="adm_dato_adic_ocup_prof_prin"
                 >
-                  Ocupación/Profesión Principal:
+                  {requiredFields.includes("adm_dato_adic_ocup_prof_prin") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_adic_ocup_prof_prin"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_adic_ocup_prof_prin"
                   name="adm_dato_adic_ocup_prof_prin"
                   value={formData["adm_dato_adic_ocup_prof_prin"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  options={listaSelectAdmision["adm_dato_adic_ocup_prof_prin"]}
+                  disabled={variableEstado["adm_dato_adic_ocup_prof_prin"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_adic_tipo_segu">
-                  <span className="text-red-600">* </span>Tipo de Seguro:
+                  {requiredFields.includes("adm_dato_adic_tipo_segu") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_adic_tipo_segu"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_adic_tipo_segu"
                   name="adm_dato_adic_tipo_segu"
                   value={formData["adm_dato_adic_tipo_segu"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  options={listaSelectAdmision["adm_dato_adic_tipo_segu"]}
+                  disabled={variableEstado["adm_dato_adic_tipo_segu"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_adic_tien_disc">
-                  <span className="text-red-600">* </span>Tiene discapacidad?:
+                  {requiredFields.includes("adm_dato_adic_tien_disc") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_adic_tien_disc"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_adic_tien_disc"
                   name="adm_dato_adic_tien_disc"
                   value={formData["adm_dato_adic_tien_disc"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  options={listaSelectAdmision["adm_dato_adic_tien_disc"]}
+                  disabled={variableEstado["adm_dato_adic_tien_disc"]}
+                  variableEstado={variableEstado}
                 />
               </div>
             </fieldset>
           )}
           {/* DATOS DEL REPRESENTANTE */}
-          {activeTab === "representante" && (
-            <fieldset className="border border-blue-200 rounded p-4 mb-6">
-              <legend className="text-lg font-semibold text-blue-600 px-2">
-                Datos del Representante
-              </legend>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="adm_dato_repr_tipo_iden">
-                  Tipo de Identificación:
-                </label>
-                <input
-                  type="text"
-                  id="adm_dato_repr_tipo_iden"
-                  name="adm_dato_repr_tipo_iden"
-                  value={formData["adm_dato_repr_tipo_iden"]}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="adm_dato_repr_nume_iden">
-                  Número de Identificación:
-                </label>
-                <input
-                  type="text"
-                  id="adm_dato_repr_nume_iden"
-                  name="adm_dato_repr_nume_iden"
-                  value={formData["adm_dato_repr_nume_iden"]}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="adm_dato_repr_apel">
-                  Apellidos:
-                </label>
-                <input
-                  type="text"
-                  id="adm_dato_repr_apel"
-                  name="adm_dato_repr_apel"
-                  value={formData["adm_dato_repr_apel"]}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="adm_dato_repr_nomb">
-                  Nombres:
-                </label>
-                <input
-                  type="text"
-                  id="adm_dato_repr_nomb"
-                  name="adm_dato_repr_nomb"
-                  value={formData["adm_dato_repr_nomb"]}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="adm_dato_repr_pare">
-                  Parentesco:
-                </label>
-                <input
-                  type="text"
-                  id="adm_dato_repr_pare"
-                  name="adm_dato_repr_pare"
-                  value={formData["adm_dato_repr_pare"]}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="adm_dato_repr_nume_tele">
-                  Número telefónico:
-                </label>
-                <input
-                  type="text"
-                  id="adm_dato_repr_nume_tele"
-                  name="adm_dato_repr_nume_tele"
-                  value={formData["adm_dato_repr_nume_tele"]}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-            </fieldset>
-          )}
+          {edad !== null &&
+            parseInt(edad) < 18 &&
+            activeTab === "representante" && (
+              <fieldset className="border border-blue-200 rounded p-4 mb-6">
+                <legend className="text-lg font-semibold text-blue-600 px-2">
+                  Datos del Representante
+                </legend>
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="adm_dato_repr_tipo_iden"
+                  >
+                    {requiredFields.includes("adm_dato_repr_tipo_iden") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["adm_dato_repr_tipo_iden"]}
+                  </label>
+                  <CustomSelect
+                    id="adm_dato_repr_tipo_iden"
+                    name="adm_dato_repr_tipo_iden"
+                    value={formData["adm_dato_repr_tipo_iden"]}
+                    onChange={handleChange}
+                    options={listaSelectAdmision["adm_dato_repr_tipo_iden"]}
+                    disabled={variableEstado["adm_dato_repr_tipo_iden"]}
+                    variableEstado={variableEstado}
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="adm_dato_repr_nume_iden"
+                  >
+                    {requiredFields.includes("adm_dato_repr_nume_iden") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["adm_dato_repr_nume_iden"]}
+                  </label>
+                  <input
+                    type="text"
+                    id="adm_dato_repr_nume_iden"
+                    name="adm_dato_repr_nume_iden"
+                    value={formData["adm_dato_repr_nume_iden"]}
+                    onChange={handleChange}
+                    placeholder="Información es requerida"
+                    className={`${inputStyle} ${
+                      variableEstado["adm_dato_repr_nume_iden"]
+                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                        : "bg-white text-gray-700 cursor-pointer"
+                    }`}
+                    disabled={variableEstado["adm_dato_repr_nume_iden"]}
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <label className={labelClass} htmlFor="adm_dato_repr_apel">
+                    {requiredFields.includes("adm_dato_repr_apel") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["adm_dato_repr_apel"]}
+                  </label>
+                  <input
+                    type="text"
+                    id="adm_dato_repr_apel"
+                    name="adm_dato_repr_apel"
+                    value={formData["adm_dato_repr_apel"]}
+                    onChange={handleChange}
+                    placeholder="Información es requerida"
+                    className={`${inputStyle} ${
+                      variableEstado["adm_dato_repr_apel"]
+                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                        : "bg-white text-gray-700 cursor-pointer"
+                    }`}
+                    disabled={variableEstado["adm_dato_repr_apel"]}
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <label className={labelClass} htmlFor="adm_dato_repr_nomb">
+                    {requiredFields.includes("adm_dato_repr_nomb") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["adm_dato_repr_nomb"]}
+                  </label>
+                  <input
+                    type="text"
+                    id="adm_dato_repr_nomb"
+                    name="adm_dato_repr_nomb"
+                    value={formData["adm_dato_repr_nomb"]}
+                    onChange={handleChange}
+                    placeholder="Información es requerida"
+                    className={`${inputStyle} ${
+                      variableEstado["adm_dato_repr_nomb"]
+                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                        : "bg-white text-gray-700 cursor-pointer"
+                    }`}
+                    disabled={variableEstado["adm_dato_repr_nomb"]}
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <label className={labelClass} htmlFor="adm_dato_repr_pare">
+                    {requiredFields.includes("adm_dato_repr_pare") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["adm_dato_repr_pare"]}
+                  </label>
+                  <CustomSelect
+                    id="adm_dato_repr_pare"
+                    name="adm_dato_repr_pare"
+                    value={formData["adm_dato_repr_pare"]}
+                    onChange={handleChange}
+                    options={listaSelectAdmision["adm_dato_repr_pare"]}
+                    disabled={variableEstado["adm_dato_repr_pare"]}
+                    variableEstado={variableEstado}
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="adm_dato_repr_nume_tele"
+                  >
+                    {requiredFields.includes("adm_dato_repr_nume_tele") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["adm_dato_repr_nume_tele"]}
+                  </label>
+                  <input
+                    type="text"
+                    id="adm_dato_repr_nume_tele"
+                    name="adm_dato_repr_nume_tele"
+                    value={formData["adm_dato_repr_nume_tele"]}
+                    onChange={handleChange}
+                    placeholder="Información es requerida"
+                    className={`${inputStyle} ${
+                      variableEstado["adm_dato_repr_nume_tele"]
+                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                        : "bg-white text-gray-700 cursor-pointer"
+                    }`}
+                    disabled={variableEstado["adm_dato_repr_nume_tele"]}
+                  />
+                </div>
+              </fieldset>
+            )}
           {/* DATOS DE CONTACTO */}
           {activeTab === "contacto" && (
             <fieldset className="border border-blue-200 rounded p-4 mb-6">
@@ -1146,7 +1422,10 @@ const Admision = () => {
                   className={labelClass}
                   htmlFor="adm_dato_cont_enca_nece_llam"
                 >
-                  Contacto de emergencia - Nombre completo:
+                  {requiredFields.includes("adm_dato_cont_enca_nece_llam") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_cont_enca_nece_llam"]}
                 </label>
                 <input
                   type="text"
@@ -1154,25 +1433,38 @@ const Admision = () => {
                   name="adm_dato_cont_enca_nece_llam"
                   value={formData["adm_dato_cont_enca_nece_llam"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  placeholder="Información es requerida"
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_cont_enca_nece_llam"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_cont_enca_nece_llam"]}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_cont_pare">
-                  Parentesco:
+                  {requiredFields.includes("adm_dato_cont_pare") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_cont_pare"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_dato_cont_pare"
                   name="adm_dato_cont_pare"
                   value={formData["adm_dato_cont_pare"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  options={listaSelectAdmision["adm_dato_cont_pare"]}
+                  disabled={variableEstado["adm_dato_cont_pare"]}
+                  variableEstado={variableEstado}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_cont_dire">
-                  Dirección:
+                  {requiredFields.includes("adm_dato_cont_dire") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_cont_dire"]}
                 </label>
                 <input
                   type="text"
@@ -1180,12 +1472,21 @@ const Admision = () => {
                   name="adm_dato_cont_dire"
                   value={formData["adm_dato_cont_dire"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  placeholder="Información es requerida"
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_cont_dire"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_cont_dire"]}
                 />
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="adm_dato_cont_tele">
-                  Teléfono:
+                  {requiredFields.includes("adm_dato_cont_tele") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_dato_cont_tele"]}
                 </label>
                 <input
                   type="text"
@@ -1193,7 +1494,13 @@ const Admision = () => {
                   name="adm_dato_cont_tele"
                   value={formData["adm_dato_cont_tele"]}
                   onChange={handleChange}
-                  className={inputClass}
+                  placeholder="Información es requerida"
+                  className={`${inputStyle} ${
+                    variableEstado["adm_dato_cont_tele"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["adm_dato_cont_tele"]}
                 />
               </div>
             </fieldset>
@@ -1212,6 +1519,16 @@ const Admision = () => {
               onClick={handleButtonClick}
             >
               {buttonText}
+            </button>
+            {/* BOTON LIMPIAR */}
+            <button
+              type="button"
+              id="btnLimpiar"
+              name="btnLimpiar"
+              className={buttonStyleSecundario}
+              onClick={limpiarVariables}
+            >
+              Limpiar
             </button>
             <button
               type="button"
