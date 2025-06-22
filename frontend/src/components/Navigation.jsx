@@ -30,6 +30,7 @@ export function Navigation() {
     { to: "/register-user/", label: "Registro" },
     { to: "/admin-user/", label: "Administrador" },
     { to: "/admision/", label: "Admision" },
+    { to: "/form-008-emergencia/", label: "Formulario 008" },
     { to: "/contact/", label: "Contact" },
   ];
 

@@ -25,9 +25,7 @@ export const CustomSelect = ({
             : "bg-white text-gray-700 cursor-pointer"
         }`}
       >
-        <option value="" disabled>
-          Seleccione una opción
-        </option>
+        <option value="">Seleccione una opción</option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -63,7 +61,7 @@ CustomSelect.propTypes = {
 };
 
 export const inputStyle =
-  "shadow appearance-none border border-gray-500 rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline";
+  "form-input shadow appearance-none border border-gray-500 rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline";
 
 export const selectStyles = {
   control: (provided) => ({
