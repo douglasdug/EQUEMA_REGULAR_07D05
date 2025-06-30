@@ -154,7 +154,7 @@ class NewPasswordResetAPIView(APIView):
 
             return Response({'email': censored_email}, status=status.HTTP_200_OK)
         except eniUser.DoesNotExist:
-            return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'El usuario ingresado no existe en la base de datos.'}, status=status.HTTP_404_NOT_FOUND)
 
     def get(self, request, token=None):
         """Verificar token y permitir cambio de contraseña"""
@@ -190,7 +190,7 @@ class ChangePasswordTokenAPIView(APIView):
             uid = urlsafe_base64_decode(uid).decode()
             user = eniUser.objects.get(pk=uid)
         except (eniUser.DoesNotExist, ValueError, TypeError, OverflowError):
-            return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'El usuario ingresado no existe en la base de datos.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Validar el token
         if not default_token_generator.check_token(user, token):
@@ -258,7 +258,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
             }
             return Response({"message": "El usuario está registrado en admision!", "data": data}, status=status.HTTP_200_OK)
         except admision_datos.DoesNotExist:
-            return Response({"error": "Usuario no encontrado en admision!"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "El usuario ingresado no existe en la base de datos en admision!"}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -401,7 +401,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         try:
             user = eniUser.objects.get(username=username)
         except eniUser.DoesNotExist:
-            return Response({"error": "Usuario no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "El usuario ingresado no existe en la base de datos!"}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -443,7 +443,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         try:
             user = eniUser.objects.get(username=username)
         except eniUser.DoesNotExist:
-            return Response({"error": "Usuario no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "El usuario ingresado no existe en la base de datos!"}, status=status.HTTP_404_NOT_FOUND)
 
         user.delete()
         return Response({"message": "Usuario eliminado exitosamente!"}, status=status.HTTP_204_NO_CONTENT)
@@ -7358,6 +7358,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 adm_dato_pers_tipo_iden=tipo, adm_dato_pers_nume_iden=identificacion
             )
             data = {
+                "id_adm": user_data.id,
                 "adm_dato_pers_apel_prim": user_data.adm_dato_pers_apel_prim,
                 "adm_dato_pers_apel_segu": user_data.adm_dato_pers_apel_segu,
                 "adm_dato_pers_nomb_prim": user_data.adm_dato_pers_nomb_prim,
@@ -7401,7 +7402,36 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
             }
             return Response({"message": "El usuario está registrado en admision!", "data": data}, status=status.HTTP_200_OK)
         except admision_datos.DoesNotExist:
-            return Response({"error": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "El usuario ingresado no existe en la base de datos."}, status=status.HTTP_404_NOT_FOUND)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        data = request.data.copy()
+        admision_id = pk
+        if not admision_id:
+            return Response({"error": "El parámetro 'id' es requerido para actualizar el registro!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            admision = admision_datos.objects.get(id=admision_id)
+        except admision_datos.DoesNotExist:
+            return Response({"error": "Registro de admisión no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+
+        apellidos = data.get('adm_dato_pers_apel_prim',
+                             '').strip().split(' ', 1)
+        nombres = data.get('adm_dato_pers_nomb_prim', '').strip().split(' ', 1)
+
+        data['adm_dato_pers_apel_prim'] = apellidos[0] if apellidos else ''
+        data['adm_dato_pers_apel_segu'] = apellidos[1] if len(
+            apellidos) > 1 else ''
+        data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
+        data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
+            nombres) > 1 else ''
+
+        serializer = self.get_serializer(
+            admision, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({"message": "La admisión se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
 
 
 class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):

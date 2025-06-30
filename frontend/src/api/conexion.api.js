@@ -253,10 +253,12 @@ export const buscarUsuarioAdmision = async (tipo, identificacion) => {
     );
     return response.data;
   } catch (error) {
-    console.error(
-      "Error fetching user admission data:",
-      error.response ? error.response.data : error.message
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching user admission data:",
+        error.response ? error.response.data : error.message
+      );
+    }
     throw error;
   }
 };
@@ -266,10 +268,12 @@ export const registerAdmision = async (formData) => {
     const response = await axios.post(`${API_URL}/admision-datos/`, formData);
     return response.data;
   } catch (error) {
-    console.error(
-      "Error registering admision data:",
-      error.response ? error.response.data : error.message
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error registering admision data:",
+        error.response ? error.response.data : error.message
+      );
+    }
     throw error;
   }
 };
@@ -277,15 +281,17 @@ export const registerAdmision = async (formData) => {
 export const updateAdmision = async (formData) => {
   try {
     const response = await axios.patch(
-      `${API_URL}/admision-datos/actualizar-usuario/`,
+      `${API_URL}/admision-datos/${formData.id_adm}/`,
       formData
     );
     return response.data;
   } catch (error) {
-    console.error(
-      "Error updating admision data:",
-      error.response ? error.response.data : error.message
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error updating admision data:",
+        error.response ? error.response.data : error.message
+      );
+    }
     throw error;
   }
 };

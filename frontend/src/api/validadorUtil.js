@@ -1,19 +1,75 @@
-import { toast } from "react-hot-toast";
-
-export const validarDato = (e, formData, setFormData, error, setError) => {
-  const { name, value } = e.target;
+export const validarDato = (
+  e,
+  formData,
+  setFormData,
+  error,
+  setError,
+  setBotonEstado
+) => {
+  const { name, value, type } = e.target;
   let formattedValue = value;
 
-  if (e.target.type === "text") {
+  if (type === "text") {
     formattedValue = value.toUpperCase().replace(/\s{2,}/g, " ");
-  } else if (e.target.type === "number") {
+  } else if (type === "number") {
     formattedValue = value.replace(/[^0-9]/g, "");
-  } else if (e.target.type === "date") {
+  } else if (type === "date") {
     formattedValue = !isNaN(new Date(value).getTime());
-  } else if (e.target.type === "password") {
+  } else if (type === "password") {
     formattedValue = value.replace(/\s/g, "");
-  } else if (e.target.type === "email") {
+  } else if (type === "email") {
     formattedValue = value.toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formattedValue) {
+      setError("");
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+    } else if (!emailRegex.test(formattedValue)) {
+      setError("Correo electrónico no válido");
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+      return;
+    } else {
+      setError("");
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
+    }
+  } else if (type === "tel") {
+    formattedValue = value.replace(/[^0-9]/g, ""); // Solo números
+    if (name === "adm_dato_pers_tele") {
+      // Teléfono convencional: 9 dígitos, empieza 02-07
+      if (!formattedValue) {
+        setError("");
+        setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+      } else if (!/^(0[2-7])[0-9]{7}$/.test(formattedValue)) {
+        setError(
+          "El teléfono debe tener 9 dígitos y comenzar con un código de área válido (02 a 07)"
+        );
+        setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+      } else {
+        setError("");
+        setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
+      }
+      setFormData({
+        ...formData,
+        [name]: formattedValue,
+      });
+      return;
+    } else {
+      // Celular: 10 dígitos, empieza 09
+      if (!formattedValue) {
+        setError("");
+        setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+      } else if (!/^09\d{8}$/.test(formattedValue)) {
+        setError("El número de celular debe empezar con 09 y tener 10 dígitos");
+        setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+      } else {
+        setError("");
+        setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
+      }
+      setFormData({
+        ...formData,
+        [name]: formattedValue,
+      });
+      return;
+    }
   }
 
   setFormData({
@@ -22,33 +78,13 @@ export const validarDato = (e, formData, setFormData, error, setError) => {
   });
 };
 
-export const validarEmail = (email, setError) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    setError((prevError) => ({
-      ...prevError,
-      email: "Correo electrónico no válido",
-    }));
-    toast.error("Correo electrónico no válido", {
-      position: "bottom-right",
-    });
-  } else {
-    setError((prevError) => {
-      const { email, ...rest } = prevError;
-      return rest;
-    });
-  }
-};
-
 const validarNoIdentificado = (username) => {
   if (username.length !== 17) {
-    toast.error(
-      "El campo 'NO IDENTIFICADO' debe tener exactamente 17 caracteres.",
-      {
-        position: "bottom-right",
-      }
-    );
-    return false;
+    return {
+      valido: false,
+      mensaje:
+        "El campo 'NO IDENTIFICADO' debe tener exactamente 17 caracteres.",
+    };
   }
 
   const letras = username.substring(0, 6);
@@ -61,13 +97,11 @@ const validarNoIdentificado = (username) => {
 
   const letrasRegex = /^[A-Z]{6}$/;
   if (!letrasRegex.test(letras)) {
-    toast.error(
-      "Los primeros 6 caracteres deben ser letras mayúsculas sin tildes.",
-      {
-        position: "bottom-right",
-      }
-    );
-    return false;
+    return {
+      valido: false,
+      mensaje:
+        "Los primeros 6 caracteres deben ser letras mayúsculas sin tildes.",
+    };
   }
 
   if (
@@ -75,60 +109,58 @@ const validarNoIdentificado = (username) => {
     codigoProvincia !== 30 &&
     codigoProvincia !== 99
   ) {
-    toast.error("El código de provincia o pais es inválido.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El código de provincia o pais es inválido.",
+    };
   }
 
   if (anio < 1900 || anio > new Date().getFullYear()) {
-    toast.error("El año es inválido.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El año es inválido.",
+    };
   }
 
   if (mes < 1 || mes > 12) {
-    toast.error("El mes es inválido.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El mes es inválido.",
+    };
   }
 
   if (dia < 1 || dia > 31) {
-    toast.error("El día es inválido.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El día es inválido.",
+    };
   }
 
   if (ultimoDigito !== digitoOnce) {
-    toast.error(
-      "El No Identificador es Invalido revisar la decada de nacimiento!.",
-      {
-        position: "bottom-right",
-      }
-    );
-    return false;
+    return {
+      valido: false,
+      mensaje:
+        "El No Identificador es Invalido revisar la decada de nacimiento!.",
+    };
   }
 
-  return true;
+  return { valido: true };
 };
 
 const validarCedula = (username) => {
   if (username.length !== 10) {
-    toast.error("La cédula debe tener exactamente 10 dígitos.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "La cédula debe tener exactamente 10 dígitos.",
+    };
   }
 
   const provincia = parseInt(username.substring(0, 2), 10);
   if ((provincia < 1 || provincia > 24) && provincia !== 30) {
-    toast.error("El código de provincia es inválido.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El código de provincia es inválido.",
+    };
   }
 
   const digits = username.split("").map(Number);
@@ -148,89 +180,89 @@ const validarCedula = (username) => {
 
   const calculatedVerifier = (10 - (sum % 10)) % 10;
   if (calculatedVerifier !== verifier) {
-    toast.error("El Identificador no corresponde a una Cedula Valida!", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El Identificador no corresponde a una Cedula Valida!",
+    };
   }
 
-  return true;
+  return { valido: true };
 };
 
 const validarPasaporte = (username) => {
   if (username.length < 7 || username.length > 15) {
-    toast.error("El pasaporte debe tener entre 7 y 15 caracteres.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El pasaporte debe tener entre 7 y 15 caracteres.",
+    };
   }
 
   const pasaporteRegex = /^[a-zA-Z0-9]+$/;
   if (!pasaporteRegex.test(username)) {
-    toast.error("El pasaporte debe ser alfanumérico.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El pasaporte debe ser alfanumérico.",
+    };
   }
 
-  return true;
+  return { valido: true };
 };
 
 const validarVisa = (username) => {
   if (username.length < 7 || username.length > 20) {
-    toast.error("La visa debe tener entre 7 y 20 caracteres.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "La visa debe tener entre 7 y 20 caracteres.",
+    };
   }
 
   const visaRegex = /^[a-zA-Z0-9]+$/;
   if (!visaRegex.test(username)) {
-    toast.error("La visa debe ser alfanumérica.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "La visa debe ser alfanumérica.",
+    };
   }
 
   const visaPrefixRegex = /^(V|VE)/;
   if (!visaPrefixRegex.test(username)) {
-    toast.error("La visa debe comenzar con 'V' o 'VE'.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "La visa debe comenzar con 'V' o 'VE'.",
+    };
   }
 
-  return true;
+  return { valido: true };
 };
 
 const validarCarnetRefugiado = (username) => {
   if (username.length < 8 || username.length > 12) {
-    toast.error("El carné de refugiado debe tener entre 8 y 12 caracteres.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El carné de refugiado debe tener entre 8 y 12 caracteres.",
+    };
   }
 
   const carnetRefugiadoRegex = /^[a-zA-Z0-9]+$/;
   if (!carnetRefugiadoRegex.test(username)) {
-    toast.error("El carné de refugiado debe ser alfanumérico.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El carné de refugiado debe ser alfanumérico.",
+    };
   }
 
   const carnetRefugiadoPrefixRegex = /^(R|RF)/;
   if (!carnetRefugiadoPrefixRegex.test(username)) {
-    toast.error("El carné de refugiado debe comenzar con 'R' o 'RF'.", {
-      position: "bottom-right",
-    });
-    return false;
+    return {
+      valido: false,
+      mensaje: "El carné de refugiado debe comenzar con 'R' o 'RF'.",
+    };
   }
 
-  return true;
+  return { valido: true };
 };
 
-export const validarIdentificacion = (fun_tipo_iden, username) => {
+export const validarNumeroIdentificacion = (fun_tipo_iden, username) => {
   switch (fun_tipo_iden) {
     case "NO IDENTIFICADO":
       return validarNoIdentificado(username);
@@ -243,24 +275,7 @@ export const validarIdentificacion = (fun_tipo_iden, username) => {
     case "CARNÉT DE REFUGIADO":
       return validarCarnetRefugiado(username);
     default:
-      return false;
-  }
-};
-
-export const validarIdenAdmision = (fun_tipo_iden, username) => {
-  switch (fun_tipo_iden) {
-    case "NO IDENTIFICADO":
-      return validarNoIdentificado(username);
-    case "CÉDULA DE IDENTIDAD":
-      return validarCedula(username);
-    case "PASAPORTE":
-      return validarPasaporte(username);
-    case "VISA":
-      return validarVisa(username);
-    case "CARNÉT DE REFUGIADO":
-      return validarCarnetRefugiado(username);
-    default:
-      return false;
+      return { valido: false };
   }
 };
 

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { registerUser, buscarUsuarioEni } from "../api/conexion.api.js";
 import { listaSelectUser } from "../components/AllList.jsx";
-import { validarDato, validarIdentificacion } from "../api/validadorUtil.js";
+import {
+  validarDato,
+  validarNumeroIdentificacion,
+} from "../api/validadorUtil.js";
 import {
   CustomSelect,
   inputStyle,
@@ -173,7 +176,7 @@ const RegisterUser = () => {
       });
       return;
     }
-    if (!validarIdentificacion(fun_tipo_iden, username)) {
+    if (!validarNumeroIdentificacion(fun_tipo_iden, username)) {
       return;
     }
     try {

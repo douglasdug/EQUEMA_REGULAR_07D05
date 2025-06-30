@@ -9,8 +9,7 @@ import {
 import { listaSelectUser, listaUnidadesSalud } from "../components/AllList.jsx";
 import {
   validarDato,
-  validarEmail,
-  validarIdentificacion,
+  validarNumeroIdentificacion,
 } from "../api/validadorUtil.js";
 import {
   CustomSelect,
@@ -104,7 +103,7 @@ const AdminUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
-    validarEmail(formData.email, setError);
+    validarDato(formData.email, setError);
     if (error.email) {
       toast.error("Por favor, corrija los errores antes de enviar.", {
         position: "bottom-right",
@@ -245,7 +244,7 @@ const AdminUser = () => {
       });
       return;
     }
-    if (!validarIdentificacion(fun_tipo_iden, username)) {
+    if (!validarNumeroIdentificacion(fun_tipo_iden, username)) {
       return;
     }
     try {
