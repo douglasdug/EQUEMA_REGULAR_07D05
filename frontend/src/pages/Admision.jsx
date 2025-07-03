@@ -58,8 +58,11 @@ const initialState = {
   adm_dato_repr_nume_iden: "",
   adm_dato_repr_apel: "",
   adm_dato_repr_nomb: "",
+  adm_dato_repr_naci_fech_naci: "",
   adm_dato_repr_pare: "",
   adm_dato_repr_nume_tele: "",
+  adm_dato_repr_naci_naci: "",
+  adm_dato_repr_no_ident_prov: "",
   adm_dato_cont_enca_nece_llam: "",
   adm_dato_cont_pare: "",
   adm_dato_cont_dire: "",
@@ -129,7 +132,6 @@ function generarCadenaApellidos(apellidos) {
 
 function generarCadenaNacionalidad(nacionalidad, noIdentProv) {
   if (nacionalidad?.toUpperCase() === "ECUATORIANO/A") {
-    // Si noIdentProv tiene valor, retorna los dos primeros caracteres
     return (noIdentProv || "NN").substring(0, 2);
   }
   return "99";
@@ -158,6 +160,7 @@ const Admision = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isBuscar, setIsBuscar] = useState(false);
+  const [isBuscarRepresentante, setIsBuscarRepresentante] = useState(false);
   const [activeTab, setActiveTab] = useState("personales");
   const [provinciasOptions, setProvinciasOptions] = useState([]);
   const [cantonesOptions, setCantonesOptions] = useState([]);
@@ -166,8 +169,6 @@ const Admision = () => {
   const [puebKichwaOptions, setPuebKichwaOptions] = useState([]);
   const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [edad, setEdad] = useState("");
-  //const [nacionalidad, setNacionalidad] = useState("");
-  //const [lugarNaci, setLugarNaci] = useState("");
   const navigate = useNavigate();
 
   const initialVariableEstado = {
@@ -205,8 +206,11 @@ const Admision = () => {
     adm_dato_repr_nume_iden: true,
     adm_dato_repr_apel: true,
     adm_dato_repr_nomb: true,
+    adm_dato_repr_naci_fech_naci: true,
     adm_dato_repr_pare: true,
     adm_dato_repr_nume_tele: true,
+    adm_dato_repr_naci_naci: true,
+    adm_dato_repr_no_ident_prov: true,
     adm_dato_cont_enca_nece_llam: true,
     adm_dato_cont_pare: true,
     adm_dato_cont_dire: true,
@@ -214,6 +218,7 @@ const Admision = () => {
   };
   const initialBotonEstado = {
     btnBuscar: true,
+    btnBuscarRepresentante: true,
     btnRegistrar: true,
     btnLimpiar: false,
     btnNuevoRegistro: false,
@@ -244,7 +249,10 @@ const Admision = () => {
     "adm_dato_repr_nume_iden",
     "adm_dato_repr_apel",
     "adm_dato_repr_nomb",
+    "adm_dato_repr_naci_fech_naci",
     "adm_dato_repr_pare",
+    "adm_dato_repr_naci_naci",
+    "adm_dato_repr_no_ident_prov",
   ];
 
   const labelMap = {
@@ -283,8 +291,11 @@ const Admision = () => {
     adm_dato_repr_nume_iden: "Número de Identificación:",
     adm_dato_repr_apel: "Apellidos:",
     adm_dato_repr_nomb: "Nombres:",
+    adm_dato_repr_naci_fech_naci: "Fecha de Nacimiento:",
     adm_dato_repr_pare: "Parentesco:",
     adm_dato_repr_nume_tele: "Número telefónico:",
+    adm_dato_repr_naci_naci: "Nacionalidad:",
+    adm_dato_repr_no_ident_prov: "Provincia de Nacimiento (NO IDENTIFICADO):",
     adm_dato_cont_enca_nece_llam: "Contacto de emergencia - Nombre completo:",
     adm_dato_cont_pare: "Parentesco:",
     adm_dato_cont_dire: "Dirección:",
@@ -295,7 +306,6 @@ const Admision = () => {
     if (error.response?.data) {
       const data = error.response.data;
       if (typeof data === "object" && data !== null) {
-        // Busca un mensaje estándar o el primer error
         if (data.message) return data.message;
         if (data.error) return data.error;
         const firstKey = Object.keys(data)[0];
@@ -370,8 +380,6 @@ const Admision = () => {
   };
 
   const actualizarFormDataConRespuesta = (data) => {
-    //setLugarNaci(data.adm_dato_naci_luga_naci || "");
-    //setNacionalidad(data.adm_dato_naci_naci || "");
     setFechaNacimiento(
       data.adm_dato_naci_fech_naci
         ? new Date(data.adm_dato_naci_fech_naci).toISOString().slice(0, 10)
@@ -554,7 +562,20 @@ const Admision = () => {
           updatedForm.adm_dato_no_ident_prov
         );
       }
-      // ...resto del código...
+      return updatedForm;
+    });
+
+    setFormData((prev) => {
+      const updatedForm = { ...prev, [name]: value };
+      if (isBuscar) {
+        updatedForm.adm_dato_repr_nume_iden = generarNumeIden(
+          updatedForm.adm_dato_repr_nomb,
+          updatedForm.adm_dato_repr_apel,
+          updatedForm.adm_dato_repr_naci_naci,
+          updatedForm.adm_dato_repr_naci_fech_naci,
+          updatedForm.adm_dato_repr_no_ident_prov
+        );
+      }
       return updatedForm;
     });
 
@@ -585,7 +606,6 @@ const Admision = () => {
         break;
 
       case "adm_dato_pers_tipo_iden":
-        // Se limpia el número de identificación al cambiar el tipo
         setFormData((prev) => ({
           ...prev,
           adm_dato_pers_nume_iden: "",
@@ -642,7 +662,6 @@ const Admision = () => {
         break;
 
       default:
-        // Se actualiza normalmente si no hay lógica adicional
         setFormData((prev) => ({ ...prev, [name]: value }));
         validarDato(
           e,
@@ -683,7 +702,6 @@ const Admision = () => {
       nuevoFormData.adm_dato_no_ident_prov = "";
       nuevoFormData.adm_dato_auto_auto_etni = "";
       const nuevoLugarNaci = nacionalidadAPais[value] || "";
-      //setLugarNaci(nuevoLugarNaci);
       nuevoFormData.adm_dato_naci_luga_naci = nuevoLugarNaci;
     }
     setFormData(nuevoFormData);
@@ -719,9 +737,6 @@ const Admision = () => {
     ];
     if (camposRepresentante.includes(field)) {
       const edadNum = parseInt(edad);
-      // const algunDato = camposRepresentante.some((f) =>
-      //   formData[f]?.toString().trim()
-      // );
       return !isNaN(edadNum) && edadNum < 18;
     }
 
@@ -831,8 +846,6 @@ const Admision = () => {
     setVariableEstado(initialVariableEstado);
     setBotonEstado(initialBotonEstado);
     setFechaNacimiento("");
-    //setNacionalidad("");
-    //setLugarNaci("");
     setEdad("");
     setIsEditing(false);
   };
@@ -930,8 +943,6 @@ const Admision = () => {
       formData.adm_dato_pers_nume_iden &&
       botonEstado.btnBuscar === true
     ) {
-      //setNacionalidad("ECUATORIANO/A" || "");
-      //setLugarNaci("ECUADOR" || "");
       setFormData((prev) => ({
         ...prev,
         adm_dato_naci_naci: "ECUATORIANO/A" || "",
@@ -1062,6 +1073,9 @@ const Admision = () => {
     "rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400";
   const buttonTextRegistro = isEditing ? "Actualizar Registro" : "Registrar";
   const buttonTextBuscar = isBuscar ? "Nuevo Registro" : "Buscar";
+  const buttonTextBuscarRepresentante = isBuscarRepresentante
+    ? "Nuevo Registro"
+    : "Buscar";
 
   return (
     <div className="w-full h-full min-h-screen flex items-start justify-center bg-gray-100">
@@ -1923,6 +1937,26 @@ const Admision = () => {
                       disabled={variableEstado["adm_dato_repr_nume_iden"]}
                     />
                   </div>
+                  <div className="flex items-center justify-start -mb-4">
+                    <button
+                      type="button"
+                      id="btnBuscarRepresentante"
+                      name="btnBuscarRepresentante"
+                      className={`${buttonStylePrimario} ${
+                        botonEstado.btnBuscarRepresentante
+                          ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                          : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+                      }`}
+                      onClick={
+                        isBuscarRepresentante
+                          ? onClickNuevoRegistro
+                          : handleSearch
+                      }
+                      disabled={botonEstado.btnBuscarRepresentante}
+                    >
+                      {buttonTextBuscarRepresentante}
+                    </button>
+                  </div>
                   <div className={fieldClass}>
                     <label className={labelClass} htmlFor="adm_dato_repr_apel">
                       {requiredFields.includes("adm_dato_repr_apel") && (
@@ -1968,6 +2002,35 @@ const Admision = () => {
                     />
                   </div>
                   <div className={fieldClass}>
+                    <label
+                      className={labelClass}
+                      htmlFor="adm_dato_repr_naci_fech_naci"
+                    >
+                      {requiredFields.includes(
+                        "adm_dato_repr_naci_fech_naci"
+                      ) && <span className="text-red-500">* </span>}
+                      {labelMap["adm_dato_repr_naci_fech_naci"]}
+                    </label>
+                    <input
+                      type="date"
+                      id="adm_dato_repr_naci_fech_naci"
+                      name="adm_dato_repr_naci_fech_naci"
+                      value={fechaNacimiento}
+                      onChange={handleChange}
+                      placeholder="Información es requerida"
+                      required
+                      className={`${inputStyle} ${
+                        variableEstado["adm_dato_repr_naci_fech_naci"]
+                          ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                          : "bg-white text-gray-700 cursor-pointer"
+                      }`}
+                      disabled={variableEstado["adm_dato_repr_naci_fech_naci"]}
+                    />
+                    <label id="edad_paciente" style={{ marginLeft: "10px" }}>
+                      {edad}
+                    </label>
+                  </div>
+                  <div className={fieldClass}>
                     <label className={labelClass} htmlFor="adm_dato_repr_pare">
                       {requiredFields.includes("adm_dato_repr_pare") && (
                         <span className="text-red-500">* </span>
@@ -2009,6 +2072,52 @@ const Admision = () => {
                       disabled={variableEstado["adm_dato_repr_nume_tele"]}
                     />
                   </div>
+                  <div className={fieldClass}>
+                    <label
+                      className={labelClass}
+                      htmlFor="adm_dato_repr_naci_naci"
+                    >
+                      {requiredFields.includes("adm_dato_repr_naci_naci") && (
+                        <span className="text-red-500">* </span>
+                      )}
+                      {labelMap["adm_dato_repr_naci_naci"]}
+                    </label>
+                    <CustomSelect
+                      id="adm_dato_repr_naci_naci"
+                      name="adm_dato_repr_naci_naci"
+                      value={formData.adm_dato_repr_naci_naci}
+                      onChange={handleSelectChange}
+                      options={getOpcionesNacionalidad()}
+                      disabled={variableEstado["adm_dato_repr_naci_naci"]}
+                      variableEstado={variableEstado}
+                    />
+                  </div>
+                  {formData.adm_dato_repr_pers_tipo_iden ===
+                    "NO IDENTIFICADO" &&
+                    formData.adm_dato_repr_naci_naci === "ECUATORIANO/A" && (
+                      <div className={fieldClass}>
+                        <label
+                          className={labelClass}
+                          htmlFor="adm_dato_repr_no_ident_prov"
+                        >
+                          {requiredFields.includes(
+                            "adm_dato_repr_no_ident_prov"
+                          ) && <span className="text-red-500">* </span>}
+                          {labelMap["adm_dato_repr_no_ident_prov"]}
+                        </label>
+                        <CustomSelect
+                          id="adm_dato_repr_no_ident_prov"
+                          name="adm_dato_repr_no_ident_prov"
+                          value={formData.adm_dato_repr_no_ident_prov || ""}
+                          onChange={handleChange}
+                          options={
+                            listaSelectAdmision["adm_dato_repr_no_ident_prov"]
+                          }
+                          disabled={false}
+                          variableEstado={variableEstado}
+                        />
+                      </div>
+                    )}
                 </div>
               </fieldset>
             )}
