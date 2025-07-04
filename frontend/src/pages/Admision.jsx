@@ -168,7 +168,10 @@ const Admision = () => {
   const [naciEtnicaPuebloOptions, setNaciEtnicaPuebloOptions] = useState([]);
   const [puebKichwaOptions, setPuebKichwaOptions] = useState([]);
   const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [fechaNacimientoRepresentante, setFechaNacimientoRepresentante] =
+    useState("");
   const [edad, setEdad] = useState("");
+  const [edadRepresentante, setEdadRepresentante] = useState("");
   const navigate = useNavigate();
 
   const initialVariableEstado = {
@@ -221,7 +224,7 @@ const Admision = () => {
     btnBuscarRepresentante: true,
     btnRegistrar: true,
     btnLimpiar: false,
-    btnNuevoRegistro: false,
+    //btnNuevoRegistro: false,
   };
 
   const [variableEstado, setVariableEstado] = useState(initialVariableEstado);
@@ -373,22 +376,34 @@ const Admision = () => {
   };
 
   const actualizarFormDataConRespuesta = (data) => {
+    const getNoIdentProv = (tipoId, numIden, provData) => {
+      if (tipoId === "NO IDENTIFICADO" && numIden) {
+        return numIden.length >= 8 ? numIden.substring(6, 8) : "99";
+      }
+      return provData || "";
+    };
+
     setFechaNacimiento(
       data.adm_dato_naci_fech_naci
         ? new Date(data.adm_dato_naci_fech_naci).toISOString().slice(0, 10)
         : ""
     );
-    let noIdentProv = data.adm_dato_no_ident_prov || "";
-    if (
-      adm_dato_pers_tipo_iden.value === "NO IDENTIFICADO" &&
-      adm_dato_pers_nume_iden.value
-    ) {
-      if (adm_dato_pers_nume_iden.value.length >= 8) {
-        noIdentProv = adm_dato_pers_nume_iden.value.substring(6, 8);
-      } else {
-        noIdentProv = "99";
-      }
-    }
+    setFechaNacimientoRepresentante(
+      data.adm_dato_repr_naci_fech_naci
+        ? new Date(data.adm_dato_repr_naci_fech_naci).toISOString().slice(0, 10)
+        : ""
+    );
+
+    const noIdentProv = getNoIdentProv(
+      formData.adm_dato_pers_tipo_iden,
+      formData.adm_dato_pers_nume_iden,
+      data.adm_dato_no_ident_prov
+    );
+    const noIdentProvRepr = getNoIdentProv(
+      formData.adm_dato_repr_tipo_iden,
+      formData.adm_dato_repr_nume_iden,
+      data.adm_dato_repr_no_ident_prov
+    );
 
     setFormData((prevData) => ({
       ...prevData,
@@ -498,7 +513,7 @@ const Admision = () => {
     }));
     setBotonEstado((prevState) => ({
       btnBuscar: true,
-      btnNuevoRegistro: true,
+      //btnNuevoRegistro: true,
     }));
   };
 
@@ -551,7 +566,8 @@ const Admision = () => {
     }));
     setBotonEstado((prevState) => ({
       btnBuscar: true,
-      btnNuevoRegistro: true,
+      //btnNuevoRegistro: true,
+      btnRegistrar: true,
     }));
   };
 
@@ -570,7 +586,7 @@ const Admision = () => {
     }));
     setBotonEstado((prevState) => ({
       btnBuscarRepresentante: true,
-      btnNuevoRegistro: true,
+      //btnNuevoRegistro: true,
     }));
   };
 
@@ -851,7 +867,10 @@ const Admision = () => {
       "adm_dato_repr_nume_iden",
       "adm_dato_repr_apel",
       "adm_dato_repr_nomb",
+      "adm_dato_repr_naci_fech_naci",
       "adm_dato_repr_pare",
+      "adm_dato_repr_naci_naci",
+      "adm_dato_repr_no_ident_prov",
     ];
     if (camposRepresentante.includes(field)) {
       const edadNum = parseInt(edad);
@@ -1129,7 +1148,10 @@ const Admision = () => {
         adm_dato_repr_nume_iden: "",
         adm_dato_repr_apel: "",
         adm_dato_repr_nomb: "",
+        adm_dato_repr_naci_fech_naci: "",
         adm_dato_repr_pare: "",
+        adm_dato_repr_naci_naci: "",
+        adm_dato_repr_no_ident_prov: "",
       }));
     }
   }, [edad]);
@@ -1183,7 +1205,8 @@ const Admision = () => {
     }));
     setBotonEstado((prevState) => ({
       btnBuscar: true,
-      btnNuevoRegistro: true,
+      //btnNuevoRegistro: true,
+      btnRegistrar: true,
     }));
   };
 
@@ -2173,7 +2196,7 @@ const Admision = () => {
                       type="date"
                       id="adm_dato_repr_naci_fech_naci"
                       name="adm_dato_repr_naci_fech_naci"
-                      value={fechaNacimiento}
+                      value={fechaNacimientoRepresentante}
                       onChange={handleChange}
                       placeholder="Información es requerida"
                       required
@@ -2185,7 +2208,7 @@ const Admision = () => {
                       disabled={variableEstado["adm_dato_repr_naci_fech_naci"]}
                     />
                     <label id="edad_paciente" style={{ marginLeft: "10px" }}>
-                      {edad}
+                      {edadRepresentante}
                     </label>
                   </div>
                   <div className={fieldClass}>
@@ -2268,7 +2291,7 @@ const Admision = () => {
                           value={formData.adm_dato_repr_no_ident_prov || ""}
                           onChange={handleChange}
                           options={
-                            listaSelectAdmision["adm_dato_repr_no_ident_prov"]
+                            listaSelectAdmision["adm_dato_no_ident_prov"]
                           }
                           disabled={false}
                           variableEstado={variableEstado}
