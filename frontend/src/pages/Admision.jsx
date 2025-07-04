@@ -355,10 +355,6 @@ const Admision = () => {
 
       actualizarFormDataConRespuesta(response.data);
       ajustarVariableEstadoExitoso();
-      setBotonEstado((prevState) => ({
-        ...prevState,
-        btnBuscar: true,
-      }));
       setIsEditing(true);
       setSuccessMessage(response.message || "Operación exitosa");
       setTimeout(() => setSuccessMessage(""), 10000);
@@ -369,9 +365,6 @@ const Admision = () => {
     } catch (error) {
       const errorMessage = getErrorMessage(error);
       ajustarVariableEstadoFalso();
-      setBotonEstado((prevState) => ({
-        btnBuscar: true,
-      }));
       setError(errorMessage);
       setTimeout(() => setError(""), 10000);
       setSuccessMessage("");
@@ -490,15 +483,22 @@ const Admision = () => {
       adm_dato_adic_tipo_segu: false,
       adm_dato_adic_tien_disc: false,
       adm_dato_repr_tipo_iden: false,
-      adm_dato_repr_nume_iden: false,
-      adm_dato_repr_apel: false,
-      adm_dato_repr_nomb: false,
-      adm_dato_repr_pare: false,
-      adm_dato_repr_nume_tele: false,
+      adm_dato_repr_nume_iden: true,
+      adm_dato_repr_apel: true,
+      adm_dato_repr_nomb: true,
+      adm_dato_repr_naci_fech_naci: true,
+      adm_dato_repr_pare: true,
+      adm_dato_repr_nume_tele: true,
+      adm_dato_repr_naci_naci: true,
+      adm_dato_repr_no_ident_prov: true,
       adm_dato_cont_enca_nece_llam: false,
       adm_dato_cont_pare: false,
       adm_dato_cont_dire: false,
       adm_dato_cont_tele: false,
+    }));
+    setBotonEstado((prevState) => ({
+      btnBuscar: true,
+      btnNuevoRegistro: true,
     }));
   };
 
@@ -536,15 +536,41 @@ const Admision = () => {
       adm_dato_adic_tipo_segu: false,
       adm_dato_adic_tien_disc: false,
       adm_dato_repr_tipo_iden: false,
-      adm_dato_repr_nume_iden: false,
-      adm_dato_repr_apel: false,
-      adm_dato_repr_nomb: false,
-      adm_dato_repr_pare: false,
-      adm_dato_repr_nume_tele: false,
+      adm_dato_repr_nume_iden: true,
+      adm_dato_repr_apel: true,
+      adm_dato_repr_nomb: true,
+      adm_dato_repr_naci_fech_naci: true,
+      adm_dato_repr_pare: true,
+      adm_dato_repr_nume_tele: true,
+      adm_dato_repr_naci_naci: true,
+      adm_dato_repr_no_ident_prov: true,
       adm_dato_cont_enca_nece_llam: false,
       adm_dato_cont_pare: false,
       adm_dato_cont_dire: false,
       adm_dato_cont_tele: false,
+    }));
+    setBotonEstado((prevState) => ({
+      btnBuscar: true,
+      btnNuevoRegistro: true,
+    }));
+  };
+
+  const ajustarVariableEstadoFalsoRepresentante = () => {
+    setVariableEstado((prevState) => ({
+      ...prevState,
+      adm_dato_repr_tipo_iden: true,
+      adm_dato_repr_nume_iden: true,
+      adm_dato_repr_apel: false,
+      adm_dato_repr_nomb: false,
+      adm_dato_repr_naci_fech_naci: false,
+      adm_dato_repr_pare: false,
+      adm_dato_repr_nume_tele: false,
+      adm_dato_repr_naci_naci: false,
+      adm_dato_repr_no_ident_prov: false,
+    }));
+    setBotonEstado((prevState) => ({
+      btnBuscarRepresentante: true,
+      btnNuevoRegistro: true,
     }));
   };
 
@@ -600,7 +626,23 @@ const Admision = () => {
       setIsBuscar(false);
     };
 
+    const resetCamposRepresentante = () => {
+      setFormData((prev) => ({
+        ...prev,
+        adm_dato_repr_nume_iden: "",
+        adm_dato_repr_apel: "",
+        adm_dato_repr_nomb: "",
+        adm_dato_repr_naci_fech_naci: "",
+        adm_dato_repr_pare: "",
+        adm_dato_repr_nume_tele: "",
+        adm_dato_repr_naci_naci: "",
+        adm_dato_repr_no_ident_prov: "",
+      }));
+      setIsBuscarRepresentante(false);
+    };
+
     switch (name) {
+      // Casos de datos personales
       case "adm_dato_naci_fech_naci":
         actualizarFechaNacimiento(value);
         break;
@@ -661,6 +703,82 @@ const Admision = () => {
         );
         break;
 
+      // Casos de representante
+      case "adm_dato_repr_naci_fech_naci":
+        actualizarFechaNacimiento(value);
+        break;
+
+      case "adm_dato_repr_tipo_iden":
+        setFormData((prev) => ({
+          ...prev,
+          adm_dato_repr_nume_iden: "",
+        }));
+        setVariableEstado((prev) => ({
+          ...prev,
+          adm_dato_repr_nume_iden: !value,
+        }));
+        if (!value) {
+          resetCamposRepresentante();
+        } else if (value === "NO IDENTIFICADO") {
+          if (formData.adm_dato_repr_nume_iden) {
+            setIsBuscarRepresentante(false);
+            setBotonEstado((prev) => ({
+              ...prev,
+              btnBuscarRepresentante: !value,
+            }));
+          } else {
+            setIsBuscarRepresentante(true);
+            setBotonEstado((prev) => ({
+              ...prev,
+              btnBuscarRepresentante: false,
+            }));
+          }
+        } else {
+          setIsBuscarRepresentante(false);
+          setBotonEstado((prev) => ({
+            ...prev,
+            btnBuscarRepresentante: true,
+          }));
+        }
+        validarDato(
+          e,
+          { ...formData, [name]: value, adm_dato_repr_nume_iden: "" },
+          setFormData,
+          error,
+          setError,
+          setBotonEstado
+        );
+        break;
+
+      case "adm_dato_repr_nume_iden":
+        if (formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO") {
+          if (value) {
+            setIsBuscarRepresentante(false);
+            setBotonEstado((prev) => ({
+              ...prev,
+              btnBuscarRepresentante: false,
+            }));
+          } else {
+            setIsBuscarRepresentante(true);
+          }
+        } else {
+          setIsBuscarRepresentante(false);
+          setBotonEstado((prev) => ({
+            ...prev,
+            btnBuscarRepresentante: !value,
+          }));
+        }
+        validarDato(
+          e,
+          { ...formData, [name]: value },
+          setFormData,
+          error,
+          setError,
+          setBotonEstado
+        );
+        break;
+
+      // Default para el resto de campos
       default:
         setFormData((prev) => ({ ...prev, [name]: value }));
         validarDato(
@@ -907,7 +1025,6 @@ const Admision = () => {
       formData.adm_dato_pers_nomb_prim?.trim() &&
       formData.adm_dato_pers_apel_prim?.trim() &&
       formData.adm_dato_naci_naci?.trim() &&
-      formData.adm_dato_naci_fech_naci?.trim() &&
       formData.adm_dato_naci_fech_naci?.trim();
 
     if (
@@ -936,6 +1053,42 @@ const Admision = () => {
     formData.adm_dato_naci_fech_naci,
     formData.adm_dato_no_ident_prov,
   ]);
+
+  // useEffect(() => {
+  //   const campoDisabled = variableEstado.adm_dato_repr_nume_iden;
+  //   const btnBuscarDisabled = botonEstado.btnBuscarRepresentante;
+  //   const tieneInfo =
+  //     formData.adm_dato_repr_nomb?.trim() &&
+  //     formData.adm_dato_repr_apel?.trim() &&
+  //     formData.adm_dato_repr_naci_naci?.trim() &&
+  //     formData.adm_dato_repr_naci_fech_naci?.trim();
+
+  //   if (
+  //     campoDisabled &&
+  //     btnBuscarDisabled &&
+  //     tieneInfo &&
+  //     formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO"
+  //   ) {
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       adm_dato_repr_nume_iden: generarNumeIden(
+  //         prev.adm_dato_repr_nomb,
+  //         prev.adm_dato_repr_apel,
+  //         prev.adm_dato_repr_naci_naci,
+  //         prev.adm_dato_repr_naci_fech_naci,
+  //         prev.adm_dato_repr_no_ident_prov
+  //       ),
+  //     }));
+  //   }
+  // }, [
+  //   variableEstado.adm_dato_repr_nume_iden,
+  //   botonEstado.btnBuscarRepresentante,
+  //   formData.adm_dato_repr_nomb,
+  //   formData.adm_dato_repr_apel,
+  //   formData.adm_dato_repr_naci_naci,
+  //   formData.adm_dato_repr_naci_fech_naci,
+  //   formData.adm_dato_repr_no_ident_prov,
+  // ]);
 
   useEffect(() => {
     if (
@@ -1015,11 +1168,14 @@ const Admision = () => {
       adm_dato_adic_tipo_segu: false,
       adm_dato_adic_tien_disc: false,
       adm_dato_repr_tipo_iden: false,
-      adm_dato_repr_nume_iden: false,
-      adm_dato_repr_apel: false,
-      adm_dato_repr_nomb: false,
-      adm_dato_repr_pare: false,
-      adm_dato_repr_nume_tele: false,
+      adm_dato_repr_nume_iden: true,
+      adm_dato_repr_apel: true,
+      adm_dato_repr_nomb: true,
+      adm_dato_repr_naci_fech_naci: true,
+      adm_dato_repr_pare: true,
+      adm_dato_repr_nume_tele: true,
+      adm_dato_repr_naci_naci: true,
+      adm_dato_repr_no_ident_prov: true,
       adm_dato_cont_enca_nece_llam: false,
       adm_dato_cont_pare: false,
       adm_dato_cont_dire: false,
@@ -1169,7 +1325,9 @@ const Admision = () => {
                           ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
                           : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
                       }`}
-                      onClick={isBuscar ? onClickNuevoRegistro : handleSearch}
+                      onClick={
+                        isBuscar ? ajustarVariableEstadoFalso : handleSearch
+                      }
                       disabled={botonEstado.btnBuscar}
                     >
                       {buttonTextBuscar}
@@ -1949,7 +2107,7 @@ const Admision = () => {
                       }`}
                       onClick={
                         isBuscarRepresentante
-                          ? onClickNuevoRegistro
+                          ? ajustarVariableEstadoFalsoRepresentante
                           : handleSearch
                       }
                       disabled={botonEstado.btnBuscarRepresentante}
@@ -2092,8 +2250,7 @@ const Admision = () => {
                       variableEstado={variableEstado}
                     />
                   </div>
-                  {formData.adm_dato_repr_pers_tipo_iden ===
-                    "NO IDENTIFICADO" &&
+                  {formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO" &&
                     formData.adm_dato_repr_naci_naci === "ECUATORIANO/A" && (
                       <div className={fieldClass}>
                         <label
