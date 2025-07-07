@@ -24,7 +24,7 @@ export const validarDato = (
       setError("");
       setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
     } else if (!emailRegex.test(formattedValue)) {
-      setError("Correo electrónico no válido");
+      setError({ type: "validacion", message: "Correo electrónico no válido" });
       setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
       return;
     } else {
@@ -39,9 +39,11 @@ export const validarDato = (
         setError("");
         setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
       } else if (!/^(0[2-7])[0-9]{7}$/.test(formattedValue)) {
-        setError(
-          "El teléfono debe tener 9 dígitos y comenzar con un código de área válido (02 a 07)"
-        );
+        setError({
+          type: "validacion",
+          message:
+            "El teléfono debe tener 9 dígitos y comenzar con un código de área válido (02 a 07)",
+        });
         setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
       } else {
         setError("");
@@ -58,7 +60,11 @@ export const validarDato = (
         setError("");
         setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
       } else if (!/^09\d{8}$/.test(formattedValue)) {
-        setError("El número de celular debe empezar con 09 y tener 10 dígitos");
+        setError({
+          type: "validacion",
+          message:
+            "El número de celular debe empezar con 09 y tener 10 dígitos",
+        });
         setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
       } else {
         setError("");
