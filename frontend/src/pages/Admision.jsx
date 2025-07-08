@@ -692,34 +692,6 @@ const Admision = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => {
-      const updatedForm = { ...prev, [name]: value };
-      if (!isEditing && isBuscar) {
-        updatedForm.adm_dato_pers_nume_iden = generarNumeIden(
-          updatedForm.adm_dato_pers_nomb_prim,
-          updatedForm.adm_dato_pers_apel_prim,
-          updatedForm.adm_dato_naci_naci,
-          updatedForm.adm_dato_naci_fech_naci,
-          updatedForm.adm_dato_no_ident_prov
-        );
-      }
-      return updatedForm;
-    });
-
-    setFormData((prev) => {
-      const updatedForm = { ...prev, [name]: value };
-      if (!isEditing && isBuscarRepresentante) {
-        updatedForm.adm_dato_repr_nume_iden = generarNumeIden(
-          updatedForm.adm_dato_repr_nomb,
-          updatedForm.adm_dato_repr_apel,
-          updatedForm.adm_dato_repr_naci,
-          updatedForm.adm_dato_repr_fech_naci,
-          updatedForm.adm_dato_repr_no_ident_prov
-        );
-      }
-      return updatedForm;
-    });
-
     const actualizarFechaNacimiento = (val, name) => {
       if (name === "adm_dato_naci_fech_naci") {
         setFormData((prev) => ({ ...prev, adm_dato_naci_fech_naci: val }));
@@ -1213,11 +1185,11 @@ const Admision = () => {
 
   // Generación automática de número de identificación para paciente y representante
   const useAutoNumeIden = ({
-    //campoDisabled,
-    //btnBuscarDisabled,
+    campoDisabled,
+    btnBuscarDisabled,
     tieneInfo,
     tipoIden,
-    isEditing,
+    //isEditing,
     setFormData,
     generarNumeIden,
     campos,
@@ -1225,45 +1197,46 @@ const Admision = () => {
   }) => {
     useEffect(() => {
       if (
-        //campoDisabled &&
-        //btnBuscarDisabled &&
+        campoDisabled &&
+        btnBuscarDisabled &&
         tieneInfo &&
-        tipoIden === "NO IDENTIFICADO" &&
-        !isEditing
+        tipoIden === "NO IDENTIFICADO"
+        //&& !isEditing
       ) {
+        const nuevoId = generarNumeIden(
+          formData[campos.nomb],
+          formData[campos.apel],
+          formData[campos.naci],
+          formData[campos.fechNaci],
+          formData[campos.noIdentProv]
+        );
         setFormData((prev) => ({
           ...prev,
-          [campos.numeIden]: generarNumeIden(
-            prev[campos.nomb],
-            prev[campos.apel],
-            prev[campos.naci],
-            prev[campos.fechNaci],
-            prev[campos.noIdentProv]
-          ),
+          [campos.numeIden]: nuevoId,
         }));
       }
     }, [
-      //campoDisabled,
-      //btnBuscarDisabled,
-      isEditing,
+      campoDisabled,
+      btnBuscarDisabled,
+      //isEditing,
       tipoIden,
       setFormData,
       generarNumeIden,
-      ...campos.deps.map((dep) => formData[dep]), // Solo los campos dependientes
+      ...campos.deps.map((dep) => formData[dep]),
     ]);
   };
 
   // Paciente
   useAutoNumeIden({
-    //campoDisabled: variableEstado.adm_dato_pers_nume_iden,
-    //btnBuscarDisabled: botonEstado.btnBuscar,
+    campoDisabled: variableEstado.adm_dato_pers_nume_iden,
+    btnBuscarDisabled: botonEstado.btnBuscar,
     tieneInfo:
       formData.adm_dato_pers_nomb_prim?.trim() &&
       formData.adm_dato_pers_apel_prim?.trim() &&
       formData.adm_dato_naci_naci?.trim() &&
       formData.adm_dato_naci_fech_naci?.trim(),
     tipoIden: formData.adm_dato_pers_tipo_iden,
-    isEditing,
+    //isEditing,
     setFormData,
     formData,
     generarNumeIden,
@@ -1294,7 +1267,7 @@ const Admision = () => {
       formData.adm_dato_repr_naci?.trim() &&
       formData.adm_dato_repr_fech_naci?.trim(),
     tipoIden: formData.adm_dato_repr_tipo_iden,
-    isEditing,
+    //isEditing,
     setFormData,
     formData,
     generarNumeIden,

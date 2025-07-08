@@ -11,6 +11,26 @@ export const validarDato = (
 
   if (type === "text") {
     formattedValue = value.toUpperCase().replace(/\s{2,}/g, " ");
+    const soloLetrasRegex = /^[A-ZÁÉÍÓÚÑ ]+$/;
+
+    // Excluir los campos de identificación de la validación de solo letras
+    if (
+      name === "adm_dato_pers_nume_iden" ||
+      name === "adm_dato_repr_nume_iden"
+    ) {
+      // Aquí puedes poner otra validación si lo deseas, o simplemente dejarlo pasar
+      setError("");
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
+    } else if (!formattedValue) {
+      setError({ type: "validacion", message: "Este campo es obligatorio" });
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+    } else if (!soloLetrasRegex.test(formattedValue)) {
+      setError({ type: "validacion", message: "Solo se permiten letras" });
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+    } else {
+      setError("");
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
+    }
   } else if (type === "number") {
     formattedValue = value.replace(/[^0-9]/g, "");
   } else if (type === "date") {
