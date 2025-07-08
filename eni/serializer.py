@@ -160,6 +160,13 @@ class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = admision_datos
         fields = '__all__'
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=admision_datos.objects.all(),
+                fields=['adm_dato_pers_tipo_iden', 'adm_dato_pers_nume_iden'],
+                message="Ya existe un registro con este tipo y número de identificación."
+            )
+        ]
 
 
 class RegistroVacunadoRegistrationSerializer(serializers.ModelSerializer):

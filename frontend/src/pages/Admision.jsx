@@ -511,7 +511,7 @@ const Admision = () => {
     setEdadRepresentante(calcularEdad(fechaNac));
     setFormData((prevData) => ({
       ...prevData,
-      id_adm: data.id_adm || data.id || "",
+      //id_adm: data.id_adm || data.id || "",
       adm_dato_repr_apel: [
         data.adm_dato_pers_apel_prim || "",
         data.adm_dato_pers_apel_segu || "",
@@ -669,6 +669,8 @@ const Admision = () => {
       adm_dato_repr_fech_naci: "",
       adm_dato_repr_naci: "",
     }));
+    setFechaNacimientoRepresentante("");
+    setEdadRepresentante("");
     setVariableEstado((prevState) => ({
       ...prevState,
       adm_dato_repr_tipo_iden: false,
@@ -1063,6 +1065,28 @@ const Admision = () => {
     }));
   };
 
+  const camposRepresentante = [
+    "adm_dato_repr_tipo_iden",
+    "adm_dato_repr_nume_iden",
+    "adm_dato_repr_apel",
+    "adm_dato_repr_nomb",
+    "adm_dato_repr_fech_naci",
+    "adm_dato_repr_pare",
+    "adm_dato_repr_nume_tele",
+    "adm_dato_repr_naci",
+    "adm_dato_repr_no_ident_prov",
+  ];
+
+  const limpiarCamposRepresentanteNoVisibles = (formData) => {
+    const nuevoFormData = { ...formData };
+    camposRepresentante.forEach((campo) => {
+      if (!isFieldVisible(campo)) {
+        nuevoFormData[campo] = "";
+      }
+    });
+    return nuevoFormData;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
@@ -1070,12 +1094,14 @@ const Admision = () => {
     setIsLoading(true);
     setError("");
     setSuccessMessage("");
+    const formDataLimpio = limpiarCamposRepresentanteNoVisibles(formData);
     const formDataToSend = {
-      ...formData,
-      adm_dato_repr_fech_naci: formData.adm_dato_repr_fech_naci
-        ? formData.adm_dato_repr_fech_naci
+      ...formDataLimpio,
+      adm_dato_repr_fech_naci: formDataLimpio.adm_dato_repr_fech_naci
+        ? formDataLimpio.adm_dato_repr_fech_naci
         : null,
     };
+
     try {
       let response;
       if (isEditing) {
@@ -1148,132 +1174,148 @@ const Admision = () => {
     setEdad("");
     setEdadRepresentante("");
     setIsEditing(false);
+    setActiveTab("personales");
   };
 
-  useEffect(() => {
-    checkFormValidity();
-  }, [formData, error]);
+  // Utilidad para actualizar opciones de selects dependientes
+  const useSelectOptions = (depValue, lista, setter) => {
+    useEffect(() => {
+      setter(depValue && lista[depValue] ? lista[depValue] : []);
+    }, [depValue, lista, setter]);
+  };
 
-  useEffect(() => {
-    const pais = formData.adm_dato_resi_pais_resi;
-    setProvinciasOptions(
-      pais && listaSelectAdmision.adm_dato_resi_prov[pais]
-        ? listaSelectAdmision.adm_dato_resi_prov[pais]
-        : []
-    );
-  }, [formData.adm_dato_resi_pais_resi]);
+  // Opciones dependientes
+  useSelectOptions(
+    formData.adm_dato_resi_pais_resi,
+    listaSelectAdmision.adm_dato_resi_prov,
+    setProvinciasOptions
+  );
+  useSelectOptions(
+    formData.adm_dato_resi_prov,
+    listaSelectAdmision.adm_dato_resi_cant,
+    setCantonesOptions
+  );
+  useSelectOptions(
+    formData.adm_dato_resi_cant,
+    listaSelectAdmision.adm_dato_resi_parr,
+    setParroquiasOptions
+  );
+  useSelectOptions(
+    formData.adm_dato_auto_auto_etni,
+    listaSelectAdmision.adm_dato_auto_naci_etni,
+    setNaciEtnicaPuebloOptions
+  );
+  useSelectOptions(
+    formData.adm_dato_auto_naci_etni,
+    listaSelectAdmision.adm_dato_auto_pueb_kich,
+    setPuebKichwaOptions
+  );
 
-  useEffect(() => {
-    const provincia = formData.adm_dato_resi_prov;
-    setCantonesOptions(
-      provincia && listaSelectAdmision.adm_dato_resi_cant[provincia]
-        ? listaSelectAdmision.adm_dato_resi_cant[provincia]
-        : []
-    );
-  }, [formData.adm_dato_resi_prov]);
+  // Generación automática de número de identificación para paciente y representante
+  const useAutoNumeIden = ({
+    //campoDisabled,
+    //btnBuscarDisabled,
+    tieneInfo,
+    tipoIden,
+    isEditing,
+    setFormData,
+    generarNumeIden,
+    campos,
+    formData,
+  }) => {
+    useEffect(() => {
+      if (
+        //campoDisabled &&
+        //btnBuscarDisabled &&
+        tieneInfo &&
+        tipoIden === "NO IDENTIFICADO" &&
+        !isEditing
+      ) {
+        setFormData((prev) => ({
+          ...prev,
+          [campos.numeIden]: generarNumeIden(
+            prev[campos.nomb],
+            prev[campos.apel],
+            prev[campos.naci],
+            prev[campos.fechNaci],
+            prev[campos.noIdentProv]
+          ),
+        }));
+      }
+    }, [
+      //campoDisabled,
+      //btnBuscarDisabled,
+      isEditing,
+      tipoIden,
+      setFormData,
+      generarNumeIden,
+      ...campos.deps.map((dep) => formData[dep]), // Solo los campos dependientes
+    ]);
+  };
 
-  useEffect(() => {
-    const canton = formData.adm_dato_resi_cant;
-    setParroquiasOptions(
-      canton && listaSelectAdmision.adm_dato_resi_parr[canton]
-        ? listaSelectAdmision.adm_dato_resi_parr[canton]
-        : []
-    );
-  }, [formData.adm_dato_resi_cant]);
-
-  useEffect(() => {
-    const autoEtnica = formData.adm_dato_auto_auto_etni;
-    setNaciEtnicaPuebloOptions(
-      autoEtnica && listaSelectAdmision.adm_dato_auto_naci_etni[autoEtnica]
-        ? listaSelectAdmision.adm_dato_auto_naci_etni[autoEtnica]
-        : []
-    );
-  }, [formData.adm_dato_auto_auto_etni]);
-
-  useEffect(() => {
-    const naciEtnicaPueblo = formData.adm_dato_auto_naci_etni;
-    setPuebKichwaOptions(
-      naciEtnicaPueblo &&
-        listaSelectAdmision.adm_dato_auto_pueb_kich[naciEtnicaPueblo]
-        ? listaSelectAdmision.adm_dato_auto_pueb_kich[naciEtnicaPueblo]
-        : []
-    );
-  }, [formData.adm_dato_auto_naci_etni]);
-
-  useEffect(() => {
-    const campoDisabled = variableEstado.adm_dato_pers_nume_iden;
-    const btnBuscarDisabled = botonEstado.btnBuscar;
-    const tieneInfo =
+  // Paciente
+  useAutoNumeIden({
+    //campoDisabled: variableEstado.adm_dato_pers_nume_iden,
+    //btnBuscarDisabled: botonEstado.btnBuscar,
+    tieneInfo:
       formData.adm_dato_pers_nomb_prim?.trim() &&
       formData.adm_dato_pers_apel_prim?.trim() &&
       formData.adm_dato_naci_naci?.trim() &&
-      formData.adm_dato_naci_fech_naci?.trim();
+      formData.adm_dato_naci_fech_naci?.trim(),
+    tipoIden: formData.adm_dato_pers_tipo_iden,
+    isEditing,
+    setFormData,
+    formData,
+    generarNumeIden,
+    campos: {
+      numeIden: "adm_dato_pers_nume_iden",
+      nomb: "adm_dato_pers_nomb_prim",
+      apel: "adm_dato_pers_apel_prim",
+      naci: "adm_dato_naci_naci",
+      fechNaci: "adm_dato_naci_fech_naci",
+      noIdentProv: "adm_dato_no_ident_prov",
+      deps: [
+        "adm_dato_pers_nomb_prim",
+        "adm_dato_pers_apel_prim",
+        "adm_dato_naci_naci",
+        "adm_dato_naci_fech_naci",
+        "adm_dato_no_ident_prov",
+      ],
+    },
+  });
 
-    if (
-      campoDisabled &&
-      btnBuscarDisabled &&
-      tieneInfo &&
-      formData.adm_dato_pers_tipo_iden === "NO IDENTIFICADO" &&
-      !isEditing
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        adm_dato_pers_nume_iden: generarNumeIden(
-          prev.adm_dato_pers_nomb_prim,
-          prev.adm_dato_pers_apel_prim,
-          prev.adm_dato_naci_naci,
-          prev.adm_dato_naci_fech_naci,
-          prev.adm_dato_no_ident_prov
-        ),
-      }));
-    }
-  }, [
-    variableEstado.adm_dato_pers_nume_iden,
-    botonEstado.btnBuscar,
-    formData.adm_dato_pers_nomb_prim,
-    formData.adm_dato_pers_apel_prim,
-    formData.adm_dato_naci_naci,
-    formData.adm_dato_naci_fech_naci,
-    formData.adm_dato_no_ident_prov,
-  ]);
-
-  useEffect(() => {
-    const campoDisabled = variableEstado.adm_dato_repr_nume_iden;
-    const btnBuscarDisabled = botonEstado.btnBuscarRepresentante;
-    const tieneInfo =
+  // Representante
+  useAutoNumeIden({
+    campoDisabled: variableEstado.adm_dato_repr_nume_iden,
+    btnBuscarDisabled: botonEstado.btnBuscarRepresentante,
+    tieneInfo:
       formData.adm_dato_repr_nomb?.trim() &&
       formData.adm_dato_repr_apel?.trim() &&
       formData.adm_dato_repr_naci?.trim() &&
-      formData.adm_dato_repr_fech_naci?.trim();
+      formData.adm_dato_repr_fech_naci?.trim(),
+    tipoIden: formData.adm_dato_repr_tipo_iden,
+    isEditing,
+    setFormData,
+    formData,
+    generarNumeIden,
+    campos: {
+      numeIden: "adm_dato_repr_nume_iden",
+      nomb: "adm_dato_repr_nomb",
+      apel: "adm_dato_repr_apel",
+      naci: "adm_dato_repr_naci",
+      fechNaci: "adm_dato_repr_fech_naci",
+      noIdentProv: "adm_dato_repr_no_ident_prov",
+      deps: [
+        "adm_dato_repr_nomb",
+        "adm_dato_repr_apel",
+        "adm_dato_repr_naci",
+        "adm_dato_repr_fech_naci",
+        "adm_dato_repr_no_ident_prov",
+      ],
+    },
+  });
 
-    if (
-      campoDisabled &&
-      btnBuscarDisabled &&
-      tieneInfo &&
-      formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO" &&
-      !isEditing
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        adm_dato_repr_nume_iden: generarNumeIden(
-          prev.adm_dato_repr_nomb,
-          prev.adm_dato_repr_apel,
-          prev.adm_dato_repr_naci,
-          prev.adm_dato_repr_fech_naci,
-          prev.adm_dato_repr_no_ident_prov
-        ),
-      }));
-    }
-  }, [
-    variableEstado.adm_dato_repr_nume_iden,
-    botonEstado.btnBuscarRepresentante,
-    formData.adm_dato_repr_nomb,
-    formData.adm_dato_repr_apel,
-    formData.adm_dato_repr_naci,
-    formData.adm_dato_repr_fech_naci,
-    formData.adm_dato_repr_no_ident_prov,
-  ]);
-
+  // Nacionalidad automática para cédula ecuatoriana
   useEffect(() => {
     if (
       formData.adm_dato_pers_tipo_iden === "CÉDULA DE IDENTIDAD" &&
@@ -1282,9 +1324,9 @@ const Admision = () => {
     ) {
       setFormData((prev) => ({
         ...prev,
-        adm_dato_naci_naci: "ECUATORIANO/A" || "",
-        adm_dato_naci_luga_naci: "ECUADOR" || "",
-        adm_dato_resi_pais_resi: "ECUADOR" || "",
+        adm_dato_naci_naci: "ECUATORIANO/A",
+        adm_dato_naci_luga_naci: "ECUADOR",
+        adm_dato_resi_pais_resi: "ECUADOR",
       }));
     }
   }, [
@@ -1293,6 +1335,7 @@ const Admision = () => {
     botonEstado.btnBuscar,
   ]);
 
+  // Validación de grupo prioritario embarazadas
   useEffect(() => {
     const sexo = formData.adm_dato_pers_sexo;
     const edadNum = parseInt(edad);
@@ -1304,6 +1347,7 @@ const Admision = () => {
     }
   }, [formData.adm_dato_pers_sexo, edad]);
 
+  // Limpieza de datos de representante si es mayor de edad
   useEffect(() => {
     const edadNum = parseInt(edad);
     if (!isNaN(edadNum) && edadNum >= 18) {
@@ -1320,6 +1364,10 @@ const Admision = () => {
       }));
     }
   }, [edad]);
+
+  useEffect(() => {
+    checkFormValidity();
+  }, [formData, error, edad, edadRepresentante, activeTab]);
 
   const opcionesEtniaEcuatoriano = [
     { value: "INDÍGENA", label: "01 INDÍGENA" },

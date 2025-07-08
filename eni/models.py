@@ -582,6 +582,9 @@ class admision_datos(models.Model):
     adm_dato_cont_dire = models.CharField(max_length=60, blank=True)
     adm_dato_cont_tele = models.CharField(max_length=15, blank=True)
 
+    class Meta:
+        unique_together = ('adm_dato_pers_tipo_iden',
+                           'adm_dato_pers_nume_iden')
 
 # Crea la tabla de Reporte de ENI
 
