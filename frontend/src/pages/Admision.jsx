@@ -689,6 +689,122 @@ const Admision = () => {
     }));
   };
 
+  // ...existing code...
+
+  // Función auxiliar para manejar cambios de tipo de identificación
+  const handleTipoIdenChange = ({
+    tipo, // 'pers' o 'repr'
+    value,
+    formData,
+    setFormData,
+    setVariableEstado,
+    setBotonEstado,
+    setIsBuscar,
+    setIsBuscarRepresentante,
+    resetCampos,
+    validarDato,
+    e,
+    error,
+    setError,
+  }) => {
+    const numeIdenKey =
+      tipo === "pers" ? "adm_dato_pers_nume_iden" : "adm_dato_repr_nume_iden";
+    const variableEstadoKey =
+      tipo === "pers" ? "adm_dato_pers_nume_iden" : "adm_dato_repr_nume_iden";
+    const isBuscarSetter =
+      tipo === "pers" ? setIsBuscar : setIsBuscarRepresentante;
+    const btnBuscarKey =
+      tipo === "pers" ? "btnBuscar" : "btnBuscarRepresentante";
+
+    setFormData((prev) => ({
+      ...prev,
+      [numeIdenKey]: "",
+      ...(tipo === "pers" ? { adm_dato_auto_auto_etni: "" } : {}),
+    }));
+    setVariableEstado((prev) => ({
+      ...prev,
+      [variableEstadoKey]: !value,
+      ...(tipo === "repr"
+        ? {
+            adm_dato_repr_apel: true,
+            adm_dato_repr_nomb: true,
+            adm_dato_repr_fech_naci: true,
+            adm_dato_repr_pare: true,
+            adm_dato_repr_nume_tele: true,
+            adm_dato_repr_naci: true,
+            adm_dato_repr_no_ident_prov: true,
+          }
+        : {}),
+    }));
+
+    if (!value) {
+      resetCampos();
+    } else if (value === "NO IDENTIFICADO") {
+      if (formData[numeIdenKey]) {
+        isBuscarSetter(false);
+        setBotonEstado((prev) => ({ ...prev, [btnBuscarKey]: !value }));
+      } else {
+        isBuscarSetter(true);
+        setBotonEstado((prev) => ({ ...prev, [btnBuscarKey]: false }));
+      }
+    } else {
+      isBuscarSetter(false);
+      setBotonEstado((prev) => ({ ...prev, [btnBuscarKey]: true }));
+    }
+    validarDato(
+      e,
+      { ...formData, [e.target.name]: value, [numeIdenKey]: "" },
+      setFormData,
+      error,
+      setError,
+      setBotonEstado
+    );
+  };
+
+  // Función auxiliar para manejar cambios de número de identificación
+  const handleNumeIdenChange = ({
+    tipo,
+    value,
+    formData,
+    setBotonEstado,
+    setIsBuscar,
+    setIsBuscarRepresentante,
+    validarDato,
+    e,
+    error,
+    setError,
+    setFormData,
+  }) => {
+    const tipoIdenKey =
+      tipo === "pers" ? "adm_dato_pers_tipo_iden" : "adm_dato_repr_tipo_iden";
+    const isBuscarSetter =
+      tipo === "pers" ? setIsBuscar : setIsBuscarRepresentante;
+    const btnBuscarKey =
+      tipo === "pers" ? "btnBuscar" : "btnBuscarRepresentante";
+
+    if (formData[tipoIdenKey] === "NO IDENTIFICADO") {
+      if (value) {
+        isBuscarSetter(false);
+        setBotonEstado((prev) => ({ ...prev, [btnBuscarKey]: false }));
+      } else {
+        isBuscarSetter(true);
+      }
+    } else {
+      isBuscarSetter(false);
+      setBotonEstado((prev) => ({ ...prev, [btnBuscarKey]: !value }));
+    }
+    validarDato(
+      e,
+      { ...formData, [e.target.name]: value },
+      setFormData,
+      error,
+      setError,
+      setBotonEstado
+    );
+  };
+
+  // ...existing code...
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -735,162 +851,78 @@ const Admision = () => {
     };
 
     switch (name) {
-      // Casos de datos personales
       case "adm_dato_naci_fech_naci":
         actualizarFechaNacimiento(value, name);
         break;
 
       case "adm_dato_pers_tipo_iden":
-        setFormData((prev) => ({
-          ...prev,
-          adm_dato_pers_nume_iden: "",
-          adm_dato_auto_auto_etni: "",
-        }));
-        setVariableEstado((prev) => ({
-          ...prev,
-          adm_dato_pers_nume_iden: !value,
-        }));
-        if (!value) {
-          resetCamposPersona();
-        } else if (value === "NO IDENTIFICADO") {
-          if (formData.adm_dato_pers_nume_iden) {
-            setIsBuscar(false);
-            setBotonEstado((prev) => ({ ...prev, btnBuscar: !value }));
-          } else {
-            setIsBuscar(true);
-            setBotonEstado((prev) => ({ ...prev, btnBuscar: false }));
-          }
-        } else {
-          setIsBuscar(false);
-          setBotonEstado((prev) => ({ ...prev, btnBuscar: true }));
-        }
-        validarDato(
-          e,
-          { ...formData, [name]: value, adm_dato_pers_nume_iden: "" },
+        handleTipoIdenChange({
+          tipo: "pers",
+          value,
+          formData,
           setFormData,
+          setVariableEstado,
+          setBotonEstado,
+          setIsBuscar,
+          resetCampos: resetCamposPersona,
+          validarDato,
+          e,
           error,
           setError,
-          setBotonEstado
-        );
+        });
         break;
 
       case "adm_dato_pers_nume_iden":
-        if (formData.adm_dato_pers_tipo_iden === "NO IDENTIFICADO") {
-          if (value) {
-            setIsBuscar(false);
-            setBotonEstado((prev) => ({ ...prev, btnBuscar: false }));
-          } else {
-            setIsBuscar(true);
-          }
-        } else {
-          setIsBuscar(false);
-          setBotonEstado((prev) => ({ ...prev, btnBuscar: !value }));
-        }
-        validarDato(
+        handleNumeIdenChange({
+          tipo: "pers",
+          value,
+          formData,
+          setBotonEstado,
+          setIsBuscar,
+          validarDato,
           e,
-          { ...formData, [name]: value },
-          setFormData,
           error,
           setError,
-          setBotonEstado
-        );
+          setFormData,
+        });
         break;
 
-      // Casos de representante
       case "adm_dato_repr_fech_naci":
         actualizarFechaNacimiento(value, name);
         break;
 
       case "adm_dato_repr_tipo_iden":
-        setFormData((prev) => ({
-          ...prev,
-          adm_dato_repr_nume_iden: "",
-        }));
-        setVariableEstado((prev) => ({
-          ...prev,
-          adm_dato_repr_nume_iden: !value,
-          adm_dato_repr_apel: true,
-          adm_dato_repr_nomb: true,
-          adm_dato_repr_fech_naci: true,
-          adm_dato_repr_pare: true,
-          adm_dato_repr_nume_tele: true,
-          adm_dato_repr_naci: true,
-          adm_dato_repr_no_ident_prov: true,
-        }));
-        if (!value) {
-          resetCamposRepresentante();
-        } else if (value === "NO IDENTIFICADO") {
-          if (formData.adm_dato_repr_nume_iden) {
-            setIsBuscarRepresentante(false);
-            setBotonEstado((prev) => ({
-              ...prev,
-              btnBuscarRepresentante: !value,
-            }));
-          } else {
-            setIsBuscarRepresentante(true);
-            setBotonEstado((prev) => ({
-              ...prev,
-              btnBuscarRepresentante: false,
-            }));
-          }
-        } else {
-          setIsBuscarRepresentante(false);
-          setBotonEstado((prev) => ({
-            ...prev,
-            btnBuscarRepresentante: true,
-          }));
-        }
-        validarDato(
-          e,
-          {
-            ...formData,
-            [name]: value,
-            adm_dato_repr_nume_iden: "",
-            adm_dato_repr_apel: "",
-            adm_dato_repr_nomb: "",
-            adm_dato_repr_pare: "",
-            adm_dato_repr_nume_tele: "",
-            adm_dato_repr_naci: "",
-            adm_dato_repr_no_ident_prov: "",
-          },
+        handleTipoIdenChange({
+          tipo: "repr",
+          value,
+          formData,
           setFormData,
+          setVariableEstado,
+          setBotonEstado,
+          setIsBuscarRepresentante,
+          resetCampos: resetCamposRepresentante,
+          validarDato,
+          e,
           error,
           setError,
-          setBotonEstado,
-          setFechaNacimientoRepresentante(""),
-          setEdadRepresentante("")
-        );
+        });
         break;
 
       case "adm_dato_repr_nume_iden":
-        if (formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO") {
-          if (value) {
-            setIsBuscarRepresentante(false);
-            setBotonEstado((prev) => ({
-              ...prev,
-              btnBuscarRepresentante: false,
-            }));
-          } else {
-            setIsBuscarRepresentante(true);
-          }
-        } else {
-          setIsBuscarRepresentante(false);
-          setBotonEstado((prev) => ({
-            ...prev,
-            btnBuscarRepresentante: !value,
-          }));
-        }
-        validarDato(
+        handleNumeIdenChange({
+          tipo: "repr",
+          value,
+          formData,
+          setBotonEstado,
+          setIsBuscarRepresentante,
+          validarDato,
           e,
-          { ...formData, [name]: value },
-          setFormData,
           error,
           setError,
-          setBotonEstado
-        );
+          setFormData,
+        });
         break;
 
-      // Default para el resto de campos
       default:
         setFormData((prev) => ({ ...prev, [name]: value }));
         validarDato(
@@ -904,39 +936,48 @@ const Admision = () => {
         break;
     }
   };
+  // ...existing code...
+
+  const dependenciasSelect = {
+    adm_dato_resi_pais_resi: [
+      "adm_dato_resi_prov",
+      "adm_dato_resi_cant",
+      "adm_dato_resi_parr",
+    ],
+    adm_dato_resi_prov: ["adm_dato_resi_cant", "adm_dato_resi_parr"],
+    adm_dato_resi_cant: ["adm_dato_resi_parr"],
+    adm_dato_auto_auto_etni: [
+      "adm_dato_auto_naci_etni",
+      "adm_dato_auto_pueb_kich",
+    ],
+    adm_dato_auto_naci_etni: ["adm_dato_auto_pueb_kich"],
+    adm_dato_naci_naci: [
+      "adm_dato_no_ident_prov",
+      "adm_dato_auto_auto_etni",
+      "adm_dato_naci_luga_naci",
+    ],
+    adm_dato_repr_naci: ["adm_dato_repr_no_ident_prov"],
+  };
 
   const handleSelectChange = (e) => {
     const { name, value } = e.target;
     let nuevoFormData = { ...formData, [name]: value };
 
-    if (name === "adm_dato_resi_pais_resi") {
-      nuevoFormData.adm_dato_resi_prov = "";
-      nuevoFormData.adm_dato_resi_cant = "";
-      nuevoFormData.adm_dato_resi_parr = "";
+    // Limpiar campos dependientes
+    if (dependenciasSelect[name]) {
+      dependenciasSelect[name].forEach((campo) => {
+        // Si es lugar de nacimiento, asignar el país según nacionalidad
+        if (
+          name === "adm_dato_naci_naci" &&
+          campo === "adm_dato_naci_luga_naci"
+        ) {
+          nuevoFormData[campo] = nacionalidadAPais[value] || "";
+        } else {
+          nuevoFormData[campo] = "";
+        }
+      });
     }
-    if (name === "adm_dato_resi_prov") {
-      nuevoFormData.adm_dato_resi_cant = "";
-      nuevoFormData.adm_dato_resi_parr = "";
-    }
-    if (name === "adm_dato_resi_cant") {
-      nuevoFormData.adm_dato_resi_parr = "";
-    }
-    if (name === "adm_dato_auto_auto_etni") {
-      nuevoFormData.adm_dato_auto_naci_etni = "";
-      nuevoFormData.adm_dato_auto_pueb_kich = "";
-    }
-    if (name === "adm_dato_auto_naci_etni") {
-      nuevoFormData.adm_dato_auto_pueb_kich = "";
-    }
-    if (name === "adm_dato_naci_naci") {
-      nuevoFormData.adm_dato_no_ident_prov = "";
-      nuevoFormData.adm_dato_auto_auto_etni = "";
-      const nuevoLugarNaci = nacionalidadAPais[value] || "";
-      nuevoFormData.adm_dato_naci_luga_naci = nuevoLugarNaci;
-    }
-    if (name === "adm_dato_repr_naci") {
-      nuevoFormData.adm_dato_repr_no_ident_prov = "";
-    }
+
     setFormData(nuevoFormData);
   };
 
@@ -1380,8 +1421,6 @@ const Admision = () => {
 
   const fieldClass = "mb-1 flex flex-col";
   const labelClass = "block text-gray-700 text-sm font-bold mb-1";
-  const inputClass =
-    "rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400";
   const buttonTextRegistro = isEditing ? "Actualizar Registro" : "Registrar";
   const buttonTextBuscar = isBuscar ? "Nuevo Registro" : "Buscar";
   const buttonTextBuscarRepresentante = isBuscarRepresentante
@@ -1389,13 +1428,13 @@ const Admision = () => {
     : "Buscar";
 
   return (
-    <div className="w-full h-full min-h-screen flex items-start justify-center bg-gray-100">
-      <div className="w-full max-w-5xl p-2 bg-white rounded-lg shadow-md mt-2">
-        <h2 className="text-2xl font-bold mb-6 text-center text-blue-700">
+    <div className="w-full h-screen flex items-stretch justify-stretch bg-gray-100">
+      <div className="w-full h-full p-4 m-4 bg-white rounded-lg shadow-md mt-1">
+        <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Admisión de Pacientes
         </h2>
         {/* NAV TABS */}
-        <nav className="flex border-b border-blue-200 mb-2 sticky top-20 z-50 bg-white items-start justify-center">
+        <nav className="flex border-b border-blue-200 mb-1 sticky top-20 z-50 bg-white items-start justify-center">
           {tabs.map((tab) =>
             tab.key === "representante" &&
             !(edad !== null && parseInt(edad) < 18) ? null : (
@@ -1403,7 +1442,7 @@ const Admision = () => {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-2 -mb-px font-semibold border-b-2 transition-colors duration-200
+                className={`px-8 py-1 -mb-px font-black border-b-2 transition-colors duration-200
                               ${
                                 activeTab === tab.key
                                   ? "border-blue-600 text-blue-600"
@@ -1415,15 +1454,15 @@ const Admision = () => {
             )
           )}
         </nav>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="w-full">
           {/* DATOS PERSONALES */}
           {activeTab === "personales" && (
             <>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Datos Personales
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -1608,11 +1647,11 @@ const Admision = () => {
                   </div>
                 </div>
               </fieldset>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Información de Contacto
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label className={labelClass} htmlFor="adm_dato_pers_tele">
                       {requiredFields.includes("adm_dato_pers_tele") && (
@@ -1684,11 +1723,11 @@ const Admision = () => {
                   </div>
                 </div>
               </fieldset>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Datos de Nacimiento
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -1759,11 +1798,11 @@ const Admision = () => {
           {/* DATOS DE RESIDENCIA */}
           {activeTab === "residencia" && (
             <>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Datos de Domicilio Actual
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -1837,11 +1876,11 @@ const Admision = () => {
                   </div>
                 </div>
               </fieldset>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Dirección de Residencia
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -1949,11 +1988,11 @@ const Admision = () => {
           {/* DATOS ADICIONALES */}
           {activeTab === "adicionales" && (
             <>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Identidad Étnica y Cultural
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -2020,11 +2059,11 @@ const Admision = () => {
                   )}
                 </div>
               </fieldset>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Condición Prioritaria
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -2047,11 +2086,11 @@ const Admision = () => {
                   </div>
                 </div>
               </fieldset>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Formación Académica
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -2096,11 +2135,11 @@ const Admision = () => {
                   </div>
                 </div>
               </fieldset>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Información Laboral
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -2167,11 +2206,11 @@ const Admision = () => {
                   </div>
                 </div>
               </fieldset>
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Discapacidad
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -2200,11 +2239,11 @@ const Admision = () => {
           {edad !== null &&
             parseInt(edad) < 18 &&
             activeTab === "representante" && (
-              <fieldset className="border border-blue-200 rounded p-4 mb-1">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">
                   Datos de Representante o Familiar
                 </legend>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   <div className={fieldClass}>
                     <label
                       className={labelClass}
@@ -2456,11 +2495,11 @@ const Admision = () => {
             )}
           {/* DATOS DE CONTACTO */}
           {activeTab === "contacto" && (
-            <fieldset className="border border-blue-200 rounded p-4 mb-1">
+            <fieldset className="border border-blue-200 rounded p-2 mb-1">
               <legend className="text-lg font-semibold text-blue-600 px-2">
                 Contacto de Emergencia
               </legend>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 <div className={fieldClass}>
                   <label
                     className={labelClass}

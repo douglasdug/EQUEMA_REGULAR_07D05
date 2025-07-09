@@ -46,113 +46,111 @@ export function Navigation() {
   const mobileLinks = [...navLinks];
 
   return (
-    <div className="container">
-      <header className="bg-blue-100 p-4 mb-4 rounded-2xl fixed top-0 left-0 right-0 z-50">
-        <div className="flex">
-          <a href="/">
-            <h1 className="my-auto font-bold text-[22px] lg:text-3xl pr-2 mr-2 border-r-2 border-blue-600 lg:pr-5 lg:mr-5">
-              SIRA-07D05
-            </h1>
-          </a>
-          <button className="my-auto mr-2 lg:hidden" onClick={toggleNav}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-6 h-6"
+    <header className="bg-blue-100 p-4 mb-4 rounded-2xl fixed top-0 left-2 right-2 z-50">
+      <div className="flex">
+        <a href="/">
+          <h1 className="my-auto font-bold text-[22px] lg:text-3xl pr-2 mr-2 border-r-2 border-blue-600 lg:pr-5 lg:mr-5">
+            SIRA-07D05
+          </h1>
+        </a>
+        <button className="my-auto mr-2 lg:hidden" onClick={toggleNav}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="2"
+            stroke="currentColor"
+            className="w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
+            />
+          </svg>
+        </button>
+        <div className="my-auto">
+          <ul className="hidden lg:flex uppercase font-bold">
+            {navLinks.map((link) => (
+              <NavLink key={link.to} to={link.to} style={linkStyle}>
+                <li className="mr-10 p-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded">
+                  {link.label}
+                </li>
+              </NavLink>
+            ))}
+            <div
+              className="menu relative"
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
-              />
-            </svg>
-          </button>
-          <div className="my-auto">
-            <ul className="hidden lg:flex uppercase font-bold">
-              {navLinks.map((link) => (
-                <NavLink key={link.to} to={link.to} style={linkStyle}>
-                  <li className="mr-10 p-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded">
-                    {link.label}
+              <ul>
+                <NavLink>
+                  <li className="align-baseline mr-10 px-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded focus:outline-none">
+                    Esquema Regula
                   </li>
                 </NavLink>
-              ))}
-              <div
-                className="menu relative"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              >
-                <ul>
-                  <NavLink>
-                    <li className="align-baseline mr-10 px-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded focus:outline-none">
-                      Esquema Regula
-                    </li>
-                  </NavLink>
-                </ul>
-                {state.isDropdownVisible && (
-                  <div className="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                    <ul>
-                      {dropdownLinks.map((link) => (
-                        <NavLink key={link.to} to={link.to} style={linkStyle}>
-                          <li className="mr-1 p-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded">
-                            {link.label}
-                          </li>
-                        </NavLink>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </ul>
-          </div>
-          <div className="ml-auto">
-            <UserLoginLogout />
-          </div>
+              </ul>
+              {state.isDropdownVisible && (
+                <div className="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                  <ul>
+                    {dropdownLinks.map((link) => (
+                      <NavLink key={link.to} to={link.to} style={linkStyle}>
+                        <li className="mr-1 p-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded">
+                          {link.label}
+                        </li>
+                      </NavLink>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </ul>
         </div>
-        {state.nav && (
-          <div
-            id="menu"
-            className="menu mt-5 p-5 bg-white border-2 border-blue-600 rounded-2xl uppercase"
-            onClick={toggleNav}
-          >
-            <ul className="font-bold">
-              {mobileLinks.map((link) => (
-                <NavLink key={link.to} to={link.to} style={linkStyle}>
-                  <li className="mb-2 hover:text-green-600">{link.label}</li>
+        <div className="ml-auto">
+          <UserLoginLogout />
+        </div>
+      </div>
+      {state.nav && (
+        <div
+          id="menu"
+          className="menu mt-5 p-5 bg-white border-2 border-blue-600 rounded-2xl uppercase"
+          onClick={toggleNav}
+        >
+          <ul className="font-bold">
+            {mobileLinks.map((link) => (
+              <NavLink key={link.to} to={link.to} style={linkStyle}>
+                <li className="mb-2 hover:text-green-600">{link.label}</li>
+              </NavLink>
+            ))}
+            <div
+              className="menu relative"
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              <ul>
+                <NavLink>
+                  <li className="align-baseline mr-10 px-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded focus:outline-none">
+                    Esquema Regula
+                  </li>
                 </NavLink>
-              ))}
-              <div
-                className="menu relative"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              >
-                <ul>
-                  <NavLink>
-                    <li className="align-baseline mr-10 px-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded focus:outline-none">
-                      Esquema Regula
-                    </li>
-                  </NavLink>
-                </ul>
-                {state.isDropdownVisible && (
-                  <div className="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                    <ul>
-                      {dropdownLinks.map((link) => (
-                        <NavLink key={link.to} to={link.to} style={linkStyle}>
-                          <li className="mr-1 p-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded">
-                            {link.label}
-                          </li>
-                        </NavLink>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </ul>
-          </div>
-        )}
-      </header>
-    </div>
+              </ul>
+              {state.isDropdownVisible && (
+                <div className="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                  <ul>
+                    {dropdownLinks.map((link) => (
+                      <NavLink key={link.to} to={link.to} style={linkStyle}>
+                        <li className="mr-1 p-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded">
+                          {link.label}
+                        </li>
+                      </NavLink>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </ul>
+        </div>
+      )}
+    </header>
   );
 }
