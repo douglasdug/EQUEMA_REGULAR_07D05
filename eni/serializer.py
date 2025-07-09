@@ -1,9 +1,10 @@
 from rest_framework import serializers
-from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, registro_vacunado
+from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, registro_vacunado
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
 DATE_FORMAT = "%d/%m/%Y"
+TIME_FORMAT = "%H:%M:%S"
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -156,6 +157,10 @@ class ReporteENIRegistrationSerializer(serializers.ModelSerializer):
 class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
     adm_dato_admi_fech_admi = serializers.DateField(
         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+    adm_dato_admi_fech_admi_actu = serializers.DateField(
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+    adm_dato_naci_fech_naci = serializers.DateField(
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
     class Meta:
         model = admision_datos
@@ -167,6 +172,70 @@ class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
                 message="Ya existe un registro con este tipo y número de identificación."
             )
         ]
+
+
+class Form008EmergenciaSerializer(serializers.ModelSerializer):
+    for_008_emer_fech_aten = serializers.DateField(
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+    for_008_emer_hora_aten = serializers.TimeField(
+        format=TIME_FORMAT, input_formats=[TIME_FORMAT, 'iso-8601'])
+
+    # Campo calculado para respuesta
+    nombre_completo = serializers.SerializerMethodField()
+
+    class Meta:
+        model = form_008_emergencia
+        fields = '__all__'
+
+    def get_nombre_completo(self, obj):
+        """Campo calculado para obtener el nombre completo"""
+        return obj.get_nombre_completo()
+
+    def validate(self, attrs):
+        """Validaciones de nivel de formulario - API específicas"""
+        # Validación de identificación
+        if attrs.get('for_008_emer_nume_iden') and not attrs.get('for_008_emer_tipo_docu_iden'):
+            raise serializers.ValidationError({
+                'for_008_emer_tipo_docu_iden': 'Si ingresa número de identificación, debe especificar el tipo'
+            })
+
+        return attrs
+
+    def validate_for_008_emer_edad(self, value):
+        """Validación específica de edad"""
+        if value is not None and value < 0:
+            raise serializers.ValidationError('La edad no puede ser negativa')
+        if value is not None and value > 150:
+            raise serializers.ValidationError(
+                'La edad no puede ser mayor a 150 años')
+        return value
+
+    def validate_for_008_emer_nume_iden(self, value):
+        """Validación de número de identificación"""
+        if value and len(value) < 7:
+            raise serializers.ValidationError(
+                'El número de identificación debe tener al menos 7 caracteres')
+        return value
+
+    def create(self, validated_data):
+        """Lógica personalizada de creación"""
+        # Aquí puedes agregar lógica adicional antes de crear
+        instance = super().create(validated_data)
+
+        # Ejemplo: Logging automático
+        # logger.info(f"Nuevo formulario 008 creado: {instance.id}")
+
+        return instance
+
+    def update(self, instance, validated_data):
+        """Lógica personalizada de actualización"""
+        # Aquí puedes agregar lógica adicional antes de actualizar
+        updated_instance = super().update(instance, validated_data)
+
+        # Ejemplo: Tracking de cambios
+        # logger.info(f"Formulario 008 actualizado: {instance.id}")
+
+        return updated_instance
 
 
 class RegistroVacunadoRegistrationSerializer(serializers.ModelSerializer):

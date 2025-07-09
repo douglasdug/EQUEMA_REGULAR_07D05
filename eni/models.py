@@ -586,6 +586,95 @@ class admision_datos(models.Model):
         unique_together = ('adm_dato_pers_tipo_iden',
                            'adm_dato_pers_nume_iden')
 
+# Crea la tabla de Form 008 EMERGENCIA
+
+
+class form_008_emergencia(models.Model):
+    for_008_emer_inst_sist = models.CharField(max_length=15, blank=True)
+    for_008_emer_unic = models.CharField(max_length=10, blank=True)
+    for_008_emer_nomb_esta_salu = models.CharField(max_length=100, blank=True)
+    for_008_emer_zona = models.CharField(max_length=10, blank=True)
+    for_008_emer_prov = models.CharField(max_length=60, blank=True)
+    for_008_emer_cant = models.CharField(max_length=60, blank=True)
+    for_008_emer_dist = models.CharField(max_length=10, blank=True)
+    for_008_emer_nive = models.CharField(max_length=10, blank=True)
+    for_008_emer_fech_aten = models.DateField(blank=True, null=True)
+    for_008_emer_tipo_docu_iden = models.CharField(max_length=25, blank=True)
+    for_008_emer_nume_iden = models.CharField(max_length=25, blank=True)
+    for_008_emer_prim_apel = models.CharField(max_length=40, blank=True)
+    for_008_emer_segu_apel = models.CharField(max_length=40, blank=True)
+    for_008_emer_prim_nomb = models.CharField(max_length=40, blank=True)
+    for_008_emer_segu_nomb = models.CharField(max_length=40, blank=True)
+    for_008_emer_sexo = models.CharField(max_length=20, blank=True)
+    for_008_emer_edad = models.IntegerField(blank=True, null=True)
+    for_008_emer_cond_edad = models.CharField(max_length=10, blank=True)
+    for_008_emer_naci = models.CharField(max_length=60, blank=True)
+    for_008_emer_etni = models.CharField(max_length=40, blank=True)
+    for_008_emer_grup_prio = models.CharField(max_length=50, blank=True)
+    for_008_emer_tipo_segu = models.CharField(max_length=40, blank=True)
+    for_008_emer_prov_reci = models.CharField(max_length=60, blank=True)
+    for_008_emer_cant_reci = models.CharField(max_length=60, blank=True)
+    for_008_emer_parr_reci = models.CharField(max_length=60, blank=True)
+    for_008_emer_espe_prof = models.CharField(max_length=40, blank=True)
+    for_008_emer_cie_10_prin = models.CharField(max_length=10, blank=True)
+    for_008_emer_diga_prin = models.CharField(max_length=260, blank=True)
+    for_008_emer_cond_diag = models.CharField(max_length=50, blank=True)
+    for_008_emer_cie_10_caus_exte = models.CharField(max_length=10, blank=True)
+    for_008_emer_diag_caus_exte = models.CharField(max_length=260, blank=True)
+    for_008_emer_hosp = models.CharField(max_length=10, blank=True)
+    for_008_emer_hora_aten = models.TimeField(blank=True, null=True)
+    for_008_emer_cond_alta = models.CharField(max_length=15, blank=True)
+    for_008_emer_obse = models.CharField(max_length=150, blank=True)
+    for_008_emer_resp_aten_medi = models.CharField(max_length=80, blank=True)
+    for_008_emer_apoy_aten_medi = models.CharField(max_length=80, blank=True)
+    for_008_emer_edad_gest = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        blank=True,
+        null=True,
+        help_text='Edad gestacional en semanas (ej: 38.5)'
+    )
+    for_008_emer_ries_obst = models.CharField(max_length=15, blank=True)
+    for_008_emer_indi_paci_fami = models.CharField(max_length=150, blank=True)
+    for_008_emer_unid_salu_resp_segu_aten = models.CharField(
+        max_length=100, blank=True)
+    for_008_emer_dire_domi = models.CharField(max_length=300, blank=True)
+    for_008_emer_tele_paci = models.CharField(max_length=30, blank=True)
+    admision_datos = models.ForeignKey(
+        'admision_datos',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='formularios_008_emergencia',
+        help_text='Datos de admisión del paciente'
+    )
+
+    class Meta:
+        verbose_name = 'Formulario 008 Emergencia'
+        verbose_name_plural = 'Formularios 008 Emergencia'
+        ordering = ['-for_008_emer_fech_aten']
+        indexes = [
+            models.Index(fields=['for_008_emer_nume_iden']),
+            models.Index(fields=['for_008_emer_fech_aten']),
+        ]
+
+    def __str__(self):
+        return f"Form 008 - {self.for_008_emer_prim_nomb} {self.for_008_emer_prim_apel} - {self.for_008_emer_fech_aten}"
+
+    def get_nombre_completo(self):
+        """Retorna el nombre completo del paciente"""
+        nombres = f"{self.for_008_emer_prim_nomb or ''} {self.for_008_emer_segu_nomb or ''}".strip()
+        apellidos = f"{self.for_008_emer_prim_apel or ''} {self.for_008_emer_segu_apel or ''}".strip()
+        return f"{nombres} {apellidos}".strip()
+
+    def clean(self):
+        """Validaciones esenciales a nivel de modelo"""
+        from django.core.exceptions import ValidationError
+
+        # Solo validaciones críticas que afectan la integridad de los datos
+        if self.for_008_emer_edad is not None and self.for_008_emer_edad < 0:
+            raise ValidationError('La edad no puede ser negativa')
+
 # Crea la tabla de Reporte de ENI
 
 
