@@ -157,14 +157,15 @@ class ReporteENIRegistrationSerializer(serializers.ModelSerializer):
 class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
     adm_dato_admi_fech_admi = serializers.DateField(
         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
-    adm_dato_admi_fech_admi_actu = serializers.DateField(
-        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+    adm_dato_admi_fech_admi_actu = serializers.DateField(read_only=True)
     adm_dato_naci_fech_naci = serializers.DateField(
         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
     class Meta:
         model = admision_datos
         fields = '__all__'
+        read_only_fields = ('adm_dato_admi_fech_admi',
+                            'adm_dato_admi_fech_admi_actu')
         validators = [
             serializers.UniqueTogetherValidator(
                 queryset=admision_datos.objects.all(),

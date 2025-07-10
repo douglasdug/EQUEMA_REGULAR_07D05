@@ -166,6 +166,7 @@ const Admision = () => {
   const [provinciasOptions, setProvinciasOptions] = useState([]);
   const [cantonesOptions, setCantonesOptions] = useState([]);
   const [parroquiasOptions, setParroquiasOptions] = useState([]);
+  const [abscripcionUnidadOptions, setAbscripcionUnidadOptions] = useState([]);
   const [naciEtnicaPuebloOptions, setNaciEtnicaPuebloOptions] = useState([]);
   const [puebKichwaOptions, setPuebKichwaOptions] = useState([]);
   const [fechaNacimiento, setFechaNacimiento] = useState("");
@@ -396,15 +397,15 @@ const Admision = () => {
     }
   };
 
-  const buscarValuePorNombreCanton = (nombre, options) => {
-    // Busca el value cuyo label termina con el nombre limpio (ignorando mayúsculas/minúsculas y espacios)
-    if (!nombre) return "";
-    const nombreLimpio = nombre.trim().toUpperCase();
-    const encontrado = options.find((opt) =>
-      opt.label.trim().toUpperCase().endsWith(nombreLimpio)
-    );
-    return encontrado ? encontrado.value : "";
-  };
+  // const buscarValuePorNombreCanton = (nombre, options) => {
+  //   // Busca el value cuyo label termina con el nombre limpio (ignorando mayúsculas/minúsculas y espacios)
+  //   if (!nombre) return "";
+  //   const nombreLimpio = nombre.trim().toUpperCase();
+  //   const encontrado = options.find((opt) =>
+  //     opt.label.trim().toUpperCase().endsWith(nombreLimpio)
+  //   );
+  //   return encontrado ? encontrado.value : "";
+  // };
 
   const buscarValuePorNombreParroquia = (nombre, options) => {
     if (!nombre) return "";
@@ -442,8 +443,8 @@ const Admision = () => {
       : "";
 
     // Opciones actuales según provincia y cantón
-    const cantonOptions =
-      listaSelectAdmision.adm_dato_resi_cant[data.adm_dato_resi_prov] || [];
+    // const cantonOptions =
+    //   listaSelectAdmision.adm_dato_resi_cant[data.adm_dato_resi_prov] || [];
     const parroquiaOptions =
       listaSelectAdmision.adm_dato_resi_parr[data.adm_dato_resi_cant] || [];
     setFechaNacimiento(fechaNac);
@@ -478,10 +479,7 @@ const Admision = () => {
       adm_dato_naci_fech_naci: fechaNac,
       adm_dato_resi_pais_resi: data.adm_dato_resi_pais_resi || "",
       adm_dato_resi_prov: data.adm_dato_resi_prov || "",
-      adm_dato_resi_cant: buscarValuePorNombreCanton(
-        data.adm_dato_resi_cant,
-        cantonOptions
-      ),
+      adm_dato_resi_cant: data.adm_dato_resi_cant || "",
       adm_dato_resi_parr: buscarValuePorNombreParroquia(
         data.adm_dato_resi_parr,
         parroquiaOptions
@@ -1137,13 +1135,13 @@ const Admision = () => {
   };
 
   // Funciones para extraer solo el nombre del value seleccionado
-  const extraerNombreCanton = (value, options) => {
-    // Busca el label correspondiente al value
-    const opt = options.find((o) => o.value === value);
-    if (!opt) return value;
-    // Elimina los primeros 4 caracteres del label y espacios
-    return opt.label.substring(5).trim();
-  };
+  // const extraerNombreCanton = (value, options) => {
+  //   // Busca el label correspondiente al value
+  //   const opt = options.find((o) => o.value === value);
+  //   if (!opt) return value;
+  //   // Elimina los primeros 4 caracteres del label y espacios
+  //   return opt.label.substring(5).trim();
+  // };
 
   const extraerNombreParroquia = (value, options) => {
     const opt = options.find((o) => o.value === value);
@@ -1161,10 +1159,10 @@ const Admision = () => {
     setSuccessMessage("");
     const formDataLimpio = limpiarCamposRepresentanteNoVisibles(formData);
     // Obtener las opciones actuales de cantón y parroquia
-    const cantonOptions = cantonesOptions.length
-      ? cantonesOptions
-      : listaSelectAdmision.adm_dato_resi_cant[formData.adm_dato_resi_prov] ||
-        [];
+    // const cantonOptions = cantonesOptions.length
+    //   ? cantonesOptions
+    //   : listaSelectAdmision.adm_dato_resi_cant[formData.adm_dato_resi_prov] ||
+    //     [];
     const parroquiaOptions = parroquiasOptions.length
       ? parroquiasOptions
       : listaSelectAdmision.adm_dato_resi_parr[formData.adm_dato_resi_cant] ||
@@ -1173,10 +1171,10 @@ const Admision = () => {
     // Transformar los valores antes de enviar
     const formDataToSend = {
       ...formDataLimpio,
-      adm_dato_resi_cant: extraerNombreCanton(
-        formDataLimpio.adm_dato_resi_cant,
-        cantonOptions
-      ),
+      // adm_dato_resi_cant: extraerNombreCanton(
+      //   formDataLimpio.adm_dato_resi_cant,
+      //   cantonOptions
+      // ),
       adm_dato_resi_parr: extraerNombreParroquia(
         formDataLimpio.adm_dato_resi_parr,
         parroquiaOptions
@@ -1283,6 +1281,11 @@ const Admision = () => {
     formData.adm_dato_resi_cant,
     listaSelectAdmision.adm_dato_resi_parr,
     setParroquiasOptions
+  );
+  useSelectOptions(
+    formData.adm_dato_resi_parr,
+    listaSelectAdmision.adm_dato_resi_esta_adsc_terr,
+    setAbscripcionUnidadOptions
   );
   useSelectOptions(
     formData.adm_dato_auto_auto_etni,
@@ -1960,7 +1963,7 @@ const Admision = () => {
                       name="adm_dato_resi_esta_adsc_terr"
                       value={formData["adm_dato_resi_esta_adsc_terr"]}
                       onChange={handleSelectChange}
-                      options={parroquiasOptions}
+                      options={abscripcionUnidadOptions}
                       disabled={variableEstado["adm_dato_resi_esta_adsc_terr"]}
                       variableEstado={variableEstado}
                     />
