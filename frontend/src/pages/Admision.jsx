@@ -40,6 +40,7 @@ const initialState = {
   adm_dato_resi_prov: "",
   adm_dato_resi_cant: "",
   adm_dato_resi_parr: "",
+  adm_dato_resi_esta_adsc_terr: "",
   adm_dato_resi_barr_sect: "",
   adm_dato_resi_call_prin: "",
   adm_dato_resi_call_secu: "",
@@ -191,6 +192,7 @@ const Admision = () => {
     adm_dato_resi_prov: true,
     adm_dato_resi_cant: true,
     adm_dato_resi_parr: true,
+    adm_dato_resi_esta_adsc_terr: true,
     adm_dato_resi_barr_sect: true,
     adm_dato_resi_call_prin: true,
     adm_dato_resi_call_secu: true,
@@ -276,6 +278,7 @@ const Admision = () => {
     adm_dato_resi_prov: "Provincia:",
     adm_dato_resi_cant: "Cantón:",
     adm_dato_resi_parr: "Parroquia:",
+    adm_dato_resi_esta_adsc_terr: "Establecimiento de Adscripción Territorial:",
     adm_dato_resi_barr_sect: "Barrio o Sector:",
     adm_dato_resi_call_prin: "Calle Principal:",
     adm_dato_resi_call_secu: "Calle Secundaria:",
@@ -393,6 +396,25 @@ const Admision = () => {
     }
   };
 
+  const buscarValuePorNombreCanton = (nombre, options) => {
+    // Busca el value cuyo label termina con el nombre limpio (ignorando mayúsculas/minúsculas y espacios)
+    if (!nombre) return "";
+    const nombreLimpio = nombre.trim().toUpperCase();
+    const encontrado = options.find((opt) =>
+      opt.label.trim().toUpperCase().endsWith(nombreLimpio)
+    );
+    return encontrado ? encontrado.value : "";
+  };
+
+  const buscarValuePorNombreParroquia = (nombre, options) => {
+    if (!nombre) return "";
+    const nombreLimpio = nombre.trim().toUpperCase();
+    const encontrado = options.find((opt) =>
+      opt.label.trim().toUpperCase().endsWith(nombreLimpio)
+    );
+    return encontrado ? encontrado.value : "";
+  };
+
   const actualizarFormDataConRespuesta = (data) => {
     const getNoIdentProv = (tipoId, numIden, provData) => {
       if (tipoId === "NO IDENTIFICADO" && numIden) {
@@ -419,6 +441,11 @@ const Admision = () => {
       ? new Date(data.adm_dato_repr_fech_naci).toISOString().slice(0, 10)
       : "";
 
+    // Opciones actuales según provincia y cantón
+    const cantonOptions =
+      listaSelectAdmision.adm_dato_resi_cant[data.adm_dato_resi_prov] || [];
+    const parroquiaOptions =
+      listaSelectAdmision.adm_dato_resi_parr[data.adm_dato_resi_cant] || [];
     setFechaNacimiento(fechaNac);
     setFechaNacimientoRepresentante(fechaNacRepr);
     setEdad(calcularEdad(fechaNac));
@@ -451,8 +478,15 @@ const Admision = () => {
       adm_dato_naci_fech_naci: fechaNac,
       adm_dato_resi_pais_resi: data.adm_dato_resi_pais_resi || "",
       adm_dato_resi_prov: data.adm_dato_resi_prov || "",
-      adm_dato_resi_cant: data.adm_dato_resi_cant || "",
-      adm_dato_resi_parr: data.adm_dato_resi_parr || "",
+      adm_dato_resi_cant: buscarValuePorNombreCanton(
+        data.adm_dato_resi_cant,
+        cantonOptions
+      ),
+      adm_dato_resi_parr: buscarValuePorNombreParroquia(
+        data.adm_dato_resi_parr,
+        parroquiaOptions
+      ),
+      adm_dato_resi_esta_adsc_terr: data.adm_dato_resi_esta_adsc_terr || "",
       adm_dato_resi_barr_sect: data.adm_dato_resi_barr_sect || "",
       adm_dato_resi_call_prin: data.adm_dato_resi_call_prin || "",
       adm_dato_resi_call_secu: data.adm_dato_resi_call_secu || "",
@@ -550,6 +584,7 @@ const Admision = () => {
       adm_dato_resi_prov: false,
       adm_dato_resi_cant: false,
       adm_dato_resi_parr: false,
+      adm_dato_resi_esta_adsc_terr: false,
       adm_dato_resi_barr_sect: false,
       adm_dato_resi_call_prin: false,
       adm_dato_resi_call_secu: false,
@@ -603,6 +638,7 @@ const Admision = () => {
       adm_dato_resi_prov: false,
       adm_dato_resi_cant: false,
       adm_dato_resi_parr: false,
+      adm_dato_resi_esta_adsc_terr: false,
       adm_dato_resi_barr_sect: false,
       adm_dato_resi_call_prin: false,
       adm_dato_resi_call_secu: false,
@@ -1100,6 +1136,22 @@ const Admision = () => {
     return nuevoFormData;
   };
 
+  // Funciones para extraer solo el nombre del value seleccionado
+  const extraerNombreCanton = (value, options) => {
+    // Busca el label correspondiente al value
+    const opt = options.find((o) => o.value === value);
+    if (!opt) return value;
+    // Elimina los primeros 4 caracteres del label y espacios
+    return opt.label.substring(5).trim();
+  };
+
+  const extraerNombreParroquia = (value, options) => {
+    const opt = options.find((o) => o.value === value);
+    if (!opt) return value;
+    // Elimina los primeros 6 caracteres del label y espacios
+    return opt.label.substring(7).trim();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
@@ -1108,8 +1160,27 @@ const Admision = () => {
     setError("");
     setSuccessMessage("");
     const formDataLimpio = limpiarCamposRepresentanteNoVisibles(formData);
+    // Obtener las opciones actuales de cantón y parroquia
+    const cantonOptions = cantonesOptions.length
+      ? cantonesOptions
+      : listaSelectAdmision.adm_dato_resi_cant[formData.adm_dato_resi_prov] ||
+        [];
+    const parroquiaOptions = parroquiasOptions.length
+      ? parroquiasOptions
+      : listaSelectAdmision.adm_dato_resi_parr[formData.adm_dato_resi_cant] ||
+        [];
+
+    // Transformar los valores antes de enviar
     const formDataToSend = {
       ...formDataLimpio,
+      adm_dato_resi_cant: extraerNombreCanton(
+        formDataLimpio.adm_dato_resi_cant,
+        cantonOptions
+      ),
+      adm_dato_resi_parr: extraerNombreParroquia(
+        formDataLimpio.adm_dato_resi_parr,
+        parroquiaOptions
+      ),
       adm_dato_repr_fech_naci: formDataLimpio.adm_dato_repr_fech_naci
         ? formDataLimpio.adm_dato_repr_fech_naci
         : null,
@@ -1871,6 +1942,26 @@ const Admision = () => {
                       onChange={handleSelectChange}
                       options={parroquiasOptions}
                       disabled={variableEstado["adm_dato_resi_parr"]}
+                      variableEstado={variableEstado}
+                    />
+                  </div>
+                  <div className={fieldClass}>
+                    <label
+                      className={labelClass}
+                      htmlFor="adm_dato_resi_esta_adsc_terr"
+                    >
+                      {requiredFields.includes(
+                        "adm_dato_resi_esta_adsc_terr"
+                      ) && <span className="text-red-500">* </span>}
+                      {labelMap["adm_dato_resi_esta_adsc_terr"]}
+                    </label>
+                    <CustomSelect
+                      id="adm_dato_resi_esta_adsc_terr"
+                      name="adm_dato_resi_esta_adsc_terr"
+                      value={formData["adm_dato_resi_esta_adsc_terr"]}
+                      onChange={handleSelectChange}
+                      options={parroquiasOptions}
+                      disabled={variableEstado["adm_dato_resi_esta_adsc_terr"]}
                       variableEstado={variableEstado}
                     />
                   </div>

@@ -555,6 +555,7 @@ class admision_datos(models.Model):
     adm_dato_resi_prov = models.CharField(max_length=60, blank=True)
     adm_dato_resi_cant = models.CharField(max_length=60, blank=True)
     adm_dato_resi_parr = models.CharField(max_length=60, blank=True)
+    adm_dato_resi_esta_adsc_terr = models.CharField(max_length=100, blank=True)
     adm_dato_resi_barr_sect = models.CharField(max_length=60, blank=True)
     adm_dato_resi_call_prin = models.CharField(max_length=60, blank=True)
     adm_dato_resi_call_secu = models.CharField(max_length=60, blank=True)
