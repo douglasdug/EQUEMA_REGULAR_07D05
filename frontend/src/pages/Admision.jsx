@@ -4,8 +4,8 @@ import {
   updateAdmision,
   buscarUsuarioAdmision,
 } from "../api/conexion.api.js";
-import { nacionalidadAPais } from "../components/AllList.jsx";
 import allList from "../api/all.list.json";
+import allListAbscripcionTerritorial from "../api/all.list.abscripcion.territorial.json";
 import {
   validarDato,
   validarNumeroIdentificacion,
@@ -395,16 +395,6 @@ const Admision = () => {
     }
   };
 
-  // const buscarValuePorNombreCanton = (nombre, options) => {
-  //   // Busca el value cuyo label termina con el nombre limpio (ignorando mayúsculas/minúsculas y espacios)
-  //   if (!nombre) return "";
-  //   const nombreLimpio = nombre.trim().toUpperCase();
-  //   const encontrado = options.find((opt) =>
-  //     opt.label.trim().toUpperCase().endsWith(nombreLimpio)
-  //   );
-  //   return encontrado ? encontrado.value : "";
-  // };
-
   const buscarValuePorNombreParroquia = (nombre, options) => {
     if (!nombre) return "";
     const nombreLimpio = nombre.trim().toUpperCase();
@@ -440,9 +430,6 @@ const Admision = () => {
       ? new Date(data.adm_dato_repr_fech_naci).toISOString().slice(0, 10)
       : "";
 
-    // Opciones actuales según provincia y cantón
-    // const cantonOptions =
-    //   listaSelectAdmision.adm_dato_resi_cant[data.adm_dato_resi_prov] || [];
     const parroquiaOptions =
       allList.adm_dato_resi_parr[data.adm_dato_resi_cant] || [];
     setFechaNacimiento(fechaNac);
@@ -541,7 +528,6 @@ const Admision = () => {
     setEdadRepresentante(calcularEdad(fechaNac));
     setFormData((prevData) => ({
       ...prevData,
-      //id_adm: data.id_adm || data.id || "",
       adm_dato_repr_apel: [
         data.adm_dato_pers_apel_prim || "",
         data.adm_dato_pers_apel_segu || "",
@@ -721,11 +707,9 @@ const Admision = () => {
     }));
   };
 
-  // ...existing code...
-
   // Función auxiliar para manejar cambios de tipo de identificación
   const handleTipoIdenChange = ({
-    tipo, // 'pers' o 'repr'
+    tipo,
     value,
     formData,
     setFormData,
@@ -834,8 +818,6 @@ const Admision = () => {
       setBotonEstado
     );
   };
-
-  // ...existing code...
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -968,7 +950,6 @@ const Admision = () => {
         break;
     }
   };
-  // ...existing code...
 
   const dependenciasSelect = {
     adm_dato_resi_pais_resi: [
@@ -986,6 +967,8 @@ const Admision = () => {
     adm_dato_naci_naci: [
       "adm_dato_no_ident_prov",
       "adm_dato_auto_auto_etni",
+      "adm_dato_auto_naci_etni",
+      "adm_dato_auto_pueb_kich",
       "adm_dato_naci_luga_naci",
     ],
     adm_dato_repr_naci: ["adm_dato_repr_no_ident_prov"],
@@ -1003,7 +986,7 @@ const Admision = () => {
           name === "adm_dato_naci_naci" &&
           campo === "adm_dato_naci_luga_naci"
         ) {
-          nuevoFormData[campo] = nacionalidadAPais[value] || "";
+          nuevoFormData[campo] = allList.nacionalidadAPais[value] || "";
         } else {
           nuevoFormData[campo] = "";
         }
@@ -1039,74 +1022,53 @@ const Admision = () => {
   };
 
   const isFieldVisible = (field) => {
+    const edadNum = parseInt(edad);
+
+    // Reglas específicas por campo
+    const reglas = {
+      adm_dato_repr_fech_naci: () =>
+        formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO",
+      adm_dato_repr_naci: () =>
+        formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO",
+      adm_dato_repr_no_ident_prov: () =>
+        formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO" &&
+        formData.adm_dato_repr_naci === "ECUATORIANO/A",
+      adm_dato_auto_naci_etni: () =>
+        formData.adm_dato_auto_auto_etni === "INDÍGENA",
+      adm_dato_auto_pueb_kich: () =>
+        formData.adm_dato_auto_naci_etni === "KICHWA",
+      adm_dato_no_ident_prov: () =>
+        formData.adm_dato_naci_naci === "ECUATORIANO/A" &&
+        formData.adm_dato_pers_tipo_iden === "NO IDENTIFICADO",
+      adm_dato_resi_prov: () => formData.adm_dato_resi_pais_resi === "ECUADOR",
+      adm_dato_resi_cant: () => formData.adm_dato_resi_pais_resi === "ECUADOR",
+      adm_dato_resi_parr: () => formData.adm_dato_resi_pais_resi === "ECUADOR",
+      adm_dato_resi_esta_adsc_terr: () =>
+        formData.adm_dato_resi_pais_resi === "ECUADOR",
+    };
+
+    // Campos del representante solo si es menor de edad
     const camposRepresentante = [
       "adm_dato_repr_tipo_iden",
       "adm_dato_repr_nume_iden",
       "adm_dato_repr_apel",
       "adm_dato_repr_nomb",
       "adm_dato_repr_pare",
-      //"adm_dato_repr_fech_naci",
-      //"adm_dato_repr_naci",
-      //"adm_dato_repr_no_ident_prov",
     ];
-    if (
-      (field === "adm_dato_repr_fech_naci" ||
-        field === "adm_dato_repr_naci" ||
-        field === "adm_dato_repr_no_ident_prov") &&
-      formData.adm_dato_repr_tipo_iden !== "NO IDENTIFICADO"
-    ) {
-      return false;
-    }
     if (camposRepresentante.includes(field)) {
-      const edadNum = parseInt(edad);
       return !isNaN(edadNum) && edadNum < 18;
     }
 
-    if (field === "adm_dato_auto_naci_etni") {
-      return formData.adm_dato_auto_auto_etni === "INDÍGENA";
+    // Si hay una regla específica, aplícala
+    if (reglas[field]) {
+      return reglas[field]();
     }
 
-    if (field === "adm_dato_auto_pueb_kich") {
-      return formData.adm_dato_auto_naci_etni === "KICHWA";
-    }
-
-    if (field === "adm_dato_no_ident_prov") {
-      return (
-        formData.adm_dato_naci_naci === "ECUATORIANO/A" &&
-        formData.adm_dato_pers_tipo_iden === "NO IDENTIFICADO"
-      );
-    }
-
-    if (field === "adm_dato_repr_no_ident_prov") {
-      return (
-        formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO" &&
-        formData.adm_dato_repr_naci === "ECUATORIANO/A"
-      );
-    }
-    if (
-      [
-        "adm_dato_resi_prov",
-        "adm_dato_resi_cant",
-        "adm_dato_resi_parr",
-        "adm_dato_resi_esta_adsc_terr",
-      ].includes(field) &&
-      formData.adm_dato_resi_pais_resi !== "ECUADOR"
-    ) {
-      return false;
-    }
-
+    // Por defecto, visible
     return true;
   };
 
   const checkFormValidity = () => {
-    // requiredFields.forEach((field) => {
-    //   console.log(
-    //     `${field}:`,
-    //     formData[field],
-    //     "visible:",
-    //     isFieldVisible(field)
-    //   );
-    // });
     const isValid = requiredFields.filter(isFieldVisible).every((field) => {
       if (Array.isArray(formData[field])) {
         return formData[field].length > 0;
@@ -1143,15 +1105,6 @@ const Admision = () => {
     return nuevoFormData;
   };
 
-  // Funciones para extraer solo el nombre del value seleccionado
-  // const extraerNombreCanton = (value, options) => {
-  //   // Busca el label correspondiente al value
-  //   const opt = options.find((o) => o.value === value);
-  //   if (!opt) return value;
-  //   // Elimina los primeros 4 caracteres del label y espacios
-  //   return opt.label.substring(5).trim();
-  // };
-
   const extraerNombreParroquia = (value, options) => {
     const opt = options.find((o) => o.value === value);
     if (!opt) return value;
@@ -1167,11 +1120,7 @@ const Admision = () => {
     setError("");
     setSuccessMessage("");
     const formDataLimpio = limpiarCamposRepresentanteNoVisibles(formData);
-    // Obtener las opciones actuales de cantón y parroquia
-    // const cantonOptions = cantonesOptions.length
-    //   ? cantonesOptions
-    //   : listaSelectAdmision.adm_dato_resi_cant[formData.adm_dato_resi_prov] ||
-    //     [];
+
     const parroquiaOptions = parroquiasOptions.length
       ? parroquiasOptions
       : allList.adm_dato_resi_parr[formData.adm_dato_resi_cant] || [];
@@ -1179,10 +1128,6 @@ const Admision = () => {
     // Transformar los valores antes de enviar
     const formDataToSend = {
       ...formDataLimpio,
-      // adm_dato_resi_cant: extraerNombreCanton(
-      //   formDataLimpio.adm_dato_resi_cant,
-      //   cantonOptions
-      // ),
       adm_dato_resi_parr: extraerNombreParroquia(
         formDataLimpio.adm_dato_resi_parr,
         parroquiaOptions
@@ -1292,7 +1237,7 @@ const Admision = () => {
   );
   useSelectOptions(
     formData.adm_dato_resi_parr,
-    allList.adm_dato_resi_esta_adsc_terr,
+    allListAbscripcionTerritorial.adm_dato_resi_esta_adsc_terr,
     setAbscripcionUnidadOptions
   );
   useSelectOptions(
@@ -1903,7 +1848,8 @@ const Admision = () => {
                       variableEstado={variableEstado}
                     />
                   </div>
-                  {formData.adm_dato_resi_pais_resi === "ECUADOR" && (
+                  {(formData.adm_dato_resi_pais_resi === "" ||
+                    formData.adm_dato_resi_pais_resi === "ECUADOR") && (
                     <>
                       <div className={fieldClass}>
                         <label
@@ -1921,7 +1867,10 @@ const Admision = () => {
                           value={formData["adm_dato_resi_prov"]}
                           onChange={handleSelectChange}
                           options={provinciasOptions}
-                          disabled={variableEstado["adm_dato_resi_prov"]}
+                          disabled={
+                            variableEstado["adm_dato_resi_prov"] ||
+                            provinciasOptions.length === 0
+                          }
                           variableEstado={variableEstado}
                         />
                       </div>
@@ -1941,7 +1890,10 @@ const Admision = () => {
                           value={formData["adm_dato_resi_cant"]}
                           onChange={handleSelectChange}
                           options={cantonesOptions}
-                          disabled={variableEstado["adm_dato_resi_cant"]}
+                          disabled={
+                            variableEstado["adm_dato_resi_cant"] ||
+                            cantonesOptions.length === 0
+                          }
                           variableEstado={variableEstado}
                         />
                       </div>
@@ -1961,7 +1913,10 @@ const Admision = () => {
                           value={formData["adm_dato_resi_parr"]}
                           onChange={handleSelectChange}
                           options={parroquiasOptions}
-                          disabled={variableEstado["adm_dato_resi_parr"]}
+                          disabled={
+                            variableEstado["adm_dato_resi_parr"] ||
+                            parroquiasOptions.length === 0
+                          }
                           variableEstado={variableEstado}
                         />
                       </div>
@@ -1982,7 +1937,8 @@ const Admision = () => {
                           onChange={handleSelectChange}
                           options={abscripcionUnidadOptions}
                           disabled={
-                            variableEstado["adm_dato_resi_esta_adsc_terr"]
+                            variableEstado["adm_dato_resi_esta_adsc_terr"] ||
+                            abscripcionUnidadOptions.length === 0
                           }
                           variableEstado={variableEstado}
                         />
