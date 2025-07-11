@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { listAdmision } from "./AllList.jsx";
+import { listaSelectUser } from "./AllList.jsx";
 
 export function RegistroAdmision() {
   const [formData, setFormData] = useState({
@@ -251,7 +251,7 @@ export function RegistroAdmision() {
             >
               {group.map((key) => {
                 let inputType;
-                if (listAdmision[key]) {
+                if (listaSelectUser[key]) {
                   return (
                     <div className="mb-2" key={key}>
                       <label
@@ -271,7 +271,7 @@ export function RegistroAdmision() {
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                       >
                         <option value="">Seleccione una opción</option>
-                        {listAdmision[key].map((option) => (
+                        {listaSelectUser[key].map((option) => (
                           <option key={option} value={option}>
                             {option}
                           </option>

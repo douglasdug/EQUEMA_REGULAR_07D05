@@ -7375,6 +7375,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 'adm_dato_resi_prov': user_data.adm_dato_resi_prov,
                 'adm_dato_resi_cant': user_data.adm_dato_resi_cant,
                 'adm_dato_resi_parr': user_data.adm_dato_resi_parr,
+                'adm_dato_resi_esta_adsc_terr': user_data.adm_dato_resi_esta_adsc_terr,
                 'adm_dato_resi_barr_sect': user_data.adm_dato_resi_barr_sect,
                 'adm_dato_resi_call_prin': user_data.adm_dato_resi_call_prin,
                 'adm_dato_resi_call_secu': user_data.adm_dato_resi_call_secu,

@@ -4,10 +4,8 @@ import {
   updateAdmision,
   buscarUsuarioAdmision,
 } from "../api/conexion.api.js";
-import {
-  listaSelectAdmision,
-  nacionalidadAPais,
-} from "../components/AllList.jsx";
+import { nacionalidadAPais } from "../components/AllList.jsx";
+import allList from "../api/all.list.json";
 import {
   validarDato,
   validarNumeroIdentificacion,
@@ -40,6 +38,7 @@ const initialState = {
   adm_dato_resi_prov: "",
   adm_dato_resi_cant: "",
   adm_dato_resi_parr: "",
+  adm_dato_resi_esta_adsc_terr: "",
   adm_dato_resi_barr_sect: "",
   adm_dato_resi_call_prin: "",
   adm_dato_resi_call_secu: "",
@@ -165,6 +164,7 @@ const Form008Emergencia = () => {
   const [provinciasOptions, setProvinciasOptions] = useState([]);
   const [cantonesOptions, setCantonesOptions] = useState([]);
   const [parroquiasOptions, setParroquiasOptions] = useState([]);
+  const [abscripcionUnidadOptions, setAbscripcionUnidadOptions] = useState([]);
   const [naciEtnicaPuebloOptions, setNaciEtnicaPuebloOptions] = useState([]);
   const [puebKichwaOptions, setPuebKichwaOptions] = useState([]);
   const [fechaNacimiento, setFechaNacimiento] = useState("");
@@ -191,6 +191,7 @@ const Form008Emergencia = () => {
     adm_dato_resi_prov: true,
     adm_dato_resi_cant: true,
     adm_dato_resi_parr: true,
+    adm_dato_resi_esta_adsc_terr: true,
     adm_dato_resi_barr_sect: true,
     adm_dato_resi_call_prin: true,
     adm_dato_resi_call_secu: true,
@@ -276,6 +277,7 @@ const Form008Emergencia = () => {
     adm_dato_resi_prov: "Provincia:",
     adm_dato_resi_cant: "Cantón:",
     adm_dato_resi_parr: "Parroquia:",
+    adm_dato_resi_esta_adsc_terr: "Establecimiento de Adscripción Territorial:",
     adm_dato_resi_barr_sect: "Barrio o Sector:",
     adm_dato_resi_call_prin: "Calle Principal:",
     adm_dato_resi_call_secu: "Calle Secundaria:",
@@ -393,6 +395,25 @@ const Form008Emergencia = () => {
     }
   };
 
+  // const buscarValuePorNombreCanton = (nombre, options) => {
+  //   // Busca el value cuyo label termina con el nombre limpio (ignorando mayúsculas/minúsculas y espacios)
+  //   if (!nombre) return "";
+  //   const nombreLimpio = nombre.trim().toUpperCase();
+  //   const encontrado = options.find((opt) =>
+  //     opt.label.trim().toUpperCase().endsWith(nombreLimpio)
+  //   );
+  //   return encontrado ? encontrado.value : "";
+  // };
+
+  const buscarValuePorNombreParroquia = (nombre, options) => {
+    if (!nombre) return "";
+    const nombreLimpio = nombre.trim().toUpperCase();
+    const encontrado = options.find((opt) =>
+      opt.label.trim().toUpperCase().endsWith(nombreLimpio)
+    );
+    return encontrado ? encontrado.value : "";
+  };
+
   const actualizarFormDataConRespuesta = (data) => {
     const getNoIdentProv = (tipoId, numIden, provData) => {
       if (tipoId === "NO IDENTIFICADO" && numIden) {
@@ -419,6 +440,11 @@ const Form008Emergencia = () => {
       ? new Date(data.adm_dato_repr_fech_naci).toISOString().slice(0, 10)
       : "";
 
+    // Opciones actuales según provincia y cantón
+    // const cantonOptions =
+    //   listaSelectAdmision.adm_dato_resi_cant[data.adm_dato_resi_prov] || [];
+    const parroquiaOptions =
+      allList.adm_dato_resi_parr[data.adm_dato_resi_cant] || [];
     setFechaNacimiento(fechaNac);
     setFechaNacimientoRepresentante(fechaNacRepr);
     setEdad(calcularEdad(fechaNac));
@@ -452,7 +478,11 @@ const Form008Emergencia = () => {
       adm_dato_resi_pais_resi: data.adm_dato_resi_pais_resi || "",
       adm_dato_resi_prov: data.adm_dato_resi_prov || "",
       adm_dato_resi_cant: data.adm_dato_resi_cant || "",
-      adm_dato_resi_parr: data.adm_dato_resi_parr || "",
+      adm_dato_resi_parr: buscarValuePorNombreParroquia(
+        data.adm_dato_resi_parr,
+        parroquiaOptions
+      ),
+      adm_dato_resi_esta_adsc_terr: data.adm_dato_resi_esta_adsc_terr || "",
       adm_dato_resi_barr_sect: data.adm_dato_resi_barr_sect || "",
       adm_dato_resi_call_prin: data.adm_dato_resi_call_prin || "",
       adm_dato_resi_call_secu: data.adm_dato_resi_call_secu || "",
@@ -550,6 +580,7 @@ const Form008Emergencia = () => {
       adm_dato_resi_prov: false,
       adm_dato_resi_cant: false,
       adm_dato_resi_parr: false,
+      adm_dato_resi_esta_adsc_terr: false,
       adm_dato_resi_barr_sect: false,
       adm_dato_resi_call_prin: false,
       adm_dato_resi_call_secu: false,
@@ -603,6 +634,7 @@ const Form008Emergencia = () => {
       adm_dato_resi_prov: false,
       adm_dato_resi_cant: false,
       adm_dato_resi_parr: false,
+      adm_dato_resi_esta_adsc_terr: false,
       adm_dato_resi_barr_sect: false,
       adm_dato_resi_call_prin: false,
       adm_dato_resi_call_secu: false,
@@ -982,7 +1014,7 @@ const Form008Emergencia = () => {
   };
 
   const getOpcionesNacionalidad = (tipoId) => {
-    const opciones = listaSelectAdmision["adm_dato_naci_naci"] || [];
+    const opciones = allList.adm_dato_naci_naci || [];
     if (["PASAPORTE", "VISA", "CARNÉT DE REFUGIADO"].includes(tipoId)) {
       return opciones.filter((opt) => opt.value !== "ECUATORIANO/A");
     }
@@ -997,7 +1029,7 @@ const Form008Emergencia = () => {
 
   const getOpcionesGrupoPrioritario = () => {
     const sexo = formData.adm_dato_pers_sexo;
-    const opciones = listaSelectAdmision["adm_dato_adic_grup_prio"] || [];
+    const opciones = allList.adm_dato_adic_grup_prio || [];
     const edadNum = parseInt(edad);
 
     if (sexo !== "MUJER" || isNaN(edadNum) || edadNum < 10 || edadNum > 49) {
@@ -1100,6 +1132,22 @@ const Form008Emergencia = () => {
     return nuevoFormData;
   };
 
+  // Funciones para extraer solo el nombre del value seleccionado
+  // const extraerNombreCanton = (value, options) => {
+  //   // Busca el label correspondiente al value
+  //   const opt = options.find((o) => o.value === value);
+  //   if (!opt) return value;
+  //   // Elimina los primeros 4 caracteres del label y espacios
+  //   return opt.label.substring(5).trim();
+  // };
+
+  const extraerNombreParroquia = (value, options) => {
+    const opt = options.find((o) => o.value === value);
+    if (!opt) return value;
+    // Elimina los primeros 6 caracteres del label y espacios
+    return opt.label.substring(7).trim();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
@@ -1108,8 +1156,26 @@ const Form008Emergencia = () => {
     setError("");
     setSuccessMessage("");
     const formDataLimpio = limpiarCamposRepresentanteNoVisibles(formData);
+    // Obtener las opciones actuales de cantón y parroquia
+    // const cantonOptions = cantonesOptions.length
+    //   ? cantonesOptions
+    //   : listaSelectAdmision.adm_dato_resi_cant[formData.adm_dato_resi_prov] ||
+    //     [];
+    const parroquiaOptions = parroquiasOptions.length
+      ? parroquiasOptions
+      : allList.adm_dato_resi_parr[formData.adm_dato_resi_cant] || [];
+
+    // Transformar los valores antes de enviar
     const formDataToSend = {
       ...formDataLimpio,
+      // adm_dato_resi_cant: extraerNombreCanton(
+      //   formDataLimpio.adm_dato_resi_cant,
+      //   cantonOptions
+      // ),
+      adm_dato_resi_parr: extraerNombreParroquia(
+        formDataLimpio.adm_dato_resi_parr,
+        parroquiaOptions
+      ),
       adm_dato_repr_fech_naci: formDataLimpio.adm_dato_repr_fech_naci
         ? formDataLimpio.adm_dato_repr_fech_naci
         : null,
@@ -1200,27 +1266,32 @@ const Form008Emergencia = () => {
   // Opciones dependientes
   useSelectOptions(
     formData.adm_dato_resi_pais_resi,
-    listaSelectAdmision.adm_dato_resi_prov,
+    allList.adm_dato_resi_prov,
     setProvinciasOptions
   );
   useSelectOptions(
     formData.adm_dato_resi_prov,
-    listaSelectAdmision.adm_dato_resi_cant,
+    allList.adm_dato_resi_cant,
     setCantonesOptions
   );
   useSelectOptions(
     formData.adm_dato_resi_cant,
-    listaSelectAdmision.adm_dato_resi_parr,
+    allList.adm_dato_resi_parr,
     setParroquiasOptions
   );
   useSelectOptions(
+    formData.adm_dato_resi_parr,
+    allList.adm_dato_resi_esta_adsc_terr,
+    setAbscripcionUnidadOptions
+  );
+  useSelectOptions(
     formData.adm_dato_auto_auto_etni,
-    listaSelectAdmision.adm_dato_auto_naci_etni,
+    allList.adm_dato_auto_naci_etni,
     setNaciEtnicaPuebloOptions
   );
   useSelectOptions(
     formData.adm_dato_auto_naci_etni,
-    listaSelectAdmision.adm_dato_auto_pueb_kich,
+    allList.adm_dato_auto_pueb_kich,
     setPuebKichwaOptions
   );
 
@@ -1431,7 +1502,7 @@ const Form008Emergencia = () => {
     <div className="w-full h-screen flex items-stretch justify-stretch bg-gray-100">
       <div className="w-full h-full p-4 m-4 bg-white rounded-lg shadow-md mt-1">
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
-          Registro de Atencion del formulario 008-EMERGENCIA
+          Admisión de Pacientes
         </h2>
         {/* NAV TABS */}
         <nav className="flex border-b border-blue-200 mb-1 sticky top-20 z-50 bg-white items-start justify-center">
@@ -1478,7 +1549,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_pers_tipo_iden"
                       value={formData["adm_dato_pers_tipo_iden"]}
                       onChange={handleChange}
-                      options={listaSelectAdmision["adm_dato_pers_tipo_iden"]}
+                      options={allList.adm_dato_pers_tipo_iden}
                       disabled={variableEstado["adm_dato_pers_tipo_iden"]}
                       variableEstado={variableEstado}
                     />
@@ -1620,7 +1691,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_pers_sexo"
                       value={formData["adm_dato_pers_sexo"]}
                       onChange={handleSelectChange}
-                      options={listaSelectAdmision["adm_dato_pers_sexo"]}
+                      options={allList.adm_dato_pers_sexo}
                       disabled={variableEstado["adm_dato_pers_sexo"]}
                       variableEstado={variableEstado}
                     />
@@ -1640,7 +1711,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_pers_esta_civi"
                       value={formData["adm_dato_pers_esta_civi"]}
                       onChange={handleSelectChange}
-                      options={listaSelectAdmision["adm_dato_pers_esta_civi"]}
+                      options={allList.adm_dato_pers_esta_civi}
                       disabled={variableEstado["adm_dato_pers_esta_civi"]}
                       variableEstado={variableEstado}
                     />
@@ -1783,9 +1854,7 @@ const Form008Emergencia = () => {
                           name="adm_dato_no_ident_prov"
                           value={formData.adm_dato_no_ident_prov || ""}
                           onChange={handleChange}
-                          options={
-                            listaSelectAdmision["adm_dato_no_ident_prov"]
-                          }
+                          options={allList.adm_dato_no_ident_prov}
                           disabled={false}
                           variableEstado={variableEstado}
                         />
@@ -1818,7 +1887,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_resi_pais_resi"
                       value={formData["adm_dato_resi_pais_resi"]}
                       onChange={handleSelectChange}
-                      options={listaSelectAdmision["adm_dato_resi_pais_resi"]}
+                      options={allList.adm_dato_resi_pais_resi}
                       disabled={variableEstado["adm_dato_resi_pais_resi"]}
                       variableEstado={variableEstado}
                     />
@@ -1871,6 +1940,26 @@ const Form008Emergencia = () => {
                       onChange={handleSelectChange}
                       options={parroquiasOptions}
                       disabled={variableEstado["adm_dato_resi_parr"]}
+                      variableEstado={variableEstado}
+                    />
+                  </div>
+                  <div className={fieldClass}>
+                    <label
+                      className={labelClass}
+                      htmlFor="adm_dato_resi_esta_adsc_terr"
+                    >
+                      {requiredFields.includes(
+                        "adm_dato_resi_esta_adsc_terr"
+                      ) && <span className="text-red-500">* </span>}
+                      {labelMap["adm_dato_resi_esta_adsc_terr"]}
+                    </label>
+                    <CustomSelect
+                      id="adm_dato_resi_esta_adsc_terr"
+                      name="adm_dato_resi_esta_adsc_terr"
+                      value={formData["adm_dato_resi_esta_adsc_terr"]}
+                      onChange={handleSelectChange}
+                      options={abscripcionUnidadOptions}
+                      disabled={variableEstado["adm_dato_resi_esta_adsc_terr"]}
                       variableEstado={variableEstado}
                     />
                   </div>
@@ -2106,7 +2195,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_adic_nive_educ"
                       value={formData["adm_dato_adic_nive_educ"]}
                       onChange={handleChange}
-                      options={listaSelectAdmision["adm_dato_adic_nive_educ"]}
+                      options={allList.adm_dato_adic_nive_educ}
                       disabled={variableEstado["adm_dato_adic_nive_educ"]}
                       variableEstado={variableEstado}
                     />
@@ -2126,9 +2215,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_adic_esta_nive_educ"
                       value={formData["adm_dato_adic_esta_nive_educ"]}
                       onChange={handleChange}
-                      options={
-                        listaSelectAdmision["adm_dato_adic_esta_nive_educ"]
-                      }
+                      options={allList.adm_dato_adic_esta_nive_educ}
                       disabled={variableEstado["adm_dato_adic_esta_nive_educ"]}
                       variableEstado={variableEstado}
                     />
@@ -2155,9 +2242,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_adic_tipo_empr_trab"
                       value={formData["adm_dato_adic_tipo_empr_trab"]}
                       onChange={handleChange}
-                      options={
-                        listaSelectAdmision["adm_dato_adic_tipo_empr_trab"]
-                      }
+                      options={allList.adm_dato_adic_tipo_empr_trab}
                       disabled={variableEstado["adm_dato_adic_tipo_empr_trab"]}
                       variableEstado={variableEstado}
                     />
@@ -2177,9 +2262,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_adic_ocup_prof_prin"
                       value={formData["adm_dato_adic_ocup_prof_prin"]}
                       onChange={handleChange}
-                      options={
-                        listaSelectAdmision["adm_dato_adic_ocup_prof_prin"]
-                      }
+                      options={allList.adm_dato_adic_ocup_prof_prin}
                       disabled={variableEstado["adm_dato_adic_ocup_prof_prin"]}
                       variableEstado={variableEstado}
                     />
@@ -2199,7 +2282,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_adic_tipo_segu"
                       value={formData["adm_dato_adic_tipo_segu"]}
                       onChange={handleChange}
-                      options={listaSelectAdmision["adm_dato_adic_tipo_segu"]}
+                      options={allList.adm_dato_adic_tipo_segu}
                       disabled={variableEstado["adm_dato_adic_tipo_segu"]}
                       variableEstado={variableEstado}
                     />
@@ -2226,7 +2309,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_adic_tien_disc"
                       value={formData["adm_dato_adic_tien_disc"]}
                       onChange={handleChange}
-                      options={listaSelectAdmision["adm_dato_adic_tien_disc"]}
+                      options={allList.adm_dato_adic_tien_disc}
                       disabled={variableEstado["adm_dato_adic_tien_disc"]}
                       variableEstado={variableEstado}
                     />
@@ -2259,7 +2342,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_repr_tipo_iden"
                       value={formData["adm_dato_repr_tipo_iden"]}
                       onChange={handleChange}
-                      options={listaSelectAdmision["adm_dato_repr_tipo_iden"]}
+                      options={allList.adm_dato_repr_tipo_iden}
                       disabled={variableEstado["adm_dato_repr_tipo_iden"]}
                       variableEstado={variableEstado}
                     />
@@ -2379,7 +2462,7 @@ const Form008Emergencia = () => {
                       name="adm_dato_repr_pare"
                       value={formData["adm_dato_repr_pare"]}
                       onChange={handleChange}
-                      options={listaSelectAdmision["adm_dato_repr_pare"]}
+                      options={allList.adm_dato_repr_pare}
                       disabled={variableEstado["adm_dato_repr_pare"]}
                       variableEstado={variableEstado}
                     />
@@ -2482,9 +2565,7 @@ const Form008Emergencia = () => {
                           name="adm_dato_repr_no_ident_prov"
                           value={formData.adm_dato_repr_no_ident_prov || ""}
                           onChange={handleChange}
-                          options={
-                            listaSelectAdmision["adm_dato_no_ident_prov"]
-                          }
+                          options={allList.adm_dato_no_ident_prov}
                           disabled={false}
                           variableEstado={variableEstado}
                         />
@@ -2537,7 +2618,7 @@ const Form008Emergencia = () => {
                     name="adm_dato_cont_pare"
                     value={formData["adm_dato_cont_pare"]}
                     onChange={handleChange}
-                    options={listaSelectAdmision["adm_dato_cont_pare"]}
+                    options={allList.adm_dato_cont_pare}
                     disabled={variableEstado["adm_dato_cont_pare"]}
                     variableEstado={variableEstado}
                   />
