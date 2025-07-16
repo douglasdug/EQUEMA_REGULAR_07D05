@@ -4,7 +4,7 @@ import {
   updateAdmision,
   buscarUsuarioAdmision,
 } from "../api/conexion.api.js";
-import allList from "../api/all.list.json";
+import allListAdmision from "../api/all.list.admision.json";
 import allListAbscripcionTerritorial from "../api/all.list.abscripcion.territorial.json";
 import {
   validarDato,
@@ -433,7 +433,7 @@ const Admision = () => {
       : "";
 
     const parroquiaOptions =
-      allList.adm_dato_resi_parr[data.adm_dato_resi_cant] || [];
+      allListAdmision.adm_dato_resi_parr[data.adm_dato_resi_cant] || [];
     setFechaNacimiento(fechaNac);
     setFechaNacimientoRepresentante(fechaNacRepr);
     setEdad(calcularEdad(fechaNac));
@@ -989,7 +989,7 @@ const Admision = () => {
           name === "adm_dato_naci_naci" &&
           campo === "adm_dato_naci_luga_naci"
         ) {
-          nuevoFormData[campo] = allList.nacionalidadAPais[value] || "";
+          nuevoFormData[campo] = allListAdmision.nacionalidadAPais[value] || "";
         } else {
           nuevoFormData[campo] = "";
         }
@@ -1000,7 +1000,7 @@ const Admision = () => {
   };
 
   const getOpcionesNacionalidad = (tipoId) => {
-    const opciones = allList.adm_dato_naci_naci || [];
+    const opciones = allListAdmision.adm_dato_naci_naci || [];
     if (["PASAPORTE", "VISA", "CARNÉT DE REFUGIADO"].includes(tipoId)) {
       return opciones.filter((opt) => opt.value !== "ECUATORIANO/A");
     }
@@ -1015,7 +1015,7 @@ const Admision = () => {
 
   const getOpcionesGrupoPrioritario = () => {
     const sexo = formData.adm_dato_pers_sexo;
-    const opciones = allList.adm_dato_adic_grup_prio || [];
+    const opciones = allListAdmision.adm_dato_adic_grup_prio || [];
     const edadNum = parseInt(edad);
 
     if (sexo !== "MUJER" || isNaN(edadNum) || edadNum < 10 || edadNum > 49) {
@@ -1126,7 +1126,7 @@ const Admision = () => {
 
     const parroquiaOptions = parroquiasOptions.length
       ? parroquiasOptions
-      : allList.adm_dato_resi_parr[formData.adm_dato_resi_cant] || [];
+      : allListAdmision.adm_dato_resi_parr[formData.adm_dato_resi_cant] || [];
 
     // Transformar los valores antes de enviar
     const formDataToSend = {
@@ -1225,17 +1225,17 @@ const Admision = () => {
   // Opciones dependientes
   useSelectOptions(
     formData.adm_dato_resi_pais_resi,
-    allList.adm_dato_resi_prov,
+    allListAdmision.adm_dato_resi_prov,
     setProvinciasOptions
   );
   useSelectOptions(
     formData.adm_dato_resi_prov,
-    allList.adm_dato_resi_cant,
+    allListAdmision.adm_dato_resi_cant,
     setCantonesOptions
   );
   useSelectOptions(
     formData.adm_dato_resi_cant,
-    allList.adm_dato_resi_parr,
+    allListAdmision.adm_dato_resi_parr,
     setParroquiasOptions
   );
   useSelectOptions(
@@ -1245,12 +1245,12 @@ const Admision = () => {
   );
   useSelectOptions(
     formData.adm_dato_auto_auto_etni,
-    allList.adm_dato_auto_naci_etni,
+    allListAdmision.adm_dato_auto_naci_etni,
     setNaciEtnicaPuebloOptions
   );
   useSelectOptions(
     formData.adm_dato_auto_naci_etni,
-    allList.adm_dato_auto_pueb_kich,
+    allListAdmision.adm_dato_auto_pueb_kich,
     setPuebKichwaOptions
   );
 
@@ -1472,6 +1472,35 @@ const Admision = () => {
     return [];
   };
 
+  const EstadoMensajes = ({ error, successMessage }) => (
+    <div className="bg-white rounded-lg shadow-md">
+      {error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-2"
+          role="alert"
+        >
+          <strong className="font-bold">
+            {typeof error === "object" && error.type === "validacion"
+              ? "¡Error de Validación! "
+              : "¡Error! "}
+          </strong>
+          <span className="block sm:inline">
+            {typeof error === "object" ? error.message : error}
+          </span>
+        </div>
+      )}
+      {successMessage && (
+        <div
+          className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-2"
+          role="alert"
+        >
+          <strong className="font-bold">¡Éxito! </strong>
+          <span className="block sm:inline">{successMessage}</span>
+        </div>
+      )}
+    </div>
+  );
+
   const fieldClass = "mb-1 flex flex-col";
   const labelClass = "block text-gray-700 text-sm font-bold mb-1";
   const buttonTextRegistro = isEditing ? "Actualizar Registro" : "Registrar";
@@ -1531,7 +1560,7 @@ const Admision = () => {
                       name="adm_dato_pers_tipo_iden"
                       value={formData["adm_dato_pers_tipo_iden"]}
                       onChange={handleChange}
-                      options={allList.adm_dato_pers_tipo_iden}
+                      options={allListAdmision.adm_dato_pers_tipo_iden}
                       disabled={variableEstado["adm_dato_pers_tipo_iden"]}
                       variableEstado={variableEstado}
                       className={
@@ -1727,7 +1756,7 @@ const Admision = () => {
                       name="adm_dato_pers_sexo"
                       value={formData["adm_dato_pers_sexo"]}
                       onChange={handleSelectChange}
-                      options={allList.adm_dato_pers_sexo}
+                      options={allListAdmision.adm_dato_pers_sexo}
                       disabled={variableEstado["adm_dato_pers_sexo"]}
                       variableEstado={variableEstado}
                       className={
@@ -1757,7 +1786,7 @@ const Admision = () => {
                       name="adm_dato_pers_esta_civi"
                       value={formData["adm_dato_pers_esta_civi"]}
                       onChange={handleSelectChange}
-                      options={allList.adm_dato_pers_esta_civi}
+                      options={allListAdmision.adm_dato_pers_esta_civi}
                       disabled={variableEstado["adm_dato_pers_esta_civi"]}
                       variableEstado={variableEstado}
                       className={
@@ -1964,7 +1993,7 @@ const Admision = () => {
                           name="adm_dato_no_ident_prov"
                           value={formData.adm_dato_no_ident_prov || ""}
                           onChange={handleChange}
-                          options={allList.adm_dato_no_ident_prov}
+                          options={allListAdmision.adm_dato_no_ident_prov}
                           disabled={false}
                           variableEstado={variableEstado}
                           className={
@@ -2007,7 +2036,7 @@ const Admision = () => {
                       name="adm_dato_resi_pais_resi"
                       value={formData["adm_dato_resi_pais_resi"]}
                       onChange={handleSelectChange}
-                      options={allList.adm_dato_resi_pais_resi}
+                      options={allListAdmision.adm_dato_resi_pais_resi}
                       disabled={variableEstado["adm_dato_resi_pais_resi"]}
                       variableEstado={variableEstado}
                       className={
@@ -2475,7 +2504,7 @@ const Admision = () => {
                       name="adm_dato_adic_nive_educ"
                       value={formData["adm_dato_adic_nive_educ"]}
                       onChange={handleChange}
-                      options={allList.adm_dato_adic_nive_educ}
+                      options={allListAdmision.adm_dato_adic_nive_educ}
                       disabled={variableEstado["adm_dato_adic_nive_educ"]}
                       variableEstado={variableEstado}
                       className={
@@ -2505,7 +2534,7 @@ const Admision = () => {
                       name="adm_dato_adic_esta_nive_educ"
                       value={formData["adm_dato_adic_esta_nive_educ"]}
                       onChange={handleChange}
-                      options={allList.adm_dato_adic_esta_nive_educ}
+                      options={allListAdmision.adm_dato_adic_esta_nive_educ}
                       disabled={variableEstado["adm_dato_adic_esta_nive_educ"]}
                       variableEstado={variableEstado}
                       className={
@@ -2542,7 +2571,7 @@ const Admision = () => {
                       name="adm_dato_adic_tipo_empr_trab"
                       value={formData["adm_dato_adic_tipo_empr_trab"]}
                       onChange={handleChange}
-                      options={allList.adm_dato_adic_tipo_empr_trab}
+                      options={allListAdmision.adm_dato_adic_tipo_empr_trab}
                       disabled={variableEstado["adm_dato_adic_tipo_empr_trab"]}
                       variableEstado={variableEstado}
                       className={
@@ -2572,7 +2601,7 @@ const Admision = () => {
                       name="adm_dato_adic_ocup_prof_prin"
                       value={formData["adm_dato_adic_ocup_prof_prin"]}
                       onChange={handleChange}
-                      options={allList.adm_dato_adic_ocup_prof_prin}
+                      options={allListAdmision.adm_dato_adic_ocup_prof_prin}
                       disabled={variableEstado["adm_dato_adic_ocup_prof_prin"]}
                       variableEstado={variableEstado}
                       className={
@@ -2602,7 +2631,7 @@ const Admision = () => {
                       name="adm_dato_adic_tipo_segu"
                       value={formData["adm_dato_adic_tipo_segu"]}
                       onChange={handleChange}
-                      options={allList.adm_dato_adic_tipo_segu}
+                      options={allListAdmision.adm_dato_adic_tipo_segu}
                       disabled={variableEstado["adm_dato_adic_tipo_segu"]}
                       variableEstado={variableEstado}
                       className={
@@ -2639,7 +2668,7 @@ const Admision = () => {
                       name="adm_dato_adic_tien_disc"
                       value={formData["adm_dato_adic_tien_disc"]}
                       onChange={handleChange}
-                      options={allList.adm_dato_adic_tien_disc}
+                      options={allListAdmision.adm_dato_adic_tien_disc}
                       disabled={variableEstado["adm_dato_adic_tien_disc"]}
                       variableEstado={variableEstado}
                       className={
@@ -2682,7 +2711,7 @@ const Admision = () => {
                       name="adm_dato_repr_tipo_iden"
                       value={formData["adm_dato_repr_tipo_iden"]}
                       onChange={handleChange}
-                      options={allList.adm_dato_repr_tipo_iden}
+                      options={allListAdmision.adm_dato_repr_tipo_iden}
                       disabled={variableEstado["adm_dato_repr_tipo_iden"]}
                       variableEstado={variableEstado}
                       className={
@@ -2845,7 +2874,7 @@ const Admision = () => {
                       name="adm_dato_repr_pare"
                       value={formData["adm_dato_repr_pare"]}
                       onChange={handleChange}
-                      options={allList.adm_dato_repr_pare}
+                      options={allListAdmision.adm_dato_repr_pare}
                       disabled={variableEstado["adm_dato_repr_pare"]}
                       variableEstado={variableEstado}
                       className={
@@ -2990,7 +3019,7 @@ const Admision = () => {
                           name="adm_dato_repr_no_ident_prov"
                           value={formData.adm_dato_repr_no_ident_prov || ""}
                           onChange={handleChange}
-                          options={allList.adm_dato_no_ident_prov}
+                          options={allListAdmision.adm_dato_no_ident_prov}
                           disabled={false}
                           variableEstado={variableEstado}
                           className={
@@ -3064,7 +3093,7 @@ const Admision = () => {
                     name="adm_dato_cont_pare"
                     value={formData["adm_dato_cont_pare"]}
                     onChange={handleChange}
-                    options={allList.adm_dato_cont_pare}
+                    options={allListAdmision.adm_dato_cont_pare}
                     disabled={variableEstado["adm_dato_cont_pare"]}
                     variableEstado={variableEstado}
                     className={
@@ -3187,32 +3216,7 @@ const Admision = () => {
             </button>
           </div>
         </form>
-        <div className="bg-white rounded-lg shadow-md">
-          {error && (
-            <div
-              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-2"
-              role="alert"
-            >
-              <strong className="font-bold">
-                {typeof error === "object" && error.type === "validacion"
-                  ? "¡Error de Validación! "
-                  : "¡Error! "}
-              </strong>
-              <span className="block sm:inline">
-                {typeof error === "object" ? error.message : error}
-              </span>
-            </div>
-          )}
-          {successMessage && (
-            <div
-              className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-2"
-              role="alert"
-            >
-              <strong className="font-bold">¡Éxito! </strong>
-              <span className="block sm:inline">{successMessage}</span>
-            </div>
-          )}
-        </div>
+        <EstadoMensajes error={error} successMessage={successMessage} />
       </div>
     </div>
   );

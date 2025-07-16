@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Select from "react-select";
-import allList from "../api/all.list.json";
+import allListAdmision from "../api/all.list.admision.json";
 
 export function AllList() {
   const [selectedPais, setSelectedPais] = useState("");
@@ -14,7 +14,7 @@ export function AllList() {
   const handlePaisChange = (selectedOption) => {
     const pais = selectedOption ? selectedOption.value : "";
     setSelectedPais(pais);
-    setProvincias(allList.adm_dato_naci_prov[pais] || []);
+    setProvincias(allListAdmision.adm_dato_naci_prov[pais] || []);
     setSelectedProvince("");
     setCantons([]);
     setSelectedCanton("");
@@ -25,7 +25,7 @@ export function AllList() {
   const handleProvinceChange = (event) => {
     const province = event.target.value;
     setSelectedProvince(province);
-    setCantons(allList.adm_dato_naci_cant[province] || []);
+    setCantons(allListAdmision.adm_dato_naci_cant[province] || []);
     setSelectedCanton("");
     setParroquias([]);
     setSelectedParroquia("");
@@ -34,7 +34,7 @@ export function AllList() {
   const handleCantonChange = (event) => {
     const canton = event.target.value;
     setSelectedCanton(canton);
-    setParroquias(allList.adm_dato_naci_parr[canton] || []);
+    setParroquias(allListAdmision.adm_dato_naci_parr[canton] || []);
     setSelectedParroquia("");
   };
 
@@ -49,10 +49,10 @@ export function AllList() {
         <Select
           id="pais"
           onChange={handlePaisChange}
-          value={allList.adm_dato_naci_pais.find(
+          value={allListAdmision.adm_dato_naci_pais.find(
             (option) => option.value === selectedPais
           )}
-          options={allList.adm_dato_naci_pais}
+          options={allListAdmision.adm_dato_naci_pais}
         />
       </div>
       <div>
