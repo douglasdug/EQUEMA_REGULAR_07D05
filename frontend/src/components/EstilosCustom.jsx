@@ -10,6 +10,7 @@ export const CustomSelect = ({
   options,
   disabled,
   variableEstado,
+  className = "",
 }) => {
   return (
     <div className="relative inline-block w-full">
@@ -23,7 +24,7 @@ export const CustomSelect = ({
           disabled
             ? "bg-gray-200 text-gray-700 cursor-no-drop"
             : "bg-white text-gray-700 cursor-pointer"
-        }`}
+        } ${className}`}
       >
         <option value="">Seleccione una opción</option>
         {options.map((option) => (
@@ -100,3 +101,16 @@ export const buttonStyleSecundario =
 
 export const buttonStyleEliminar =
   "bg-red-500 hover:bg-red-700 text-white ml-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline cursor-pointer";
+
+export function isFieldInvalid(
+  field,
+  requiredFields,
+  formData,
+  isFieldVisible
+) {
+  if (!requiredFields.includes(field)) return false;
+  if (!isFieldVisible(field)) return false;
+  const value = formData[field];
+  if (Array.isArray(value)) return value.length === 0;
+  return !value;
+}

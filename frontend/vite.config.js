@@ -1,9 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   build: {
+    sourcemap: mode === "development",
     rollupOptions: {
       output: {
         manualChunks: {
@@ -14,4 +15,4 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 1000, // Ajusta el límite a 1000 kB
   },
-});
+}));

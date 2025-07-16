@@ -13,6 +13,7 @@ import {
 import {
   CustomSelect,
   inputStyle,
+  isFieldInvalid,
   buttonStylePrimario,
   buttonStyleSecundario,
 } from "../components/EstilosCustom.jsx";
@@ -172,6 +173,7 @@ const Admision = () => {
     useState("");
   const [edad, setEdad] = useState("");
   const [edadRepresentante, setEdadRepresentante] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
   const navigate = useNavigate();
 
   const initialVariableEstado = {
@@ -673,6 +675,7 @@ const Admision = () => {
       btnBuscarRepresentante: true,
       btnRegistrar: true,
     }));
+    //setIsBuscarRepresentante(false);
   };
 
   const limpiarEstadoRepr = () => {
@@ -1257,19 +1260,21 @@ const Admision = () => {
     btnBuscarDisabled,
     tieneInfo,
     tipoIden,
-    //isEditing,
+    isEditing,
     setFormData,
     generarNumeIden,
     campos,
     formData,
+    isBuscarRepresentante,
   }) => {
     useEffect(() => {
       if (
         campoDisabled &&
         btnBuscarDisabled &&
         tieneInfo &&
-        tipoIden === "NO IDENTIFICADO"
-        //&& !isEditing
+        tipoIden === "NO IDENTIFICADO" &&
+        !isEditing &&
+        isBuscarRepresentante
       ) {
         const nuevoId = generarNumeIden(
           formData[campos.nomb],
@@ -1286,10 +1291,11 @@ const Admision = () => {
     }, [
       campoDisabled,
       btnBuscarDisabled,
-      //isEditing,
+      isEditing,
       tipoIden,
       setFormData,
       generarNumeIden,
+      isBuscarRepresentante,
       ...campos.deps.map((dep) => formData[dep]),
     ]);
   };
@@ -1304,10 +1310,11 @@ const Admision = () => {
       formData.adm_dato_naci_naci?.trim() &&
       formData.adm_dato_naci_fech_naci?.trim(),
     tipoIden: formData.adm_dato_pers_tipo_iden,
-    //isEditing,
+    isEditing,
     setFormData,
     formData,
     generarNumeIden,
+    isBuscarRepresentante,
     campos: {
       numeIden: "adm_dato_pers_nume_iden",
       nomb: "adm_dato_pers_nomb_prim",
@@ -1339,6 +1346,7 @@ const Admision = () => {
     setFormData,
     formData,
     generarNumeIden,
+    isBuscarRepresentante,
     campos: {
       numeIden: "adm_dato_repr_nume_iden",
       nomb: "adm_dato_repr_nomb",
@@ -1409,6 +1417,24 @@ const Admision = () => {
   useEffect(() => {
     checkFormValidity();
   }, [formData, error, edad, edadRepresentante, activeTab]);
+
+  useEffect(() => {
+    // Marca el formulario como modificado si cambia algún campo
+    setIsDirty(JSON.stringify(formData) !== JSON.stringify(initialState));
+  }, [formData]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = ""; // Necesario para mostrar el mensaje en algunos navegadores
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty]);
 
   const opcionesEtniaEcuatoriano = [
     { value: "INDÍGENA", label: "01 INDÍGENA" },
@@ -1508,6 +1534,16 @@ const Admision = () => {
                       options={allList.adm_dato_pers_tipo_iden}
                       disabled={variableEstado["adm_dato_pers_tipo_iden"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_pers_tipo_iden",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   <div className={fieldClass}>
@@ -1528,11 +1564,22 @@ const Admision = () => {
                       onChange={handleChange}
                       placeholder="Información es requerida"
                       required
-                      className={`${inputStyle} ${
-                        variableEstado["adm_dato_pers_nume_iden"]
-                          ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                          : "bg-white text-gray-700 cursor-pointer"
-                      }`}
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_pers_nume_iden",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                       ${
+                         variableEstado["adm_dato_pers_nume_iden"]
+                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                           : "bg-white text-gray-700 cursor-pointer"
+                       }`}
                       disabled={variableEstado["adm_dato_pers_nume_iden"]}
                     />
                   </div>
@@ -1572,7 +1619,18 @@ const Admision = () => {
                       onChange={handleChange}
                       placeholder="Información es requerida"
                       required
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_pers_apel_prim",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_pers_apel_prim"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -1598,7 +1656,18 @@ const Admision = () => {
                       onChange={handleChange}
                       placeholder="Información es requerida"
                       required
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_pers_nomb_prim",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_pers_nomb_prim"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -1624,11 +1693,22 @@ const Admision = () => {
                       onChange={handleChange}
                       placeholder="Información es requerida"
                       required
-                      className={`${inputStyle} ${
-                        variableEstado["adm_dato_naci_fech_naci"]
-                          ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                          : "bg-white text-gray-700 cursor-pointer"
-                      }`}
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_naci_fech_naci",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                       ${
+                         variableEstado["adm_dato_naci_fech_naci"]
+                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                           : "bg-white text-gray-700 cursor-pointer"
+                       }`}
                       disabled={variableEstado["adm_dato_naci_fech_naci"]}
                     />
                     <label id="edad_paciente" style={{ marginLeft: "10px" }}>
@@ -1650,6 +1730,16 @@ const Admision = () => {
                       options={allList.adm_dato_pers_sexo}
                       disabled={variableEstado["adm_dato_pers_sexo"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_pers_sexo",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   <div className={fieldClass}>
@@ -1670,6 +1760,16 @@ const Admision = () => {
                       options={allList.adm_dato_pers_esta_civi}
                       disabled={variableEstado["adm_dato_pers_esta_civi"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_pers_esta_civi",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                 </div>
@@ -1693,11 +1793,22 @@ const Admision = () => {
                       value={formData["adm_dato_pers_tele"]}
                       onChange={handleChange}
                       placeholder="071112223"
-                      className={`${inputStyle} ${
-                        variableEstado["adm_dato_pers_tele"]
-                          ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                          : "bg-white text-gray-700 cursor-pointer"
-                      }`}
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_pers_tele",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                       ${
+                         variableEstado["adm_dato_pers_tele"]
+                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                           : "bg-white text-gray-700 cursor-pointer"
+                       }`}
                       disabled={variableEstado["adm_dato_pers_tele"]}
                     />
                   </div>
@@ -1715,7 +1826,18 @@ const Admision = () => {
                       value={formData["adm_dato_pers_celu"]}
                       onChange={handleChange}
                       placeholder="0911122233"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_pers_celu",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_pers_celu"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -1740,7 +1862,18 @@ const Admision = () => {
                       value={formData["adm_dato_pers_corr_elec"]}
                       onChange={handleChange}
                       placeholder="ejemplo@dominio.com"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_pers_corr_elec",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_pers_corr_elec"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -1772,7 +1905,18 @@ const Admision = () => {
                       value={formData.adm_dato_naci_luga_naci}
                       onChange={handleChange}
                       placeholder="Información es requerida"
-                      className={`${inputStyle} ${"bg-gray-200 text-gray-700 cursor-no-drop"}`}
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_naci_luga_naci",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${"bg-gray-200 text-gray-700 cursor-no-drop"}`}
                       disabled
                     />
                   </div>
@@ -1791,6 +1935,16 @@ const Admision = () => {
                       options={getOpcionesNacionalidadPaci()}
                       disabled={variableEstado["adm_dato_naci_naci"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_naci_naci",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   {formData.adm_dato_pers_tipo_iden === "NO IDENTIFICADO" &&
@@ -1813,6 +1967,16 @@ const Admision = () => {
                           options={allList.adm_dato_no_ident_prov}
                           disabled={false}
                           variableEstado={variableEstado}
+                          className={
+                            isFieldInvalid(
+                              "adm_dato_no_ident_prov",
+                              requiredFields,
+                              formData,
+                              isFieldVisible
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
                         />
                       </div>
                     )}
@@ -1846,6 +2010,16 @@ const Admision = () => {
                       options={allList.adm_dato_resi_pais_resi}
                       disabled={variableEstado["adm_dato_resi_pais_resi"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_resi_pais_resi",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   {(formData.adm_dato_resi_pais_resi === "" ||
@@ -1872,6 +2046,16 @@ const Admision = () => {
                             provinciasOptions.length === 0
                           }
                           variableEstado={variableEstado}
+                          className={
+                            isFieldInvalid(
+                              "adm_dato_resi_prov",
+                              requiredFields,
+                              formData,
+                              isFieldVisible
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
                         />
                       </div>
                       <div className={fieldClass}>
@@ -1895,6 +2079,16 @@ const Admision = () => {
                             cantonesOptions.length === 0
                           }
                           variableEstado={variableEstado}
+                          className={
+                            isFieldInvalid(
+                              "adm_dato_resi_cant",
+                              requiredFields,
+                              formData,
+                              isFieldVisible
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
                         />
                       </div>
                       <div className={fieldClass}>
@@ -1918,6 +2112,16 @@ const Admision = () => {
                             parroquiasOptions.length === 0
                           }
                           variableEstado={variableEstado}
+                          className={
+                            isFieldInvalid(
+                              "adm_dato_resi_parr",
+                              requiredFields,
+                              formData,
+                              isFieldVisible
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
                         />
                       </div>
                       <div className={fieldClass}>
@@ -1941,6 +2145,16 @@ const Admision = () => {
                             abscripcionUnidadOptions.length === 0
                           }
                           variableEstado={variableEstado}
+                          className={
+                            isFieldInvalid(
+                              "adm_dato_resi_esta_adsc_terr",
+                              requiredFields,
+                              formData,
+                              isFieldVisible
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
                         />
                       </div>
                     </>
@@ -1969,7 +2183,18 @@ const Admision = () => {
                       value={formData["adm_dato_resi_barr_sect"]}
                       onChange={handleChange}
                       placeholder="Información es requerida"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_resi_barr_sect",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_resi_barr_sect"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -1994,7 +2219,18 @@ const Admision = () => {
                       value={formData["adm_dato_resi_call_prin"]}
                       onChange={handleChange}
                       placeholder="Información es requerida"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_resi_call_prin",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_resi_call_prin"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -2019,7 +2255,18 @@ const Admision = () => {
                       value={formData["adm_dato_resi_call_secu"]}
                       onChange={handleChange}
                       placeholder="Información es requerida"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_resi_call_secu",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_resi_call_secu"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -2044,7 +2291,18 @@ const Admision = () => {
                       value={formData["adm_dato_resi_refe_resi"]}
                       onChange={handleChange}
                       placeholder="Información es requerida"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_resi_refe_resi",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_resi_refe_resi"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -2082,6 +2340,16 @@ const Admision = () => {
                       options={getOpcionesAutoEtnia()}
                       disabled={variableEstado["adm_dato_auto_auto_etni"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_auto_auto_etni",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   {formData.adm_dato_auto_auto_etni === "INDÍGENA" && (
@@ -2103,6 +2371,16 @@ const Admision = () => {
                         options={naciEtnicaPuebloOptions}
                         disabled={variableEstado["adm_dato_auto_naci_etni"]}
                         variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "adm_dato_auto_naci_etni",
+                            requiredFields,
+                            formData,
+                            isFieldVisible
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
                       />
                     </div>
                   )}
@@ -2125,6 +2403,16 @@ const Admision = () => {
                         options={puebKichwaOptions}
                         disabled={variableEstado["adm_dato_auto_pueb_kich"]}
                         variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "adm_dato_auto_pueb_kich",
+                            requiredFields,
+                            formData,
+                            isFieldVisible
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
                       />
                     </div>
                   )}
@@ -2153,6 +2441,16 @@ const Admision = () => {
                       options={getOpcionesGrupoPrioritario()}
                       disabled={variableEstado["adm_dato_adic_grup_prio"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_adic_grup_prio",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                 </div>
@@ -2180,6 +2478,16 @@ const Admision = () => {
                       options={allList.adm_dato_adic_nive_educ}
                       disabled={variableEstado["adm_dato_adic_nive_educ"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_adic_nive_educ",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   <div className={fieldClass}>
@@ -2200,6 +2508,16 @@ const Admision = () => {
                       options={allList.adm_dato_adic_esta_nive_educ}
                       disabled={variableEstado["adm_dato_adic_esta_nive_educ"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_adic_esta_nive_educ",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                 </div>
@@ -2227,6 +2545,16 @@ const Admision = () => {
                       options={allList.adm_dato_adic_tipo_empr_trab}
                       disabled={variableEstado["adm_dato_adic_tipo_empr_trab"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_adic_tipo_empr_trab",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   <div className={fieldClass}>
@@ -2247,6 +2575,16 @@ const Admision = () => {
                       options={allList.adm_dato_adic_ocup_prof_prin}
                       disabled={variableEstado["adm_dato_adic_ocup_prof_prin"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_adic_ocup_prof_prin",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   <div className={fieldClass}>
@@ -2267,6 +2605,16 @@ const Admision = () => {
                       options={allList.adm_dato_adic_tipo_segu}
                       disabled={variableEstado["adm_dato_adic_tipo_segu"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_adic_tipo_segu",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                 </div>
@@ -2294,6 +2642,16 @@ const Admision = () => {
                       options={allList.adm_dato_adic_tien_disc}
                       disabled={variableEstado["adm_dato_adic_tien_disc"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_adic_tien_disc",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                 </div>
@@ -2327,6 +2685,16 @@ const Admision = () => {
                       options={allList.adm_dato_repr_tipo_iden}
                       disabled={variableEstado["adm_dato_repr_tipo_iden"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_repr_tipo_iden",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   <div className={fieldClass}>
@@ -2346,7 +2714,18 @@ const Admision = () => {
                       value={formData["adm_dato_repr_nume_iden"]}
                       onChange={handleChange}
                       placeholder="Información es requerida"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_repr_nume_iden",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_repr_nume_iden"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -2402,7 +2781,18 @@ const Admision = () => {
                       value={formData["adm_dato_repr_apel"]}
                       onChange={handleChange}
                       placeholder="Información es requerida"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_repr_apel",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_repr_apel"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -2424,7 +2814,18 @@ const Admision = () => {
                       value={formData["adm_dato_repr_nomb"]}
                       onChange={handleChange}
                       placeholder="Información es requerida"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_repr_nomb",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_repr_nomb"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -2447,6 +2848,16 @@ const Admision = () => {
                       options={allList.adm_dato_repr_pare}
                       disabled={variableEstado["adm_dato_repr_pare"]}
                       variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "adm_dato_repr_pare",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   <div className={fieldClass}>
@@ -2466,7 +2877,18 @@ const Admision = () => {
                       value={formData["adm_dato_repr_nume_tele"]}
                       onChange={handleChange}
                       placeholder="0911122233"
-                      className={`${inputStyle} ${
+                      className={`${inputStyle}
+                      ${
+                        isFieldInvalid(
+                          "adm_dato_repr_nume_tele",
+                          requiredFields,
+                          formData,
+                          isFieldVisible
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
+                      ${
                         variableEstado["adm_dato_repr_nume_tele"]
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
@@ -2494,7 +2916,18 @@ const Admision = () => {
                           onChange={handleChange}
                           placeholder="Información es requerida"
                           required
-                          className={`${inputStyle} ${
+                          className={`${inputStyle}
+                          ${
+                            isFieldInvalid(
+                              "adm_dato_repr_fech_naci",
+                              requiredFields,
+                              formData,
+                              isFieldVisible
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
+                          ${
                             variableEstado["adm_dato_repr_fech_naci"]
                               ? "bg-gray-200 text-gray-700 cursor-no-drop"
                               : "bg-white text-gray-700 cursor-pointer"
@@ -2526,6 +2959,16 @@ const Admision = () => {
                           options={getOpcionesNacionalidadRepr()}
                           disabled={variableEstado["adm_dato_repr_naci"]}
                           variableEstado={variableEstado}
+                          className={
+                            isFieldInvalid(
+                              "adm_dato_repr_naci",
+                              requiredFields,
+                              formData,
+                              isFieldVisible
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
                         />
                       </div>
                     </>
@@ -2550,6 +2993,16 @@ const Admision = () => {
                           options={allList.adm_dato_no_ident_prov}
                           disabled={false}
                           variableEstado={variableEstado}
+                          className={
+                            isFieldInvalid(
+                              "adm_dato_repr_no_ident_prov",
+                              requiredFields,
+                              formData,
+                              isFieldVisible
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
                         />
                       </div>
                     )}
@@ -2580,7 +3033,18 @@ const Admision = () => {
                     value={formData["adm_dato_cont_enca_nece_llam"]}
                     onChange={handleChange}
                     placeholder="Información es requerida"
-                    className={`${inputStyle} ${
+                    className={`${inputStyle}
+                    ${
+                      isFieldInvalid(
+                        "adm_dato_cont_enca_nece_llam",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                    ${
                       variableEstado["adm_dato_cont_enca_nece_llam"]
                         ? "bg-gray-200 text-gray-700 cursor-no-drop"
                         : "bg-white text-gray-700 cursor-pointer"
@@ -2603,6 +3067,16 @@ const Admision = () => {
                     options={allList.adm_dato_cont_pare}
                     disabled={variableEstado["adm_dato_cont_pare"]}
                     variableEstado={variableEstado}
+                    className={
+                      isFieldInvalid(
+                        "adm_dato_cont_pare",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
                   />
                 </div>
                 <div className={fieldClass}>
@@ -2619,7 +3093,18 @@ const Admision = () => {
                     value={formData["adm_dato_cont_dire"]}
                     onChange={handleChange}
                     placeholder="Información es requerida"
-                    className={`${inputStyle} ${
+                    className={`${inputStyle}
+                    ${
+                      isFieldInvalid(
+                        "adm_dato_cont_dire",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                    ${
                       variableEstado["adm_dato_cont_dire"]
                         ? "bg-gray-200 text-gray-700 cursor-no-drop"
                         : "bg-white text-gray-700 cursor-pointer"
@@ -2641,7 +3126,18 @@ const Admision = () => {
                     value={formData["adm_dato_cont_tele"]}
                     onChange={handleChange}
                     placeholder="0911122233"
-                    className={`${inputStyle} ${
+                    className={`${inputStyle}
+                    ${
+                      isFieldInvalid(
+                        "adm_dato_cont_tele",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                    ${
                       variableEstado["adm_dato_cont_tele"]
                         ? "bg-gray-200 text-gray-700 cursor-no-drop"
                         : "bg-white text-gray-700 cursor-pointer"
