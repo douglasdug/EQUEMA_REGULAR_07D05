@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, NewPasswordResetAPIView, ChangePasswordTokenAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, RegistroVacunadoRegistrationAPIView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, NewPasswordResetAPIView, ChangePasswordTokenAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, Form008EmergenciaRegistrationAPIView, RegistroVacunadoRegistrationAPIView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -20,6 +20,9 @@ router.register(r'influenza', InfluenzaRegistrationAPIView, 'influenza')
 router.register(r'reporte-eni', ReporteENIRegistrationAPIView, 'reporte-eni')
 router.register(
     r'admision-datos', AdmisionDatosRegistrationAPIView, 'admision-datos'
+)
+router.register(
+    r'form-008-emergencia', Form008EmergenciaRegistrationAPIView, 'form-008-emergencia'
 )
 router.register(
     r'registro-vacunado', RegistroVacunadoRegistrationAPIView, 'registro-vacunado'

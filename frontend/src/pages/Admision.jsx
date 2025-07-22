@@ -153,7 +153,11 @@ function generarNumeIden(nombres, apellidos, naci, fecha, noIdentProv) {
   );
 }
 
-const Admision = () => {
+const Admision = ({
+  tipoIdenInicial = "",
+  numeIdenInicial = "",
+  ejecutarAjustarAdmision = false,
+}) => {
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -343,7 +347,13 @@ const Admision = () => {
       tipoId = formData.adm_dato_pers_tipo_iden;
       numIden = formData.adm_dato_pers_nume_iden;
     }
-
+    if (!tipoId || !numIden) {
+      setError("Debe seleccionar el tipo y número de identificación.");
+      toast.error("Debe seleccionar el tipo y número de identificación.", {
+        position: "bottom-right",
+      });
+      return;
+    }
     if (!numIden) {
       toast.error("Por favor, ingrese una identificación.", {
         position: "bottom-right",
@@ -1265,7 +1275,7 @@ const Admision = () => {
     generarNumeIden,
     campos,
     formData,
-    isBuscarRepresentante,
+    //isBuscarRepresentante,
   }) => {
     useEffect(() => {
       if (
@@ -1273,8 +1283,8 @@ const Admision = () => {
         btnBuscarDisabled &&
         tieneInfo &&
         tipoIden === "NO IDENTIFICADO" &&
-        !isEditing &&
-        isBuscarRepresentante
+        !isEditing
+        //isBuscarRepresentante
       ) {
         const nuevoId = generarNumeIden(
           formData[campos.nomb],
@@ -1295,7 +1305,7 @@ const Admision = () => {
       tipoIden,
       setFormData,
       generarNumeIden,
-      isBuscarRepresentante,
+      //isBuscarRepresentante,
       ...campos.deps.map((dep) => formData[dep]),
     ]);
   };
@@ -1314,7 +1324,7 @@ const Admision = () => {
     setFormData,
     formData,
     generarNumeIden,
-    isBuscarRepresentante,
+    //isBuscarRepresentante,
     campos: {
       numeIden: "adm_dato_pers_nume_iden",
       nomb: "adm_dato_pers_nomb_prim",
@@ -1346,7 +1356,7 @@ const Admision = () => {
     setFormData,
     formData,
     generarNumeIden,
-    isBuscarRepresentante,
+    //isBuscarRepresentante,
     campos: {
       numeIden: "adm_dato_repr_nume_iden",
       nomb: "adm_dato_repr_nomb",
@@ -1424,6 +1434,31 @@ const Admision = () => {
   }, [formData]);
 
   useEffect(() => {
+    // Solo setea si hay valores iniciales y los campos están vacíos
+    setFormData((prev) => {
+      if (
+        tipoIdenInicial &&
+        numeIdenInicial &&
+        !prev.adm_dato_pers_tipo_iden &&
+        !prev.adm_dato_pers_nume_iden
+      ) {
+        return {
+          ...prev,
+          adm_dato_pers_tipo_iden: tipoIdenInicial,
+          adm_dato_pers_nume_iden: numeIdenInicial,
+        };
+      }
+      return prev;
+    });
+  }, [tipoIdenInicial, numeIdenInicial]);
+
+  useEffect(() => {
+    if (ejecutarAjustarAdmision) {
+      ajustarVariableEstadoFalso();
+    }
+  }, [ejecutarAjustarAdmision]);
+
+  useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isDirty) {
         e.preventDefault();
@@ -1472,6 +1507,26 @@ const Admision = () => {
     return [];
   };
 
+  function getBtnBuscarClass({ base, disabled, isBuscar }) {
+    if (disabled)
+      return `${base} bg-gray-300 hover:bg-gray-400 cursor-not-allowed`;
+    if (isBuscar)
+      return `${base} bg-blue-700 hover:bg-blue-900 text-white cursor-pointer border-2 border-blue-900`;
+    return `${base} bg-green-600 hover:bg-green-700 text-white cursor-pointer border-2 border-green-800`;
+  }
+
+  const btnBuscarClass = getBtnBuscarClass({
+    base: buttonStylePrimario,
+    disabled: botonEstado.btnBuscar,
+    isBuscar,
+  });
+
+  const btnBuscarRepresentanteClass = getBtnBuscarClass({
+    base: buttonStylePrimario,
+    disabled: botonEstado.btnBuscarRepresentante,
+    isBuscarRepresentante,
+  });
+
   const EstadoMensajes = ({ error, successMessage }) => (
     <div className="bg-white rounded-lg shadow-md">
       {error && (
@@ -1510,13 +1565,13 @@ const Admision = () => {
     : "Buscar";
 
   return (
-    <div className="w-full h-screen flex items-stretch justify-stretch bg-gray-100">
+    <div className="w-auto h-auto flex items-stretch justify-stretch bg-gray-100">
       <div className="w-full h-full p-4 m-4 bg-white rounded-lg shadow-md mt-1">
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Admisión de Pacientes
         </h2>
         {/* NAV TABS */}
-        <nav className="flex border-b border-blue-200 mb-1 sticky top-20 z-50 bg-white items-start justify-center">
+        <nav className="w-full flex overflow-x-auto no-scrollbar space-x-2 border-b border-blue-200 mb-1 bg-white items-center justify-center px-2 py-1 relative">
           {tabs.map((tab) =>
             tab.key === "representante" &&
             !(edad !== null && parseInt(edad) < 18) ? null : (
@@ -1524,12 +1579,12 @@ const Admision = () => {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-8 py-1 -mb-px font-black border-b-2 transition-colors duration-200
-                              ${
-                                activeTab === tab.key
-                                  ? "border-blue-600 text-blue-600"
-                                  : "border-transparent text-gray-500 hover:text-blue-600"
-                              }`}
+                className={`px-2 py-1 sm:px-4 sm:py-2 rounded-e-full font-bold transition-colors duration-200 whitespace-nowrap
+          ${
+            activeTab === tab.key
+              ? "bg-blue-600 text-white shadow"
+              : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+          }`}
               >
                 {tab.label}
               </button>
@@ -1585,15 +1640,16 @@ const Admision = () => {
                       )}
                       {labelMap["adm_dato_pers_nume_iden"]}
                     </label>
-                    <input
-                      type="text"
-                      id="adm_dato_pers_nume_iden"
-                      name="adm_dato_pers_nume_iden"
-                      value={formData["adm_dato_pers_nume_iden"]}
-                      onChange={handleChange}
-                      placeholder="Información es requerida"
-                      required
-                      className={`${inputStyle}
+                    <div className="flex items-center gap-1 mb-1">
+                      <input
+                        type="text"
+                        id="adm_dato_pers_nume_iden"
+                        name="adm_dato_pers_nume_iden"
+                        value={formData["adm_dato_pers_nume_iden"]}
+                        onChange={handleChange}
+                        placeholder="Información es requerida"
+                        required
+                        className={`${inputStyle}
                       ${
                         isFieldInvalid(
                           "adm_dato_pers_nume_iden",
@@ -1609,26 +1665,21 @@ const Admision = () => {
                            ? "bg-gray-200 text-gray-700 cursor-no-drop"
                            : "bg-white text-gray-700 cursor-pointer"
                        }`}
-                      disabled={variableEstado["adm_dato_pers_nume_iden"]}
-                    />
-                  </div>
-                  <div className="flex items-center justify-start -mb-4">
-                    <button
-                      type="button"
-                      id="btnBuscar"
-                      name="btnBuscar"
-                      className={`${buttonStylePrimario} ${
-                        botonEstado.btnBuscar
-                          ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                          : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-                      }`}
-                      onClick={
-                        isBuscar ? ajustarVariableEstadoFalso : handleSearch
-                      }
-                      disabled={botonEstado.btnBuscar}
-                    >
-                      {buttonTextBuscar}
-                    </button>
+                        disabled={variableEstado["adm_dato_pers_nume_iden"]}
+                      />
+                      <button
+                        type="button"
+                        id="btnBuscar"
+                        name="btnBuscar"
+                        className={btnBuscarClass}
+                        onClick={
+                          isBuscar ? ajustarVariableEstadoFalso : handleSearch
+                        }
+                        disabled={botonEstado.btnBuscar}
+                      >
+                        {buttonTextBuscar}
+                      </button>
+                    </div>
                   </div>
                   <div className={fieldClass}>
                     <label
@@ -2767,11 +2818,7 @@ const Admision = () => {
                       type="button"
                       id="btnBuscarRepresentante"
                       name="btnBuscarRepresentante"
-                      className={`${buttonStylePrimario} ${
-                        botonEstado.btnBuscarRepresentante
-                          ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                          : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-                      }`}
+                      className={btnBuscarRepresentanteClass}
                       onClick={
                         isBuscarRepresentante
                           ? ajustarVariableEstadoFalsoRepr
@@ -3177,7 +3224,7 @@ const Admision = () => {
               </div>
             </fieldset>
           )}
-          <div className="flex justify-center">
+          <div className="md:col-span-2 flex justify-center mt-1">
             <button
               type="submit"
               id="btnRegistrar"

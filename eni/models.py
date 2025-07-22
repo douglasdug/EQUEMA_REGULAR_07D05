@@ -57,6 +57,7 @@ class eniUser(AbstractUser):
 
 # Crea la tabla de Unidad de Salud
 class unidad_salud(models.Model):
+    uni_inst_sist = models.CharField(max_length=15, blank=True)
     uni_zona = models.CharField(max_length=10, blank=True)
     uni_dist = models.CharField(max_length=8, blank=True)
     uni_prov = models.CharField(max_length=20, blank=True)
@@ -535,8 +536,8 @@ class influenza(models.Model):
 
 
 class admision_datos(models.Model):
-    adm_dato_admi_fech_admi = models.DateField(auto_now_add=True)
-    adm_dato_admi_fech_admi_actu = models.DateField(auto_now=True)
+    adm_dato_admi_fech_admi = models.DateTimeField(auto_now_add=True)
+    adm_dato_admi_fech_admi_actu = models.DateTimeField(auto_now=True)
     adm_dato_pers_tipo_iden = models.CharField(max_length=25, blank=True)
     adm_dato_pers_nume_iden = models.CharField(max_length=25, blank=True)
     adm_dato_pers_apel_prim = models.CharField(max_length=40, blank=True)
@@ -613,12 +614,12 @@ class form_008_emergencia(models.Model):
     for_008_emer_etni = models.CharField(max_length=40, blank=True)
     for_008_emer_grup_prio = models.CharField(max_length=50, blank=True)
     for_008_emer_tipo_segu = models.CharField(max_length=40, blank=True)
-    for_008_emer_prov_reci = models.CharField(max_length=60, blank=True)
-    for_008_emer_cant_reci = models.CharField(max_length=60, blank=True)
-    for_008_emer_parr_reci = models.CharField(max_length=60, blank=True)
+    for_008_emer_prov_resi = models.CharField(max_length=60, blank=True)
+    for_008_emer_cant_resi = models.CharField(max_length=60, blank=True)
+    for_008_emer_parr_resi = models.CharField(max_length=60, blank=True)
     for_008_emer_espe_prof = models.CharField(max_length=40, blank=True)
     for_008_emer_cie_10_prin = models.CharField(max_length=10, blank=True)
-    for_008_emer_diga_prin = models.CharField(max_length=260, blank=True)
+    for_008_emer_diag_prin = models.CharField(max_length=260, blank=True)
     for_008_emer_cond_diag = models.CharField(max_length=50, blank=True)
     for_008_emer_cie_10_caus_exte = models.CharField(max_length=10, blank=True)
     for_008_emer_diag_caus_exte = models.CharField(max_length=260, blank=True)
@@ -626,6 +627,7 @@ class form_008_emergencia(models.Model):
     for_008_emer_hora_aten = models.TimeField(blank=True, null=True)
     for_008_emer_cond_alta = models.CharField(max_length=15, blank=True)
     for_008_emer_obse = models.CharField(max_length=150, blank=True)
+    for_008_emer_fech_repor = models.DateTimeField(auto_now=True)
     for_008_emer_resp_aten_medi = models.CharField(max_length=80, blank=True)
     for_008_emer_apoy_aten_medi = models.CharField(max_length=80, blank=True)
     for_008_emer_edad_gest = models.DecimalField(
@@ -633,7 +635,7 @@ class form_008_emergencia(models.Model):
         decimal_places=1,
         blank=True,
         null=True,
-        help_text='Edad gestacional en semanas (ej: 38.5)'
+        help_text='Edad gestacional en semanas (ej: 38,5)'
     )
     for_008_emer_ries_obst = models.CharField(max_length=15, blank=True)
     for_008_emer_indi_paci_fami = models.CharField(max_length=150, blank=True)

@@ -296,6 +296,63 @@ export const updateAdmision = async (formData) => {
   }
 };
 
+//Funciones para el Form008 de Emergencia
+export const buscarUsuarioForm008Emer = async (tipo, identificacion) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/form-008-emergencia/buscar-admision/`,
+      {
+        params: { tipo, identificacion },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching user admission data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
+export const registerForm008Emer = async (formData) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/form-008-emergencia/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error registering admision data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
+export const updateForm008Emer = async (formData) => {
+  try {
+    const response = await axios.patch(
+      `${API_URL}/form-008-emergencia/${formData.id_adm}/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error updating admision data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
 //Funciones de Temprano
 export const getMesTemprano = async (user_id, month, year) => {
   try {

@@ -9,45 +9,37 @@ export const CustomSelect = ({
   onChange,
   options,
   disabled,
-  variableEstado,
   className = "",
 }) => {
+  // Buscar el objeto seleccionado en options
+  const selectedOption = options.find((opt) => opt.value === value) || null;
+
   return (
-    <div className="relative inline-block w-full">
-      <select
-        id={id}
+    <div
+      className={`relative w-full ${className} ${
+        disabled ? "cursor-not-allowed" : ""
+      }`}
+      style={disabled ? { cursor: "not-allowed" } : {}}
+    >
+      <Select
+        inputId={id}
         name={name}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className={`block appearance-none w-full border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline ${
-          disabled
-            ? "bg-gray-200 text-gray-700 cursor-no-drop"
-            : "bg-white text-gray-700 cursor-pointer"
-        } ${className}`}
-      >
-        <option value="">Seleccione una opción</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-        <svg
-          className="fill-current h-4 w-4"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-        >
-          <line x1="0" y1="0" x2="0" y2="20" stroke="gray" strokeWidth="2" />
-          <path
-            d="M5 8l5 6 5-6H5z"
-            fill="gray"
-            stroke="black"
-            strokeWidth="0.5"
-          />
-        </svg>
-      </div>
+        value={selectedOption}
+        onChange={(selected) =>
+          onChange({
+            target: {
+              name,
+              value: selected ? selected.value : "",
+            },
+          })
+        }
+        options={options}
+        isDisabled={disabled}
+        placeholder="Seleccione una opción"
+        styles={selectStyles}
+        classNamePrefix="react-select"
+        isClearable
+      />
     </div>
   );
 };
@@ -58,38 +50,54 @@ CustomSelect.propTypes = {
   onChange: PropTypes.func.isRequired,
   name: PropTypes.string.isRequired,
   disabled: PropTypes.bool,
-  variableEstado: PropTypes.object,
+  className: PropTypes.string,
 };
 
 export const inputStyle =
   "form-input shadow appearance-none border border-gray-500 rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline";
 
 export const selectStyles = {
-  control: (provided) => ({
+  control: (provided, state) => ({
     ...provided,
     borderColor: "#A0AEC0",
     boxShadow: "none",
+    backgroundColor: state.isDisabled ? "#E5E7EB" : "#FFFFFF",
+    color: "#374151",
+    cursor: state.isDisabled ? "not-allowed" : "pointer",
     "&:hover": {
       borderColor: "#A0AEC0",
     },
   }),
-  placeholder: (provided) => ({
+  singleValue: (provided, state) => ({
+    ...provided,
+    color: "#374151",
+    cursor: state.isDisabled ? "not-allowed" : "inherit", // Agrega esta línea
+  }),
+  placeholder: (provided, state) => ({
     ...provided,
     color: "#262626",
+    cursor: state.isDisabled ? "not-allowed" : "inherit", // Agrega esta línea
   }),
   dropdownIndicator: (provided, state) => ({
     ...provided,
-    color: state.isDisabled ? "#A0AEC0" : "#000000", // Cambia el color de la flecha
+    color: state.isDisabled ? "#A0AEC0" : "#000000",
+    cursor: state.isDisabled ? "not-allowed" : "pointer", // Agrega esta línea
     "&:hover": {
-      color: state.isDisabled ? "#A0AEC0" : "#000000", // Cambia el color de la flecha al pasar el ratón
+      color: state.isDisabled ? "#A0AEC0" : "#000000",
     },
   }),
   indicatorSeparator: (provided, state) => ({
     ...provided,
-    backgroundColor: state.isDisabled ? "#A0AEC0" : "#000000", // Color de la raya vertical
-    width: "1px", // Ancho de la raya vertical
-    height: "70%", // Altura de la raya vertical
-    margin: "auto", // Centrar verticalmente
+    backgroundColor: state.isDisabled ? "#A0AEC0" : "#000000",
+    cursor: state.isDisabled ? "not-allowed" : "inherit", // Agrega esta línea
+    width: "1px",
+    height: "70%",
+    margin: "auto",
+  }),
+  clearIndicator: (provided, state) => ({
+    // Agrega este bloque
+    ...provided,
+    cursor: state.isDisabled ? "not-allowed" : "pointer",
   }),
 };
 

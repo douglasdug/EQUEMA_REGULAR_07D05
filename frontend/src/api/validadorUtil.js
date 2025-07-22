@@ -9,27 +9,57 @@ export const validarDato = (
   const { name, value, type } = e.target;
   let formattedValue = value;
 
-  if (type === "text") {
+  // Validador para password1 y password2
+  if (
+    (name === "password1" || name === "password2") &&
+    (type === "password" || type === "text")
+  ) {
+    // Solo permite letras, números y * - +
+    const passwordRegex = /^[A-Za-z0-9*+\-]*$/;
+    if (!passwordRegex.test(formattedValue)) {
+      setError({
+        type: "validacion",
+        message:
+          "La contraseña solo puede contener letras, números y los caracteres especiales * + -",
+      });
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+      // No actualices el valor si no es válido
+      return;
+    } else {
+      setError("");
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
+    }
+    // Opcional: puedes limitar la longitud aquí si lo deseas
+  }
+
+  if (type === "text" && name !== "password1" && name !== "password2") {
     formattedValue = value.toUpperCase().replace(/\s{2,}/g, " ");
     const soloLetrasRegex = /^[A-ZÁÉÍÓÚÑ ]+$/;
 
     // Excluir los campos de identificación de la validación de solo letras
     if (
-      name === "adm_dato_pers_nume_iden" ||
-      name === "adm_dato_repr_nume_iden"
+      name === "adm_dato_pers_apel_prim" ||
+      name === "adm_dato_pers_nomb_prim" ||
+      name === "adm_dato_repr_apel" ||
+      name === "adm_dato_repr_nomb" ||
+      name === "adm_dato_cont_enca_nece_llam" ||
+      name === "first_name" ||
+      name === "last_name"
     ) {
-      // Aquí puedes poner otra validación si lo deseas, o simplemente dejarlo pasar
-      setError("");
-      setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
-    } else if (!formattedValue) {
-      setError({ type: "validacion", message: "Este campo es obligatorio" });
-      setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
-    } else if (!soloLetrasRegex.test(formattedValue)) {
-      setError({ type: "validacion", message: "Solo se permiten letras" });
-      setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
-    } else {
-      setError("");
-      setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
+      if (!formattedValue) {
+        setError({ type: "validacion", message: "Este campo es obligatorio" });
+        setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+      } else if (!soloLetrasRegex.test(formattedValue)) {
+        setError({
+          type: "validacion",
+          message:
+            "En los campos de Apellidos y Nombres solo se permiten letras",
+        });
+        setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+      } else {
+        setError("");
+        setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
+      }
     }
   } else if (type === "number") {
     formattedValue = value.replace(/[^0-9]/g, "");
@@ -96,6 +126,10 @@ export const validarDato = (
       });
       return;
     }
+  } else {
+    // Para otros campos de texto, solo limpiar error y permitir cualquier valor
+    setError("");
+    setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
   }
 
   setFormData({

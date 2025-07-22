@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
+import Admision from "./Admision.jsx";
 import {
-  registerAdmision,
-  updateAdmision,
+  registerForm008Emer,
+  updateForm008Emer,
   buscarUsuarioAdmision,
 } from "../api/conexion.api.js";
 import allListForm008 from "../api/all.list.form008.json";
-import allListAbscripcionTerritorial from "../api/all.list.abscripcion.territorial.json";
 import {
   validarDato,
   validarNumeroIdentificacion,
@@ -21,24 +21,16 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 const initialState = {
+  id_adm: "",
   for_008_busc_pers_tipo_iden: "",
   for_008_busc_pers_nume_iden: "",
-  for_008_emer_inst_sist: "",
-  for_008_emer_unic: "",
-  for_008_emer_nomb_esta_salu: "",
-  for_008_emer_zona: "",
-  for_008_emer_prov: "",
-  for_008_emer_cant: "",
-  for_008_emer_dist: "",
-  for_008_emer_nive: "",
+  for_008_emer_nomb_esta_salu: "592 HOSPITAL BASICO DE HUAQUILLAS",
   for_008_emer_fech_aten: "",
-  for_008_emer_tipo_docu_iden: "",
-  for_008_emer_nume_iden: "",
+  for_008_emer_hora_aten: "",
+  for_008_emer_edad_cond: "",
   for_008_emer_apel_comp: "",
   for_008_emer_nomb_comp: "",
   for_008_emer_sexo: "",
-  for_008_emer_edad: "",
-  for_008_emer_cond_edad: "",
   for_008_emer_naci: "",
   for_008_emer_etni: "",
   for_008_emer_grup_prio: "",
@@ -46,77 +38,146 @@ const initialState = {
   for_008_emer_prov_resi: "",
   for_008_emer_cant_resi: "",
   for_008_emer_parr_resi: "",
+  for_008_emer_unid_salu_resp_segu_aten: "",
+  for_008_emer_dire_domi: "",
+  for_008_emer_tele_paci: "",
   for_008_emer_espe_prof: "",
-  for_008_emer_cie_10_prin: "",
-  for_008_emer_diga_prin: "",
+  for_008_emer_cie_10_prin_diag: "",
   for_008_emer_cond_diag: "",
-  for_008_emer_cie_10_caus_exte: "",
-  for_008_emer_diag_caus_exte: "",
+  for_008_emer_cie_10_caus_exte_diag: "",
   for_008_emer_hosp: "",
-  for_008_emer_hora_aten: "",
   for_008_emer_cond_alta: "",
   for_008_emer_obse: "",
-  for_008_emer_resp_aten_medi: "",
   for_008_emer_apoy_aten_medi: "",
   for_008_emer_edad_gest: "",
   for_008_emer_ries_obst: "",
   for_008_emer_indi_paci_fami: "",
-  for_008_emer_unid_salu_resp_segu_aten: "",
-  for_008_emer_dire_domi: "",
-  for_008_emer_tele_paci: "",
 };
 
+function calcularEdad(fechaNacimientoStr) {
+  if (!fechaNacimientoStr) return "";
+  const [year, month, day] = fechaNacimientoStr.split("-").map(Number);
+  const fechaNacimiento = new Date(year, month - 1, day);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  if (fechaNacimiento > hoy) {
+    return "ERROR La fecha de nacimiento no puede ser mayor a la fecha actual";
+  }
+
+  let años = hoy.getFullYear() - fechaNacimiento.getFullYear();
+  let meses = hoy.getMonth() - fechaNacimiento.getMonth();
+  let dias = hoy.getDate() - fechaNacimiento.getDate();
+
+  if (dias < 0) {
+    meses--;
+    dias += new Date(hoy.getFullYear(), hoy.getMonth(), 0).getDate();
+  }
+  if (meses < 0) {
+    años--;
+    meses += 12;
+  }
+
+  let textoEdad = "";
+  if (años > 0) textoEdad += años + (años === 1 ? " AÑO " : " AÑO/S ");
+  if (meses > 0) textoEdad += meses + (meses === 1 ? " MES " : " MES/ES ");
+  if (dias > 0) textoEdad += dias + (dias === 1 ? " DÍA" : " DÍA/S");
+  if (!textoEdad) textoEdad = "0 DÍA/S";
+
+  return textoEdad.trim();
+}
+
+function calcularEdadConFechaReferencia(
+  fechaNacimientoStr,
+  fechaReferenciaStr
+) {
+  if (!fechaNacimientoStr || !fechaReferenciaStr) return "";
+
+  const [yearNac, monthNac, dayNac] = fechaNacimientoStr.split("-").map(Number);
+  const fechaNacimiento = new Date(yearNac, monthNac - 1, dayNac);
+
+  const [yearRef, monthRef, dayRef] = fechaReferenciaStr.split("-").map(Number);
+  const fechaReferencia = new Date(yearRef, monthRef - 1, dayRef);
+
+  if (fechaNacimiento > fechaReferencia) {
+    return "ERROR: Fecha de nacimiento mayor a fecha de atención";
+  }
+
+  let años = fechaReferencia.getFullYear() - fechaNacimiento.getFullYear();
+  let meses = fechaReferencia.getMonth() - fechaNacimiento.getMonth();
+  let dias = fechaReferencia.getDate() - fechaNacimiento.getDate();
+
+  if (dias < 0) {
+    meses--;
+    const ultimoDiaMes = new Date(
+      fechaReferencia.getFullYear(),
+      fechaReferencia.getMonth(),
+      0
+    ).getDate();
+    dias += ultimoDiaMes;
+  }
+
+  if (meses < 0) {
+    años--;
+    meses += 12;
+  }
+
+  let textoEdad = "";
+  if (años > 0) textoEdad += años + (años === 1 ? " AÑO " : " AÑO/S ");
+  if (meses > 0) textoEdad += meses + (meses === 1 ? " MES " : " MES/ES ");
+  if (dias > 0) textoEdad += dias + (dias === 1 ? " DÍA" : " DÍA/S");
+  if (!textoEdad) textoEdad = "0 DÍA/S";
+
+  return textoEdad.trim();
+}
+
 const Form008Emergencia = () => {
+  const [showAdmisionModal, setShowAdmisionModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [edad, setEdad] = useState("");
+  const fechaActual = new Date().toISOString().slice(0, 10);
+  const fechaMinima = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  const navigate = useNavigate();
 
   const initialVariableEstado = {
     for_008_busc_pers_tipo_iden: false,
     for_008_busc_pers_nume_iden: false,
-    for_008_emer_inst_sist: true,
-    for_008_emer_unic: true,
     for_008_emer_nomb_esta_salu: true,
-    for_008_emer_zona: true,
-    for_008_emer_prov: true,
-    for_008_emer_cant: true,
-    for_008_emer_dist: true,
-    for_008_emer_nive: true,
     for_008_emer_fech_aten: true,
-    for_008_emer_tipo_docu_iden: true,
-    for_008_emer_nume_iden: true,
-    for_008_emer_prim_apel: true,
-    for_008_emer_prim_nomb: true,
+    for_008_emer_hora_aten: true,
+    for_008_emer_edad_cond: true,
+    for_008_emer_apel_comp: true,
+    for_008_emer_nomb_comp: true,
     for_008_emer_sexo: true,
-    for_008_emer_edad: true,
-    for_008_emer_cond_edad: true,
     for_008_emer_naci: true,
     for_008_emer_etni: true,
     for_008_emer_grup_prio: true,
     for_008_emer_tipo_segu: true,
-    for_008_emer_prov_reci: true,
-    for_008_emer_cant_reci: true,
-    for_008_emer_parr_reci: true,
+    for_008_emer_prov_resi: true,
+    for_008_emer_cant_resi: true,
+    for_008_emer_parr_resi: true,
+    for_008_emer_unid_salu_resp_segu_aten: true,
+    for_008_emer_dire_domi: true,
+    for_008_emer_tele_paci: true,
     for_008_emer_espe_prof: true,
-    for_008_emer_cie_10_prin: true,
-    for_008_emer_diga_prin: true,
+    for_008_emer_cie_10_prin_diag: true,
     for_008_emer_cond_diag: true,
-    for_008_emer_cie_10_caus_exte: true,
-    for_008_emer_diag_caus_exte: true,
+    for_008_emer_cie_10_caus_exte_diag: true,
     for_008_emer_hosp: true,
-    for_008_emer_hora_aten: true,
     for_008_emer_cond_alta: true,
     for_008_emer_obse: true,
-    for_008_emer_resp_aten_medi: true,
     for_008_emer_apoy_aten_medi: true,
     for_008_emer_edad_gest: true,
     for_008_emer_ries_obst: true,
     for_008_emer_indi_paci_fami: true,
-    for_008_emer_unid_salu_resp_segu_aten: true,
-    for_008_emer_dire_domi: true,
-    for_008_emer_tele_paci: true,
   };
   const initialBotonEstado = {
     btnBuscar: false,
@@ -128,50 +189,37 @@ const Form008Emergencia = () => {
   const requiredFields = [];
 
   const labelMap = {
-    for_008_busc_pers_tipo_iden: "TIPO DE IDENTIFICACIÓN",
-    for_008_busc_pers_nume_iden: "NÚMERO DE IDENTIFICACIÓN",
-    for_008_emer_inst_sist: "INSTITUCIÓN DEL SISTEMA",
-    for_008_emer_unic: "UNICODIGO",
-    for_008_emer_nomb_esta_salu: "NOMBRE DEL ESTABLECIMIENTO DE SALUD",
-    for_008_emer_zona: "ZONA",
-    for_008_emer_prov: "PROVINCIA",
-    for_008_emer_cant: "CANTON",
-    for_008_emer_dist: "DISTRITO",
-    for_008_emer_nive: "NIVEL",
-    for_008_emer_fech_aten: "FECHA DE ATENCIÓN",
-    for_008_emer_tipo_docu_iden: "TIPO DE DOCUMENTO DE IDENTIFICACIÓN",
-    for_008_emer_nume_iden: "NÚMERO DE IDENTIFICACION",
-    for_008_emer_apel_comp: "APELLIDOS",
-    for_008_emer_nomb_comp: "NOMBRES",
-    for_008_emer_sexo: "SEXO",
-    for_008_emer_edad: "EDAD",
-    for_008_emer_cond_edad: "CONDICIÓN DE LA EDAD",
-    for_008_emer_naci: "NACIONALIDAD",
-    for_008_emer_etni: "ETNIA",
-    for_008_emer_grup_prio: "GRUPO PRIORITARIO",
-    for_008_emer_tipo_segu: "TIPO DE SEGURO",
-    for_008_emer_prov_reci: "PROVINCIA DE RECIDENCIA",
-    for_008_emer_cant_reci: "CANTON DE RECIDENCIA",
-    for_008_emer_parr_reci: "PARROQUIA DE RECIDENCIA",
-    for_008_emer_espe_prof: "ESPECIALIDAD DEL PROFESIONAL",
-    for_008_emer_cie_10_prin: "CIE-10 (PRINCIPAL)",
-    for_008_emer_diga_prin: "DIGANÓSTICO 1 (PRINCIPAL)",
-    for_008_emer_cond_diag: "CONDICIÓN DEL DIAGNÓSTICO",
-    for_008_emer_cie_10_caus_exte: "CIE-10 (CAUSA EXTERNA)",
-    for_008_emer_diag_caus_exte: "DIAGNOSTICO (CAUSA  EXTERNA)",
-    for_008_emer_hosp: "HOSPITALIZACIÓN",
-    for_008_emer_hora_aten: "HORA ATENCIÓN",
-    for_008_emer_cond_alta: "CONDICIÓN DEL ALTA ",
-    for_008_emer_obse: "OBSERVACIÓN",
-    for_008_emer_resp_aten_medi: "RESPONSABLE DE LA ATENCION MEDICA",
-    for_008_emer_apoy_aten_medi: "APOYO EN LA ATENCION MEDICA",
-    for_008_emer_edad_gest: "EDAD GESTACIONAL",
-    for_008_emer_ries_obst: "RIESGO OBSTETRICO",
-    for_008_emer_indi_paci_fami: "INDICACIONES PARA EL PACIENTE O LA FAMILIA",
+    for_008_busc_pers_tipo_iden: "TIPO DE IDENTIFICACIÓN:",
+    for_008_busc_pers_nume_iden: "NÚMERO DE IDENTIFICACIÓN:",
+    for_008_emer_nomb_esta_salu: "NOMBRE DEL ESTABLECIMIENTO DE SALUD:",
+    for_008_emer_fech_aten: "FECHA DE ATENCIÓN:",
+    for_008_emer_hora_aten: "HORA ATENCIÓN:",
+    for_008_emer_edad_cond: "EDAD:",
+    for_008_emer_apel_comp: "APELLIDOS:",
+    for_008_emer_nomb_comp: "NOMBRES:",
+    for_008_emer_sexo: "SEXO:",
+    for_008_emer_naci: "NACIONALIDAD:",
+    for_008_emer_etni: "ETNIA:",
+    for_008_emer_grup_prio: "GRUPO PRIORITARIO:",
+    for_008_emer_tipo_segu: "TIPO DE SEGURO:",
+    for_008_emer_prov_resi: "PROVINCIA DE RESIDENCIA:",
+    for_008_emer_cant_resi: "CANTON DE RESIDENCIA:",
+    for_008_emer_parr_resi: "PARROQUIA DE RESIDENCIA:",
     for_008_emer_unid_salu_resp_segu_aten:
-      "UNIDAD DE SALUD RESPONSABLE DE SEGUIMIENTO DE ATENCIÓN",
-    for_008_emer_dire_domi: "DIRECCIÓN DE DOMICILIO",
-    for_008_emer_tele_paci: "TELEFONO DE PACIENTE",
+      "UNIDAD DE SALUD RESPONSABLE DE SEGUIMIENTO DE ATENCIÓN:",
+    for_008_emer_dire_domi: "DIRECCIÓN DE DOMICILIO:",
+    for_008_emer_tele_paci: "TELEFONO DE PACIENTE:",
+    for_008_emer_espe_prof: "ESPECIALIDAD DEL PROFESIONAL:",
+    for_008_emer_cie_10_prin_diag: "CIE-10 (PRINCIPAL):",
+    for_008_emer_cond_diag: "CONDICIÓN DEL DIAGNÓSTICO:",
+    for_008_emer_cie_10_caus_exte_diag: "CIE-10 (CAUSA EXTERNA):",
+    for_008_emer_hosp: "HOSPITALIZACIÓN:",
+    for_008_emer_cond_alta: "CONDICIÓN DEL ALTA:",
+    for_008_emer_obse: "OBSERVACIÓN:",
+    for_008_emer_apoy_aten_medi: "APOYO EN LA ATENCION MEDICA:",
+    for_008_emer_edad_gest: "EDAD GESTACIONAL:",
+    for_008_emer_ries_obst: "RIESGO OBSTETRICO:",
+    for_008_emer_indi_paci_fami: "INDICACIONES PARA EL PACIENTE O LA FAMILIA:",
   };
 
   const getErrorMessage = (error) => {
@@ -204,6 +252,15 @@ const Form008Emergencia = () => {
     tipoId = formData.for_008_busc_pers_tipo_iden;
     numIden = formData.for_008_busc_pers_nume_iden;
 
+    if (!tipoId || !numIden) {
+      setError("Debe seleccionar el tipo y número de identificación.");
+      setTimeout(() => setError(""), 5000);
+      toast.error("Debe seleccionar el tipo y número de identificación.", {
+        position: "bottom-right",
+      });
+      return;
+    }
+
     if (!numIden) {
       toast.error("Por favor, ingrese una identificación.", {
         position: "bottom-right",
@@ -232,34 +289,48 @@ const Form008Emergencia = () => {
       });
     } catch (error) {
       const errorMessage = getErrorMessage(error);
-      ajustarVariableEstadoFalsoRepr();
-
+      ajustarVariableEstadoFalso();
       setError(errorMessage);
       setTimeout(() => setError(""), 10000);
       setSuccessMessage("");
       toast.error(errorMessage, { position: "bottom-right" });
+      if (
+        errorMessage.toLowerCase().includes("no se encontró") ||
+        errorMessage.toLowerCase().includes("no existe") ||
+        errorMessage.toLowerCase().includes("no se pudo obtener")
+      ) {
+        setShowConfirmModal(true);
+      }
     }
   };
 
   const actualizarFormDataConRespuesta = (data) => {
-    console.log("Datos recibidos:", data);
+    //console.log("Datos recibidos:", data);
     setFormData((prevData) => ({
       ...prevData,
       id_adm: data.id_adm || data.id || "",
+      adm_dato_naci_fech_naci: data.adm_dato_naci_fech_naci || "",
+      for_008_emer_edad_cond: calcularEdad(data.adm_dato_naci_fech_naci),
       // Combina apellidos
       for_008_emer_apel_comp: [
         data.adm_dato_pers_apel_prim || "",
         data.adm_dato_pers_apel_segu || "",
-      ],
+      ]
+        .filter(Boolean)
+        .join(" "),
       for_008_emer_nomb_comp: [
         data.adm_dato_pers_nomb_prim || "",
         data.adm_dato_pers_nomb_segu || "",
-      ],
+      ]
+        .filter(Boolean)
+        .join(" "),
       for_008_emer_sexo: data.adm_dato_pers_sexo || "",
       for_008_emer_tele_paci: [
         data.adm_dato_pers_tele || "",
         data.adm_dato_pers_celu || "",
-      ],
+      ]
+        .filter(Boolean)
+        .join(" / "),
       for_008_emer_naci: data.adm_dato_naci_naci || "",
       for_008_emer_prov_resi: data.adm_dato_resi_prov || "",
       for_008_emer_cant_resi: data.adm_dato_resi_cant || "",
@@ -267,11 +338,21 @@ const Form008Emergencia = () => {
       for_008_emer_unid_salu_resp_segu_aten:
         data.adm_dato_resi_esta_adsc_terr || "",
       for_008_emer_dire_domi: [
-        data.adm_dato_resi_barr_sect || "",
-        data.adm_dato_resi_call_prin || "",
-        data.adm_dato_resi_call_secu || "",
-        data.adm_dato_resi_refe_resi || "",
-      ],
+        data.adm_dato_resi_barr_sect
+          ? `Barrio o Sector: ${data.adm_dato_resi_barr_sect}`
+          : "",
+        data.adm_dato_resi_call_prin
+          ? `Calle principal: ${data.adm_dato_resi_call_prin}`
+          : "",
+        data.adm_dato_resi_call_secu
+          ? `Calle secundaria: ${data.adm_dato_resi_call_secu}`
+          : "",
+        data.adm_dato_resi_refe_resi
+          ? `Referencia: ${data.adm_dato_resi_refe_resi}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" / "),
       for_008_emer_etni: data.adm_dato_auto_auto_etni || "",
       for_008_emer_grup_prio: data.adm_dato_adic_grup_prio || "",
       for_008_emer_tipo_segu: data.adm_dato_adic_tipo_segu || "",
@@ -283,47 +364,73 @@ const Form008Emergencia = () => {
       ...prevState,
       for_008_busc_pers_nume_iden: true,
       for_008_busc_pers_tipo_iden: true,
-      for_008_emer_inst_sist: false,
-      for_008_emer_unic: false,
-      for_008_emer_nomb_esta_salu: false,
-      for_008_emer_zona: false,
-      for_008_emer_prov: false,
-      for_008_emer_cant: false,
-      for_008_emer_dist: false,
-      for_008_emer_nive: false,
+      for_008_emer_nomb_esta_salu: true,
       for_008_emer_fech_aten: false,
-      for_008_emer_tipo_docu_iden: false,
-      for_008_emer_nume_iden: false,
-      for_008_emer_apel_comp: false,
-      for_008_emer_nomb_comp: false,
-      for_008_emer_sexo: false,
-      for_008_emer_edad: false,
-      for_008_emer_cond_edad: false,
-      for_008_emer_naci: false,
-      for_008_emer_etni: false,
-      for_008_emer_grup_prio: false,
-      for_008_emer_tipo_segu: false,
-      for_008_emer_prov_reci: false,
-      for_008_emer_cant_reci: false,
-      for_008_emer_parr_reci: false,
-      for_008_emer_espe_prof: false,
-      for_008_emer_cie_10_prin: false,
-      for_008_emer_diga_prin: false,
-      for_008_emer_cond_diag: false,
-      for_008_emer_cie_10_caus_exte: false,
-      for_008_emer_diag_caus_exte: false,
-      for_008_emer_hosp: false,
       for_008_emer_hora_aten: false,
+      for_008_emer_edad_cond: true,
+      for_008_emer_apel_comp: true,
+      for_008_emer_nomb_comp: true,
+      for_008_emer_sexo: true,
+      for_008_emer_naci: true,
+      for_008_emer_etni: true,
+      for_008_emer_grup_prio: true,
+      for_008_emer_tipo_segu: true,
+      for_008_emer_prov_resi: true,
+      for_008_emer_cant_resi: true,
+      for_008_emer_parr_resi: true,
+      for_008_emer_unid_salu_resp_segu_aten: true,
+      for_008_emer_dire_domi: true,
+      for_008_emer_tele_paci: true,
+      for_008_emer_espe_prof: false,
+      for_008_emer_cie_10_prin_diag: false,
+      for_008_emer_cond_diag: false,
+      for_008_emer_cie_10_caus_exte_diag: false,
+      for_008_emer_hosp: false,
       for_008_emer_cond_alta: false,
       for_008_emer_obse: false,
-      for_008_emer_resp_aten_medi: false,
       for_008_emer_apoy_aten_medi: false,
       for_008_emer_edad_gest: false,
       for_008_emer_ries_obst: false,
       for_008_emer_indi_paci_fami: false,
-      for_008_emer_unid_salu_resp_segu_aten: false,
-      for_008_emer_dire_domi: false,
-      for_008_emer_tele_paci: false,
+    }));
+    setBotonEstado((prevState) => ({
+      btnBuscar: true,
+    }));
+  };
+
+  const ajustarVariableEstadoFalso = () => {
+    setVariableEstado((prevState) => ({
+      ...prevState,
+      for_008_busc_pers_nume_iden: true,
+      for_008_busc_pers_tipo_iden: true,
+      for_008_emer_nomb_esta_salu: true,
+      for_008_emer_fech_aten: false,
+      for_008_emer_hora_aten: false,
+      for_008_emer_edad_cond: true,
+      for_008_emer_apel_comp: true,
+      for_008_emer_nomb_comp: true,
+      for_008_emer_sexo: true,
+      for_008_emer_naci: true,
+      for_008_emer_etni: true,
+      for_008_emer_grup_prio: true,
+      for_008_emer_tipo_segu: true,
+      for_008_emer_prov_resi: true,
+      for_008_emer_cant_resi: true,
+      for_008_emer_parr_resi: true,
+      for_008_emer_unid_salu_resp_segu_aten: true,
+      for_008_emer_dire_domi: true,
+      for_008_emer_tele_paci: true,
+      for_008_emer_espe_prof: false,
+      for_008_emer_cie_10_prin_diag: false,
+      for_008_emer_cond_diag: false,
+      for_008_emer_cie_10_caus_exte_diag: false,
+      for_008_emer_hosp: false,
+      for_008_emer_cond_alta: false,
+      for_008_emer_obse: false,
+      for_008_emer_apoy_aten_medi: false,
+      for_008_emer_edad_gest: false,
+      for_008_emer_ries_obst: false,
+      for_008_emer_indi_paci_fami: false,
     }));
     setBotonEstado((prevState) => ({
       btnBuscar: true,
@@ -332,7 +439,51 @@ const Form008Emergencia = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    const actualizarFechaNacimiento = (val, name) => {
+      if (name === "for_008_emer_fech_aten") {
+        // Validar la fecha
+        if (value < fechaMinima || value > fechaActual) {
+          setError(`La fecha debe estar entre ${fechaMinima} y ${fechaActual}`);
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
+        // Si tenemos fecha de nacimiento guardada, recalcular la edad
+        if (formData.adm_dato_naci_fech_naci) {
+          formData.for_008_emer_edad_cond = calcularEdadConFechaReferencia(
+            formData.adm_dato_naci_fech_naci,
+            value
+          );
+        }
+        // Actualizar el estado una sola vez
+        setFormData((prev) => ({ ...prev, for_008_emer_fech_aten: val }));
+      }
+      validarDato(
+        { target: { name, value: val } },
+        { ...formData, [name]: val },
+        setFormData,
+        error,
+        setError,
+        setBotonEstado
+      );
+    };
+
+    switch (name) {
+      case "for_008_emer_fech_aten":
+        actualizarFechaNacimiento(value, name);
+        break;
+      default:
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        validarDato(
+          e,
+          { ...formData, [name]: value },
+          setFormData,
+          error,
+          setError,
+          setBotonEstado
+        );
+        break;
+    }
   };
 
   const isFieldVisible = (field) => {
@@ -382,12 +533,80 @@ const Form008Emergencia = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const camposRepresentante = [
+    "adm_dato_repr_tipo_iden",
+    "adm_dato_repr_nume_iden",
+    "adm_dato_repr_apel",
+    "adm_dato_repr_nomb",
+    "adm_dato_repr_fech_naci",
+    "adm_dato_repr_pare",
+    "adm_dato_repr_nume_tele",
+    "adm_dato_repr_naci",
+    "adm_dato_repr_no_ident_prov",
+  ];
+
+  // const limpiarCamposRepresentanteNoVisibles = (formData) => {
+  //   const nuevoFormData = { ...formData };
+  //   camposRepresentante.forEach((campo) => {
+  //     if (!isFieldVisible(campo)) {
+  //       nuevoFormData[campo] = "";
+  //     }
+  //   });
+  //   return nuevoFormData;
+  // };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aquí iría la lógica para enviar los datos a la API
-    setSuccess("Formulario enviado correctamente");
+    if (isLoading) return;
+
+    setIsLoading(true);
     setError("");
-    // console.log(formData);
+    setSuccessMessage("");
+    //const formDataLimpio = limpiarCamposRepresentanteNoVisibles(formData);
+
+    // const parroquiaOptions = parroquiasOptions.length
+    //   ? parroquiasOptions
+    //   : allListAdmision.adm_dato_resi_parr[formData.adm_dato_resi_cant] || [];
+
+    // Transformar los valores antes de enviar
+    // const formDataToSend = {
+    //   ...formDataLimpio,
+    //   adm_dato_resi_parr: extraerNombreParroquia(
+    //     formDataLimpio.adm_dato_resi_parr,
+    //     parroquiaOptions
+    //   ),
+    //   adm_dato_repr_fech_naci: formDataLimpio.adm_dato_repr_fech_naci
+    //     ? formDataLimpio.adm_dato_repr_fech_naci
+    //     : null,
+    // };
+
+    try {
+      let response;
+      if (isEditing) {
+        response = await updateForm008Emer(formData);
+        const message = response?.message || "Registro actualizado con éxito!";
+        setSuccessMessage(message);
+        setTimeout(() => setSuccessMessage(""), 10000);
+        toast.success(message, { position: "bottom-right" });
+        navigate("/form-008-emergencia/");
+        limpiarVariables(true);
+      } else {
+        const response = await registerForm008Emer(formData);
+        const message = response?.message || "Registro guardado con éxito!";
+        setSuccessMessage(message);
+        setTimeout(() => setSuccessMessage(""), 10000);
+        toast.success(message, { position: "bottom-right" });
+        navigate("/form-008-emergencia/");
+        limpiarVariables(true);
+      }
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      toast.error(errorMessage, { position: "bottom-right" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmitBuscar = (e) => {
@@ -397,6 +616,46 @@ const Form008Emergencia = () => {
     setError("");
     // console.log(formData);
   };
+
+  const handleButtonClick = (e) => {
+    if (botonEstado.btnRegistrar) {
+      e.preventDefault();
+      toast.error("Todos los campos con * en rojo tienen que estar llenos!", {
+        position: "bottom-right",
+      });
+    }
+  };
+
+  const limpiarVariables = (esBtnLimpiar = false) => {
+    setFormData(initialState);
+    if (esBtnLimpiar) {
+      setTimeout(() => setSuccessMessage(""), 5000);
+      setTimeout(() => setError(""), 5000);
+    } else {
+      setSuccessMessage("");
+      setError("");
+    }
+    setVariableEstado(initialVariableEstado);
+    setBotonEstado(initialBotonEstado);
+    setFechaNacimiento("");
+    setEdad("");
+    setIsEditing(false);
+    //setActiveTab("personales");
+  };
+
+  useEffect(() => {
+    const now = new Date();
+    const horaActual =
+      now.getHours().toString().padStart(2, "0") +
+      ":" +
+      now.getMinutes().toString().padStart(2, "0");
+    const fechaActual = now.toISOString().slice(0, 10); // formato YYYY-MM-DD
+    setFormData((prev) => ({
+      ...prev,
+      for_008_emer_hora_aten: horaActual,
+      for_008_emer_fech_aten: fechaActual,
+    }));
+  }, []);
 
   const EstadoMensajes = ({ error, successMessage }) => (
     <div className="bg-white rounded-lg shadow-md">
@@ -433,7 +692,7 @@ const Form008Emergencia = () => {
   const buttonTextBuscar = "Buscar";
 
   return (
-    <div className="w-full h-screen flex items-stretch justify-stretch bg-gray-100">
+    <div className="w-auto h-auto flex items-stretch justify-stretch bg-gray-100">
       <div className="w-full h-full p-4 m-4 bg-white rounded-lg shadow-md mt-1">
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Formulario 008 Emergencia
@@ -524,6 +783,49 @@ const Form008Emergencia = () => {
             </div>
           </fieldset>
         </form>
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+              <h3 className="text-lg font-bold mb-4 text-blue-700">
+                ¿Desea registrar la admision del paciente?
+              </h3>
+              <div className="flex justify-end gap-2">
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setShowAdmisionModal(true);
+                  }}
+                >
+                  Sí, registrar
+                </button>
+                <button
+                  className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
+                  onClick={() => setShowConfirmModal(false)}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showAdmisionModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50">
+            <div className="relative w-full max-w-7xl mx-auto mt-8 rounded-lg shadow-lg overflow-y-auto max-h-screen">
+              <button
+                className="absolute top-4 right-4 text-red-500 font-bold text-2xl z-10"
+                onClick={() => setShowAdmisionModal(false)}
+              >
+                X
+              </button>
+              <Admision
+                tipoIdenInicial={formData.for_008_busc_pers_tipo_iden}
+                numeIdenInicial={formData.for_008_busc_pers_nume_iden}
+                ejecutarAjustarAdmision={true}
+              />
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="w-full">
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
@@ -580,6 +882,8 @@ const Form008Emergencia = () => {
                   onChange={handleChange}
                   placeholder="Información es requerida"
                   required
+                  min={fechaMinima}
+                  max={fechaActual}
                   className={`${inputStyle} ${
                     isFieldInvalid(
                       "for_008_emer_fech_aten",
@@ -595,6 +899,70 @@ const Form008Emergencia = () => {
                       : "bg-white text-gray-700 cursor-pointer"
                   }`}
                   disabled={variableEstado["for_008_emer_fech_aten"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_hora_aten">
+                  {requiredFields.includes("for_008_emer_hora_aten") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_hora_aten"]}
+                </label>
+                <input
+                  type="time"
+                  id="for_008_emer_hora_aten"
+                  name="for_008_emer_hora_aten"
+                  value={formData["for_008_emer_hora_aten"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_hora_aten",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_hora_aten"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_hora_aten"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_edad_cond">
+                  {requiredFields.includes("for_008_emer_edad_cond") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_edad_cond"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_edad_cond"
+                  name="for_008_emer_edad_cond"
+                  value={formData["for_008_emer_edad_cond"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_edad_cond",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_edad_cond"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_edad_cond"]}
                 />
               </div>
             </div>
@@ -668,334 +1036,755 @@ const Form008Emergencia = () => {
                   disabled={variableEstado["for_008_emer_nomb_comp"]}
                 />
               </div>
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_sexo">
-                {requiredFields.includes("for_008_emer_sexo") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_sexo"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_sexo"
-                name="for_008_emer_sexo"
-                value={formData["for_008_emer_sexo"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_sexo",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_sexo"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_sexo"]}
-              />
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_edad">
-                {requiredFields.includes("for_008_emer_edad") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_edad"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_edad"
-                name="for_008_emer_edad"
-                value={formData["for_008_emer_edad"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_edad",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_edad"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_edad"]}
-              />
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_cond_edad">
-                {requiredFields.includes("for_008_emer_cond_edad") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_cond_edad"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_cond_edad"
-                name="for_008_emer_cond_edad"
-                value={formData["for_008_emer_cond_edad"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_cond_edad",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_cond_edad"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_cond_edad"]}
-              />
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_naci">
-                {requiredFields.includes("for_008_emer_naci") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_naci"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_naci"
-                name="for_008_emer_naci"
-                value={formData["for_008_emer_naci"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_naci",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_naci"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_naci"]}
-              />
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_etni">
-                {requiredFields.includes("for_008_emer_etni") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_etni"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_etni"
-                name="for_008_emer_etni"
-                value={formData["for_008_emer_etni"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_etni",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_etni"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_etni"]}
-              />
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_grup_prio">
-                {requiredFields.includes("for_008_emer_grup_prio") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_grup_prio"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_grup_prio"
-                name="for_008_emer_grup_prio"
-                value={formData["for_008_emer_grup_prio"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_grup_prio",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_grup_prio"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_grup_prio"]}
-              />
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_tipo_segu">
-                {requiredFields.includes("for_008_emer_tipo_segu") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_tipo_segu"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_tipo_segu"
-                name="for_008_emer_tipo_segu"
-                value={formData["for_008_emer_tipo_segu"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_tipo_segu",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_tipo_segu"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_tipo_segu"]}
-              />
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_prov_reci">
-                {requiredFields.includes("for_008_emer_prov_reci") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_prov_reci"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_prov_reci"
-                name="for_008_emer_prov_reci"
-                value={formData["for_008_emer_prov_reci"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_prov_reci",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_prov_reci"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_prov_reci"]}
-              />
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_cant_reci">
-                {requiredFields.includes("for_008_emer_cant_reci") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_cant_reci"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_cant_reci"
-                name="for_008_emer_cant_reci"
-                value={formData["for_008_emer_cant_reci"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_cant_reci",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_cant_reci"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_cant_reci"]}
-              />
-            </div>
-            <div className={fieldClass}>
-              <label className={labelClass} htmlFor="for_008_emer_parr_reci">
-                {requiredFields.includes("for_008_emer_parr_reci") && (
-                  <span className="text-red-500">* </span>
-                )}
-                {labelMap["for_008_emer_parr_reci"]}
-              </label>
-              <input
-                type="text"
-                id="for_008_emer_parr_reci"
-                name="for_008_emer_parr_reci"
-                value={formData["for_008_emer_parr_reci"]}
-                onChange={handleChange}
-                placeholder="Información es requerida"
-                required
-                className={`${inputStyle} ${
-                  isFieldInvalid(
-                    "for_008_emer_parr_reci",
-                    requiredFields,
-                    formData,
-                    isFieldVisible
-                  )
-                    ? "border-2 border-red-500"
-                    : ""
-                } ${
-                  variableEstado["for_008_emer_parr_reci"]
-                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                    : "bg-white text-gray-700 cursor-pointer"
-                }`}
-                disabled={variableEstado["for_008_emer_parr_reci"]}
-              />
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_sexo">
+                  {requiredFields.includes("for_008_emer_sexo") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_sexo"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_sexo"
+                  name="for_008_emer_sexo"
+                  value={formData["for_008_emer_sexo"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_sexo",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_sexo"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_sexo"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_naci">
+                  {requiredFields.includes("for_008_emer_naci") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_naci"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_naci"
+                  name="for_008_emer_naci"
+                  value={formData["for_008_emer_naci"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_naci",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_naci"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_naci"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_etni">
+                  {requiredFields.includes("for_008_emer_etni") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_etni"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_etni"
+                  name="for_008_emer_etni"
+                  value={formData["for_008_emer_etni"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_etni",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_etni"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_etni"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_grup_prio">
+                  {requiredFields.includes("for_008_emer_grup_prio") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_grup_prio"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_grup_prio"
+                  name="for_008_emer_grup_prio"
+                  value={formData["for_008_emer_grup_prio"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_grup_prio",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_grup_prio"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_grup_prio"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_tipo_segu">
+                  {requiredFields.includes("for_008_emer_tipo_segu") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_tipo_segu"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_tipo_segu"
+                  name="for_008_emer_tipo_segu"
+                  value={formData["for_008_emer_tipo_segu"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_tipo_segu",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_tipo_segu"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_tipo_segu"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_prov_resi">
+                  {requiredFields.includes("for_008_emer_prov_resi") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_prov_resi"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_prov_resi"
+                  name="for_008_emer_prov_resi"
+                  value={formData["for_008_emer_prov_resi"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_prov_resi",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_prov_resi"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_prov_resi"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_cant_resi">
+                  {requiredFields.includes("for_008_emer_cant_resi") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_cant_resi"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_cant_resi"
+                  name="for_008_emer_cant_resi"
+                  value={formData["for_008_emer_cant_resi"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_cant_resi",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_cant_resi"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_cant_resi"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_parr_resi">
+                  {requiredFields.includes("for_008_emer_parr_resi") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_parr_resi"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_parr_resi"
+                  name="for_008_emer_parr_resi"
+                  value={formData["for_008_emer_parr_resi"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_parr_resi",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_parr_resi"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_parr_resi"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label
+                  className={labelClass}
+                  htmlFor="for_008_emer_unid_salu_resp_segu_aten"
+                >
+                  {requiredFields.includes(
+                    "for_008_emer_unid_salu_resp_segu_aten"
+                  ) && <span className="text-red-500">* </span>}
+                  {labelMap["for_008_emer_unid_salu_resp_segu_aten"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_unid_salu_resp_segu_aten"
+                  name="for_008_emer_unid_salu_resp_segu_aten"
+                  value={formData["for_008_emer_unid_salu_resp_segu_aten"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_unid_salu_resp_segu_aten",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_unid_salu_resp_segu_aten"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={
+                    variableEstado["for_008_emer_unid_salu_resp_segu_aten"]
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_dire_domi">
+                  {requiredFields.includes("for_008_emer_dire_domi") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_dire_domi"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_dire_domi"
+                  name="for_008_emer_dire_domi"
+                  value={formData["for_008_emer_dire_domi"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_dire_domi",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_dire_domi"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_dire_domi"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_tele_paci">
+                  {requiredFields.includes("for_008_emer_tele_paci") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_tele_paci"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_tele_paci"
+                  name="for_008_emer_tele_paci"
+                  value={formData["for_008_emer_tele_paci"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_tele_paci",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_tele_paci"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_tele_paci"]}
+                />
+              </div>
             </div>
           </fieldset>
-          <div className="md:col-span-2 flex justify-end mt-4">
+          <fieldset className="border border-blue-200 rounded p-2 mb-1">
+            <legend className="text-lg font-semibold text-blue-600 px-2">
+              Datos de Registro de Atencion de Emergencia
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_espe_prof">
+                  {requiredFields.includes("for_008_emer_espe_prof") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_espe_prof"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_espe_prof"
+                  name="for_008_emer_espe_prof"
+                  value={formData["for_008_emer_espe_prof"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_espe_prof}
+                  disabled={variableEstado["for_008_emer_espe_prof"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_espe_prof",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label
+                  className={labelClass}
+                  htmlFor="for_008_emer_cie_10_prin_diag"
+                >
+                  {requiredFields.includes("for_008_emer_cie_10_prin_diag") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_cie_10_prin_diag"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_cie_10_prin_diag"
+                  name="for_008_emer_cie_10_prin_diag"
+                  value={formData["for_008_emer_cie_10_prin_diag"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_cie_10_prin_diag}
+                  disabled={variableEstado["for_008_emer_cie_10_prin_diag"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_cie_10_prin_diag",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_cond_diag">
+                  {requiredFields.includes("for_008_emer_cond_diag") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_cond_diag"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_cond_diag"
+                  name="for_008_emer_cond_diag"
+                  value={formData["for_008_emer_cond_diag"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_cond_diag}
+                  disabled={variableEstado["for_008_emer_cond_diag"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_cond_diag",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label
+                  className={labelClass}
+                  htmlFor="for_008_emer_cie_10_caus_exte_diag"
+                >
+                  {requiredFields.includes(
+                    "for_008_emer_cie_10_caus_exte_diag"
+                  ) && <span className="text-red-500">* </span>}
+                  {labelMap["for_008_emer_cie_10_caus_exte_diag"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_cie_10_caus_exte_diag"
+                  name="for_008_emer_cie_10_caus_exte_diag"
+                  value={formData["for_008_emer_cie_10_caus_exte_diag"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_cie_10_caus_exte_diag}
+                  disabled={
+                    variableEstado["for_008_emer_cie_10_caus_exte_diag"]
+                  }
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_cie_10_caus_exte_diag",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_hosp">
+                  {requiredFields.includes("for_008_emer_hosp") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_hosp"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_hosp"
+                  name="for_008_emer_hosp"
+                  value={formData["for_008_emer_hosp"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_hosp}
+                  disabled={variableEstado["for_008_emer_hosp"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_hosp",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_cond_alta">
+                  {requiredFields.includes("for_008_emer_cond_alta") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_cond_alta"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_cond_alta"
+                  name="for_008_emer_cond_alta"
+                  value={formData["for_008_emer_cond_alta"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_cond_alta}
+                  disabled={variableEstado["for_008_emer_cond_alta"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_cond_alta",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_obse">
+                  {requiredFields.includes("for_008_emer_obse") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_obse"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_obse"
+                  name="for_008_emer_obse"
+                  value={formData["for_008_emer_obse"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_obse",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_obse"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_obse"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label
+                  className={labelClass}
+                  htmlFor="for_008_emer_apoy_aten_medi"
+                >
+                  {requiredFields.includes("for_008_emer_apoy_aten_medi") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_apoy_aten_medi"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_apoy_aten_medi"
+                  name="for_008_emer_apoy_aten_medi"
+                  value={formData["for_008_emer_apoy_aten_medi"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_apoy_aten_medi",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_apoy_aten_medi"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_apoy_aten_medi"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_edad_gest">
+                  {requiredFields.includes("for_008_emer_edad_gest") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_edad_gest"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_edad_gest"
+                  name="for_008_emer_edad_gest"
+                  value={formData["for_008_emer_edad_gest"]}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Permitir vacío para borrar
+                    if (value === "") {
+                      handleChange(e);
+                      return;
+                    }
+                    // Permitir solo semanas 1-60 y días 1-6, formato paso a paso
+                    const partialRegex = /^([1-9]|[1-5][0-9]|60)?(,([1-6])?)?$/;
+                    if (partialRegex.test(value)) {
+                      handleChange(e);
+                    }
+                  }}
+                  placeholder="Ej: 8,6 (8 semanas, 6 días)"
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_edad_gest",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_edad_gest"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_edad_gest"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_ries_obst">
+                  {requiredFields.includes("for_008_emer_ries_obst") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_ries_obst"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_ries_obst"
+                  name="for_008_emer_ries_obst"
+                  value={formData["for_008_emer_ries_obst"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_ries_obst}
+                  disabled={variableEstado["for_008_emer_ries_obst"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_ries_obst",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label
+                  className={labelClass}
+                  htmlFor="for_008_emer_indi_paci_fami"
+                >
+                  {requiredFields.includes("for_008_emer_indi_paci_fami") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_indi_paci_fami"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_indi_paci_fami"
+                  name="for_008_emer_indi_paci_fami"
+                  value={formData["for_008_emer_indi_paci_fami"]}
+                  onChange={handleChange}
+                  placeholder="Máximo 150 caracteres"
+                  maxLength={150}
+                  required
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_indi_paci_fami",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_indi_paci_fami"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_indi_paci_fami"]}
+                />
+                <span className="text-xs text-gray-500">
+                  Máximo 150 caracteres
+                </span>
+              </div>
+            </div>
+          </fieldset>
+          <div className="md:col-span-2 flex justify-center mt-1">
             <button
               type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+              id="btnRegistrar"
+              name="btnRegistrar"
+              className={`${buttonStylePrimario} ${
+                botonEstado.btnRegistrar
+                  ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+              }`}
+              disabled={botonEstado.btnRegistrar}
+              onClick={handleButtonClick}
             >
-              Registrar
+              {buttonTextRegistro}
+            </button>
+            {/* BOTON LIMPIAR */}
+            <button
+              type="button"
+              id="btnLimpiar"
+              name="btnLimpiar"
+              className={`${buttonStyleSecundario} ${
+                botonEstado.btnLimpiar
+                  ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+              }`}
+              disabled={botonEstado.btnLimpiar}
+              onClick={() => limpiarVariables()}
+            >
+              Limpiar Todo
+            </button>
+            <button
+              type="button"
+              className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+              onClick={() => navigate("/")}
+            >
+              Cancelar
             </button>
           </div>
         </form>

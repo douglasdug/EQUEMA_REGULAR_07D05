@@ -5,6 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 
 DATE_FORMAT = "%d/%m/%Y"
 TIME_FORMAT = "%H:%M:%S"
+DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -155,9 +156,10 @@ class ReporteENIRegistrationSerializer(serializers.ModelSerializer):
 
 
 class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
-    adm_dato_admi_fech_admi = serializers.DateField(
-        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
-    adm_dato_admi_fech_admi_actu = serializers.DateField(read_only=True)
+    adm_dato_admi_fech_admi = serializers.DateTimeField(
+        format=DATETIME_FORMAT, input_formats=[DATETIME_FORMAT, DATE_FORMAT, 'iso-8601'])
+    adm_dato_admi_fech_admi_actu = serializers.DateTimeField(
+        DATETIME_FORMAT, read_only=True)
     adm_dato_naci_fech_naci = serializers.DateField(
         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
@@ -175,7 +177,7 @@ class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
         ]
 
 
-class Form008EmergenciaSerializer(serializers.ModelSerializer):
+class Form008EmergenciaRegistrationSerializer(serializers.ModelSerializer):
     for_008_emer_fech_aten = serializers.DateField(
         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
     for_008_emer_hora_aten = serializers.TimeField(

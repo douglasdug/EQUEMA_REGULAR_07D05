@@ -23,6 +23,21 @@ import TablaUsers from "../components/TablaUsers.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
+const initialState = {
+  fun_tipo_iden: "",
+  username: "",
+  first_name: "",
+  last_name: "",
+  fun_sex: "",
+  email: "",
+  fun_titu: "",
+  password1: "",
+  password2: "",
+  fun_admi_rol: "",
+  uni_unic: [],
+  fun_esta: "",
+};
+
 const getInputTypeAndAutoComplete = (key) => {
   switch (key) {
     case "password1":
@@ -41,25 +56,12 @@ const getInputTypeAndAutoComplete = (key) => {
 };
 
 const AdminUser = () => {
-  const [formData, setFormData] = useState({
-    fun_tipo_iden: "",
-    username: "",
-    first_name: "",
-    last_name: "",
-    fun_sex: "",
-    email: "",
-    fun_titu: "",
-    password1: "",
-    password2: "",
-    fun_admi_rol: "",
-    uni_unic: [],
-    fun_esta: "",
-  });
-
-  const [error, setError] = useState({});
+  const [formData, setFormData] = useState(initialState);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isBuscar, setIsBuscar] = useState(false);
   const navigate = useNavigate();
 
   const initialVariableEstado = {
@@ -99,6 +101,243 @@ const AdminUser = () => {
     "uni_unic",
     "fun_esta",
   ];
+
+  const labelMap = {
+    fun_tipo_iden: "Tipo de Identificacion:",
+    username: "Cédula de Identidad:",
+    first_name: "Apellidos completos:",
+    last_name: "Nombres completos:",
+    fun_sex: "Sexo:",
+    email: "Correo Electrónico:",
+    fun_titu: "Titulo del Funcionario:",
+    password1: "Clave:",
+    password2: "Confirmar Clave:",
+    fun_admi_rol: "Rol del Funcionario:",
+    uni_unic: "Unidad de Salud:",
+    fun_esta: "Activar la cuenta:",
+  };
+
+  const getErrorMessage = (error) => {
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (typeof data === "object" && data !== null) {
+        if (data.message) return data.message;
+        if (data.error) return data.error;
+        const firstKey = Object.keys(data)[0];
+        const firstError = data[firstKey];
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          return firstError[0];
+        } else if (typeof firstError === "string") {
+          return firstError;
+        }
+        return JSON.stringify(data);
+      } else if (typeof data === "string") {
+        return data;
+      }
+    } else if (error.request) {
+      return "No se recibió respuesta del servidor";
+    } else if (error.message) {
+      return error.message;
+    }
+    return "Error desconocido";
+  };
+
+  const handleSearch = async () => {
+    let tipoId, numIden;
+    tipoId = formData.fun_tipo_iden;
+    numIden = formData.username;
+    if (!tipoId || !numIden) {
+      setError("Debe seleccionar el tipo y número de identificación.");
+      toast.error("Debe seleccionar el tipo y número de identificación.", {
+        position: "bottom-right",
+      });
+      return;
+    }
+    if (!numIden) {
+      toast.error("Por favor, ingrese una identificación.", {
+        position: "bottom-right",
+      });
+      return;
+    }
+    const resultado = validarNumeroIdentificacion(tipoId, numIden);
+    if (!resultado.valido) {
+      setError(resultado.mensaje);
+      setTimeout(() => setError(""), 8000);
+      toast.error(resultado.mensaje, { position: "bottom-right" });
+      return;
+    }
+    try {
+      const response = await buscarUsuarioEni(tipoId, numIden);
+      if (!response)
+        throw new Error("No se pudo obtener una respuesta de la API.");
+
+      actualizarFormDataConRespuesta(response.data);
+      ajustarVariableEstadoExitoso();
+      setIsEditing(true);
+      setSuccessMessage(response.message || "Operación exitosa");
+      setTimeout(() => setSuccessMessage(""), 10000);
+      setError("");
+      toast.success(response.message || "Operación exitosa", {
+        position: "bottom-right",
+      });
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      ajustarVariableEstadoFalso();
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      setSuccessMessage("");
+      toast.error(errorMessage, { position: "bottom-right" });
+    }
+  };
+
+  const actualizarFormDataConRespuesta = (data) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      first_name: data.first_name || data.adm_dato_pers_apel,
+      last_name: data.last_name || data.adm_dato_pers_nomb,
+      fun_sex: data.fun_sex || data.adm_dato_pers_sexo,
+      email: data.email || data.adm_dato_pers_corr_elec,
+      fun_titu: data.fun_titu || "",
+      password1: data.password || "",
+      password2: data.password || "",
+      fun_admi_rol: data.fun_admi_rol || "",
+      fun_esta: data.fun_esta || 0,
+      uni_unic: Array.isArray(data.uni_unic)
+        ? data.uni_unic.map((item) => ({
+            value: item,
+            label: `${listaUnidadesSalud[item] || item}`.trim(),
+          }))
+        : [],
+    }));
+  };
+
+  const ajustarVariableEstadoExitoso = () => {
+    setVariableEstado((prevState) => ({
+      ...prevState,
+      fun_tipo_iden: true,
+      username: true,
+      first_name: true,
+      last_name: true,
+      fun_sex: false,
+      email: false,
+      fun_titu: false,
+      password1: false,
+      password2: false,
+      fun_admi_rol: false,
+      uni_unic: false,
+      fun_esta: false,
+    }));
+    setBotonEstado((prevState) => ({
+      btnBuscar: true,
+    }));
+  };
+
+  const ajustarVariableEstadoFalso = () => {
+    setVariableEstado((prevState) => ({
+      ...prevState,
+      fun_tipo_iden: true,
+      username: true,
+      first_name: false,
+      last_name: false,
+      fun_sex: false,
+      email: false,
+      fun_titu: false,
+      password1: false,
+      password2: false,
+      fun_admi_rol: false,
+      uni_unic: false,
+      fun_esta: false,
+    }));
+    setBotonEstado((prevState) => ({
+      btnBuscar: true,
+      btnRegistrar: true,
+    }));
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "fun_tipo_iden") {
+      limpiarVariables();
+      setFormData((prev) => ({
+        ...initialState,
+        fun_tipo_iden: value,
+      }));
+      setVariableEstado({
+        ...initialVariableEstado,
+        username: !value,
+      });
+      setBotonEstado({
+        ...initialBotonEstado,
+        btnBuscar: !value,
+      });
+      return;
+    }
+
+    let newFormData = { ...formData, [name]: value };
+    let newVariableEstado = { ...variableEstado };
+    let newBotonEstado = { ...botonEstado };
+
+    if (name === "username") {
+      newBotonEstado.btnBuscar = !value;
+    }
+
+    setFormData(newFormData);
+    setVariableEstado(newVariableEstado);
+    setBotonEstado(newBotonEstado);
+
+    validarDato(e, newFormData, setFormData, error, setError, setBotonEstado);
+  };
+
+  const handleSelectChange = (e) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      uni_unic: e,
+    }));
+  };
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    const confirmDelete = window.confirm(
+      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${formData.username}\nNombres: ${formData.last_name} ${formData.first_name}`
+    );
+    if (!confirmDelete) return;
+
+    setIsLoading(true);
+    try {
+      const response = await deleteUser(formData.username);
+      setSuccessMessage("Registro eliminado con éxito!");
+      const message = response.message || "Registro eliminado con éxito!";
+      toast.success(message, {
+        position: "bottom-right",
+      });
+      //window.location.reload("/admin-user/");
+      limpiarVariables();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      setSuccessMessage("");
+      toast.error(errorMessage, { position: "bottom-right" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const checkFormValidity = () => {
+    const isValid = requiredFields.every((field) => {
+      if (Array.isArray(formData[field])) {
+        return formData[field].length > 0;
+      }
+      return formData[field];
+    });
+    setBotonEstado((prevState) => ({
+      ...prevState,
+      btnRegistrar: !isValid,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -173,62 +412,6 @@ const AdminUser = () => {
     }
   };
 
-  const handleDelete = async (e) => {
-    e.preventDefault();
-    if (isLoading) return;
-
-    const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${formData.username}\nNombres: ${formData.last_name} ${formData.first_name}`
-    );
-    if (!confirmDelete) return;
-
-    setIsLoading(true);
-    try {
-      const response = await deleteUser(formData.username);
-      setSuccessMessage("Registro eliminado con éxito!");
-      const message = response.message || "Registro eliminado con éxito!";
-      toast.success(message, {
-        position: "bottom-right",
-      });
-      window.location.reload("/admin-user/");
-    } catch (error) {
-      let errorMessage = "Hubo un error en la operación";
-      if (error.response) {
-        if (error.response?.data?.error) {
-          setError(error.response.data.error);
-          errorMessage = error.response.data.error;
-        } else if (error.response?.data?.message) {
-          setError(error.response.data.message);
-          errorMessage = error.response.data.message;
-        } else {
-          setError("Error del servidor");
-        }
-      } else if (error.request) {
-        setError("No se recibió respuesta del servidor");
-      } else {
-        setError("Error desconocido");
-      }
-      toast.error(errorMessage, { position: "bottom-right" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const labelMap = {
-    fun_tipo_iden: "Tipo de Identificacion:",
-    username: "Cédula de Identidad:",
-    first_name: "Apellidos completos:",
-    last_name: "Nombres completos:",
-    fun_sex: "Sexo:",
-    email: "Correo Electrónico:",
-    fun_titu: "Titulo del Funcionario:",
-    password1: "Clave:",
-    password2: "Confirmar Clave:",
-    fun_admi_rol: "Rol del Funcionario:",
-    uni_unic: "Unidad de Salud:",
-    fun_esta: "Activar la cuenta:",
-  };
-
   const groupedFields = [];
   const keys = Object.keys(formData).filter((key) => key !== "eniUser");
 
@@ -236,181 +419,10 @@ const AdminUser = () => {
     groupedFields.push(keys.slice(i, i + 4));
   }
 
-  const handleSearch = async () => {
-    const { fun_tipo_iden, username } = formData;
-    if (!username) {
-      toast.error("Por favor, ingrese una identificación.", {
-        position: "bottom-right",
-      });
-      return;
-    }
-    if (!validarNumeroIdentificacion(fun_tipo_iden, username)) {
-      return;
-    }
-    try {
-      const response = await buscarUsuarioEni(formData.fun_tipo_iden, username);
-      if (!response)
-        throw new Error("No se pudo obtener una respuesta de la API.");
-      const data = response.data;
-      const message = response.message || "Operación exitosa";
-      setFormData((prevData) => ({
-        ...prevData,
-        first_name: data.first_name || data.adm_dato_pers_apel,
-        last_name: data.last_name || data.adm_dato_pers_nomb,
-        fun_sex: data.fun_sex || data.adm_dato_pers_sexo,
-        email: data.email || data.adm_dato_pers_corr_elec,
-        fun_titu: data.fun_titu || "",
-        password1: data.password || "",
-        password2: data.password || "",
-        fun_admi_rol: data.fun_admi_rol || "",
-        fun_esta: data.fun_esta || 0,
-        uni_unic: Array.isArray(data.uni_unic)
-          ? data.uni_unic.map((item) => ({
-              value: item,
-              label: `${listaUnidadesSalud[item] || item}`.trim(),
-            }))
-          : [],
-      }));
-      setVariableEstado((prevState) => ({
-        ...prevState,
-        fun_tipo_iden: true,
-        username: true,
-        first_name: true,
-        last_name: true,
-        fun_sex: false,
-        email: false,
-        fun_titu: false,
-        password1: false,
-        password2: false,
-        fun_admi_rol: false,
-        uni_unic: false,
-        fun_esta: false,
-      }));
-      setBotonEstado((prevState) => ({
-        btnBuscar: true,
-      }));
-      setIsEditing(true);
-      toast.success(message, {
-        position: "bottom-right",
-      });
-      checkFormValidity();
-    } catch (error) {
-      let errorMessage = "Hubo un error en la operación";
-      if (error.response) {
-        if (error.response.data && error.response.data.error) {
-          setError({ general: error.response.data.error });
-          errorMessage = error.response.data.error;
-        } else if (error.response.data && error.response.data.message) {
-          setError({ general: error.response.data.message });
-          errorMessage = error.response.data.message;
-        } else {
-          setError({ general: "Error del servidor" });
-        }
-      } else if (error.request) {
-        setError({ general: "No se recibió respuesta del servidor" });
-      } else {
-        setError({ general: "Error desconocido" });
-      }
-      setVariableEstado((prevState) => ({
-        ...prevState,
-        fun_tipo_iden: true,
-        username: true,
-        first_name: false,
-        last_name: false,
-        fun_sex: false,
-        email: false,
-        fun_titu: false,
-        password1: false,
-        password2: false,
-        fun_admi_rol: false,
-        uni_unic: false,
-        fun_esta: false,
-      }));
-      setBotonEstado((prevState) => ({
-        btnBuscar: true,
-        btnRegistrar: true,
-      }));
-      toast.error(errorMessage, {
-        position: "bottom-right",
-      });
-    }
-  };
-
-  const handleChange = (e) => {
-    validarDato(e, formData, setFormData);
-    const { name, value } = e.target;
-
-    if (name === "fun_tipo_iden") {
-      setVariableEstado((prevState) => ({
-        ...prevState,
-        username: !value,
-      }));
-      if (!value) {
-        setFormData({
-          fun_tipo_iden: value,
-          username: "",
-          first_name: "",
-          last_name: "",
-          fun_sex: "",
-          email: "",
-          fun_titu: "",
-          password1: "",
-          password2: "",
-          fun_admi_rol: "",
-          uni_unic: [],
-          fun_esta: "",
-        });
-        setVariableEstado(initialVariableEstado);
-        setBotonEstado(initialBotonEstado);
-        setIsEditing(false);
-      }
-    } else if (name === "username") {
-      setBotonEstado((prevState) => ({
-        ...prevState,
-        btnBuscar: !value,
-      }));
-    }
-    checkFormValidity();
-  };
-
-  const handleSelectChange = (selectedOptions) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      uni_unic: selectedOptions,
-    }));
-    checkFormValidity();
-  };
-
-  const checkFormValidity = () => {
-    const isValid = requiredFields.every((field) => {
-      if (Array.isArray(formData[field])) {
-        return formData[field].length > 0;
-      }
-      return formData[field];
-    });
-    setBotonEstado((prevState) => ({
-      ...prevState,
-      btnRegistrar: !isValid,
-    }));
-  };
-
   const limpiarVariables = () => {
-    setFormData({
-      fun_tipo_iden: "",
-      username: "",
-      first_name: "",
-      last_name: "",
-      fun_sex: "",
-      email: "",
-      fun_titu: "",
-      password1: "",
-      password2: "",
-      fun_admi_rol: "",
-      uni_unic: [],
-      fun_esta: "",
-    });
-    setError({});
-    setSuccessMessage(null);
+    setFormData(initialState);
+    setSuccessMessage("");
+    setError("");
     setVariableEstado(initialVariableEstado);
     setBotonEstado(initialBotonEstado);
     setIsEditing(false);
@@ -420,192 +432,225 @@ const AdminUser = () => {
     checkFormValidity();
   }, [formData]);
 
-  const buttonText = isEditing ? "Actualizar Registro" : "Registrar";
+  const EstadoMensajes = ({ error, successMessage }) => (
+    <div className="bg-white rounded-lg shadow-md">
+      {error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-2"
+          role="alert"
+        >
+          <strong className="font-bold">
+            {typeof error === "object" && error.type === "validacion"
+              ? "¡Error de Validación! "
+              : "¡Error! "}
+          </strong>
+          <span className="block sm:inline">
+            {typeof error === "object" ? error.message : error}
+          </span>
+        </div>
+      )}
+      {successMessage && (
+        <div
+          className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-2"
+          role="alert"
+        >
+          <strong className="font-bold">¡Éxito! </strong>
+          <span className="block sm:inline">{successMessage}</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const fieldClass = "mb-1 flex flex-col";
+  const labelClass = "block text-gray-700 text-sm font-bold mb-1";
+  const buttonTextRegistro = isEditing ? "Actualizar Registro" : "Registrar";
+  const buttonTextBuscar = isBuscar ? "Nuevo Registro" : "Buscar";
 
   return (
-    <div className="container">
-      <div className="max-w-max m-auto mt-5">
-        <h1 className="text-center text-2xl font-bold mb-5">
-          Administrador de Usuarios
-        </h1>
-        {error && (
-          <p style={{ color: "red" }}>
-            {Object.keys(error).length > 0 ? JSON.stringify(error) : ""}
-          </p>
-        )}
-        {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white p-6 rounded-lg shadow-md"
-        >
-          {groupedFields.map((group) => (
-            <div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2"
-              key={group.join("-")}
-            >
-              {group.map((key) => {
-                const { inputType, autoCompleteValue } =
-                  getInputTypeAndAutoComplete(key);
-                let inputElement;
-                if (key === "uni_unic") {
-                  inputElement = (
-                    <Select
-                      inputId={key}
-                      name={key}
-                      value={formData[key]}
-                      onChange={handleSelectChange}
-                      options={Object.keys(listaUnidadesSalud).map((item) => ({
-                        value: item,
-                        label: listaUnidadesSalud[item],
-                      }))}
-                      isMulti
-                      placeholder="Seleccione una o varias opciones"
-                      styles={{
-                        ...selectStyles,
-                        control: (provided, state) => ({
-                          ...selectStyles.control(provided, state),
-                          borderWidth: "1px",
-                          borderColor: "black",
-                          cursor: variableEstado[key]
-                            ? "not-allowed"
-                            : "pointer",
-                          backgroundColor: variableEstado[key]
-                            ? "lightgray"
-                            : "white",
-                        }),
-                      }}
-                      isDisabled={variableEstado[key]}
-                    />
-                  );
-                } else if (listaSelectUser[key]) {
-                  inputElement = (
-                    <CustomSelect
-                      id={key}
-                      name={key}
-                      value={formData[key]}
-                      onChange={handleChange}
-                      options={listaSelectUser[key]}
-                      disabled={variableEstado[key]}
-                      variableEstado={variableEstado}
-                    />
-                  );
-                } else {
-                  inputElement = (
-                    <div className="flex">
-                      <input
-                        type={inputType}
-                        id={key}
-                        name={key}
-                        value={formData[key]}
-                        onChange={handleChange}
-                        placeholder="Información es requerida"
-                        className={`${inputStyle} ${
-                          variableEstado[key]
-                            ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                            : "bg-white text-gray-700 cursor-pointer"
-                        }`}
-                        min="0"
-                        disabled={variableEstado[key]}
-                        autoComplete={autoCompleteValue}
-                      />
-                      {key === "username" && (
+    <div className="w-auto h-auto flex items-stretch justify-stretch bg-gray-100">
+      <div className="w-full h-full p-4 m-4 bg-white rounded-lg shadow-md mt-1">
+        <div className="max-w-max m-auto mt-5">
+          <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
+            Administrador de Usuarios
+          </h2>
+          <form onSubmit={handleSubmit} className="w-full">
+            <fieldset className="border border-blue-200 rounded p-2 mb-1">
+              <legend className="text-lg font-semibold text-blue-600 px-2">
+                Datos Personales
+              </legend>
+              {groupedFields.map((group) => (
+                <div
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2"
+                  key={group.join("-")}
+                >
+                  {group.map((key) => {
+                    const { inputType, autoCompleteValue } =
+                      getInputTypeAndAutoComplete(key);
+                    let inputElement;
+                    if (key === "uni_unic") {
+                      inputElement = (
+                        <Select
+                          inputId={key}
+                          name={key}
+                          value={formData[key]}
+                          onChange={handleSelectChange}
+                          options={Object.keys(listaUnidadesSalud).map(
+                            (item) => ({
+                              value: item,
+                              label: listaUnidadesSalud[item],
+                            })
+                          )}
+                          isMulti
+                          placeholder="Seleccione una o varias opciones"
+                          styles={{
+                            ...selectStyles,
+                            control: (provided, state) => ({
+                              ...selectStyles.control(provided, state),
+                              borderWidth: "1px",
+                              borderColor: "black",
+                              cursor: variableEstado[key]
+                                ? "not-allowed"
+                                : "pointer",
+                              backgroundColor: variableEstado[key]
+                                ? "lightgray"
+                                : "white",
+                            }),
+                          }}
+                          isDisabled={variableEstado[key]}
+                        />
+                      );
+                    } else if (listaSelectUser[key]) {
+                      inputElement = (
+                        <CustomSelect
+                          id={key}
+                          name={key}
+                          value={formData[key]}
+                          onChange={handleChange}
+                          options={listaSelectUser[key]}
+                          disabled={variableEstado[key]}
+                          variableEstado={variableEstado}
+                        />
+                      );
+                    } else {
+                      inputElement = (
                         <div className="flex">
-                          <button
-                            type="button"
-                            id="btnBuscar"
-                            name="btnBuscar"
-                            className={`${buttonStylePrimario} ${
-                              botonEstado.btnBuscar
-                                ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                                : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+                          <input
+                            type={inputType}
+                            id={key}
+                            name={key}
+                            value={formData[key]}
+                            onChange={handleChange}
+                            placeholder="Información es requerida"
+                            className={`${inputStyle} ${
+                              variableEstado[key]
+                                ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                                : "bg-white text-gray-700 cursor-pointer"
                             }`}
-                            onClick={handleSearch}
-                            disabled={botonEstado.btnBuscar}
-                          >
-                            Buscar
-                          </button>
-                          <button
-                            type="button"
-                            id="btnLimpiar"
-                            name="btnLimpiar"
-                            className={buttonStyleSecundario}
-                            onClick={limpiarVariables}
-                          >
-                            Limpiar
-                          </button>
+                            min="0"
+                            disabled={variableEstado[key]}
+                            autoComplete={autoCompleteValue}
+                          />
+                          {key === "username" && (
+                            <div className="flex">
+                              <button
+                                type="button"
+                                id="btnBuscar"
+                                name="btnBuscar"
+                                className={`${buttonStylePrimario} ${
+                                  botonEstado.btnBuscar
+                                    ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                                    : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+                                }`}
+                                onClick={handleSearch}
+                                disabled={botonEstado.btnBuscar}
+                              >
+                                Buscar
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                }
-                return (
-                  <div className="mb-2" key={key}>
-                    <label
-                      className="block text-gray-700 text-sm font-bold mb-2"
-                      htmlFor={key}
-                    >
-                      {requiredFields.includes(key) && (
-                        <span className="text-red-500">* </span>
-                      )}
-                      {labelMap[key]}
-                    </label>
-                    {inputElement}
-                    {error[key] && (
-                      <p className="text-red-500 text-xs italic">
-                        {error[key]}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-          <div className="flex items-center justify-center">
-            <button
-              type="submit"
-              id="btnRegistrar"
-              name="btnRegistrar"
-              className={`${buttonStylePrimario} ${
-                botonEstado.btnRegistrar
-                  ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-              }`}
-              disabled={botonEstado.btnRegistrar}
-              onClick={handleButtonClick}
-            >
-              {buttonText}
-            </button>
-            {isEditing && (
+                      );
+                    }
+                    return (
+                      <div className="mb-2" key={key}>
+                        <label
+                          className="block text-gray-700 text-sm font-bold mb-2"
+                          htmlFor={key}
+                        >
+                          {requiredFields.includes(key) && (
+                            <span className="text-red-500">* </span>
+                          )}
+                          {labelMap[key]}
+                        </label>
+                        {inputElement}
+                        {error[key] && (
+                          <p className="text-red-500 text-xs italic">
+                            {error[key]}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </fieldset>
+            <div className="flex items-center justify-center">
+              <button
+                type="submit"
+                id="btnRegistrar"
+                name="btnRegistrar"
+                className={`${buttonStylePrimario} ${
+                  botonEstado.btnRegistrar
+                    ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+                }`}
+                disabled={botonEstado.btnRegistrar}
+                onClick={handleButtonClick}
+              >
+                {buttonTextRegistro}
+              </button>
+              {isEditing && (
+                <button
+                  type="button"
+                  id="btnEliminar"
+                  name="btnEliminar"
+                  className={buttonStyleEliminar}
+                  onClick={handleDelete}
+                >
+                  Eliminar registro
+                </button>
+              )}
               <button
                 type="button"
-                id="btnEliminar"
-                name="btnEliminar"
-                className={buttonStyleEliminar}
-                onClick={handleDelete}
+                id="btnLimpiar"
+                name="btnLimpiar"
+                className={buttonStyleSecundario}
+                onClick={limpiarVariables}
               >
-                Eliminar registro
+                Limpiar
               </button>
-            )}
-            <button
-              type="button"
-              className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
-              onClick={() => navigate("/")}
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </div>
-      <div className="mt-5">
-        <TablaUsers
-          setFormData={setFormData}
-          setVariableEstado={setVariableEstado}
-          setBotonEstado={setBotonEstado}
-          setIsEditing={setIsEditing}
-          setIsLoading={setIsLoading}
-          setSuccessMessage={setSuccessMessage}
-          setError={setError}
-        />
+              <button
+                type="button"
+                className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+                onClick={() => navigate("/")}
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+          <EstadoMensajes error={error} successMessage={successMessage} />
+        </div>
+        <div className="mt-5">
+          <TablaUsers
+            setFormData={setFormData}
+            setVariableEstado={setVariableEstado}
+            setBotonEstado={setBotonEstado}
+            setIsEditing={setIsEditing}
+            setIsLoading={setIsLoading}
+            setSuccessMessage={setSuccessMessage}
+            setError={setError}
+          />
+        </div>
       </div>
     </div>
   );
