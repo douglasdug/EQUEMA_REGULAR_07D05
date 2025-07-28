@@ -1,14 +1,37 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function AvisoUser() {
   const [userData, setUserData] = useState({});
+  const [counter, setCounter] = useState(40); // Contador de 40 segundos
+  const navigate = useNavigate();
 
+  // Efecto para validar acceso y cargar datos
   useEffect(() => {
     const data = localStorage.getItem("userData");
-    if (data) {
-      setUserData(JSON.parse(data));
+    if (!data) {
+      // Navegar después del render
+      setTimeout(() => navigate("/home/"), 0);
+      return;
     }
-  }, []);
+    setUserData(JSON.parse(data));
+  }, [navigate]);
+
+  // Efecto para el contador regresivo
+  useEffect(() => {
+    if (!userData || !userData.username) return; // Solo iniciar si hay datos
+    const timer = setInterval(() => {
+      setCounter((prevCounter) => {
+        if (prevCounter <= 1) {
+          localStorage.removeItem("userData");
+          navigate("/home/");
+          return 0;
+        }
+        return prevCounter - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [navigate, userData]);
 
   return (
     <div className="w-auto h-auto flex items-stretch justify-stretch bg-gray-100">
@@ -58,6 +81,16 @@ export default function AvisoUser() {
                 <br />
                 Agradecemos su paciencia y comprensión en este proceso.
               </p>
+              {/* Contador regresivo */}
+              <div className="mt-6 text-center">
+                <p className="text-lg">
+                  Será redireccionado a la página principal en{" "}
+                  <span className="font-bold text-red-600 text-2xl">
+                    {counter}
+                  </span>{" "}
+                  segundos.
+                </p>
+              </div>
             </div>
           </div>
         </div>

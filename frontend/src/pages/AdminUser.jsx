@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import Select from "react-select";
 import {
   registerUser,
   updateUser,
   deleteUser,
   buscarUsuarioEni,
 } from "../api/conexion.api.js";
-import { listaSelectUser, listaUnidadesSalud } from "../components/AllList.jsx";
+import allListRegisterUser from "../api/all.list.register.user.json";
 import {
   validarDato,
   validarNumeroIdentificacion,
@@ -14,6 +13,7 @@ import {
 import {
   CustomSelect,
   inputStyle,
+  isFieldInvalid,
   selectStyles,
   buttonStylePrimario,
   buttonStyleSecundario,
@@ -38,23 +38,6 @@ const initialState = {
   fun_esta: "",
 };
 
-const getInputTypeAndAutoComplete = (key) => {
-  switch (key) {
-    case "password1":
-      return { inputType: "password", autoCompleteValue: "new-password" };
-    case "password2":
-      return { inputType: "password", autoCompleteValue: "current-password" };
-    case "email":
-      return { inputType: "email", autoCompleteValue: "email" };
-    case "username":
-    case "first_name":
-    case "last_name":
-      return { inputType: "text", autoCompleteValue: "off" };
-    default:
-      return { inputType: "text", autoCompleteValue: "off" };
-  }
-};
-
 const AdminUser = () => {
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState("");
@@ -62,6 +45,10 @@ const AdminUser = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isBuscar, setIsBuscar] = useState(false);
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [showPassword1, setShowPassword1] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
+  const [refreshTable, setRefreshTable] = useState(0);
   const navigate = useNavigate();
 
   const initialVariableEstado = {
@@ -95,8 +82,6 @@ const AdminUser = () => {
     "fun_sex",
     "email",
     "fun_titu",
-    "password1",
-    "password2",
     "fun_admi_rol",
     "uni_unic",
     "fun_esta",
@@ -105,8 +90,8 @@ const AdminUser = () => {
   const labelMap = {
     fun_tipo_iden: "Tipo de Identificacion:",
     username: "Cédula de Identidad:",
-    first_name: "Apellidos completos:",
-    last_name: "Nombres completos:",
+    first_name: "Nombres completos:",
+    last_name: "Apellidos completos:",
     fun_sex: "Sexo:",
     email: "Correo Electrónico:",
     fun_titu: "Titulo del Funcionario:",
@@ -193,20 +178,30 @@ const AdminUser = () => {
   const actualizarFormDataConRespuesta = (data) => {
     setFormData((prevData) => ({
       ...prevData,
-      first_name: data.first_name || data.adm_dato_pers_apel,
-      last_name: data.last_name || data.adm_dato_pers_nomb,
-      fun_sex: data.fun_sex || data.adm_dato_pers_sexo,
-      email: data.email || data.adm_dato_pers_corr_elec,
+      id_eniUser: data.id_eniUser || "",
+      first_name: data.first_name || data.adm_dato_pers_nomb || "",
+      last_name: data.last_name || data.adm_dato_pers_apel || "",
+      fun_sex: data.fun_sex || data.adm_dato_pers_sexo || "",
+      email: data.email || data.adm_dato_pers_corr_elec || "",
       fun_titu: data.fun_titu || "",
-      password1: data.password || "",
-      password2: data.password || "",
+      password1: "",
+      password2: "",
       fun_admi_rol: data.fun_admi_rol || "",
       fun_esta: data.fun_esta || 0,
-      uni_unic: Array.isArray(data.uni_unic)
-        ? data.uni_unic.map((item) => ({
-            value: item,
-            label: `${listaUnidadesSalud[item] || item}`.trim(),
-          }))
+      uni_unic: Array.isArray(data.unidades_data)
+        ? data.unidades_data.map((item) => {
+            if (typeof item === "object" && item !== null) {
+              return {
+                value: item.uni_unic,
+                label: `${item.uni_unic} - ${item.uni_unid}`.trim(),
+              };
+            } else {
+              return {
+                value: item,
+                label: item,
+              };
+            }
+          })
         : [],
     }));
   };
@@ -289,11 +284,39 @@ const AdminUser = () => {
     validarDato(e, newFormData, setFormData, error, setError, setBotonEstado);
   };
 
-  const handleSelectChange = (e) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      uni_unic: e,
-    }));
+  const handleSelectChange = (selectedOptions) => {
+    const name = "uni_unic";
+    let value = selectedOptions || [];
+    let errorMessage = "";
+
+    if (!selectedOptions || selectedOptions.length === 0) {
+      errorMessage = "Debe seleccionar al menos una unidad de salud";
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+      setError(errorMessage);
+    } else if (selectedOptions.length > 3) {
+      errorMessage = "Solo puede seleccionar hasta 3 unidades de salud";
+      value = selectedOptions.slice(0, 3);
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+      setError(errorMessage);
+    } else {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+      setError("");
+    }
+
+    if (errorMessage) {
+      toast.error(errorMessage, { position: "bottom-right" });
+    }
+
+    setTimeout(checkFormValidity, 0);
   };
 
   const handleDelete = async (e) => {
@@ -313,7 +336,7 @@ const AdminUser = () => {
       toast.success(message, {
         position: "bottom-right",
       });
-      //window.location.reload("/admin-user/");
+      setRefreshTable((prev) => prev + 1);
       limpiarVariables();
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -326,77 +349,48 @@ const AdminUser = () => {
     }
   };
 
-  const checkFormValidity = () => {
-    const isValid = requiredFields.every((field) => {
-      if (Array.isArray(formData[field])) {
-        return formData[field].length > 0;
-      }
-      return formData[field];
-    });
-    setBotonEstado((prevState) => ({
-      ...prevState,
-      btnRegistrar: !isValid,
-    }));
+  const isFieldVisible = (field) => {
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
-    validarDato(formData.email, setError);
-    if (error.email) {
-      toast.error("Por favor, corrija los errores antes de enviar.", {
-        position: "bottom-right",
-      });
-      return;
-    }
+
     setIsLoading(true);
+    setError("");
+    setSuccessMessage("");
     try {
       let response;
       if (isEditing) {
-        response = await updateUser(formData);
-        setSuccessMessage("Registro actualizado con éxito!");
-        const message = response.message || "Registro actualizado con éxito!";
-        toast.success(message, {
-          position: "bottom-right",
-        });
+        // Construir el objeto data solo con los campos necesarios
+        const data = {
+          ...formData,
+        };
+        // Solo agregar password1 y password2 si ambos tienen valor
+        if (!formData.password1 && !formData.password2) {
+          delete data.password1;
+          delete data.password2;
+        }
+        response = await updateUser(data);
+        const message = response?.message || "Registro actualizado con éxito!";
+        setSuccessMessage(message);
+        setTimeout(() => setSuccessMessage(""), 10000);
+        toast.success(message, { position: "bottom-right" });
+        setRefreshTable((prev) => prev + 1);
       } else {
         response = await registerUser(formData);
-        setSuccessMessage("Registro guardado con éxito!");
         const message = response.message || "Registro guardado con éxito!";
-        toast.success(message, {
-          position: "bottom-right",
-        });
+        setSuccessMessage(message);
+        setTimeout(() => setSuccessMessage(""), 10000);
+        toast.success(message, { position: "bottom-right" });
+        setRefreshTable((prev) => prev + 1);
       }
-      window.location.reload("/admin-user/");
+      limpiarVariables();
     } catch (error) {
-      const getErrorMessage = (error) => {
-        if (error.response?.data) {
-          const data = error.response.data;
-          if (typeof data === "object") {
-            const firstKey = Object.keys(data)[0];
-            const firstError = data[firstKey];
-            if (Array.isArray(firstError) && firstError.length > 0) {
-              return firstError[0];
-            } else if (typeof firstError === "string") {
-              return firstError;
-            } else if (data.message) {
-              return data.message;
-            } else if (data.error) {
-              return data.error;
-            }
-          } else if (typeof data === "string") {
-            return data;
-          }
-        } else if (error.request) {
-          return "No se recibió respuesta del servidor";
-        } else if (error.message) {
-          return error.message;
-        }
-        return "Error desconocido";
-      };
-      let errorMessage = "Hubo un error en la operación";
-      errorMessage = getErrorMessage(error);
+      const errorMessage = getErrorMessage(error);
       setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
       toast.error(errorMessage, { position: "bottom-right" });
     } finally {
       setIsLoading(false);
@@ -412,12 +406,71 @@ const AdminUser = () => {
     }
   };
 
-  const groupedFields = [];
-  const keys = Object.keys(formData).filter((key) => key !== "eniUser");
+  // Validación de contraseña reutilizable
+  const getPasswordValidation = () => {
+    const { password1, password2 } = formData;
+    return {
+      longitud:
+        password1.length >= 10 &&
+        password1.length <= 20 &&
+        password2.length >= 10 &&
+        password2.length <= 20,
+      mayMinNum:
+        /[A-Z]/.test(password1) &&
+        /[a-z]/.test(password1) &&
+        /\d/.test(password1) &&
+        /[A-Z]/.test(password2) &&
+        /[a-z]/.test(password2) &&
+        /\d/.test(password2),
+      especial: /[*+\-]/.test(password1) && /[*+\-]/.test(password2),
+      iguales: password1 && password2 && password1 === password2,
+    };
+  };
 
-  for (let i = 0; i < keys.length; i += 4) {
-    groupedFields.push(keys.slice(i, i + 4));
-  }
+  const cumpleRequisitosPassword = () => {
+    const val = getPasswordValidation();
+    return val.longitud && val.mayMinNum && val.especial && val.iguales;
+  };
+
+  const checkFormValidity = () => {
+    // Validar todos los campos requeridos excepto password1 y password2 si es edición
+    const fieldsValid = requiredFields
+      .filter((field) => {
+        // Si estamos editando, no exigir password1 ni password2
+        if (isEditing && (field === "password1" || field === "password2")) {
+          return false;
+        }
+        return true;
+      })
+      .every((field) => {
+        if (Array.isArray(formData[field])) {
+          return formData[field].length > 0;
+        }
+        return formData[field];
+      });
+
+    // Validar contraseña según el modo y si hay valores en los campos
+    let passwordValid = true;
+    if (!isEditing) {
+      // Registro: siempre validar contraseña
+      passwordValid = cumpleRequisitosPassword();
+    } else {
+      // Edición: solo validar si ambos campos tienen valor
+      const { password1, password2 } = formData;
+      if (password1 || password2) {
+        passwordValid = cumpleRequisitosPassword();
+        // Si solo uno está lleno, no permitir
+        if (!password1 || !password2) passwordValid = false;
+      }
+    }
+
+    const formValid = fieldsValid && passwordValid;
+
+    setBotonEstado((prevState) => ({
+      ...prevState,
+      btnRegistrar: !formValid,
+    }));
+  };
 
   const limpiarVariables = () => {
     setFormData(initialState);
@@ -469,188 +522,535 @@ const AdminUser = () => {
   return (
     <div className="w-auto h-auto flex items-stretch justify-stretch bg-gray-100">
       <div className="w-full h-full p-4 m-4 bg-white rounded-lg shadow-md mt-1">
-        <div className="max-w-max m-auto mt-5">
-          <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
-            Administrador de Usuarios
-          </h2>
-          <form onSubmit={handleSubmit} className="w-full">
-            <fieldset className="border border-blue-200 rounded p-2 mb-1">
-              <legend className="text-lg font-semibold text-blue-600 px-2">
-                Datos Personales
-              </legend>
-              {groupedFields.map((group) => (
-                <div
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2"
-                  key={group.join("-")}
-                >
-                  {group.map((key) => {
-                    const { inputType, autoCompleteValue } =
-                      getInputTypeAndAutoComplete(key);
-                    let inputElement;
-                    if (key === "uni_unic") {
-                      inputElement = (
-                        <Select
-                          inputId={key}
-                          name={key}
-                          value={formData[key]}
-                          onChange={handleSelectChange}
-                          options={Object.keys(listaUnidadesSalud).map(
-                            (item) => ({
-                              value: item,
-                              label: listaUnidadesSalud[item],
-                            })
-                          )}
-                          isMulti
-                          placeholder="Seleccione una o varias opciones"
-                          styles={{
-                            ...selectStyles,
-                            control: (provided, state) => ({
-                              ...selectStyles.control(provided, state),
-                              borderWidth: "1px",
-                              borderColor: "black",
-                              cursor: variableEstado[key]
-                                ? "not-allowed"
-                                : "pointer",
-                              backgroundColor: variableEstado[key]
-                                ? "lightgray"
-                                : "white",
-                            }),
-                          }}
-                          isDisabled={variableEstado[key]}
-                        />
-                      );
-                    } else if (listaSelectUser[key]) {
-                      inputElement = (
-                        <CustomSelect
-                          id={key}
-                          name={key}
-                          value={formData[key]}
-                          onChange={handleChange}
-                          options={listaSelectUser[key]}
-                          disabled={variableEstado[key]}
-                          variableEstado={variableEstado}
-                        />
-                      );
-                    } else {
-                      inputElement = (
-                        <div className="flex">
-                          <input
-                            type={inputType}
-                            id={key}
-                            name={key}
-                            value={formData[key]}
-                            onChange={handleChange}
-                            placeholder="Información es requerida"
-                            className={`${inputStyle} ${
-                              variableEstado[key]
-                                ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                                : "bg-white text-gray-700 cursor-pointer"
-                            }`}
-                            min="0"
-                            disabled={variableEstado[key]}
-                            autoComplete={autoCompleteValue}
-                          />
-                          {key === "username" && (
-                            <div className="flex">
-                              <button
-                                type="button"
-                                id="btnBuscar"
-                                name="btnBuscar"
-                                className={`${buttonStylePrimario} ${
-                                  botonEstado.btnBuscar
-                                    ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                                    : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-                                }`}
-                                onClick={handleSearch}
-                                disabled={botonEstado.btnBuscar}
-                              >
-                                Buscar
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="mb-2" key={key}>
-                        <label
-                          className="block text-gray-700 text-sm font-bold mb-2"
-                          htmlFor={key}
-                        >
-                          {requiredFields.includes(key) && (
-                            <span className="text-red-500">* </span>
-                          )}
-                          {labelMap[key]}
-                        </label>
-                        {inputElement}
-                        {error[key] && (
-                          <p className="text-red-500 text-xs italic">
-                            {error[key]}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
+        <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
+          Administrador de Usuarios
+        </h2>
+        <form onSubmit={handleSubmit} className="w-full">
+          <fieldset className="border border-blue-200 rounded p-2 mb-1">
+            <legend className="text-lg font-semibold text-blue-600 px-2">
+              Datos Personales
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="fun_tipo_iden">
+                  {requiredFields.includes("fun_tipo_iden") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["fun_tipo_iden"]}
+                </label>
+                <CustomSelect
+                  id="fun_tipo_iden"
+                  name="fun_tipo_iden"
+                  value={formData["fun_tipo_iden"]}
+                  onChange={handleChange}
+                  options={allListRegisterUser.fun_tipo_iden}
+                  disabled={variableEstado["fun_tipo_iden"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "fun_tipo_iden",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="username">
+                  {requiredFields.includes("username") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["username"]}
+                </label>
+                <div className="flex items-center gap-1 mb-1">
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData["username"]}
+                    onChange={handleChange}
+                    placeholder="Información es requerida"
+                    required
+                    className={`${inputStyle}
+                                ${
+                                  isFieldInvalid(
+                                    "username",
+                                    requiredFields,
+                                    formData,
+                                    isFieldVisible
+                                  )
+                                    ? "border-2 border-red-500"
+                                    : ""
+                                }
+                                 ${
+                                   variableEstado["username"]
+                                     ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                                     : "bg-white text-gray-700 cursor-pointer"
+                                 }`}
+                    disabled={variableEstado["username"]}
+                  />
+                  <button
+                    type="button"
+                    id="btnBuscar"
+                    name="btnBuscar"
+                    className={`${buttonStylePrimario} ${
+                      botonEstado.btnBuscar
+                        ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                    }`}
+                    onClick={handleSearch}
+                    disabled={botonEstado.btnBuscar}
+                  >
+                    Buscar
+                  </button>
                 </div>
-              ))}
-            </fieldset>
-            <div className="flex items-center justify-center">
-              <button
-                type="submit"
-                id="btnRegistrar"
-                name="btnRegistrar"
-                className={`${buttonStylePrimario} ${
-                  botonEstado.btnRegistrar
-                    ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-                }`}
-                disabled={botonEstado.btnRegistrar}
-                onClick={handleButtonClick}
-              >
-                {buttonTextRegistro}
-              </button>
-              {isEditing && (
-                <button
-                  type="button"
-                  id="btnEliminar"
-                  name="btnEliminar"
-                  className={buttonStyleEliminar}
-                  onClick={handleDelete}
-                >
-                  Eliminar registro
-                </button>
-              )}
-              <button
-                type="button"
-                id="btnLimpiar"
-                name="btnLimpiar"
-                className={buttonStyleSecundario}
-                onClick={limpiarVariables}
-              >
-                Limpiar
-              </button>
-              <button
-                type="button"
-                className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
-                onClick={() => navigate("/")}
-              >
-                Cancelar
-              </button>
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="last_name">
+                  {requiredFields.includes("last_name") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["last_name"]}
+                </label>
+                <input
+                  type="text"
+                  id="last_name"
+                  name="last_name"
+                  value={formData["last_name"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle}
+                                ${
+                                  isFieldInvalid(
+                                    "last_name",
+                                    requiredFields,
+                                    formData,
+                                    isFieldVisible
+                                  )
+                                    ? "border-2 border-red-500"
+                                    : ""
+                                }
+                                ${
+                                  variableEstado["last_name"]
+                                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                                    : "bg-white text-gray-700 cursor-pointer"
+                                }`}
+                  disabled={variableEstado["last_name"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="first_name">
+                  {requiredFields.includes("first_name") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["first_name"]}
+                </label>
+                <input
+                  type="text"
+                  id="first_name"
+                  name="first_name"
+                  value={formData["first_name"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle}
+                                ${
+                                  isFieldInvalid(
+                                    "first_name",
+                                    requiredFields,
+                                    formData,
+                                    isFieldVisible
+                                  )
+                                    ? "border-2 border-red-500"
+                                    : ""
+                                }
+                                ${
+                                  variableEstado["first_name"]
+                                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                                    : "bg-white text-gray-700 cursor-pointer"
+                                }`}
+                  disabled={variableEstado["first_name"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="fun_sex">
+                  {requiredFields.includes("fun_sex") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["fun_sex"]}
+                </label>
+                <CustomSelect
+                  id="fun_sex"
+                  name="fun_sex"
+                  value={formData["fun_sex"]}
+                  onChange={handleChange}
+                  options={allListRegisterUser.fun_sex}
+                  disabled={variableEstado["fun_sex"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "fun_sex",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="email">
+                  {requiredFields.includes("email") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["email"]}
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData["email"]}
+                  onChange={handleChange}
+                  placeholder="ejemplo@gmacil.com"
+                  required
+                  className={`${inputStyle}
+                                ${
+                                  isFieldInvalid(
+                                    "email",
+                                    requiredFields,
+                                    formData,
+                                    isFieldVisible
+                                  )
+                                    ? "border-2 border-red-500"
+                                    : ""
+                                }
+                                ${
+                                  variableEstado["email"]
+                                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                                    : "bg-white text-gray-700 cursor-pointer"
+                                }`}
+                  disabled={variableEstado["email"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="fun_titu">
+                  {requiredFields.includes("fun_titu") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["fun_titu"]}
+                </label>
+                <CustomSelect
+                  id="fun_titu"
+                  name="fun_titu"
+                  value={formData["fun_titu"]}
+                  onChange={handleChange}
+                  options={allListRegisterUser.fun_titu}
+                  disabled={variableEstado["fun_titu"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "fun_titu",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="uni_unic">
+                  {requiredFields.includes("uni_unic") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["uni_unic"]}
+                </label>
+                <CustomSelect
+                  id="uni_unic"
+                  name="uni_unic"
+                  value={formData["uni_unic"]}
+                  onChange={handleSelectChange}
+                  options={allListRegisterUser.uni_unic}
+                  isMulti
+                  disabled={variableEstado["uni_unic"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "uni_unic",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+                <span className="text-xs text-gray-500 mt-1">
+                  Seleccione de 1 a 3 unidades de salud
+                </span>
+              </div>
             </div>
-          </form>
-          <EstadoMensajes error={error} successMessage={successMessage} />
-        </div>
-        <div className="mt-5">
-          <TablaUsers
-            setFormData={setFormData}
-            setVariableEstado={setVariableEstado}
-            setBotonEstado={setBotonEstado}
-            setIsEditing={setIsEditing}
-            setIsLoading={setIsLoading}
-            setSuccessMessage={setSuccessMessage}
-            setError={setError}
-          />
-        </div>
+          </fieldset>
+          <fieldset className="border border-blue-200 rounded p-2 mb-1">
+            <legend className="text-lg font-semibold text-blue-600 px-2">
+              Rol y Estado del Usuario
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="fun_admi_rol">
+                  {requiredFields.includes("fun_admi_rol") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["fun_admi_rol"]}
+                </label>
+                <CustomSelect
+                  id="fun_admi_rol"
+                  name="fun_admi_rol"
+                  value={formData["fun_admi_rol"]}
+                  onChange={handleChange}
+                  options={allListRegisterUser.fun_admi_rol}
+                  disabled={variableEstado["fun_admi_rol"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "fun_admi_rol",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="fun_esta">
+                  {requiredFields.includes("fun_esta") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["fun_esta"]}
+                </label>
+                <CustomSelect
+                  id="fun_esta"
+                  name="fun_esta"
+                  value={formData["fun_esta"]}
+                  onChange={handleChange}
+                  options={allListRegisterUser.fun_esta}
+                  disabled={variableEstado["fun_esta"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "fun_esta",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+            </div>
+          </fieldset>
+          <fieldset className="border border-blue-200 rounded p-2 mb-1">
+            <legend className="text-lg font-semibold text-blue-600 px-2">
+              Solo para registrar o Actualizar la Clave o Contraseña
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="password1">
+                  {requiredFields.includes("password1") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["password1"]}
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type={showPassword1 ? "text" : "password"}
+                    id="password1"
+                    name="password1"
+                    value={formData["password1"]}
+                    onChange={handleChange}
+                    placeholder="Requiere la misma clave"
+                    className={`${inputStyle}
+                    ${
+                      isFieldInvalid(
+                        "password1",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                    ${
+                      variableEstado["password1"]
+                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                        : "bg-white text-gray-700 cursor-pointer"
+                    }
+                    pr-10`}
+                    disabled={variableEstado["password1"]}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-700 border-l border-gray-800 pl-3 h-7 flex items-center bg-transparent"
+                    onClick={() => setShowPassword1((prev) => !prev)}
+                    style={{ outline: "none" }}
+                  >
+                    {showPassword1 ? "🙈" : "👁️"}
+                  </button>
+                </div>
+                <div className="mt-1 ml-1 text-sm">
+                  {(() => {
+                    const passwordValidation = getPasswordValidation();
+                    return (
+                      <ul>
+                        <li className="flex items-center">
+                          {passwordValidation.longitud ? (
+                            <span className="text-green-600 mr-1">✅</span>
+                          ) : (
+                            <span className="text-red-600 mr-1">❌</span>
+                          )}
+                          Tener de 10 hasta 20 caracteres.
+                        </li>
+                        <li className="flex items-center">
+                          {passwordValidation.mayMinNum ? (
+                            <span className="text-green-600 mr-1">✅</span>
+                          ) : (
+                            <span className="text-red-600 mr-1">❌</span>
+                          )}
+                          Estar conformada de Mayúsculas, minúsculas y números.
+                        </li>
+                        <li className="flex items-center">
+                          {passwordValidation.especial ? (
+                            <span className="text-green-600 mr-1">✅</span>
+                          ) : (
+                            <span className="text-red-600 mr-1">❌</span>
+                          )}
+                          Al menos un carácter especial: * + -
+                        </li>
+                        <li className="flex items-center">
+                          {passwordValidation.iguales ? (
+                            <span className="text-green-600 mr-1">✅</span>
+                          ) : (
+                            <span className="text-red-600 mr-1">❌</span>
+                          )}
+                          Las contraseñas coinciden.
+                        </li>
+                      </ul>
+                    );
+                  })()}
+                </div>
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="password2">
+                  {requiredFields.includes("password2") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["password2"]}
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type={showPassword2 ? "text" : "password"}
+                    id="password2"
+                    name="password2"
+                    value={formData["password2"]}
+                    onChange={handleChange}
+                    placeholder="Requiere la misma clave"
+                    className={`${inputStyle}
+                    ${
+                      isFieldInvalid(
+                        "password2",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                    ${
+                      variableEstado["password2"]
+                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                        : "bg-white text-gray-700 cursor-pointer"
+                    }
+                    pr-10`}
+                    disabled={variableEstado["password2"]}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-700 border-l border-gray-800 pl-3 h-7 flex items-center bg-transparent"
+                    onClick={() => setShowPassword2((prev) => !prev)}
+                    style={{ outline: "none" }}
+                  >
+                    {showPassword2 ? "🙈" : "👁️"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+          <div className="flex items-center justify-center">
+            <button
+              type="submit"
+              id="btnRegistrar"
+              name="btnRegistrar"
+              className={`${buttonStylePrimario} ${
+                botonEstado.btnRegistrar
+                  ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+              }`}
+              disabled={botonEstado.btnRegistrar}
+              onClick={handleButtonClick}
+            >
+              {buttonTextRegistro}
+            </button>
+            {isEditing && (
+              <button
+                type="button"
+                id="btnEliminar"
+                name="btnEliminar"
+                className={buttonStyleEliminar}
+                onClick={handleDelete}
+              >
+                Eliminar registro
+              </button>
+            )}
+            <button
+              type="button"
+              id="btnLimpiar"
+              name="btnLimpiar"
+              className={buttonStyleSecundario}
+              onClick={limpiarVariables}
+            >
+              Limpiar
+            </button>
+            <button
+              type="button"
+              className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+              onClick={() => navigate("/")}
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+        <EstadoMensajes error={error} successMessage={successMessage} />
+        <TablaUsers
+          setFormData={setFormData}
+          setVariableEstado={setVariableEstado}
+          setBotonEstado={setBotonEstado}
+          setIsEditing={setIsEditing}
+          setIsLoading={setIsLoading}
+          setSuccessMessage={setSuccessMessage}
+          setError={setError}
+          refreshTable={refreshTable}
+        />
       </div>
     </div>
   );

@@ -28,12 +28,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def validate(self, attrs):
-        if attrs['password1'] != attrs['password2']:
-            raise serializers.ValidationError(
-                "Clave 1 y Clave 2 no son iguales!")
+        password1 = attrs.get('password1')
+        password2 = attrs.get('password2')
 
-        password = attrs.get("password1")
-        validate_password(password)
+        # Solo validar si alguno de los campos de contraseña está presente
+        if password1 or password2:
+            if password1 != password2:
+                raise serializers.ValidationError(
+                    "Clave 1 y Clave 2 no son iguales!")
+            validate_password(password1)
 
         return attrs
 
@@ -70,32 +73,36 @@ class UserLoginSerializer(serializers.Serializer):
         return data
 
 
+class UnidadSaludRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = unidad_salud
+        fields = '__all__'
+
+
 class EniUserRegistrationSerializer(serializers.ModelSerializer):
-    password1 = serializers.CharField(write_only=True)
-    password2 = serializers.CharField(write_only=True)
-    password = serializers.CharField(read_only=True)
-    uni_unic = serializers.SerializerMethodField()
+    password1 = serializers.CharField(write_only=True, required=False)
+    password2 = serializers.CharField(write_only=True, required=False)
+    unidades_data = UnidadSaludRegistrationSerializer(
+        source='unidades_salud', many=True, read_only=True)
 
     class Meta:
         model = eniUser
         fields = (
-            "id", "fun_tipo_iden", "username", "last_name", "first_name", "fun_sex", "email", "fun_titu", "password1", "password2", "password", "fun_admi_rol", "fun_esta", "uni_unic"
+            "id", "fun_tipo_iden", "username", "last_name", "first_name", "fun_sex", "email", "fun_titu", "password1", "password2", "fun_admi_rol", "fun_esta", "unidades_data"
         )
-        extra_kwargs = {"password": {"write_only": True}}
 
     def validate(self, attrs):
-        if attrs['password1'] != attrs['password2']:
-            raise serializers.ValidationError(
-                "Clave 1 y Clave 2 no son iguales!")
+        password1 = attrs.get('password1')
+        password2 = attrs.get('password2')
 
-        password = attrs.get("password1")
-        validate_password(password)
+        # Solo validar si alguno de los campos de contraseña está presente
+        if password1 or password2:
+            if password1 != password2:
+                raise serializers.ValidationError(
+                    "Clave 1 y Clave 2 no son iguales!")
+            validate_password(password1)
 
         return attrs
-
-    def get_uni_unic(self, obj):
-        # Obtiene una lista de 'uni_unic' de todas las 'unidades_salud' relacionadas
-        return [unidad.uni_unic for unidad in obj.unidades_salud.all()]
 
     def create(self, validated_data):
         password = validated_data.pop("password1")
@@ -103,11 +110,16 @@ class EniUserRegistrationSerializer(serializers.ModelSerializer):
         user = eniUser.objects.create_user(password=password, **validated_data)
         return user
 
-
-class UnidadSaludRegistrationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = unidad_salud
-        fields = '__all__'
+    def update(self, instance, validated_data):
+        password1 = validated_data.pop('password1', None)
+        password2 = validated_data.pop('password2', None)
+        # Solo actualiza la contraseña si se proporcionan ambos campos
+        if password1 and password2:
+            if password1 != password2:
+                raise serializers.ValidationError(
+                    {"password2": "Las contraseñas no coinciden."})
+            instance.set_password(password1)
+        return super().update(instance, validated_data)
 
 
 class TempranoRegistrationSerializer(serializers.ModelSerializer):
@@ -178,21 +190,14 @@ class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
 
 
 class Form008EmergenciaRegistrationSerializer(serializers.ModelSerializer):
-    for_008_emer_fech_aten = serializers.DateField(
-        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
-    for_008_emer_hora_aten = serializers.TimeField(
-        format=TIME_FORMAT, input_formats=[TIME_FORMAT, 'iso-8601'])
-
-    # Campo calculado para respuesta
-    nombre_completo = serializers.SerializerMethodField()
+    # for_008_emer_fech_aten = serializers.DateField(
+    #     format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+    # for_008_emer_hora_aten = serializers.TimeField(
+    #     format=TIME_FORMAT, input_formats=[TIME_FORMAT, 'iso-8601'])
 
     class Meta:
         model = form_008_emergencia
         fields = '__all__'
-
-    def get_nombre_completo(self, obj):
-        """Campo calculado para obtener el nombre completo"""
-        return obj.get_nombre_completo()
 
     def validate(self, attrs):
         """Validaciones de nivel de formulario - API específicas"""

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
-import { getAllEniUsers, deleteUser } from "../api/conexion.api.js";
+import { getAllForm008Emer, deleteUser } from "../api/conexion.api.js";
 import { toast } from "react-hot-toast";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
-const TablaUsers = ({
+const TablaForm008Emer = ({
   setFormData,
   setVariableEstado,
   setBotonEstado,
@@ -26,17 +26,49 @@ const TablaUsers = ({
   ];
   const STATUS_NAMES = ["INACTIVO", "ACTIVO"];
   const TABLE_HEADERS = [
-    "Tipo de Identificacion",
-    "Número de Identificación",
-    "Apellido completo",
-    "Nombre completo",
-    "Sexo",
-    "Correo Electrónico",
-    "Titulo del Funcionario",
-    //"Clave",
-    "Rol de usuario",
-    "Activar cuenta",
-    "Unidad de Salud",
+    "INSTITUCIÓN DEL SISTEMA",
+    "UNICODIGO",
+    "NOMBRE DEL ESTABLECIMIENTO DE SALUD",
+    "ZONA",
+    "PROVINCIA",
+    "CANTON",
+    "DISTRITO",
+    "NIVEL",
+    "FECHA DE ATENCIÓN",
+    "TIPO DE DOCUMENTO DE IDENTIFICACIÓN",
+    "NÚMERO DE IDENTIFICACION",
+    "PRIMER APELLIDO",
+    "SEGUNDO APELLIDO",
+    "PRIMER NOMBRE",
+    "SEGUNDO NOMBRE",
+    "SEXO",
+    "EDAD",
+    "CONDICIÓN DE LA EDAD",
+    "NACIONALIDAD",
+    "ETNIA",
+    "GRUPO PRIORITARIO",
+    "TIPO DE SEGURO",
+    "PROVINCIA DE RECIDENCIA",
+    "CANTON DE RECIDENCIA",
+    "PARROQUIA DE RECIDENCIA",
+    "ESPECIALIDAD DEL PROFESIONAL",
+    "CIE-10 (PRINCIPAL)",
+    "DIAGNÓSTICO 1 (PRINCIPAL)",
+    "CONDICIÓN DEL DIAGNÓSTICO",
+    "CIE-10 (CAUSA EXTERNA)",
+    "DIAGNOSTICO (CAUSA  EXTERNA)",
+    "HOSPITALIZACIÓN",
+    "HORA ATENCIÓN",
+    "CONDICIÓN DEL ALTA",
+    "OBSERVACIÓN",
+    "FECHA DE REPORTE",
+    "RESPONSABLE DE LA ATENCION MEDICA",
+    "APOYO EN LA ATENCION MEDICA",
+    "EDAD GESTACIONAL",
+    "RIESGO OBSTETRICO",
+    "UNIDAD DE SALUD RESPONSABLE DE SEGUIMIENTO DE ATENCIÓN",
+    "DIRECCIÓN DE DOMICILIO",
+    "TELEFONO DE PACIENTE",
   ];
 
   const getErrorMessage = (error) => {
@@ -67,7 +99,7 @@ const TablaUsers = ({
   useEffect(() => {
     const loadEniUsers = async () => {
       try {
-        const data = await getAllEniUsers();
+        const data = await getAllForm008Emer();
         setEniUsers(Array.isArray(data) ? data : []);
       } catch (error) {
         setError(error.message);
@@ -156,14 +188,14 @@ const TablaUsers = ({
     fun_sex: user.fun_sex || "",
     email: user.email || "",
     fun_titu: user.fun_titu || "",
-    password1: "",
-    password2: "",
+    password1: user.password || "",
+    password2: user.password || "",
     fun_admi_rol: funAdmiRol || "",
-    uni_unic: Array.isArray(user.unidades_data)
-      ? user.unidades_data.map((item) => {
+    uni_unic: Array.isArray(user.unidades_salud_detalle)
+      ? user.unidades_salud_detalle.map((item) => {
           if (typeof item === "object" && item !== null) {
             return {
-              value: item.uni_unic,
+              value: item.id || item.uni_unic,
               label: `${item.uni_unic} - ${item.uni_unid}`.trim(),
             };
           } else {
@@ -185,8 +217,8 @@ const TablaUsers = ({
     fun_sex: false,
     email: false,
     fun_titu: false,
-    password1: false,
-    password2: false,
+    password1: true,
+    password2: true,
     fun_admi_rol: false,
     uni_unic: false,
     fun_esta: false,
@@ -200,7 +232,7 @@ const TablaUsers = ({
     thead: "bg-gray-50 border-b border-gray-300",
     th: "px-3 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-x border-gray-200",
     tbody: "divide-y divide-gray-200",
-    td: "px-3 py-2 text-sm text-gray-600 border-x border-gray-200",
+    td: "px-1 py-1 text-sm text-gray-600 border-x border-gray-200",
     actionButton:
       "p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded",
     deleteButton: "p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded",
@@ -245,57 +277,40 @@ const TablaUsers = ({
                   </div>
                 </td>
                 {Object.keys(registro)
-                  .filter((key) => key !== "id")
+                  .filter((key) => key !== "id" && key !== "admision_datos")
                   .map((key) => {
                     let cellContent;
                     switch (key) {
-                      case "fun_esta":
+                      case "for_008_emer_fech_repor":
+                        let fechaFormateada = "";
+                        let horaFormateada = "";
+                        if (registro[key]) {
+                          const [fechaISO, horaISO] = registro[key].split("T");
+                          if (fechaISO) {
+                            const [anio, mes, dia] = fechaISO.split("-");
+                            fechaFormateada = `${dia}/${mes}/${anio}`;
+                          }
+                          if (horaISO) {
+                            horaFormateada = horaISO.substring(0, 5); // "18:09"
+                          }
+                        }
                         cellContent = (
-                          <span
-                            className={
-                              registro[key] === 1
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }
-                          >
-                            {STATUS_NAMES[registro[key]] || ""}
+                          <span>
+                            {fechaFormateada} <br />
+                            {horaFormateada}
                           </span>
                         );
                         break;
-                      case "fun_admi_rol":
+                      case "for_008_emer_dire_domi":
                         cellContent = (
-                          <span className="font-medium">
-                            {ROLE_NAMES[registro[key]] || ""}
+                          <span className="text-xs block max-w-[150px]">
+                            {registro[key]}
                           </span>
                         );
                         break;
-                      case "unidades_data":
+                      case "for_008_emer_obse":
                         cellContent = (
-                          <ul className="list-disc pl-4 text-xs max-w-[200px] overflow-hidden">
-                            {Array.isArray(registro[key]) ? (
-                              registro[key].map((item, index) => (
-                                <li
-                                  key={
-                                    typeof item === "object"
-                                      ? item.id || index
-                                      : index
-                                  }
-                                  className="truncate"
-                                >
-                                  {typeof item === "object"
-                                    ? `${item.uni_unic} - ${item.uni_unid}`
-                                    : item}
-                                </li>
-                              ))
-                            ) : (
-                              <li>No hay unidades asignadas</li>
-                            )}
-                          </ul>
-                        );
-                        break;
-                      case "email":
-                        cellContent = (
-                          <span className="truncate block max-w-[150px]">
+                          <span className="text-xs block max-w-[150px]">
                             {registro[key]}
                           </span>
                         );
@@ -341,7 +356,7 @@ const TablaUsers = ({
     </div>
   );
 };
-TablaUsers.propTypes = {
+TablaForm008Emer.propTypes = {
   setFormData: PropTypes.func.isRequired,
   setVariableEstado: PropTypes.func.isRequired,
   setBotonEstado: PropTypes.func.isRequired,
@@ -352,4 +367,4 @@ TablaUsers.propTypes = {
   refreshTable: PropTypes.number,
 };
 
-export default TablaUsers;
+export default TablaForm008Emer;

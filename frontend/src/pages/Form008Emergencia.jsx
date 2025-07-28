@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Admision from "./Admision.jsx";
 import {
+  getAllEniUsers,
   registerForm008Emer,
   updateForm008Emer,
   buscarUsuarioAdmision,
@@ -17,6 +18,7 @@ import {
   buttonStylePrimario,
   buttonStyleSecundario,
 } from "../components/EstilosCustom.jsx";
+import TablaForm008Emer from "../components/TablaForm008Emer.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
@@ -51,7 +53,6 @@ const initialState = {
   for_008_emer_apoy_aten_medi: "",
   for_008_emer_edad_gest: "",
   for_008_emer_ries_obst: "",
-  for_008_emer_indi_paci_fami: "",
 };
 
 function calcularEdad(fechaNacimientoStr) {
@@ -132,8 +133,10 @@ function calcularEdadConFechaReferencia(
 }
 
 const Form008Emergencia = () => {
+  const storedUserId = localStorage.getItem("userId") || 4;
   const [showAdmisionModal, setShowAdmisionModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalText, setConfirmModalText] = useState("");
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -145,6 +148,10 @@ const Form008Emergencia = () => {
   const fechaMinima = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);
+  const [refreshTable, setRefreshTable] = useState(0);
+  const [isIndicacionesFocused, setIsIndicacionesFocused] = useState(false);
+  const [medicosList, setMedicosList] = useState([]);
+  const [admisionData, setAdmisionData] = useState(null);
   const navigate = useNavigate();
 
   const initialVariableEstado = {
@@ -177,7 +184,6 @@ const Form008Emergencia = () => {
     for_008_emer_apoy_aten_medi: true,
     for_008_emer_edad_gest: true,
     for_008_emer_ries_obst: true,
-    for_008_emer_indi_paci_fami: true,
   };
   const initialBotonEstado = {
     btnBuscar: false,
@@ -219,7 +225,6 @@ const Form008Emergencia = () => {
     for_008_emer_apoy_aten_medi: "APOYO EN LA ATENCION MEDICA:",
     for_008_emer_edad_gest: "EDAD GESTACIONAL:",
     for_008_emer_ries_obst: "RIESGO OBSTETRICO:",
-    for_008_emer_indi_paci_fami: "INDICACIONES PARA EL PACIENTE O LA FAMILIA:",
   };
 
   const getErrorMessage = (error) => {
@@ -278,9 +283,22 @@ const Form008Emergencia = () => {
       const response = await buscarUsuarioAdmision(tipoId, numIden);
       if (!response)
         throw new Error("No se pudo obtener una respuesta de la API.");
-
-      actualizarFormDataConRespuesta(response.data);
-      ajustarVariableEstadoExitoso();
+      if (parseInt(response.data.adm_dato_paci_falt_dato) === 0) {
+        if (
+          response.message.toLowerCase().includes("usuario está registrado") ||
+          response.message.toLowerCase().includes("registrado en admision") ||
+          response.message.toLowerCase().includes("no se pudo obtener")
+        ) {
+          setConfirmModalText(
+            "¿El paciente le falta actualizar la información en el sistema?"
+          );
+          setAdmisionData(response.data);
+          setShowConfirmModal(true);
+        }
+      } else {
+        actualizarFormDataConRespuesta(response.data);
+        ajustarVariableEstadoExitoso();
+      }
       setSuccessMessage(response.message || "Operación exitosa");
       setTimeout(() => setSuccessMessage(""), 10000);
       setError("");
@@ -299,13 +317,15 @@ const Form008Emergencia = () => {
         errorMessage.toLowerCase().includes("no existe") ||
         errorMessage.toLowerCase().includes("no se pudo obtener")
       ) {
+        setConfirmModalText(
+          "¿El paciente tiene que ser admisionado al sistema?"
+        );
         setShowConfirmModal(true);
       }
     }
   };
 
   const actualizarFormDataConRespuesta = (data) => {
-    //console.log("Datos recibidos:", data);
     setFormData((prevData) => ({
       ...prevData,
       id_adm: data.id_adm || data.id || "",
@@ -339,13 +359,13 @@ const Form008Emergencia = () => {
         data.adm_dato_resi_esta_adsc_terr || "",
       for_008_emer_dire_domi: [
         data.adm_dato_resi_barr_sect
-          ? `Barrio o Sector: ${data.adm_dato_resi_barr_sect}`
+          ? `Barrio: ${data.adm_dato_resi_barr_sect}`
           : "",
         data.adm_dato_resi_call_prin
-          ? `Calle principal: ${data.adm_dato_resi_call_prin}`
+          ? `Calle prin.: ${data.adm_dato_resi_call_prin}`
           : "",
         data.adm_dato_resi_call_secu
-          ? `Calle secundaria: ${data.adm_dato_resi_call_secu}`
+          ? `Calle sec.: ${data.adm_dato_resi_call_secu}`
           : "",
         data.adm_dato_resi_refe_resi
           ? `Referencia: ${data.adm_dato_resi_refe_resi}`
@@ -391,7 +411,6 @@ const Form008Emergencia = () => {
       for_008_emer_apoy_aten_medi: false,
       for_008_emer_edad_gest: false,
       for_008_emer_ries_obst: false,
-      for_008_emer_indi_paci_fami: false,
     }));
     setBotonEstado((prevState) => ({
       btnBuscar: true,
@@ -430,7 +449,6 @@ const Form008Emergencia = () => {
       for_008_emer_apoy_aten_medi: false,
       for_008_emer_edad_gest: false,
       for_008_emer_ries_obst: false,
-      for_008_emer_indi_paci_fami: false,
     }));
     setBotonEstado((prevState) => ({
       btnBuscar: true,
@@ -533,28 +551,6 @@ const Form008Emergencia = () => {
     return true;
   };
 
-  const camposRepresentante = [
-    "adm_dato_repr_tipo_iden",
-    "adm_dato_repr_nume_iden",
-    "adm_dato_repr_apel",
-    "adm_dato_repr_nomb",
-    "adm_dato_repr_fech_naci",
-    "adm_dato_repr_pare",
-    "adm_dato_repr_nume_tele",
-    "adm_dato_repr_naci",
-    "adm_dato_repr_no_ident_prov",
-  ];
-
-  // const limpiarCamposRepresentanteNoVisibles = (formData) => {
-  //   const nuevoFormData = { ...formData };
-  //   camposRepresentante.forEach((campo) => {
-  //     if (!isFieldVisible(campo)) {
-  //       nuevoFormData[campo] = "";
-  //     }
-  //   });
-  //   return nuevoFormData;
-  // };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
@@ -562,41 +558,23 @@ const Form008Emergencia = () => {
     setIsLoading(true);
     setError("");
     setSuccessMessage("");
-    //const formDataLimpio = limpiarCamposRepresentanteNoVisibles(formData);
-
-    // const parroquiaOptions = parroquiasOptions.length
-    //   ? parroquiasOptions
-    //   : allListAdmision.adm_dato_resi_parr[formData.adm_dato_resi_cant] || [];
-
-    // Transformar los valores antes de enviar
-    // const formDataToSend = {
-    //   ...formDataLimpio,
-    //   adm_dato_resi_parr: extraerNombreParroquia(
-    //     formDataLimpio.adm_dato_resi_parr,
-    //     parroquiaOptions
-    //   ),
-    //   adm_dato_repr_fech_naci: formDataLimpio.adm_dato_repr_fech_naci
-    //     ? formDataLimpio.adm_dato_repr_fech_naci
-    //     : null,
-    // };
+    const formDataConUsuario = { ...formData, eniUser: storedUserId };
 
     try {
       let response;
       if (isEditing) {
-        response = await updateForm008Emer(formData);
+        response = await updateForm008Emer(formDataConUsuario);
         const message = response?.message || "Registro actualizado con éxito!";
         setSuccessMessage(message);
         setTimeout(() => setSuccessMessage(""), 10000);
         toast.success(message, { position: "bottom-right" });
-        navigate("/form-008-emergencia/");
         limpiarVariables(true);
       } else {
-        const response = await registerForm008Emer(formData);
+        const response = await registerForm008Emer(formDataConUsuario);
         const message = response?.message || "Registro guardado con éxito!";
         setSuccessMessage(message);
         setTimeout(() => setSuccessMessage(""), 10000);
         toast.success(message, { position: "bottom-right" });
-        navigate("/form-008-emergencia/");
         limpiarVariables(true);
       }
     } catch (error) {
@@ -611,10 +589,8 @@ const Form008Emergencia = () => {
 
   const handleSubmitBuscar = (e) => {
     e.preventDefault();
-    // Aquí iría la lógica para enviar los datos a la API
     setSuccess("Formulario enviado correctamente");
     setError("");
-    // console.log(formData);
   };
 
   const handleButtonClick = (e) => {
@@ -655,6 +631,25 @@ const Form008Emergencia = () => {
       for_008_emer_hora_aten: horaActual,
       for_008_emer_fech_aten: fechaActual,
     }));
+  }, []);
+
+  useEffect(() => {
+    const loadMedicosList = async () => {
+      try {
+        const medicosData = await getAllEniUsers();
+        // Formatear los datos para el Select
+        const formattedMedicos = medicosData.map((medico) => ({
+          value: medico.id.toString(),
+          label: `${medico.username} ${medico.last_name} ${medico.first_name}`,
+        }));
+        setMedicosList(formattedMedicos);
+      } catch (error) {
+        console.error("Error al cargar la lista de médicos:", error);
+        setError("No se pudo cargar la lista de médicos");
+      }
+    };
+
+    loadMedicosList();
   }, []);
 
   const EstadoMensajes = ({ error, successMessage }) => (
@@ -787,7 +782,7 @@ const Form008Emergencia = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
               <h3 className="text-lg font-bold mb-4 text-blue-700">
-                ¿Desea registrar la admision del paciente?
+                {confirmModalText}
               </h3>
               <div className="flex justify-end gap-2">
                 <button
@@ -809,19 +804,42 @@ const Form008Emergencia = () => {
             </div>
           </div>
         )}
-        {showAdmisionModal && (
+        {showAdmisionModal && admisionData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50">
             <div className="relative w-full max-w-7xl mx-auto mt-8 rounded-lg shadow-lg overflow-y-auto max-h-screen">
               <button
                 className="absolute top-4 right-4 text-red-500 font-bold text-2xl z-10"
-                onClick={() => setShowAdmisionModal(false)}
+                onClick={() => {
+                  setShowAdmisionModal(false);
+                  setAdmisionData(null);
+                }}
               >
                 X
               </button>
               <Admision
+                id_admision={admisionData.id_adm}
                 tipoIdenInicial={formData.for_008_busc_pers_tipo_iden}
                 numeIdenInicial={formData.for_008_busc_pers_nume_iden}
+                pers_apellidos={[
+                  admisionData.adm_dato_pers_apel_prim,
+                  admisionData.adm_dato_pers_apel_segu,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                pers_nombres={[
+                  admisionData.adm_dato_pers_nomb_prim,
+                  admisionData.adm_dato_pers_nomb_segu,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                pers_sexo={admisionData.adm_dato_pers_sexo}
+                pers_correo={admisionData.adm_dato_pers_corr_elec}
                 ejecutarAjustarAdmision={true}
+                btnActualizar={true}
+                onClose={() => {
+                  setShowAdmisionModal(false);
+                  setAdmisionData(null); // Limpia la información al terminar
+                }}
               />
             </div>
           </div>
@@ -1455,6 +1473,10 @@ const Form008Emergencia = () => {
                       ? "border-2 border-red-500"
                       : ""
                   }
+                  isLargeList={true} // Activar el modo lista grande
+                  placeholder="Escriba para buscar diagnóstico CIE-10..."
+                  minSearchLength={2}
+                  maxResults={100}
                 />
               </div>
               <div className={fieldClass}>
@@ -1514,6 +1536,10 @@ const Form008Emergencia = () => {
                       ? "border-2 border-red-500"
                       : ""
                   }
+                  isLargeList={true}
+                  placeholder="Escriba para buscar diagnóstico CIE-10..."
+                  minSearchLength={2}
+                  maxResults={100}
                 />
               </div>
               <div className={fieldClass}>
@@ -1577,31 +1603,49 @@ const Form008Emergencia = () => {
                   )}
                   {labelMap["for_008_emer_obse"]}
                 </label>
-                <input
-                  type="text"
+                <textarea
                   id="for_008_emer_obse"
                   name="for_008_emer_obse"
                   value={formData["for_008_emer_obse"]}
                   onChange={handleChange}
-                  placeholder="Información es requerida"
-                  required
-                  className={`${inputStyle} ${
-                    isFieldInvalid(
-                      "for_008_emer_obse",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  } ${
-                    variableEstado["for_008_emer_obse"]
-                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                      : "bg-white text-gray-700 cursor-pointer"
-                  }`}
+                  placeholder="Máximo 350 caracteres"
+                  maxLength={350}
+                  onFocus={() => setIsIndicacionesFocused(true)}
+                  onBlur={() => setIsIndicacionesFocused(false)}
+                  className={`
+                    ${inputStyle}
+                    resize-none
+                    transition-all duration-300
+                    ${
+                      isFieldInvalid(
+                        "for_008_emer_obse",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                    ${
+                      variableEstado["for_008_emer_obse"]
+                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                        : "bg-white text-gray-700 cursor-pointer"
+                    }
+                    ${isIndicacionesFocused ? "h-24 text-lg" : "h-10"}
+                  `}
                   disabled={variableEstado["for_008_emer_obse"]}
                 />
+                <span className="text-xs text-gray-500">
+                  Máximo 350 caracteres
+                </span>
               </div>
+            </div>
+          </fieldset>
+          <fieldset className="border border-blue-200 rounded p-2 mb-1">
+            <legend className="text-lg font-semibold text-blue-600 px-2">
+              Datos de Medico que ayudo en la Atencion
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               <div className={fieldClass}>
                 <label
                   className={labelClass}
@@ -1612,15 +1656,15 @@ const Form008Emergencia = () => {
                   )}
                   {labelMap["for_008_emer_apoy_aten_medi"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="for_008_emer_apoy_aten_medi"
                   name="for_008_emer_apoy_aten_medi"
                   value={formData["for_008_emer_apoy_aten_medi"]}
                   onChange={handleChange}
-                  placeholder="Información es requerida"
-                  required
-                  className={`${inputStyle} ${
+                  options={medicosList}
+                  disabled={variableEstado["for_008_emer_apoy_aten_medi"]}
+                  variableEstado={variableEstado}
+                  className={
                     isFieldInvalid(
                       "for_008_emer_apoy_aten_medi",
                       requiredFields,
@@ -1629,14 +1673,20 @@ const Form008Emergencia = () => {
                     )
                       ? "border-2 border-red-500"
                       : ""
-                  } ${
-                    variableEstado["for_008_emer_apoy_aten_medi"]
-                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                      : "bg-white text-gray-700 cursor-pointer"
-                  }`}
-                  disabled={variableEstado["for_008_emer_apoy_aten_medi"]}
+                  }
+                  isLargeList={true}
+                  placeholder="Escriba para buscar diagnóstico CIE-10..."
+                  minSearchLength={1}
+                  maxResults={100}
                 />
               </div>
+            </div>
+          </fieldset>
+          <fieldset className="border border-blue-200 rounded p-2 mb-1">
+            <legend className="text-lg font-semibold text-blue-600 px-2">
+              Datos de atencion obstetrica
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="for_008_emer_edad_gest">
                   {requiredFields.includes("for_008_emer_edad_gest") && (
@@ -1657,13 +1707,12 @@ const Form008Emergencia = () => {
                       return;
                     }
                     // Permitir solo semanas 1-60 y días 1-6, formato paso a paso
-                    const partialRegex = /^([1-9]|[1-5][0-9]|60)?(,([1-6])?)?$/;
+                    const partialRegex = /^([1-9]|[1-5][0-9]|60)?(.([1-6])?)?$/;
                     if (partialRegex.test(value)) {
                       handleChange(e);
                     }
                   }}
-                  placeholder="Ej: 8,6 (8 semanas, 6 días)"
-                  required
+                  placeholder="Ej: 8.6 (8 semanas. 6 días)"
                   className={`${inputStyle} ${
                     isFieldInvalid(
                       "for_008_emer_edad_gest",
@@ -1708,45 +1757,6 @@ const Form008Emergencia = () => {
                   }
                 />
               </div>
-              <div className={fieldClass}>
-                <label
-                  className={labelClass}
-                  htmlFor="for_008_emer_indi_paci_fami"
-                >
-                  {requiredFields.includes("for_008_emer_indi_paci_fami") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["for_008_emer_indi_paci_fami"]}
-                </label>
-                <input
-                  type="text"
-                  id="for_008_emer_indi_paci_fami"
-                  name="for_008_emer_indi_paci_fami"
-                  value={formData["for_008_emer_indi_paci_fami"]}
-                  onChange={handleChange}
-                  placeholder="Máximo 150 caracteres"
-                  maxLength={150}
-                  required
-                  className={`${inputStyle} ${
-                    isFieldInvalid(
-                      "for_008_emer_indi_paci_fami",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  } ${
-                    variableEstado["for_008_emer_indi_paci_fami"]
-                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                      : "bg-white text-gray-700 cursor-pointer"
-                  }`}
-                  disabled={variableEstado["for_008_emer_indi_paci_fami"]}
-                />
-                <span className="text-xs text-gray-500">
-                  Máximo 150 caracteres
-                </span>
-              </div>
             </div>
           </fieldset>
           <div className="md:col-span-2 flex justify-center mt-1">
@@ -1789,6 +1799,16 @@ const Form008Emergencia = () => {
           </div>
         </form>
         <EstadoMensajes error={error} successMessage={successMessage} />
+        <TablaForm008Emer
+          setFormData={setFormData}
+          setVariableEstado={setVariableEstado}
+          setBotonEstado={setBotonEstado}
+          setIsEditing={setIsEditing}
+          setIsLoading={setIsLoading}
+          setSuccessMessage={setSuccessMessage}
+          setError={setError}
+          refreshTable={refreshTable}
+        />
       </div>
     </div>
   );

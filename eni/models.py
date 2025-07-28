@@ -44,6 +44,9 @@ class eniUser(AbstractUser):
 
     objects = EniUserManager()
 
+    class Meta:
+        unique_together = ('fun_tipo_iden', 'username')
+
     @classmethod
     def get_all_users(cls):
         return cls.objects.all()
@@ -57,6 +60,7 @@ class eniUser(AbstractUser):
 
 # Crea la tabla de Unidad de Salud
 class unidad_salud(models.Model):
+    uni_unid_prin = models.IntegerField()
     uni_inst_sist = models.CharField(max_length=15, blank=True)
     uni_zona = models.CharField(max_length=10, blank=True)
     uni_dist = models.CharField(max_length=8, blank=True)
@@ -583,6 +587,7 @@ class admision_datos(models.Model):
     adm_dato_cont_pare = models.CharField(max_length=50, blank=True)
     adm_dato_cont_dire = models.CharField(max_length=60, blank=True)
     adm_dato_cont_tele = models.CharField(max_length=15, blank=True)
+    adm_dato_paci_falt_dato = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ('adm_dato_pers_tipo_iden',
@@ -626,7 +631,7 @@ class form_008_emergencia(models.Model):
     for_008_emer_hosp = models.CharField(max_length=10, blank=True)
     for_008_emer_hora_aten = models.TimeField(blank=True, null=True)
     for_008_emer_cond_alta = models.CharField(max_length=15, blank=True)
-    for_008_emer_obse = models.CharField(max_length=150, blank=True)
+    for_008_emer_obse = models.CharField(max_length=350, blank=True)
     for_008_emer_fech_repor = models.DateTimeField(auto_now=True)
     for_008_emer_resp_aten_medi = models.CharField(max_length=80, blank=True)
     for_008_emer_apoy_aten_medi = models.CharField(max_length=80, blank=True)
@@ -635,10 +640,9 @@ class form_008_emergencia(models.Model):
         decimal_places=1,
         blank=True,
         null=True,
-        help_text='Edad gestacional en semanas (ej: 38,5)'
+        help_text='Edad gestacional en semanas (ej: 38.5)'
     )
     for_008_emer_ries_obst = models.CharField(max_length=15, blank=True)
-    for_008_emer_indi_paci_fami = models.CharField(max_length=150, blank=True)
     for_008_emer_unid_salu_resp_segu_aten = models.CharField(
         max_length=100, blank=True)
     for_008_emer_dire_domi = models.CharField(max_length=300, blank=True)

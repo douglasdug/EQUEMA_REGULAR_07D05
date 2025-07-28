@@ -72,8 +72,8 @@ const RegisterUser = () => {
   const labelMap = {
     fun_tipo_iden: "Tipo de Identificacion:",
     username: "Cédula de Identidad:",
-    first_name: "Apellidos completos:",
-    last_name: "Nombres completos:",
+    first_name: "Nombres completos:",
+    last_name: "Apellidos completos:",
     fun_sex: "Sexo:",
     fun_titu: "Titulo del Funcionario:",
     uni_unic: "Unidad de Salud:",
@@ -160,13 +160,13 @@ const RegisterUser = () => {
       first_name:
         data.first_name ||
         "" ||
-        [data.adm_dato_pers_apel_prim || "", data.adm_dato_pers_apel_segu || ""]
+        [data.adm_dato_pers_nomb_prim || "", data.adm_dato_pers_nomb_segu || ""]
           .filter(Boolean)
           .join(" "),
       last_name:
         data.last_name ||
         "" ||
-        [data.adm_dato_pers_nomb_prim || "", data.adm_dato_pers_nomb_segu || ""]
+        [data.adm_dato_pers_apel_prim || "", data.adm_dato_pers_apel_segu || ""]
           .filter(Boolean)
           .join(" "),
       fun_sex: data.fun_sex || data.adm_dato_pers_sexo || "",
@@ -215,6 +215,9 @@ const RegisterUser = () => {
     e.preventDefault();
     if (isLoading) return;
     setIsLoading(true);
+    setError("");
+    setSuccessMessage("");
+
     try {
       let response;
       response = await registerUser(formData);
@@ -239,8 +242,9 @@ const RegisterUser = () => {
       }, 5000);
       return () => clearTimeout(timer);
     } catch (error) {
-      const errorMessage = parseErrorMessage(error);
+      const errorMessage = getErrorMessage(error);
       setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
       toast.error(errorMessage, { position: "bottom-right" });
     } finally {
       setIsLoading(false);
@@ -488,40 +492,6 @@ const RegisterUser = () => {
                 </div>
               </div>
               <div className={fieldClass}>
-                <label className={labelClass} htmlFor="first_name">
-                  {requiredFields.includes("first_name") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["first_name"]}
-                </label>
-                <input
-                  type="text"
-                  id="first_name"
-                  name="first_name"
-                  value={formData["first_name"]}
-                  onChange={handleChange}
-                  placeholder="Información es requerida"
-                  required
-                  className={`${inputStyle}
-                                ${
-                                  isFieldInvalid(
-                                    "first_name",
-                                    requiredFields,
-                                    formData,
-                                    isFieldVisible
-                                  )
-                                    ? "border-2 border-red-500"
-                                    : ""
-                                }
-                                ${
-                                  variableEstado["first_name"]
-                                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                                    : "bg-white text-gray-700 cursor-pointer"
-                                }`}
-                  disabled={variableEstado["first_name"]}
-                />
-              </div>
-              <div className={fieldClass}>
                 <label className={labelClass} htmlFor="last_name">
                   {requiredFields.includes("last_name") && (
                     <span className="text-red-500">* </span>
@@ -553,6 +523,40 @@ const RegisterUser = () => {
                                     : "bg-white text-gray-700 cursor-pointer"
                                 }`}
                   disabled={variableEstado["last_name"]}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="first_name">
+                  {requiredFields.includes("first_name") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["first_name"]}
+                </label>
+                <input
+                  type="text"
+                  id="first_name"
+                  name="first_name"
+                  value={formData["first_name"]}
+                  onChange={handleChange}
+                  placeholder="Información es requerida"
+                  required
+                  className={`${inputStyle}
+                                ${
+                                  isFieldInvalid(
+                                    "first_name",
+                                    requiredFields,
+                                    formData,
+                                    isFieldVisible
+                                  )
+                                    ? "border-2 border-red-500"
+                                    : ""
+                                }
+                                ${
+                                  variableEstado["first_name"]
+                                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                                    : "bg-white text-gray-700 cursor-pointer"
+                                }`}
+                  disabled={variableEstado["first_name"]}
                 />
               </div>
               <div className={fieldClass}>

@@ -154,9 +154,16 @@ function generarNumeIden(nombres, apellidos, naci, fecha, noIdentProv) {
 }
 
 const Admision = ({
+  id_admision = "",
   tipoIdenInicial = "",
   numeIdenInicial = "",
+  pers_apellidos = "",
+  pers_nombres = "",
+  pers_sexo = "",
+  pers_correo = "",
   ejecutarAjustarAdmision = false,
+  btnActualizar = false,
+  onClose, // <-- Recibe el callback
 }) => {
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState("");
@@ -1158,7 +1165,7 @@ const Admision = ({
         setSuccessMessage(message);
         setTimeout(() => setSuccessMessage(""), 10000);
         toast.success(message, { position: "bottom-right" });
-        navigate("/admision/");
+        if (onClose) onClose(); // Cierra y limpia al terminar actualización
         limpiarVariables(true);
       } else {
         try {
@@ -1177,7 +1184,6 @@ const Admision = ({
             setSuccessMessage(message);
             setTimeout(() => setSuccessMessage(""), 10000);
             toast.success(message, { position: "bottom-right" });
-            navigate("/admision/");
             limpiarVariables(true);
           } else {
             const errorMessage = getErrorMessage(error);
@@ -1437,26 +1443,52 @@ const Admision = ({
     // Solo setea si hay valores iniciales y los campos están vacíos
     setFormData((prev) => {
       if (
+        id_admision &&
         tipoIdenInicial &&
         numeIdenInicial &&
+        pers_apellidos &&
+        pers_nombres &&
+        pers_sexo &&
+        pers_correo &&
+        !prev.id_adm &&
         !prev.adm_dato_pers_tipo_iden &&
-        !prev.adm_dato_pers_nume_iden
+        !prev.adm_dato_pers_nume_iden &&
+        !prev.adm_dato_pers_apel_prim &&
+        !prev.adm_dato_pers_nomb_prim &&
+        !prev.adm_dato_pers_sexo &&
+        !prev.adm_dato_pers_corr_elec
       ) {
         return {
           ...prev,
+          id_adm: id_admision,
           adm_dato_pers_tipo_iden: tipoIdenInicial,
           adm_dato_pers_nume_iden: numeIdenInicial,
+          adm_dato_pers_apel_prim: pers_apellidos,
+          adm_dato_pers_nomb_prim: pers_nombres,
+          adm_dato_pers_sexo: pers_sexo,
+          adm_dato_pers_corr_elec: pers_correo,
         };
       }
       return prev;
     });
-  }, [tipoIdenInicial, numeIdenInicial]);
+  }, [
+    tipoIdenInicial,
+    numeIdenInicial,
+    pers_apellidos,
+    pers_nombres,
+    pers_sexo,
+    pers_correo,
+  ]);
 
   useEffect(() => {
     if (ejecutarAjustarAdmision) {
       ajustarVariableEstadoFalso();
     }
   }, [ejecutarAjustarAdmision]);
+
+  useEffect(() => {
+    setIsEditing(btnActualizar);
+  }, [btnActualizar]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {

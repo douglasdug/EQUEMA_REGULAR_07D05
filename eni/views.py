@@ -227,18 +227,20 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                 fun_tipo_iden=tipo, username=identificacion)
             # Asumiendo que hay una relación con unidades_salud
             unidades_salud = user_data.unidades_salud.all()
-            uni_unic = [
-                unidad.uni_unic for unidad in unidades_salud] if unidades_salud else []
+            unidades_data = [{
+                "uni_unic": unidad.uni_unic, "uni_unid": unidad.uni_unid
+            }
+                for unidad in unidades_salud] if unidades_salud else []
             data = {
-                "last_name": user_data.last_name,
+                "id_eniUser": user_data.id,
                 "first_name": user_data.first_name,
+                "last_name": user_data.last_name,
                 "fun_sex": user_data.fun_sex,
                 "email": user_data.email,
                 "fun_titu": user_data.fun_titu,
-                "password": user_data.password,
                 "fun_admi_rol": user_data.fun_admi_rol,
                 "fun_esta": user_data.fun_esta,
-                "uni_unic": uni_unic,
+                "unidades_data": unidades_data,
             }
             return Response({"message": "El usuario ya se encuentra registrado. Por favor, comuníquese con el Administrador!", "data": data}, status=status.HTTP_200_OK)
         except eniUser.DoesNotExist:
@@ -308,7 +310,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                     if isinstance(uni_unic_list, (str, dict)):
                         uni_unic_list = [uni_unic_list]
                     # Si es lista de dicts o strings
-                    for item in uni_unic_list:
+                    for idx, item in enumerate(uni_unic_list):
                         if isinstance(item, dict):
                             uni_unic = item.get('value')
                         else:
@@ -316,6 +318,8 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                         unidad_salud_data = self.get_unidad_salud_data(
                             uni_unic)
                         if unidad_salud_data:
+                            # Asignar 1 al primero, 0 a los demás
+                            unidad_salud_data['uni_unid_prin'] = 1 if idx == 0 else 0
                             unidad_salud.objects.create(
                                 eniUser=user,
                                 **unidad_salud_data
@@ -392,45 +396,98 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                 return unidad
         return None
 
-    @action(detail=False, methods=['patch'], url_path='actualizar-usuario')
-    def update_by_username(self, request):
-        username = request.data.get('username')
-        if not username:
-            return Response({"error": "El parámetro de identificacion es requerido!"}, status=status.HTTP_400_BAD_REQUEST)
+    def update(self, request, pk=None, *args, **kwargs):
+        data = request.data.copy()
+        eni_user_id = pk
+        print("data", data)
+        if not eni_user_id:
+            return Response({"error": "El parámetro 'id' es requerido para actualizar el registro!"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = eniUser.objects.get(username=username)
+            eni_user = eniUser.objects.get(id=eni_user_id)
         except eniUser.DoesNotExist:
-            return Response({"error": "El usuario ingresado no existe en la base de datos!"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Registro de usuario no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer = self.get_serializer(
+            eni_user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
         # Actualizar unidades de salud
-        uni_unic_list = request.data.get('uni_unic')
+        uni_unic_list = data.get('uni_unic')
         if isinstance(uni_unic_list, list) and len(uni_unic_list) > 0:
-            user.unidades_salud.clear()  # Limpiar unidades de salud existentes
-            for uni_unic_item in uni_unic_list:
+            # 1. Obtener las unidades de salud actuales del usuario, ordenadas por uni_unid_prin DESC
+            unidades_actuales = list(unidad_salud.objects.filter(
+                eniUser=eni_user
+            ).order_by('-uni_unid_prin', 'id'))  # El principal primero
+
+            # --- NUEVO BLOQUE PARA ELIMINAR SEGUNDO Y TERCER REGISTRO SIEMPRE ---
+            # Eliminar siempre los registros secundarios (posición 1 y 2, si existen)
+            if len(unidades_actuales) > 1:
+                # Eliminar desde el segundo registro hasta el final
+                for unidad in unidades_actuales[1:]:
+                    unidad.delete()
+            # ------------------------------------------------------
+
+            # 2. Procesar el primer registro (principal)
+            if len(uni_unic_list) > 0:
+                uni_unic_item = uni_unic_list[0]
                 uni_unic = uni_unic_item.get('value')
                 unidad_salud_data = self.get_unidad_salud_data(uni_unic)
                 if unidad_salud_data:
-                    # Verificar si la unidad de salud ya existe
-                    unidad_salud_instance, _ = unidad_salud.objects.get_or_create(
+                    if len(unidades_actuales) > 0:
+                        # Actualizar el primer registro existente
+                        unidad_principal = unidades_actuales[0]
+                        unidad_principal.uni_unic = unidad_salud_data['uni_unic']
+                        unidad_principal.uni_inst_sist = unidad_salud_data['uni_inst_sist']
+                        unidad_principal.uni_zona = unidad_salud_data['uni_zona']
+                        unidad_principal.uni_dist = unidad_salud_data['uni_dist']
+                        unidad_principal.uni_prov = unidad_salud_data['uni_prov']
+                        unidad_principal.uni_cant = unidad_salud_data['uni_cant']
+                        unidad_principal.uni_parr = unidad_salud_data['uni_parr']
+                        unidad_principal.uni_unid = unidad_salud_data['uni_unid']
+                        unidad_principal.uni_tipo = unidad_salud_data['uni_tipo']
+                        unidad_principal.uni_nive = unidad_salud_data['uni_nive']
+                        unidad_principal.uni_unid_prin = 1
+                        unidad_principal.save()
+                    else:
+                        # Si no existe, crearla
+                        unidad_principal = unidad_salud.objects.create(
+                            eniUser=eni_user,
+                            uni_unic=unidad_salud_data['uni_unic'],
+                            uni_inst_sist=unidad_salud_data['uni_inst_sist'],
+                            uni_zona=unidad_salud_data['uni_zona'],
+                            uni_dist=unidad_salud_data['uni_dist'],
+                            uni_prov=unidad_salud_data['uni_prov'],
+                            uni_cant=unidad_salud_data['uni_cant'],
+                            uni_parr=unidad_salud_data['uni_parr'],
+                            uni_unid=unidad_salud_data['uni_unid'],
+                            uni_tipo=unidad_salud_data['uni_tipo'],
+                            uni_nive=unidad_salud_data['uni_nive'],
+                            uni_unid_prin=1
+                        )
+
+            # 3. Procesar segundo y tercer registro (si existen en uni_unic_list)
+            for idx in range(1, min(3, len(uni_unic_list))):
+                uni_unic_item = uni_unic_list[idx]
+                uni_unic = uni_unic_item.get('value')
+                unidad_salud_data = self.get_unidad_salud_data(uni_unic)
+                if unidad_salud_data:
+                    # Crear el nuevo registro secundario
+                    unidad_salud.objects.create(
+                        eniUser=eni_user,
                         uni_unic=unidad_salud_data['uni_unic'],
-                        defaults={
-                            'uni_zona': unidad_salud_data['uni_zona'],
-                            'uni_dist': unidad_salud_data['uni_dist'],
-                            'uni_prov': unidad_salud_data['uni_prov'],
-                            'uni_cant': unidad_salud_data['uni_cant'],
-                            'uni_parr': unidad_salud_data['uni_parr'],
-                            'uni_unid': unidad_salud_data['uni_unid'],
-                            'uni_tipo': unidad_salud_data['uni_tipo'],
-                            'uni_nive': unidad_salud_data['uni_nive'],
-                        }
+                        uni_inst_sist=unidad_salud_data['uni_inst_sist'],
+                        uni_zona=unidad_salud_data['uni_zona'],
+                        uni_dist=unidad_salud_data['uni_dist'],
+                        uni_prov=unidad_salud_data['uni_prov'],
+                        uni_cant=unidad_salud_data['uni_cant'],
+                        uni_parr=unidad_salud_data['uni_parr'],
+                        uni_unid=unidad_salud_data['uni_unid'],
+                        uni_tipo=unidad_salud_data['uni_tipo'],
+                        uni_nive=unidad_salud_data['uni_nive'],
+                        uni_unid_prin=0
                     )
-                    # Asociar la unidad de salud existente o nueva con el usuario
-                    user.unidades_salud.add(unidad_salud_instance)
 
         return Response({"message": "El usuario se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
 
@@ -7340,6 +7397,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
         data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
             nombres) > 1 else ''
+        data['adm_dato_paci_falt_dato'] = 1
 
         serializer = self.get_serializer(data=data)
         if serializer.is_valid():
@@ -7351,6 +7409,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
     def buscar_admision(self, request):
         tipo = request.query_params.get('tipo')
         identificacion = request.query_params.get('identificacion')
+
         if not tipo or not identificacion:
             return Response({"error": "El parámetro identificacion es requerido."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -7403,6 +7462,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 'adm_dato_cont_pare': user_data.adm_dato_cont_pare,
                 'adm_dato_cont_dire': user_data.adm_dato_cont_dire,
                 'adm_dato_cont_tele': user_data.adm_dato_cont_tele,
+                'adm_dato_paci_falt_dato': user_data.adm_dato_paci_falt_dato,
             }
             return Response({"message": "El usuario está registrado en admision!", "data": data}, status=status.HTTP_200_OK)
         except admision_datos.DoesNotExist:
@@ -7429,6 +7489,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
         data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
             nombres) > 1 else ''
+        data['adm_dato_paci_falt_dato'] = 1
 
         serializer = self.get_serializer(
             admision, data=data, partial=True)
@@ -7462,6 +7523,34 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
 
+        eni_user_id = data.get('eniUser', '')
+        # Buscar el usuario
+        try:
+            eni_user = eniUser.objects.get(id=eni_user_id)
+        except eniUser.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Obtener los datos del usuario
+        last_name = eni_user.last_name
+        first_name = eni_user.first_name
+
+        # Buscar la unidad de salud asociada (ajusta el filtro según tu modelo)
+        try:
+            unidad_salud_data = unidad_salud.objects.get(
+                eniUser=eni_user, uni_unid_prin=1)
+        except unidad_salud.DoesNotExist:
+            return Response({'error': 'Unidad de salud no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Obtener los datos de la unidad de salud
+        uni_inst_sist = unidad_salud_data.uni_inst_sist
+        uni_unic = unidad_salud_data.uni_unic
+        uni_unid = unidad_salud_data.uni_unid
+        uni_zona = unidad_salud_data.uni_zona
+        uni_prov = unidad_salud_data.uni_prov
+        uni_cant = unidad_salud_data.uni_cant
+        uni_dist = unidad_salud_data.uni_dist
+        uni_nive = unidad_salud_data.uni_nive
+
         edad_cond_str = data.get('for_008_emer_edad_cond', '').strip()
         parts = edad_cond_str.split(' ')
         tipo_docu_iden = data.get('for_008_busc_pers_tipo_iden', '')
@@ -7474,6 +7563,15 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         cie10_secu_diag = data.get(
             'for_008_emer_cie_10_caus_exte_diag', '').strip().split(' ', 1)
         id_adm = data.get('id_adm', '')
+
+        data['for_008_emer_inst_sist'] = uni_inst_sist
+        data['for_008_emer_unic'] = uni_unic
+        data['for_008_emer_nomb_esta_salu'] = uni_unid
+        data['for_008_emer_zona'] = uni_zona
+        data['for_008_emer_prov'] = uni_prov
+        data['for_008_emer_cant'] = uni_cant
+        data['for_008_emer_dist'] = uni_dist
+        data['for_008_emer_nive'] = uni_nive
 
         # Extraer solo el número de edad (7)
         if parts and parts[0]:
@@ -7498,6 +7596,8 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         data['for_008_emer_cie_10_caus_exte'] = cie10_secu_diag[0] if cie10_secu_diag else ''
         data['for_008_emer_diag_caus_exte'] = cie10_secu_diag[1] if len(
             cie10_secu_diag) > 1 else ''
+        data['for_008_emer_resp_aten_medi'] = f"{last_name or ''} {first_name or ''}".strip(
+        )
         data['admision_datos'] = id_adm
 
         serializer = self.get_serializer(data=data)

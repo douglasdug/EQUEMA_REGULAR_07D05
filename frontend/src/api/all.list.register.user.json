@@ -59,5 +59,15 @@
     { "value": "002879", "label": "002879 CENTRO DE SALUD DE HUAQUILLAS" },
     { "value": "002900", "label": "002900 CENTRO DE SALUD DE ARENILLAS" },
     { "value": "050748", "label": "050748 PUESTO DE VIGILANCIA HUAQUILLAS" }
+  ],
+  "fun_admi_rol": [
+    { "value": 1, "label": "01 ADMINISTRADOR" },
+    { "value": 2, "label": "02 VACUNADOR" },
+    { "value": 3, "label": "03 MEDICO" },
+    { "value": 4, "label": "04 VACUNADOR Y MEDICO" }
+  ],
+  "fun_esta": [
+    { "value": 1, "label": "01 ACTIVO" },
+    { "value": 0, "label": "02 INACTIVO" }
   ]
 }

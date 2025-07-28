@@ -136,7 +136,7 @@ export const registerUser = async (formData) => {
 export const updateUser = async (formData) => {
   try {
     const response = await axios.patch(
-      `${API_URL}/eni-user/actualizar-usuario/`,
+      `${API_URL}/eni-user/${formData.id_eniUser}/`,
       formData
     );
     return response.data;
@@ -297,6 +297,19 @@ export const updateAdmision = async (formData) => {
 };
 
 //Funciones para el Form008 de Emergencia
+export const getAllForm008Emer = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/form-008-emergencia/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching all form 008 emergency data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
 export const buscarUsuarioForm008Emer = async (tipo, identificacion) => {
   try {
     const response = await axios.get(
@@ -318,6 +331,7 @@ export const buscarUsuarioForm008Emer = async (tipo, identificacion) => {
 };
 
 export const registerForm008Emer = async (formData) => {
+  //console.log("formData:", formData);
   try {
     const response = await axios.post(
       `${API_URL}/form-008-emergencia/`,

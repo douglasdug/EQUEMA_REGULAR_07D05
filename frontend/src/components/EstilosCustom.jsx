@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Select from "react-select";
 import PropTypes from "prop-types";
 
@@ -10,9 +10,33 @@ export const CustomSelect = ({
   options,
   disabled,
   className = "",
+  isMulti = false,
+  isLargeList = false, // Nueva prop para indicar listas grandes
+  placeholder = "Seleccione una opción",
+  minSearchLength = 2, // Caracteres mínimos para búsqueda
+  maxResults = 100, // Máximo de resultados a mostrar
 }) => {
-  // Buscar el objeto seleccionado en options
-  const selectedOption = options.find((opt) => opt.value === value) || null;
+  const [filteredOptions, setFilteredOptions] = useState([]);
+  const [inputValue, setInputValue] = useState("");
+
+  // Para isMulti, value debe ser array de objetos; para simple, un objeto
+  const selectedOption = isMulti
+    ? value
+    : options.find((opt) => opt.value === value) || null;
+
+  // Si es lista grande, mostrar solo el elemento seleccionado inicialmente
+  let optionsToShow;
+  if (isLargeList) {
+    if (filteredOptions.length > 0) {
+      optionsToShow = filteredOptions;
+    } else if (selectedOption) {
+      optionsToShow = [selectedOption].filter(Boolean);
+    } else {
+      optionsToShow = [];
+    }
+  } else {
+    optionsToShow = options;
+  }
 
   return (
     <div
@@ -25,20 +49,72 @@ export const CustomSelect = ({
         inputId={id}
         name={name}
         value={selectedOption}
-        onChange={(selected) =>
-          onChange({
-            target: {
-              name,
-              value: selected ? selected.value : "",
-            },
-          })
-        }
-        options={options}
+        onChange={(selected) => {
+          if (isMulti) {
+            // selected es array de objetos
+            onChange(selected || []);
+          } else {
+            // selected es objeto o null
+            onChange({
+              target: {
+                name,
+                value: selected ? selected.value : "",
+              },
+            });
+          }
+        }}
+        options={optionsToShow}
         isDisabled={disabled}
-        placeholder="Seleccione una opción"
+        isMulti={isMulti}
+        placeholder={
+          isLargeList
+            ? `Escriba para buscar (mínimo ${minSearchLength} caracteres)`
+            : placeholder
+        }
         styles={selectStyles}
         classNamePrefix="react-select"
         isClearable
+        // Propiedades adicionales para listas grandes
+        onInputChange={
+          isLargeList
+            ? (text) => {
+                setInputValue(text);
+                if (text.length >= minSearchLength) {
+                  const filtered = options
+                    .filter(
+                      (opt) =>
+                        opt.value.toLowerCase().includes(text.toLowerCase()) ||
+                        opt.label.toLowerCase().includes(text.toLowerCase())
+                    )
+                    .slice(0, maxResults)
+                    // Cambia esta parte para evitar la duplicación:
+                    .map((opt) => {
+                      // Verificar si el label ya incluye el código
+                      if (opt.label.startsWith(opt.value)) {
+                        return opt; // Ya incluye el código, no modificar
+                      } else {
+                        return {
+                          ...opt,
+                          label: `${opt.value} - ${opt.label}`,
+                        };
+                      }
+                    });
+                  setFilteredOptions(filtered);
+                } else {
+                  setFilteredOptions([]);
+                }
+              }
+            : undefined
+        }
+        noOptionsMessage={
+          isLargeList
+            ? () =>
+                inputValue.length < minSearchLength
+                  ? `Escriba al menos ${minSearchLength} caracteres para buscar`
+                  : "No se encontraron resultados"
+            : undefined
+        }
+        filterOption={isLargeList ? null : undefined} // Desactivar filtro interno para listas grandes
       />
     </div>
   );
@@ -46,11 +122,21 @@ export const CustomSelect = ({
 
 CustomSelect.propTypes = {
   options: PropTypes.array.isRequired,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  value: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number,
+    PropTypes.object,
+    PropTypes.array,
+  ]),
   onChange: PropTypes.func.isRequired,
   name: PropTypes.string.isRequired,
   disabled: PropTypes.bool,
   className: PropTypes.string,
+  isMulti: PropTypes.bool,
+  isLargeList: PropTypes.bool,
+  placeholder: PropTypes.string,
+  minSearchLength: PropTypes.number,
+  maxResults: PropTypes.number,
 };
 
 export const inputStyle =
