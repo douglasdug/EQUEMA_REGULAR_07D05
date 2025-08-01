@@ -647,6 +647,7 @@ class form_008_emergencia(models.Model):
         max_length=100, blank=True)
     for_008_emer_dire_domi = models.CharField(max_length=300, blank=True)
     for_008_emer_tele_paci = models.CharField(max_length=30, blank=True)
+    for_008_emer_aten_fina = models.IntegerField(blank=True, null=True)
     admision_datos = models.ForeignKey(
         'admision_datos',
         null=True,

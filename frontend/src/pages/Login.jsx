@@ -5,6 +5,11 @@ import PropTypes from "prop-types";
 import { AuthContext } from "../components/AuthContext.jsx";
 import { toast } from "react-hot-toast";
 
+const initialState = {
+  username: "",
+  password: "",
+};
+
 const InputField = ({
   label,
   type,
@@ -65,151 +70,183 @@ InputField.propTypes = {
   isButtonIcon: PropTypes.bool,
 };
 
-const FormMessage = ({ message, type }) => (
-  <p style={{ color: type === "error" ? "red" : "green" }}>{message}</p>
-);
-
-FormMessage.propTypes = {
-  message: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
-};
-
 export default function Login() {
-  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [formData, setFormData] = useState(initialState);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(null);
-  const [errorMessage, setErrorMessage] = useState(null);
   const { setAuthData } = useContext(AuthContext);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => {
-        navigate("/home/");
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage, navigate]);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const data = await loginUser(formData);
-      setAuthData({
-        isLoggedIn: true,
-        user: data, // Actualiza el contexto con los datos del usuario
-      });
-      setSuccessMessage("Login con éxito!");
-      toast.success("Login con éxito!", { position: "bottom-right" });
-      navigate("/"); // Redirige a la página deseada
-    } catch (error) {
-      let errorMsg = "Hubo un error en la operación";
-      if (error.response) {
-        const data = error.response.data;
-        if (data.error && Array.isArray(data.error)) {
-          setErrorMessage(data.error[0]);
-          errorMsg = data.error[0];
-        } else if (Array.isArray(data)) {
-          setErrorMessage(data[0]);
-          errorMsg = data[0];
-        } else if (data.error) {
-          setErrorMessage(data.error);
-          errorMsg = data.error;
-        } else if (data.message) {
-          setErrorMessage(data.message);
-          errorMsg = data.message;
-        } else {
-          setErrorMessage("Error del servidor");
-        }
-      } else if (error.request) {
-        setErrorMessage("No se recibió respuesta del servidor");
-      } else {
-        setErrorMessage("Error desconocido");
-      }
-      toast.error(errorMsg, { position: "bottom-right" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const labelMap = {
     username: "Cédula de Identificación",
     password: "Clave de acceso",
   };
 
+  const getErrorMessage = (error) => {
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (typeof data === "object" && data !== null) {
+        if (data.message) return data.message;
+        if (data.error) {
+          // Si data.error es un array, devuelve el primer elemento
+          if (Array.isArray(data.error) && data.error.length > 0) {
+            return data.error[0];
+          }
+          return data.error;
+        }
+        const firstKey = Object.keys(data)[0];
+        const firstError = data[firstKey];
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          return firstError[0];
+        } else if (typeof firstError === "string") {
+          return firstError;
+        }
+        return JSON.stringify(data);
+      } else if (typeof data === "string") {
+        return data;
+      }
+    } else if (error.request) {
+      return "No se recibió respuesta del servidor";
+    } else if (error.message) {
+      return error.message;
+    }
+    return "Error desconocido";
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    setIsLoading(true);
+    setError("");
+    setSuccessMessage("");
+    try {
+      let response;
+      response = await loginUser(formData);
+      setAuthData({
+        isLoggedIn: true,
+        user: response, // Actualiza el contexto con los datos del usuario
+      });
+      setSuccessMessage("Login con éxito!");
+      setTimeout(() => setSuccessMessage(""), 10000);
+      const message = response.message || "Login con éxito!";
+      toast.success(message, {
+        position: "bottom-right",
+      });
+      setTimeout(() => navigate("/"), 4000);
+    } catch (error) {
+      formData.password = "";
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      toast.error(errorMessage, { position: "bottom-right" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const EstadoMensajes = ({ error, successMessage }) => (
+    <div className="bg-white rounded-lg shadow-md">
+      {error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-2"
+          role="alert"
+        >
+          <strong className="font-bold">
+            {typeof error === "object" && error.type === "validacion"
+              ? "¡Error de Validación! "
+              : "¡Error! "}
+          </strong>
+          <span className="block sm:inline">
+            {typeof error === "object" ? error.message : error}
+          </span>
+        </div>
+      )}
+      {successMessage && (
+        <div
+          className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-2"
+          role="alert"
+        >
+          <strong className="font-bold">¡Éxito! </strong>
+          <span className="block sm:inline">{successMessage}</span>
+        </div>
+      )}
+    </div>
+  );
+
+  EstadoMensajes.propTypes = {
+    error: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+    successMessage: PropTypes.string,
+  };
+
   return (
-    <section className="container min-h-screen items-start justify-center">
-      <div className="mx-auto max-w-lg text-center">
-        {errorMessage && <FormMessage message={errorMessage} type="error" />}
-        {successMessage && (
-          <FormMessage message={successMessage} type="success" />
-        )}
-      </div>
-      <div className="flex flex-col items-center justify-center">
-        <div className="bg-slate-100 p-8 rounded-lg shadow-lg max-w-sm w-full">
-          <h2 className="text-2xl font-semibold text-center mb-6">Login</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <InputField
-              htmlFor="username"
-              label={labelMap["username"]}
-              type="text"
-              name="username"
-              id="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Cedula de Identidad"
-              icon="&#x1F464;"
-              isButtonIcon={false}
-            />
-            <InputField
-              htmlFor="password"
-              label={labelMap["password"]}
-              type={showPassword ? "text" : "password"}
-              name="password"
-              id="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Contraseña"
-              icon={showPassword ? "🙈" : "👁️"}
-              onIconClick={() => setShowPassword(!showPassword)}
-              isButtonIcon={true}
-            />
-            <div className="flex items-center text-center justify-between">
-              <p className="text-sm text-gray-700">
-                No tienes cuenta?
-                <br />
-                <Link
-                  to="/register-user/"
-                  className="text-blue-500 underline ml-1"
-                >
-                  Regístrese
-                </Link>
-              </p>
-              <p className="text-sm text-blue-500">
-                <Link to="/olvido-clave/" className="underline ml-1">
-                  Olvido su contraseña?
-                </Link>
-              </p>
-            </div>
-            <div className="flex items-center justify-center">
-              <button
-                type="submit"
-                disabled={isLoading || !formData.username || !formData.password}
-                className={`inline-block rounded-lg px-5 py-3 text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 text-white ${
-                  isLoading || !formData.username || !formData.password
-                    ? "bg-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 cursor-pointer"
-                }`}
-              >
-                Login
-              </button>
-            </div>
-          </form>
+    <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+        <h2 className="text-3xl font-extrabold mb-6 text-center text-blue-700 tracking-tight">
+          Iniciar Sesión
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <InputField
+            htmlFor="username"
+            label={labelMap["username"]}
+            type="text"
+            name="username"
+            id="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="Cedula de Identidad"
+            icon="&#x1F464;"
+            isButtonIcon={false}
+          />
+          <InputField
+            htmlFor="password"
+            label={labelMap["password"]}
+            type={showPassword ? "text" : "password"}
+            name="password"
+            id="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Contraseña"
+            icon={showPassword ? "🙈" : "👁️"}
+            onIconClick={() => setShowPassword(!showPassword)}
+            isButtonIcon={true}
+          />
+          <div className="flex items-center justify-between text-sm">
+            <Link
+              to="/register-user/"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              ¿No tienes cuenta? Regístrate
+            </Link>
+            <Link
+              to="/olvido-clave/"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading || !formData.username || !formData.password}
+            className={`w-full py-3 rounded-lg font-semibold text-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400
+            ${
+              isLoading || !formData.username || !formData.password
+                ? "bg-gray-400 text-gray-100 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            {isLoading ? "Ingresando..." : "Login"}
+          </button>
+        </form>
+        <div className="mt-4">
+          <EstadoMensajes error={error} successMessage={successMessage} />
         </div>
       </div>
     </section>

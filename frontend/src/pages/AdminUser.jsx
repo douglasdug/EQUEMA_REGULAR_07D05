@@ -284,39 +284,26 @@ const AdminUser = () => {
     validarDato(e, newFormData, setFormData, error, setError, setBotonEstado);
   };
 
-  const handleSelectChange = (selectedOptions) => {
-    const name = "uni_unic";
-    let value = selectedOptions || [];
+  const handleSelectChange = (selected) => {
+    let value = selected || [];
     let errorMessage = "";
 
-    if (!selectedOptions || selectedOptions.length === 0) {
+    if (!value.length) {
       errorMessage = "Debe seleccionar al menos una unidad de salud";
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
-      setError(errorMessage);
-    } else if (selectedOptions.length > 3) {
-      errorMessage = "Solo puede seleccionar hasta 3 unidades de salud";
-      value = selectedOptions.slice(0, 3);
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
-      setError(errorMessage);
-    } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
       setError("");
+    } else if (value.length > 3) {
+      errorMessage = "Solo puede seleccionar hasta 3 unidades de salud";
+      setError("Solo puede seleccionar hasta 3 unidades de salud");
+      value = value.slice(0, 3);
     }
+
+    setFormData((prev) => ({ ...prev, uni_unic: value }));
+
+    setTimeout(() => checkFormValidity({ ...formData, uni_unic: value }), 0);
 
     if (errorMessage) {
       toast.error(errorMessage, { position: "bottom-right" });
     }
-
-    setTimeout(checkFormValidity, 0);
   };
 
   const handleDelete = async (e) => {
@@ -432,39 +419,36 @@ const AdminUser = () => {
     return val.longitud && val.mayMinNum && val.especial && val.iguales;
   };
 
-  const checkFormValidity = () => {
-    // Validar todos los campos requeridos excepto password1 y password2 si es edición
-    const fieldsValid = requiredFields
-      .filter((field) => {
-        // Si estamos editando, no exigir password1 ni password2
-        if (isEditing && (field === "password1" || field === "password2")) {
-          return false;
-        }
-        return true;
-      })
-      .every((field) => {
-        if (Array.isArray(formData[field])) {
-          return formData[field].length > 0;
-        }
-        return formData[field];
-      });
+  const checkFormValidity = (customFormData) => {
+    const data = customFormData || formData;
+    const fieldsValid = requiredFields.every((field) => {
+      if (field === "uni_unic") {
+        return (
+          Array.isArray(data.uni_unic) &&
+          data.uni_unic.length >= 1 &&
+          data.uni_unic.length <= 3
+        );
+      }
+      if (Array.isArray(data[field])) {
+        return data[field].length > 0;
+      }
+      return data[field];
+    });
 
-    // Validar contraseña según el modo y si hay valores en los campos
+    // Solo requerir password en modo registro
     let passwordValid = true;
     if (!isEditing) {
-      // Registro: siempre validar contraseña
       passwordValid = cumpleRequisitosPassword();
     } else {
-      // Edición: solo validar si ambos campos tienen valor
-      const { password1, password2 } = formData;
+      // En edición, solo validar si el usuario escribe algo en los campos
+      const { password1, password2 } = data;
       if (password1 || password2) {
         passwordValid = cumpleRequisitosPassword();
-        // Si solo uno está lleno, no permitir
         if (!password1 || !password2) passwordValid = false;
       }
     }
 
-    const formValid = fieldsValid && passwordValid;
+    const formValid = fieldsValid && passwordValid && !error;
 
     setBotonEstado((prevState) => ({
       ...prevState,
@@ -865,9 +849,7 @@ const AdminUser = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="password1">
-                  {requiredFields.includes("password1") && (
-                    <span className="text-red-500">* </span>
-                  )}
+                  {!isEditing && <span className="text-red-500">* </span>}
                   {labelMap["password1"]}
                 </label>
                 <div className="relative flex items-center">
@@ -880,12 +862,7 @@ const AdminUser = () => {
                     placeholder="Requiere la misma clave"
                     className={`${inputStyle}
                     ${
-                      isFieldInvalid(
-                        "password1",
-                        requiredFields,
-                        formData,
-                        isFieldVisible
-                      )
+                      !isEditing && !formData["password1"] // Solo en modo registro y si está vacío
                         ? "border-2 border-red-500"
                         : ""
                     }
@@ -951,9 +928,7 @@ const AdminUser = () => {
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="password2">
-                  {requiredFields.includes("password2") && (
-                    <span className="text-red-500">* </span>
-                  )}
+                  {!isEditing && <span className="text-red-500">* </span>}
                   {labelMap["password2"]}
                 </label>
                 <div className="relative flex items-center">
@@ -966,12 +941,7 @@ const AdminUser = () => {
                     placeholder="Requiere la misma clave"
                     className={`${inputStyle}
                     ${
-                      isFieldInvalid(
-                        "password2",
-                        requiredFields,
-                        formData,
-                        isFieldVisible
-                      )
+                      !isEditing && !formData["password2"] // Solo en modo registro y si está vacío
                         ? "border-2 border-red-500"
                         : ""
                     }

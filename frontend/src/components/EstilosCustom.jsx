@@ -15,6 +15,7 @@ export const CustomSelect = ({
   placeholder = "Seleccione una opción",
   minSearchLength = 2, // Caracteres mínimos para búsqueda
   maxResults = 100, // Máximo de resultados a mostrar
+  isClearable = true,
 }) => {
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [inputValue, setInputValue] = useState("");
@@ -40,7 +41,7 @@ export const CustomSelect = ({
 
   return (
     <div
-      className={`relative w-full ${className} ${
+      className={`relative w-full rounded ${className} ${
         disabled ? "cursor-not-allowed" : ""
       }`}
       style={disabled ? { cursor: "not-allowed" } : {}}
@@ -73,7 +74,7 @@ export const CustomSelect = ({
         }
         styles={selectStyles}
         classNamePrefix="react-select"
-        isClearable
+        isClearable={isClearable}
         // Propiedades adicionales para listas grandes
         onInputChange={
           isLargeList
@@ -137,6 +138,7 @@ CustomSelect.propTypes = {
   placeholder: PropTypes.string,
   minSearchLength: PropTypes.number,
   maxResults: PropTypes.number,
+  isClearable: PropTypes.bool,
 };
 
 export const inputStyle =

@@ -5,6 +5,8 @@ import {
   registerForm008Emer,
   updateForm008Emer,
   buscarUsuarioAdmision,
+  buscarUsuarioIdUnidadSalud,
+  updateUnidadSaludPrincipal,
 } from "../api/conexion.api.js";
 import allListForm008 from "../api/all.list.form008.json";
 import {
@@ -23,10 +25,11 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 const initialState = {
-  id_adm: "",
+  id_eni_user: "",
+  id_unid_salu: "",
   for_008_busc_pers_tipo_iden: "",
   for_008_busc_pers_nume_iden: "",
-  for_008_emer_nomb_esta_salu: "592 HOSPITAL BASICO DE HUAQUILLAS",
+  for_008_emer_nomb_esta_salu: "",
   for_008_emer_fech_aten: "",
   for_008_emer_hora_aten: "",
   for_008_emer_edad_cond: "",
@@ -133,7 +136,7 @@ function calcularEdadConFechaReferencia(
 }
 
 const Form008Emergencia = () => {
-  const storedUserId = localStorage.getItem("userId") || 4;
+  const storedUserId = localStorage.getItem("userId") || 1;
   const [showAdmisionModal, setShowAdmisionModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalText, setConfirmModalText] = useState("");
@@ -150,14 +153,79 @@ const Form008Emergencia = () => {
     .slice(0, 10);
   const [refreshTable, setRefreshTable] = useState(0);
   const [isIndicacionesFocused, setIsIndicacionesFocused] = useState(false);
+  const [unidadSaludList, setUnidadSaludList] = useState([]);
   const [medicosList, setMedicosList] = useState([]);
   const [admisionData, setAdmisionData] = useState(null);
+  const [showUnidadModal, setShowUnidadModal] = useState(false);
+  const [unidadSeleccionada, setUnidadSeleccionada] = useState(null);
+  const [sugerencias, setSugerencias] = useState([]);
+  const [palabraActual, setPalabraActual] = useState("");
+  const [posicionCursor, setPosicionCursor] = useState(0);
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const navigate = useNavigate();
+
+  const frasesMedicas = [
+    "Paciente presenta",
+    "Se observa",
+    "Dolor abdominal agudo",
+    "Traumatismo en",
+    "Administración de medicamento",
+    "Control de signos vitales",
+    "Herida superficial en",
+    "Requiere seguimiento en",
+    "Fractura en",
+    "Derivado a especialista",
+    "En observación por",
+    "Alta médica con indicaciones",
+    "Curación y limpieza de herida",
+    "Dolor abdominal de inicio súbito",
+    "Fiebre de  días de evolución",
+    "Dificultad respiratoria",
+    "Pérdida de conocimiento",
+    "Paciente politraumatizado por accidente de tránsito",
+    "Convulsión tónico-clónica generalizada",
+    "Dolor torácico irradiado al brazo izquierdo",
+    "Herida cortante en miembro superior derecho",
+    "Hipertensión arterial controlada con medicación",
+    "Diabetes mellitus tipo  diagnosticada hace  años",
+    "Sin antecedentes personales de importancia",
+    "Alergia conocida a penicilina",
+    "Paciente consciente, orientado en tiempo, espacio y persona",
+    "TA: /80 mmHg, FC:  lpm, FR:  rpm, Temp:  °C",
+    "Palidez cutánea, diaforesis",
+    "Movilidad limitada por dolor",
+    "Herida de  cm en región frontal con sangrado activo",
+    "Traumatismo craneoencefálico leve",
+    "Infección respiratoria aguda",
+    "Gastroenteritis aguda",
+    "Síndrome febril en estudio",
+    "Probable apendicitis aguda",
+    "Colocación de suero fisiológico al  % a  ml/hora",
+    "Administración de Paracetamol  mg vía oral",
+    "Sutura de herida bajo anestesia local",
+    "Toma de muestra para laboratorio",
+    "Canalización de vena periférica",
+    "Paciente permanece estable hemodinámicamente",
+    "Se solicita interconsulta con cirugía",
+    "En observación por  horas sin complicaciones",
+    "Paciente refiere mejoría del dolor",
+    "Paciente atendido en área de emergencia",
+    "Se registra ingreso a las : del día  //",
+    "Acompañado por familiar de primer grado",
+    "Documentación completa al momento del ingreso",
+    "Paciente no porta identificación al momento de la atención",
+    "Se activa protocolo de triage: prioridad ",
+    "Paciente dado de alta en condiciones estables",
+    "Referido a  de  nivel por complejidad del caso",
+    "Paciente se retira por voluntad propia, se deja constancia",
+    "Alta voluntaria con firma de consentimiento informado",
+    "Traslado interno al área de hospitalización",
+  ];
 
   const initialVariableEstado = {
     for_008_busc_pers_tipo_iden: false,
     for_008_busc_pers_nume_iden: false,
-    for_008_emer_nomb_esta_salu: true,
+    for_008_emer_nomb_esta_salu: false,
     for_008_emer_fech_aten: true,
     for_008_emer_hora_aten: true,
     for_008_emer_edad_cond: true,
@@ -490,6 +558,41 @@ const Form008Emergencia = () => {
       case "for_008_emer_fech_aten":
         actualizarFechaNacimiento(value, name);
         break;
+      case "for_008_emer_cie_10_prin_diag": {
+        // Verificar si el nuevo diagnóstico comienza con S o T
+        const diagSeleccionado = opcionesCIE10Permitidas.find(
+          (op) => op.value === value
+        );
+        const codigo = diagSeleccionado
+          ? diagSeleccionado.label.split(" ")[0]
+          : "";
+        const empiezaConSoT = codigo.startsWith("S") || codigo.startsWith("T");
+
+        // Si no comienza con S o T y hay un valor en causa externa, limpiar causa externa
+        if (
+          !empiezaConSoT &&
+          formData["for_008_emer_cie_10_caus_exte_diag"] !== ""
+        ) {
+          setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+            for_008_emer_cie_10_caus_exte_diag: "",
+          }));
+        } else {
+          // Solo actualizar el diagnóstico principal
+          setFormData((prev) => ({ ...prev, [name]: value }));
+        }
+
+        // validarDato(
+        //   e,
+        //   { ...formData, [name]: value },
+        //   setFormData,
+        //   error,
+        //   setError,
+        //   setBotonEstado
+        // );
+        break;
+      }
       default:
         setFormData((prev) => ({ ...prev, [name]: value }));
         validarDato(
@@ -502,6 +605,70 @@ const Form008Emergencia = () => {
         );
         break;
     }
+  };
+
+  const handleObservacionesChange = (e) => {
+    const { value, selectionStart } = e.target;
+    const { name } = e.target;
+
+    // Actualiza el formData como lo haces normalmente
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    validarDato(
+      e,
+      { ...formData, [name]: value },
+      setFormData,
+      error,
+      setError,
+      setBotonEstado
+    );
+
+    // Obtiene la palabra actual donde está el cursor
+    const textoPrevio = value.substring(0, selectionStart);
+    const palabras = textoPrevio.split(/\s+/);
+    const palabraActual = palabras[palabras.length - 1];
+
+    // Si la palabra tiene al menos 3 caracteres, buscar sugerencias
+    if (palabraActual && palabraActual.length >= 3) {
+      const coincidencias = frasesMedicas.filter((frase) =>
+        frase.toLowerCase().startsWith(palabraActual.toLowerCase())
+      );
+
+      setSugerencias(coincidencias);
+      setPalabraActual(palabraActual);
+      setPosicionCursor(selectionStart);
+      setMostrarSugerencias(coincidencias.length > 0);
+    } else {
+      setMostrarSugerencias(false);
+    }
+  };
+
+  // Modificar la función insertarSugerencia para resaltar el texto insertado
+  const insertarSugerencia = (sugerencia) => {
+    const textoActual = formData["for_008_emer_obse"];
+    // Encuentra el inicio de la palabra actual antes del cursor
+    const inicioPalabra = textoActual
+      .substring(0, posicionCursor)
+      .lastIndexOf(palabraActual);
+    const textoAntes = textoActual.substring(0, inicioPalabra);
+    const textoDespues = textoActual.substring(posicionCursor);
+
+    // Reemplaza la palabra actual con la sugerencia
+    const nuevoTexto = textoAntes + sugerencia + " " + textoDespues;
+
+    setFormData((prev) => ({ ...prev, for_008_emer_obse: nuevoTexto }));
+    setMostrarSugerencias(false);
+
+    // Selecciona la frase insertada para edición inmediata
+    setTimeout(() => {
+      const textarea = document.getElementById("for_008_emer_obse");
+      if (textarea) {
+        textarea.focus();
+        const inicioSeleccion = textoAntes.length;
+        const finSeleccion = textoAntes.length + sugerencia.length;
+        textarea.setSelectionRange(inicioSeleccion, finSeleccion);
+      }
+    }, 10);
   };
 
   const isFieldVisible = (field) => {
@@ -644,13 +811,90 @@ const Form008Emergencia = () => {
         }));
         setMedicosList(formattedMedicos);
       } catch (error) {
-        console.error("Error al cargar la lista de médicos:", error);
-        setError("No se pudo cargar la lista de médicos");
+        const errorMessage = getErrorMessage(error);
+        setError(errorMessage);
+        setTimeout(() => setError(""), 10000);
+        setSuccessMessage("");
       }
     };
 
     loadMedicosList();
   }, []);
+
+  useEffect(() => {
+    let id_eni_user = 1;
+    const loadUnidadSaludList = async () => {
+      try {
+        const unidadSaludData = await buscarUsuarioIdUnidadSalud(id_eni_user);
+
+        let lista = [];
+        if (Array.isArray(unidadSaludData?.data?.unidades_data)) {
+          lista = unidadSaludData.data.unidades_data;
+        } else {
+          setUnidadSaludList([]);
+          setError(
+            "No se pudo cargar la lista de unidades de salud (respuesta inesperada)"
+          );
+          return;
+        }
+
+        // Formatear para el select
+        const formattedUnidadSalud = lista.map((unidad) => ({
+          value: unidad.id.toString(),
+          label: `${unidad.uni_unic} - ${unidad.uni_unid}`,
+        }));
+        setUnidadSaludList(formattedUnidadSalud);
+
+        // Seleccionar automáticamente la unidad principal
+        const principal = lista.find((unidad) => unidad.uni_unid_prin === 1);
+        if (principal) {
+          setFormData((prev) => ({
+            ...prev,
+            for_008_emer_nomb_esta_salu: principal.id.toString(),
+          }));
+        }
+      } catch (error) {
+        const errorMessage = getErrorMessage(error);
+        setError(errorMessage);
+        setTimeout(() => setError(""), 10000);
+        setSuccessMessage("");
+      }
+    };
+
+    loadUnidadSaludList();
+  }, []);
+
+  const opcionesCIE10Permitidas = allListForm008.for_008_emer_cie_10_prin_diag;
+
+  const codigoCIE10Seleccionado = (() => {
+    const selected = opcionesCIE10Permitidas.find(
+      (op) => op.value === formData["for_008_emer_cie_10_prin_diag"]
+    );
+    return selected ? selected.label.split(" ")[0] : "";
+  })();
+
+  const esDiagnosticoNoValido =
+    codigoCIE10Seleccionado && codigoCIE10Seleccionado.length === 3;
+
+  const opcionesCIE10PermitidasExterno =
+    allListForm008.for_008_emer_cie_10_caus_exte_diag;
+
+  const codigoCIE10SeleccionadoExterno = (() => {
+    const selected = opcionesCIE10PermitidasExterno.find(
+      (op) => op.value === formData["for_008_emer_cie_10_caus_exte_diag"]
+    );
+    return selected ? selected.label.split(" ")[0] : "";
+  })();
+
+  const esDiagnosticoNoValidoExterno =
+    codigoCIE10SeleccionadoExterno &&
+    codigoCIE10SeleccionadoExterno.length === 3;
+
+  // Verificar si el diagnóstico comienza con S o T para habilitar causa externa
+  const habilitarCausaExterna =
+    codigoCIE10Seleccionado &&
+    (codigoCIE10Seleccionado.startsWith("S") ||
+      codigoCIE10Seleccionado.startsWith("T"));
 
   const EstadoMensajes = ({ error, successMessage }) => (
     <div className="bg-white rounded-lg shadow-md">
@@ -860,15 +1104,23 @@ const Form008Emergencia = () => {
                   )}
                   {labelMap["for_008_emer_nomb_esta_salu"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="for_008_emer_nomb_esta_salu"
                   name="for_008_emer_nomb_esta_salu"
                   value={formData["for_008_emer_nomb_esta_salu"]}
-                  onChange={handleChange}
-                  placeholder="Información es requerida"
-                  required
-                  className={`${inputStyle} ${
+                  onChange={(e) => {
+                    // Si el valor es diferente al actual, mostrar modal
+                    if (
+                      e.target.value !== formData["for_008_emer_nomb_esta_salu"]
+                    ) {
+                      setUnidadSeleccionada(e.target.value);
+                      setShowUnidadModal(true);
+                    }
+                  }}
+                  options={unidadSaludList}
+                  disabled={variableEstado["for_008_emer_nomb_esta_salu"]}
+                  variableEstado={variableEstado}
+                  className={
                     isFieldInvalid(
                       "for_008_emer_nomb_esta_salu",
                       requiredFields,
@@ -877,12 +1129,9 @@ const Form008Emergencia = () => {
                     )
                       ? "border-2 border-red-500"
                       : ""
-                  } ${
-                    variableEstado["for_008_emer_nomb_esta_salu"]
-                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                      : "bg-white text-gray-700 cursor-pointer"
-                  }`}
-                  disabled={variableEstado["for_008_emer_nomb_esta_salu"]}
+                  }
+                  placeholder="Escriba para buscar Unidad de Salud..."
+                  isClearable={false}
                 />
               </div>
               <div className={fieldClass}>
@@ -1417,6 +1666,12 @@ const Form008Emergencia = () => {
             <legend className="text-lg font-semibold text-blue-600 px-2">
               Datos de Registro de Atencion de Emergencia
             </legend>
+            <div className="bg-blue-50 border-l-4 border-blue-500 text-black p-2 mb-2 text-sm">
+              <strong>Atención:</strong> Solo se registrarán diagnósticos que
+              incluyan el código CIE-10 con cuatro caracteres (por ejemplo:
+              I100), seguido de su respectiva descripción. Esta estructura es
+              obligatoria para garantizar uniformidad en el registro clínico.
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="for_008_emer_espe_prof">
@@ -1460,7 +1715,7 @@ const Form008Emergencia = () => {
                   name="for_008_emer_cie_10_prin_diag"
                   value={formData["for_008_emer_cie_10_prin_diag"]}
                   onChange={handleChange}
-                  options={allListForm008.for_008_emer_cie_10_prin_diag}
+                  options={opcionesCIE10Permitidas}
                   disabled={variableEstado["for_008_emer_cie_10_prin_diag"]}
                   variableEstado={variableEstado}
                   className={
@@ -1478,6 +1733,19 @@ const Form008Emergencia = () => {
                   minSearchLength={2}
                   maxResults={100}
                 />
+                {esDiagnosticoNoValido && (
+                  <span className="text-red-600 text-sm mt-1">
+                    El diagnóstico seleccionado no es válido. Seleccione un
+                    código CIE-10 más específico.
+                  </span>
+                )}
+                {!!habilitarCausaExterna &&
+                  formData["for_008_emer_cie_10_prin_diag"] && (
+                    <span className="text-blue-600 text-sm mt-1">
+                      Se tiene que registrar la causa externa para diagnósticos
+                      que comiencen con S o T.
+                    </span>
+                  )}
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="for_008_emer_cond_diag">
@@ -1521,9 +1789,10 @@ const Form008Emergencia = () => {
                   name="for_008_emer_cie_10_caus_exte_diag"
                   value={formData["for_008_emer_cie_10_caus_exte_diag"]}
                   onChange={handleChange}
-                  options={allListForm008.for_008_emer_cie_10_caus_exte_diag}
+                  options={opcionesCIE10PermitidasExterno}
                   disabled={
-                    variableEstado["for_008_emer_cie_10_caus_exte_diag"]
+                    variableEstado["for_008_emer_cie_10_caus_exte_diag"] ||
+                    !habilitarCausaExterna
                   }
                   variableEstado={variableEstado}
                   className={
@@ -1537,10 +1806,20 @@ const Form008Emergencia = () => {
                       : ""
                   }
                   isLargeList={true}
-                  placeholder="Escriba para buscar diagnóstico CIE-10..."
+                  placeholder={
+                    habilitarCausaExterna
+                      ? "Escriba para buscar diagnóstico CIE-10..."
+                      : "Solo disponible para diagnósticos S y T"
+                  }
                   minSearchLength={2}
                   maxResults={100}
                 />
+                {esDiagnosticoNoValidoExterno && (
+                  <span className="text-red-600 text-sm mt-1">
+                    El diagnóstico seleccionado no es válido. Seleccione un
+                    código CIE-10 más específico.
+                  </span>
+                )}
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="for_008_emer_hosp">
@@ -1607,11 +1886,15 @@ const Form008Emergencia = () => {
                   id="for_008_emer_obse"
                   name="for_008_emer_obse"
                   value={formData["for_008_emer_obse"]}
-                  onChange={handleChange}
+                  onChange={handleObservacionesChange}
                   placeholder="Máximo 350 caracteres"
                   maxLength={350}
                   onFocus={() => setIsIndicacionesFocused(true)}
-                  onBlur={() => setIsIndicacionesFocused(false)}
+                  onBlur={() => {
+                    setIsIndicacionesFocused(false);
+                    // Pequeño delay para permitir clics en las sugerencias
+                    setTimeout(() => setMostrarSugerencias(false), 200);
+                  }}
                   className={`
                     ${inputStyle}
                     resize-none
@@ -1638,6 +1921,21 @@ const Form008Emergencia = () => {
                 <span className="text-xs text-gray-500">
                   Máximo 350 caracteres
                 </span>
+                {mostrarSugerencias && (
+                  <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto w-100">
+                    {sugerencias.map((sugerencia, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className="w-full text-left px-4 py-2 hover:bg-blue-100 cursor-pointer text-sm"
+                        onClick={() => insertarSugerencia(sugerencia)}
+                        aria-label={`Insertar sugerencia: ${sugerencia}`}
+                      >
+                        {sugerencia}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </fieldset>
@@ -1675,8 +1973,8 @@ const Form008Emergencia = () => {
                       : ""
                   }
                   isLargeList={true}
-                  placeholder="Escriba para buscar diagnóstico CIE-10..."
-                  minSearchLength={1}
+                  placeholder="Escriba para buscar Medico..."
+                  minSearchLength={2}
                   maxResults={100}
                 />
               </div>
@@ -1799,6 +2097,46 @@ const Form008Emergencia = () => {
           </div>
         </form>
         <EstadoMensajes error={error} successMessage={successMessage} />
+        {showUnidadModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+              <h3 className="text-lg font-bold mb-4 text-blue-700">
+                ¿Desea establecer esta unidad de salud como principal?
+              </h3>
+              <div className="flex justify-end gap-2">
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                  onClick={async () => {
+                    try {
+                      await updateUnidadSaludPrincipal({
+                        id_unid_salu: unidadSeleccionada,
+                      });
+                      setFormData((prev) => ({
+                        ...prev,
+                        id_unid_salu: unidadSeleccionada,
+                        for_008_emer_nomb_esta_salu: unidadSeleccionada,
+                      }));
+                      setSuccessMessage(
+                        "Unidad principal actualizada correctamente."
+                      );
+                    } catch (error) {
+                      setError("No se pudo actualizar la unidad principal.");
+                    }
+                    setShowUnidadModal(false);
+                  }}
+                >
+                  Sí, cambiar
+                </button>
+                <button
+                  className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
+                  onClick={() => setShowUnidadModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <TablaForm008Emer
           setFormData={setFormData}
           setVariableEstado={setVariableEstado}

@@ -262,6 +262,28 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         except admision_datos.DoesNotExist:
             return Response({"error": "El usuario ingresado no existe en la base de datos porfavor registrese!"}, status=status.HTTP_404_NOT_FOUND)
 
+    @action(detail=False, methods=['get'], url_path='buscar-usuario-id-unidad-salud')
+    def buscar_usuario_id_unidad_salud(self, request):
+        id_eni_user = request.query_params.get('id_eni_user')
+
+        # Primera búsqueda en eniUser
+        try:
+            user_data = eniUser.objects.get(
+                id=id_eni_user)
+            # Asumiendo que hay una relación con unidades_salud
+            unidades_salud = user_data.unidades_salud.all()
+            unidades_data = [{
+                "id": unidad.id, "uni_unid_prin": unidad.uni_unid_prin, "uni_unic": unidad.uni_unic, "uni_unid": unidad.uni_unid
+            }
+                for unidad in unidades_salud] if unidades_salud else []
+            data = {
+                "id_eniUser": user_data.id,
+                "unidades_data": unidades_data,
+            }
+            return Response({"message": "Se encontro las unidades de salud del usuario!", "data": data}, status=status.HTTP_200_OK)
+        except eniUser.DoesNotExist:
+            return Response({"error": "No se encontro las unidades de salud del usuario!"}, status=status.HTTP_404_NOT_FOUND)
+
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
         now = timezone.now()
@@ -399,7 +421,6 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     def update(self, request, pk=None, *args, **kwargs):
         data = request.data.copy()
         eni_user_id = pk
-        print("data", data)
         if not eni_user_id:
             return Response({"error": "El parámetro 'id' es requerido para actualizar el registro!"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -510,6 +531,38 @@ class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = UnidadSaludRegistrationSerializer
     queryset = unidad_salud.objects.all()
     permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=['patch'], url_path='unidad-salud-principal')
+    def update_unidad_salud_principal(self, request):
+        # 1. Obtener el id de la unidad a actualizar desde el frontend
+        # O request.data['id'] si es obligatorio
+        unidad_id = request.data.get('id_unid_salu')
+        print(f"Unidad ID: {unidad_id}")
+
+        if not unidad_id:
+            return Response({'error': 'No se proporcionó el id de la unidad de salud.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # 2. Obtener la unidad de salud y su eniUser_id
+            unidad = unidad_salud.objects.get(id=unidad_id)
+            eni_user_id = unidad.eniUser_id
+        except unidad_salud.DoesNotExist:
+            return Response({"error": "Registro de unidad de salud no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+
+        # 3. Obtener todas las unidades de ese usuario
+        unidades_usuario = unidad_salud.objects.filter(eniUser_id=eni_user_id)
+
+        # 4. Actualizar uni_unid_prin para todas las unidades
+        for u in unidades_usuario:
+            if u.id == unidad.id:
+                u.uni_unid_prin = 1
+            else:
+                u.uni_unid_prin = 0
+            u.save()
+
+        serializer = self.get_serializer(unidad)
+
+        return Response({"message": "La unidad de salud principal se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
 
 
 Error_Fecha_Registrada = "La fecha ya ha sido registrada desea Actualizar la información!."
@@ -7563,6 +7616,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         cie10_secu_diag = data.get(
             'for_008_emer_cie_10_caus_exte_diag', '').strip().split(' ', 1)
         id_adm = data.get('id_adm', '')
+        # atencion_finalizada = data.get('id', '')
 
         data['for_008_emer_inst_sist'] = uni_inst_sist
         data['for_008_emer_unic'] = uni_unic
@@ -7599,6 +7653,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         data['for_008_emer_resp_aten_medi'] = f"{last_name or ''} {first_name or ''}".strip(
         )
         data['admision_datos'] = id_adm
+        # data['for_008_emer_aten_fina'] = atencion_finalizada
 
         serializer = self.get_serializer(data=data)
         if serializer.is_valid():

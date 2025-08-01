@@ -62,7 +62,7 @@ export const validarDato = (
       }
     }
   } else if (type === "textarea") {
-    formattedValue = value.toUpperCase().replace(/\s{2,}/g, " ");
+    formattedValue = value.replace(/\s{2,}/g, " ");
   } else if (type === "number") {
     formattedValue = value.replace(/[^0-9]/g, "");
   } else if (type === "date") {

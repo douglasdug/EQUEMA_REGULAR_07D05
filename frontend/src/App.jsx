@@ -26,30 +26,52 @@ function App() {
       <div className="container">
         <Navigation />
       </div>
-      <div className="mx-auto mt-20">
-        <Routes>
-          <Route path="/" element={<Navigate to="/home/" />} />
-          <Route path="/home/" element={<Home />} />
-          <Route path="/login/" element={<Login />} />
-          <Route path="/olvido-clave/" element={<OlvidoClave />} />
-          <Route path="/new-password/:uid/:token" element={<NewPassword />} />
-          <Route path="/register-user/" element={<RegisterUser />} />
-          <Route path="/aviso-user/" element={<AvisoUser />} />
-          <Route path="/admin-user/" element={<AdminUser />} />
-          <Route path="/admision/" element={<Admision />} />
-          <Route path="/form-008-emergencia/" element={<Form008Emergencia />} />
-          <Route path="/create-temprano/" element={<CreateTemprano />} />
-          <Route path="/create-tardio/" element={<CreateTardio />} />
-          <Route path="/create-desperdicio/" element={<CreateDesperdicio />} />
-          <Route path="/create-influenza/" element={<CreateInfluenza />} />
-          <Route path="/create-reporte-eni/" element={<CreateReporteENI />} />
-          <Route
-            path="/create-registro-vacunado/"
-            element={<CreateRegistroVacunado />}
-          />
-        </Routes>
-        <Toaster />
-      </div>
+      <Routes>
+        <Route path="/login/" element={<Login />} />
+        <Route
+          path="*"
+          element={
+            <div className="mx-auto mt-20">
+              <Routes>
+                <Route path="/" element={<Navigate to="/home/" />} />
+                <Route path="/home/" element={<Home />} />
+                <Route path="/olvido-clave/" element={<OlvidoClave />} />
+                <Route
+                  path="/new-password/:uid/:token"
+                  element={<NewPassword />}
+                />
+                <Route path="/register-user/" element={<RegisterUser />} />
+                <Route path="/aviso-user/" element={<AvisoUser />} />
+                <Route path="/admin-user/" element={<AdminUser />} />
+                <Route path="/admision/" element={<Admision />} />
+                <Route
+                  path="/form-008-emergencia/"
+                  element={<Form008Emergencia />}
+                />
+                <Route path="/create-temprano/" element={<CreateTemprano />} />
+                <Route path="/create-tardio/" element={<CreateTardio />} />
+                <Route
+                  path="/create-desperdicio/"
+                  element={<CreateDesperdicio />}
+                />
+                <Route
+                  path="/create-influenza/"
+                  element={<CreateInfluenza />}
+                />
+                <Route
+                  path="/create-reporte-eni/"
+                  element={<CreateReporteENI />}
+                />
+                <Route
+                  path="/create-registro-vacunado/"
+                  element={<CreateRegistroVacunado />}
+                />
+              </Routes>
+            </div>
+          }
+        />
+      </Routes>
+      <Toaster />
     </AuthProvider>
   );
 }

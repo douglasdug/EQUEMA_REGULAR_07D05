@@ -9,24 +9,21 @@ from .report import reporteTempranoPDF
 
 # Api de vesiones
 router = routers.DefaultRouter()
-router.register(
-    r'unidad-salud', UnidadSaludRegistrationAPIView, 'unidad-salud'
-)
+
 router.register(r'eni-user', EniUserRegistrationAPIView, 'eni-user')
+router.register(r'unidad-salud',
+                UnidadSaludRegistrationAPIView, 'unidad-salud')
 router.register(r'temprano', TempranoRegistrationAPIView, 'temprano')
 router.register(r'tardio', TardioRegistrationAPIView, 'tardio')
 router.register(r'desperdicio', DesperdicioRegistrationAPIView, 'desperdicio')
 router.register(r'influenza', InfluenzaRegistrationAPIView, 'influenza')
 router.register(r'reporte-eni', ReporteENIRegistrationAPIView, 'reporte-eni')
-router.register(
-    r'admision-datos', AdmisionDatosRegistrationAPIView, 'admision-datos'
-)
-router.register(
-    r'form-008-emergencia', Form008EmergenciaRegistrationAPIView, 'form-008-emergencia'
-)
-router.register(
-    r'registro-vacunado', RegistroVacunadoRegistrationAPIView, 'registro-vacunado'
-)
+router.register(r'admision-datos',
+                AdmisionDatosRegistrationAPIView, 'admision-datos')
+router.register(r'form-008-emergencia',
+                Form008EmergenciaRegistrationAPIView, 'form-008-emergencia')
+router.register(r'registro-vacunado',
+                RegistroVacunadoRegistrationAPIView, 'registro-vacunado')
 
 urlpatterns = [
     path('v1/', include(router.urls)),

@@ -211,6 +211,45 @@ export const resetPasswordWithToken = async ({ uid, token, password }) => {
   }
 };
 
+export const buscarUsuarioIdUnidadSalud = async (id_eni_user) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/eni-user/buscar-usuario-id-unidad-salud/`,
+      {
+        params: { id_eni_user },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching user unidad de salud data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
+//Funciones para los registros de unidades de salud
+export const updateUnidadSaludPrincipal = async (formData) => {
+  try {
+    const response = await axios.patch(
+      `${API_URL}/unidad-salud/unidad-salud-principal/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error updating unidad de salud data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
 //Funciones para los registros de vacunación
 const eniUser_id = 1;
 
@@ -331,7 +370,6 @@ export const buscarUsuarioForm008Emer = async (tipo, identificacion) => {
 };
 
 export const registerForm008Emer = async (formData) => {
-  //console.log("formData:", formData);
   try {
     const response = await axios.post(
       `${API_URL}/form-008-emergencia/`,
