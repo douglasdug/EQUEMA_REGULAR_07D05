@@ -27,6 +27,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Max
 
 
 # Create your views here.
@@ -7573,93 +7574,124 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('for_008_emer_fech_aten')
 
+    def get_eni_user(self, eni_user_id):
+        try:
+            return eniUser.objects.get(id=eni_user_id)
+        except eniUser.DoesNotExist:
+            return None
+
+    def get_unidad_salud(self, eni_user):
+        try:
+            return unidad_salud.objects.get(eniUser=eni_user, uni_unid_prin=1)
+        except unidad_salud.DoesNotExist:
+            return None
+
+    def get_next_codigo_atencion(self):
+        max_valor = form_008_emergencia.objects.aggregate(Max('for_008_emer_aten_fina'))[
+            'for_008_emer_aten_fina__max'] or 1
+        return max_valor + 1
+
+    def split_nombre_apellido(self, nombre_completo):
+        partes = nombre_completo.strip().split(' ', 1)
+        return partes[0], partes[1] if len(partes) > 1 else ''
+
+    def procesar_diagnosticos(self, cie10_list):
+        cie10 = []
+        diag = []
+        for code in cie10_list:
+            cie10.append(code[:4])
+            diag.append(code[4:])
+        return cie10, diag
+
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-
         eni_user_id = data.get('eniUser', '')
-        # Buscar el usuario
-        try:
-            eni_user = eniUser.objects.get(id=eni_user_id)
-        except eniUser.DoesNotExist:
+        medic_apoll_id = data.get('for_008_emer_apoy_aten_medi', '')
+        eni_user = self.get_eni_user(eni_user_id)
+        medic_apoll = self.get_eni_user(medic_apoll_id)
+        if not eni_user:
             return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Obtener los datos del usuario
-        last_name = eni_user.last_name
-        first_name = eni_user.first_name
-
-        # Buscar la unidad de salud asociada (ajusta el filtro según tu modelo)
-        try:
-            unidad_salud_data = unidad_salud.objects.get(
-                eniUser=eni_user, uni_unid_prin=1)
-        except unidad_salud.DoesNotExist:
+        unidad_salud_data = self.get_unidad_salud(eni_user)
+        if not unidad_salud_data:
             return Response({'error': 'Unidad de salud no encontrada'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Obtener los datos de la unidad de salud
-        uni_inst_sist = unidad_salud_data.uni_inst_sist
-        uni_unic = unidad_salud_data.uni_unic
-        uni_unid = unidad_salud_data.uni_unid
-        uni_zona = unidad_salud_data.uni_zona
-        uni_prov = unidad_salud_data.uni_prov
-        uni_cant = unidad_salud_data.uni_cant
-        uni_dist = unidad_salud_data.uni_dist
-        uni_nive = unidad_salud_data.uni_nive
+        nuevo_codigo_atencion = self.get_next_codigo_atencion()
 
-        edad_cond_str = data.get('for_008_emer_edad_cond', '').strip()
-        parts = edad_cond_str.split(' ')
+        # Datos de unidad de salud
+        # Asignar campos de unidad_salud a los campos correspondientes en data
+        data['for_008_emer_inst_sist'] = getattr(
+            unidad_salud_data, 'uni_inst_sist')
+        for field in ['uni_unic', 'uni_unid', 'uni_zona', 'uni_prov', 'uni_cant', 'uni_dist', 'uni_nive']:
+            data[f'for_008_emer_{field.split("_")[1]}'] = getattr(
+                unidad_salud_data, field)
+
         tipo_docu_iden = data.get('for_008_busc_pers_tipo_iden', '')
         nume_iden = data.get('for_008_busc_pers_nume_iden', '')
-        apellidos = data.get('for_008_emer_apel_comp',
-                             '').strip().split(' ', 1)
-        nombres = data.get('for_008_emer_nomb_comp', '').strip().split(' ', 1)
-        cie10_prin_diag = data.get(
-            'for_008_emer_cie_10_prin_diag', '').strip().split(' ', 1)
-        cie10_secu_diag = data.get(
-            'for_008_emer_cie_10_caus_exte_diag', '').strip().split(' ', 1)
-        id_adm = data.get('id_adm', '')
-        # atencion_finalizada = data.get('id', '')
-
-        data['for_008_emer_inst_sist'] = uni_inst_sist
-        data['for_008_emer_unic'] = uni_unic
-        data['for_008_emer_nomb_esta_salu'] = uni_unid
-        data['for_008_emer_zona'] = uni_zona
-        data['for_008_emer_prov'] = uni_prov
-        data['for_008_emer_cant'] = uni_cant
-        data['for_008_emer_dist'] = uni_dist
-        data['for_008_emer_nive'] = uni_nive
-
-        # Extraer solo el número de edad (7)
-        if parts and parts[0]:
-            data['for_008_emer_edad'] = parts[0]
-        else:
-            data['for_008_emer_edad'] = ''
-
-        if len(parts) > 1:
-            data['for_008_emer_cond_edad'] = parts[1]
-        else:
-            data['for_008_emer_cond_edad'] = ''
         data['for_008_emer_tipo_docu_iden'] = tipo_docu_iden
         data['for_008_emer_nume_iden'] = nume_iden
-        data['for_008_emer_prim_apel'] = apellidos[0] if apellidos else ''
-        data['for_008_emer_segu_apel'] = apellidos[1] if len(
-            apellidos) > 1 else ''
-        data['for_008_emer_prim_nomb'] = nombres[0] if nombres else ''
-        data['for_008_emer_segu_nomb'] = nombres[1] if len(nombres) > 1 else ''
-        data['for_008_emer_cie_10_prin'] = cie10_prin_diag[0] if cie10_prin_diag else ''
-        data['for_008_emer_diag_prin'] = cie10_prin_diag[1] if len(
-            cie10_prin_diag) > 1 else ''
-        data['for_008_emer_cie_10_caus_exte'] = cie10_secu_diag[0] if cie10_secu_diag else ''
-        data['for_008_emer_diag_caus_exte'] = cie10_secu_diag[1] if len(
-            cie10_secu_diag) > 1 else ''
-        data['for_008_emer_resp_aten_medi'] = f"{last_name or ''} {first_name or ''}".strip(
-        )
-        data['admision_datos'] = id_adm
-        # data['for_008_emer_aten_fina'] = atencion_finalizada
 
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Se creo la atencion Form_008_Emer del usuario exitosamente!", "data": serializer.data}, status=status.HTTP_201_CREATED)
-        return Response({"message": "Error al crear la atencion Form_008_Emer", "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        # Edad y condición
+        edad_cond_str = data.get('for_008_emer_edad_cond', '').strip()
+        parts = edad_cond_str.split(' ')
+        data['for_008_emer_edad'] = parts[0] if parts and parts[0] else ''
+        data['for_008_emer_cond_edad'] = parts[1] if len(parts) > 1 else ''
+
+        # Nombres y apellidos
+        apellidos = self.split_nombre_apellido(
+            data.get('for_008_emer_apel_comp', ''))
+        nombres = self.split_nombre_apellido(
+            data.get('for_008_emer_nomb_comp', ''))
+        data['for_008_emer_prim_apel'], data['for_008_emer_segu_apel'] = apellidos
+        data['for_008_emer_prim_nomb'], data['for_008_emer_segu_nomb'] = nombres
+
+        # Diagnósticos
+        cie10_prin_diag = data.get('for_008_emer_cie_10_prin_diag', [])
+        cond_diag = data.get('for_008_emer_cond_diag', [])
+        cie10_secu_diag = data.get('for_008_emer_cie_10_caus_exte_diag', [])
+
+        if not (len(cie10_prin_diag) == len(cond_diag) == len(cie10_secu_diag)):
+            return Response(
+                {"detail": "Los arrays de diagnósticos deben tener la misma longitud."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        cie10_prin, diag_prin = self.procesar_diagnosticos(cie10_prin_diag)
+        cie10_caus_exte, diag_caus_exte = self.procesar_diagnosticos(
+            cie10_secu_diag)
+
+        data['for_008_emer_resp_aten_medi'] = f"{eni_user.last_name or ''} {eni_user.first_name or ''}".strip(
+        )
+        data['for_008_emer_apoy_aten_medi'] = f"{medic_apoll.last_name or ''} {medic_apoll.first_name or ''}".strip(
+        )
+        data['admision_datos'] = data.get('id_adm', '')
+
+        created_objects = []
+        errors = []
+
+        for i in range(len(cie10_prin_diag)):
+            data_item = data.copy()
+            data_item.update({
+                'for_008_emer_cie_10_prin_diag': cie10_prin_diag[i],
+                'for_008_emer_cond_diag': cond_diag[i],
+                'for_008_emer_cie_10_caus_exte_diag': cie10_secu_diag[i],
+                'for_008_emer_cie_10_prin': cie10_prin[i],
+                'for_008_emer_diag_prin': diag_prin[i],
+                'for_008_emer_cie_10_caus_exte': cie10_caus_exte[i],
+                'for_008_emer_diag_caus_exte': diag_caus_exte[i],
+                'for_008_emer_aten_fina': nuevo_codigo_atencion,
+            })
+            serializer = self.get_serializer(data=data_item)
+            if serializer.is_valid():
+                self.perform_create(serializer)
+                created_objects.append(serializer.data)
+            else:
+                errors.append(serializer.errors)
+
+        if errors:
+            return Response({"message": "Error al crear la atencion Form_008_Emer", "error": errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Se creo la atencion Form_008_Emer del usuario exitosamente!", "data": created_objects}, status=status.HTTP_201_CREATED)
 
 
 class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):

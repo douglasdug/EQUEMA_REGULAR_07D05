@@ -47,9 +47,9 @@ const initialState = {
   for_008_emer_dire_domi: "",
   for_008_emer_tele_paci: "",
   for_008_emer_espe_prof: "",
-  for_008_emer_cie_10_prin_diag: "",
-  for_008_emer_cond_diag: "",
-  for_008_emer_cie_10_caus_exte_diag: "",
+  for_008_emer_cie_10_prin_diag: [""],
+  for_008_emer_cond_diag: [""],
+  for_008_emer_cie_10_caus_exte_diag: [""],
   for_008_emer_hosp: "",
   for_008_emer_cond_alta: "",
   for_008_emer_obse: "",
@@ -725,19 +725,35 @@ const Form008Emergencia = () => {
     setIsLoading(true);
     setError("");
     setSuccessMessage("");
-    const formDataConUsuario = { ...formData, eniUser: storedUserId };
+    const formDataToSend = { ...formData, eniUser: storedUserId };
+
+    // Formatear los arrays de diagnóstico para el backend
+    // formDataToSend.for_008_emer_cie_10_prin_diag_array =
+    //   formData.for_008_emer_cie_10_prin_diag;
+    // formDataToSend.for_008_emer_cond_diag_array =
+    //   formData.for_008_emer_cond_diag;
+    // formDataToSend.for_008_emer_cie_10_caus_exte_diag_array =
+    //   formData.for_008_emer_cie_10_caus_exte_diag;
+
+    // Para mantener compatibilidad con el backend, usar el primer elemento como valor principal
+    // formDataToSend.for_008_emer_cie_10_prin_diag =
+    //   formData.for_008_emer_cie_10_prin_diag[0] || "";
+    // formDataToSend.for_008_emer_cond_diag =
+    //   formData.for_008_emer_cond_diag[0] || "";
+    // formDataToSend.for_008_emer_cie_10_caus_exte_diag =
+    //   formData.for_008_emer_cie_10_caus_exte_diag[0] || "";
 
     try {
       let response;
       if (isEditing) {
-        response = await updateForm008Emer(formDataConUsuario);
+        response = await updateForm008Emer(formDataToSend);
         const message = response?.message || "Registro actualizado con éxito!";
         setSuccessMessage(message);
         setTimeout(() => setSuccessMessage(""), 10000);
         toast.success(message, { position: "bottom-right" });
         limpiarVariables(true);
       } else {
-        const response = await registerForm008Emer(formDataConUsuario);
+        const response = await registerForm008Emer(formDataToSend);
         const message = response?.message || "Registro guardado con éxito!";
         setSuccessMessage(message);
         setTimeout(() => setSuccessMessage(""), 10000);
@@ -865,36 +881,244 @@ const Form008Emergencia = () => {
   }, []);
 
   const opcionesCIE10Permitidas = allListForm008.for_008_emer_cie_10_prin_diag;
-
-  const codigoCIE10Seleccionado = (() => {
-    const selected = opcionesCIE10Permitidas.find(
-      (op) => op.value === formData["for_008_emer_cie_10_prin_diag"]
-    );
-    return selected ? selected.label.split(" ")[0] : "";
-  })();
-
-  const esDiagnosticoNoValido =
-    codigoCIE10Seleccionado && codigoCIE10Seleccionado.length === 3;
-
   const opcionesCIE10PermitidasExterno =
     allListForm008.for_008_emer_cie_10_caus_exte_diag;
 
-  const codigoCIE10SeleccionadoExterno = (() => {
-    const selected = opcionesCIE10PermitidasExterno.find(
-      (op) => op.value === formData["for_008_emer_cie_10_caus_exte_diag"]
+  const DiagnosticosMultiples = ({
+    formData,
+    setFormData,
+    variableEstado,
+    requiredFields,
+    isFieldVisible,
+    handleChange,
+    opcionesCIE10Permitidas,
+    opcionesCIE10PermitidasExterno,
+    allListForm008,
+  }) => {
+    // Función para agregar un nuevo diagnóstico (máximo 3)
+    const agregarDiagnostico = () => {
+      if (formData.for_008_emer_cie_10_prin_diag.length < 3) {
+        setFormData((prev) => ({
+          ...prev,
+          for_008_emer_cie_10_prin_diag: [
+            ...prev.for_008_emer_cie_10_prin_diag,
+            "",
+          ],
+          for_008_emer_cond_diag: [...prev.for_008_emer_cond_diag, ""],
+          for_008_emer_cie_10_caus_exte_diag: [
+            ...prev.for_008_emer_cie_10_caus_exte_diag,
+            "",
+          ],
+        }));
+      }
+    };
+
+    // Función para eliminar un diagnóstico
+    const eliminarDiagnostico = (index) => {
+      if (formData.for_008_emer_cie_10_prin_diag.length > 1) {
+        setFormData((prev) => ({
+          ...prev,
+          for_008_emer_cie_10_prin_diag:
+            prev.for_008_emer_cie_10_prin_diag.filter((_, i) => i !== index),
+          for_008_emer_cond_diag: prev.for_008_emer_cond_diag.filter(
+            (_, i) => i !== index
+          ),
+          for_008_emer_cie_10_caus_exte_diag:
+            prev.for_008_emer_cie_10_caus_exte_diag.filter(
+              (_, i) => i !== index
+            ),
+        }));
+      }
+    };
+
+    // Verificar diagnósticos que comienzan con S o T
+    const esDiagnosticoSoT = (diagValue) => {
+      const selected = opcionesCIE10Permitidas.find(
+        (op) => op.value === diagValue
+      );
+      const codigo = selected ? selected.label.split(" ")[0] : "";
+      return codigo.startsWith("S") || codigo.startsWith("T");
+    };
+
+    // Manejar cambio en campos de diagnóstico
+    const handleDiagnosticoChange = (e, index) => {
+      const { name, value } = e.target;
+
+      setFormData((prev) => {
+        const newData = { ...prev };
+
+        // Actualizar el valor específico en el array correcto
+        if (name === `for_008_emer_cie_10_prin_diag_${index}`) {
+          newData.for_008_emer_cie_10_prin_diag[index] = value;
+
+          // Si no es S o T, limpiar causa externa correspondiente
+          if (!esDiagnosticoSoT(value)) {
+            newData.for_008_emer_cie_10_caus_exte_diag[index] = "";
+          }
+        } else if (name === `for_008_emer_cond_diag_${index}`) {
+          newData.for_008_emer_cond_diag[index] = value;
+        } else if (name === `for_008_emer_cie_10_caus_exte_diag_${index}`) {
+          newData.for_008_emer_cie_10_caus_exte_diag[index] = value;
+        }
+
+        return newData;
+      });
+    };
+
+    // Funciones de validación específicas para el componente
+    const verificarCodigoCIE10 = (diagValue) => {
+      const selected = opcionesCIE10Permitidas.find(
+        (op) => op.value === diagValue
+      );
+      return selected ? selected.label.split(" ")[0] : "";
+    };
+
+    const esDiagnosticoNoValido = (diagValue) => {
+      const codigo = verificarCodigoCIE10(diagValue);
+      return codigo && codigo.length === 3;
+    };
+
+    const requiereCausaExterna = (diagValue) => {
+      const codigo = verificarCodigoCIE10(diagValue);
+      return codigo && (codigo.startsWith("S") || codigo.startsWith("T"));
+    };
+
+    return (
+      <div className="space-y-4">
+        {formData.for_008_emer_cie_10_prin_diag.map((diagValue, index) => (
+          <div key={index} className="border p-3 rounded bg-gray-50 relative">
+            {index > 0 && (
+              <button
+                type="button"
+                onClick={() => eliminarDiagnostico(index)}
+                className="absolute top-2 right-2 text-red-500 font-bold"
+                title="Eliminar diagnóstico"
+              >
+                X
+              </button>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              {/* Diagnóstico principal */}
+              <div className="mb-1 flex flex-col">
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-1"
+                  htmlFor={`for_008_emer_cie_10_prin_diag_${index}`}
+                >
+                  {index === 0
+                    ? "CIE-10 (PRINCIPAL):"
+                    : `CIE-10 (PRINCIPAL) #${index + 1}:`}
+                </label>
+                <CustomSelect
+                  id={`for_008_emer_cie_10_prin_diag_${index}`}
+                  name={`for_008_emer_cie_10_prin_diag_${index}`}
+                  value={formData.for_008_emer_cie_10_prin_diag[index] || ""}
+                  onChange={(e) => handleDiagnosticoChange(e, index)}
+                  options={opcionesCIE10Permitidas}
+                  disabled={variableEstado["for_008_emer_cie_10_prin_diag"]}
+                  variableEstado={variableEstado}
+                  isLargeList={true}
+                  placeholder="Escriba para buscar diagnóstico CIE-10..."
+                  minSearchLength={2}
+                  maxResults={100}
+                />
+                {esDiagnosticoNoValido(diagValue) && (
+                  <span className="text-red-600 text-sm mt-1">
+                    El diagnóstico seleccionado no es válido. Seleccione un
+                    código CIE-10 más específico.
+                  </span>
+                )}
+                {requiereCausaExterna(diagValue) && diagValue && (
+                  <span className="text-blue-600 text-sm mt-1">
+                    Se tiene que registrar la causa externa para diagnósticos
+                    que comiencen con S o T.
+                  </span>
+                )}
+              </div>
+
+              {/* Condición del diagnóstico */}
+              <div className="mb-1 flex flex-col">
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-1"
+                  htmlFor={`for_008_emer_cond_diag_${index}`}
+                >
+                  {index === 0
+                    ? "CONDICIÓN DEL DIAGNÓSTICO:"
+                    : `CONDICIÓN DIAGNÓSTICO #${index + 1}:`}
+                </label>
+                <CustomSelect
+                  id={`for_008_emer_cond_diag_${index}`}
+                  name={`for_008_emer_cond_diag_${index}`}
+                  value={formData.for_008_emer_cond_diag[index] || ""}
+                  onChange={(e) => handleDiagnosticoChange(e, index)}
+                  options={allListForm008.for_008_emer_cond_diag}
+                  disabled={variableEstado["for_008_emer_cond_diag"]}
+                  variableEstado={variableEstado}
+                />
+              </div>
+
+              {/* Causa externa */}
+              <div className="mb-1 flex flex-col">
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-1"
+                  htmlFor={`for_008_emer_cie_10_caus_exte_diag_${index}`}
+                >
+                  {index === 0
+                    ? "CIE-10 (CAUSA EXTERNA):"
+                    : `CIE-10 (CAUSA EXTERNA) #${index + 1}:`}
+                </label>
+                <CustomSelect
+                  id={`for_008_emer_cie_10_caus_exte_diag_${index}`}
+                  name={`for_008_emer_cie_10_caus_exte_diag_${index}`}
+                  value={
+                    formData.for_008_emer_cie_10_caus_exte_diag[index] || ""
+                  }
+                  onChange={(e) => handleDiagnosticoChange(e, index)}
+                  options={opcionesCIE10PermitidasExterno}
+                  disabled={
+                    variableEstado["for_008_emer_cie_10_caus_exte_diag"] ||
+                    !esDiagnosticoSoT(
+                      formData.for_008_emer_cie_10_prin_diag[index]
+                    )
+                  }
+                  variableEstado={variableEstado}
+                  isLargeList={true}
+                  placeholder={
+                    esDiagnosticoSoT(
+                      formData.for_008_emer_cie_10_prin_diag[index]
+                    )
+                      ? "Escriba para buscar diagnóstico CIE-10..."
+                      : "Solo disponible para diagnósticos S y T"
+                  }
+                  minSearchLength={2}
+                  maxResults={100}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {formData.for_008_emer_cie_10_prin_diag.length < 3 && (
+          <button
+            type="button"
+            onClick={agregarDiagnostico}
+            className="mt-2 bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded text-sm"
+            disabled={variableEstado["for_008_emer_cie_10_prin_diag"]}
+          >
+            + Agregar otro diagnóstico
+          </button>
+        )}
+      </div>
     );
-    return selected ? selected.label.split(" ")[0] : "";
-  })();
+  };
 
-  const esDiagnosticoNoValidoExterno =
-    codigoCIE10SeleccionadoExterno &&
-    codigoCIE10SeleccionadoExterno.length === 3;
-
-  // Verificar si el diagnóstico comienza con S o T para habilitar causa externa
-  const habilitarCausaExterna =
-    codigoCIE10Seleccionado &&
-    (codigoCIE10Seleccionado.startsWith("S") ||
-      codigoCIE10Seleccionado.startsWith("T"));
+  // Añadir a las validaciones existentes
+  const esDiagnosticoValido = () => {
+    return (
+      formData.for_008_emer_cie_10_prin_diag[0] &&
+      formData.for_008_emer_cond_diag[0]
+    );
+  };
 
   const EstadoMensajes = ({ error, successMessage }) => (
     <div className="bg-white rounded-lg shadow-md">
@@ -1666,12 +1890,6 @@ const Form008Emergencia = () => {
             <legend className="text-lg font-semibold text-blue-600 px-2">
               Datos de Registro de Atencion de Emergencia
             </legend>
-            <div className="bg-blue-50 border-l-4 border-blue-500 text-black p-2 mb-2 text-sm">
-              <strong>Atención:</strong> Solo se registrarán diagnósticos que
-              incluyan el código CIE-10 con cuatro caracteres (por ejemplo:
-              I100), seguido de su respectiva descripción. Esta estructura es
-              obligatoria para garantizar uniformidad en el registro clínico.
-            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="for_008_emer_espe_prof">
@@ -1699,127 +1917,6 @@ const Form008Emergencia = () => {
                       : ""
                   }
                 />
-              </div>
-              <div className={fieldClass}>
-                <label
-                  className={labelClass}
-                  htmlFor="for_008_emer_cie_10_prin_diag"
-                >
-                  {requiredFields.includes("for_008_emer_cie_10_prin_diag") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["for_008_emer_cie_10_prin_diag"]}
-                </label>
-                <CustomSelect
-                  id="for_008_emer_cie_10_prin_diag"
-                  name="for_008_emer_cie_10_prin_diag"
-                  value={formData["for_008_emer_cie_10_prin_diag"]}
-                  onChange={handleChange}
-                  options={opcionesCIE10Permitidas}
-                  disabled={variableEstado["for_008_emer_cie_10_prin_diag"]}
-                  variableEstado={variableEstado}
-                  className={
-                    isFieldInvalid(
-                      "for_008_emer_cie_10_prin_diag",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  }
-                  isLargeList={true} // Activar el modo lista grande
-                  placeholder="Escriba para buscar diagnóstico CIE-10..."
-                  minSearchLength={2}
-                  maxResults={100}
-                />
-                {esDiagnosticoNoValido && (
-                  <span className="text-red-600 text-sm mt-1">
-                    El diagnóstico seleccionado no es válido. Seleccione un
-                    código CIE-10 más específico.
-                  </span>
-                )}
-                {!!habilitarCausaExterna &&
-                  formData["for_008_emer_cie_10_prin_diag"] && (
-                    <span className="text-blue-600 text-sm mt-1">
-                      Se tiene que registrar la causa externa para diagnósticos
-                      que comiencen con S o T.
-                    </span>
-                  )}
-              </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="for_008_emer_cond_diag">
-                  {requiredFields.includes("for_008_emer_cond_diag") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["for_008_emer_cond_diag"]}
-                </label>
-                <CustomSelect
-                  id="for_008_emer_cond_diag"
-                  name="for_008_emer_cond_diag"
-                  value={formData["for_008_emer_cond_diag"]}
-                  onChange={handleChange}
-                  options={allListForm008.for_008_emer_cond_diag}
-                  disabled={variableEstado["for_008_emer_cond_diag"]}
-                  variableEstado={variableEstado}
-                  className={
-                    isFieldInvalid(
-                      "for_008_emer_cond_diag",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  }
-                />
-              </div>
-              <div className={fieldClass}>
-                <label
-                  className={labelClass}
-                  htmlFor="for_008_emer_cie_10_caus_exte_diag"
-                >
-                  {requiredFields.includes(
-                    "for_008_emer_cie_10_caus_exte_diag"
-                  ) && <span className="text-red-500">* </span>}
-                  {labelMap["for_008_emer_cie_10_caus_exte_diag"]}
-                </label>
-                <CustomSelect
-                  id="for_008_emer_cie_10_caus_exte_diag"
-                  name="for_008_emer_cie_10_caus_exte_diag"
-                  value={formData["for_008_emer_cie_10_caus_exte_diag"]}
-                  onChange={handleChange}
-                  options={opcionesCIE10PermitidasExterno}
-                  disabled={
-                    variableEstado["for_008_emer_cie_10_caus_exte_diag"] ||
-                    !habilitarCausaExterna
-                  }
-                  variableEstado={variableEstado}
-                  className={
-                    isFieldInvalid(
-                      "for_008_emer_cie_10_caus_exte_diag",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  }
-                  isLargeList={true}
-                  placeholder={
-                    habilitarCausaExterna
-                      ? "Escriba para buscar diagnóstico CIE-10..."
-                      : "Solo disponible para diagnósticos S y T"
-                  }
-                  minSearchLength={2}
-                  maxResults={100}
-                />
-                {esDiagnosticoNoValidoExterno && (
-                  <span className="text-red-600 text-sm mt-1">
-                    El diagnóstico seleccionado no es válido. Seleccione un
-                    código CIE-10 más específico.
-                  </span>
-                )}
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="for_008_emer_hosp">
@@ -1937,6 +2034,33 @@ const Form008Emergencia = () => {
                   </div>
                 )}
               </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-2">
+              <fieldset className="border border-blue-200 rounded p-2 mb-1">
+                <legend className="text-lg font-semibold text-blue-600 px-2">
+                  Registro de diagnósticos de la atención de emergencia
+                </legend>
+                <div className="bg-blue-50 border-l-4 border-blue-500 text-black p-2 mb-2 text-sm">
+                  <strong>Atención:</strong> Solo se registrarán diagnósticos
+                  que incluyan el código CIE-10 con cuatro caracteres (por
+                  ejemplo: I100), seguido de su respectiva descripción. Esta
+                  estructura es obligatoria para garantizar uniformidad en el
+                  registro clínico.
+                </div>
+                <DiagnosticosMultiples
+                  formData={formData}
+                  setFormData={setFormData}
+                  variableEstado={variableEstado}
+                  requiredFields={requiredFields}
+                  isFieldVisible={isFieldVisible}
+                  handleChange={handleChange}
+                  opcionesCIE10Permitidas={opcionesCIE10Permitidas}
+                  opcionesCIE10PermitidasExterno={
+                    opcionesCIE10PermitidasExterno
+                  }
+                  allListForm008={allListForm008}
+                />
+              </fieldset>
             </div>
           </fieldset>
           <fieldset className="border border-blue-200 rounded p-2 mb-1">

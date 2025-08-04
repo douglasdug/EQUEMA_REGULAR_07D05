@@ -599,7 +599,7 @@ class admision_datos(models.Model):
 class form_008_emergencia(models.Model):
     for_008_emer_inst_sist = models.CharField(max_length=15, blank=True)
     for_008_emer_unic = models.CharField(max_length=10, blank=True)
-    for_008_emer_nomb_esta_salu = models.CharField(max_length=100, blank=True)
+    for_008_emer_unid = models.CharField(max_length=100, blank=True)
     for_008_emer_zona = models.CharField(max_length=10, blank=True)
     for_008_emer_prov = models.CharField(max_length=60, blank=True)
     for_008_emer_cant = models.CharField(max_length=60, blank=True)

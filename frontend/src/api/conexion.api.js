@@ -370,6 +370,7 @@ export const buscarUsuarioForm008Emer = async (tipo, identificacion) => {
 };
 
 export const registerForm008Emer = async (formData) => {
+  //console.log("Registering Form008Emer with data:", formData);
   try {
     const response = await axios.post(
       `${API_URL}/form-008-emergencia/`,
