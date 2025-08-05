@@ -895,6 +895,26 @@ const Form008Emergencia = () => {
     opcionesCIE10PermitidasExterno,
     allListForm008,
   }) => {
+    // NUEVO: Función para filtrar opciones ya seleccionadas en la lista principal
+    const getOpcionesCIE10Filtradas = (index) => {
+      const seleccionados = formData.for_008_emer_cie_10_prin_diag.filter(
+        (_, i) => i !== index
+      );
+      return opcionesCIE10Permitidas.filter(
+        (op) => !seleccionados.includes(op.value)
+      );
+    };
+
+    // NUEVO: Función para filtrar opciones ya seleccionadas en la lista de causa externa
+    const getOpcionesCIE10CausaExternaFiltradas = (index) => {
+      const seleccionados = formData.for_008_emer_cie_10_caus_exte_diag.filter(
+        (_, i) => i !== index
+      );
+      return opcionesCIE10PermitidasExterno.filter(
+        (op) => !seleccionados.includes(op.value)
+      );
+    };
+
     // Función para agregar un nuevo diagnóstico (máximo 3)
     const agregarDiagnostico = () => {
       if (formData.for_008_emer_cie_10_prin_diag.length < 3) {
@@ -1014,7 +1034,7 @@ const Form008Emergencia = () => {
                   name={`for_008_emer_cie_10_prin_diag_${index}`}
                   value={formData.for_008_emer_cie_10_prin_diag[index] || ""}
                   onChange={(e) => handleDiagnosticoChange(e, index)}
-                  options={opcionesCIE10Permitidas}
+                  options={getOpcionesCIE10Filtradas(index)}
                   disabled={variableEstado["for_008_emer_cie_10_prin_diag"]}
                   variableEstado={variableEstado}
                   isLargeList={true}
@@ -1074,7 +1094,7 @@ const Form008Emergencia = () => {
                     formData.for_008_emer_cie_10_caus_exte_diag[index] || ""
                   }
                   onChange={(e) => handleDiagnosticoChange(e, index)}
-                  options={opcionesCIE10PermitidasExterno}
+                  options={getOpcionesCIE10CausaExternaFiltradas(index)}
                   disabled={
                     variableEstado["for_008_emer_cie_10_caus_exte_diag"] ||
                     !esDiagnosticoSoT(

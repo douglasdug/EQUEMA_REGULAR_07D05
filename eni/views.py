@@ -7609,7 +7609,11 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         eni_user_id = data.get('eniUser', '')
         medic_apoll_id = data.get('for_008_emer_apoy_aten_medi', '')
         eni_user = self.get_eni_user(eni_user_id)
-        medic_apoll = self.get_eni_user(medic_apoll_id)
+
+        medic_apoll = None
+        if medic_apoll_id:
+            medic_apoll = self.get_eni_user(medic_apoll_id)
+
         if not eni_user:
             return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -7661,10 +7665,13 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         cie10_caus_exte, diag_caus_exte = self.procesar_diagnosticos(
             cie10_secu_diag)
 
-        data['for_008_emer_resp_aten_medi'] = f"{eni_user.last_name or ''} {eni_user.first_name or ''}".strip(
+        data['for_008_emer_resp_aten_medi'] = f"{eni_user.username or ''} {eni_user.last_name or ''} {eni_user.first_name or ''}".strip(
         )
-        data['for_008_emer_apoy_aten_medi'] = f"{medic_apoll.last_name or ''} {medic_apoll.first_name or ''}".strip(
-        )
+        if medic_apoll:
+            data['for_008_emer_apoy_aten_medi'] = f"{medic_apoll.username or ''} {medic_apoll.last_name or ''} {medic_apoll.first_name or ''}".strip(
+            )
+        else:
+            data['for_008_emer_apoy_aten_medi'] = ''
         data['admision_datos'] = data.get('id_adm', '')
 
         created_objects = []
