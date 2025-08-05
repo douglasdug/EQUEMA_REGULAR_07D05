@@ -1180,12 +1180,13 @@ const Form008Emergencia = () => {
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Formulario 008 Emergencia
         </h2>
-        <form onSubmit={handleSubmitBuscar} className="w-full">
+        <form onSubmit={handleSubmitBuscar} className="w-full"></form>
+        <form onSubmit={handleSubmit} className="w-full">
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
               Buscar pacientes admisionados
             </legend>
-            <div className="flex flex-col sm:flex-row items-center gap-2 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               <div className={fieldClass}>
                 <label
                   className={labelClass}
@@ -1220,15 +1221,16 @@ const Form008Emergencia = () => {
                 >
                   {labelMap["for_008_busc_pers_nume_iden"]}
                 </label>
-                <input
-                  type="text"
-                  id="for_008_busc_pers_nume_iden"
-                  name="for_008_busc_pers_nume_iden"
-                  value={formData["for_008_busc_pers_nume_iden"]}
-                  onChange={handleChange}
-                  placeholder="Información es requerida"
-                  required
-                  className={`${inputStyle}
+                <div className="flex items-center gap-1 mb-1">
+                  <input
+                    type="text"
+                    id="for_008_busc_pers_nume_iden"
+                    name="for_008_busc_pers_nume_iden"
+                    value={formData["for_008_busc_pers_nume_iden"]}
+                    onChange={handleChange}
+                    placeholder="Información es requerida"
+                    required
+                    className={`${inputStyle}
                       ${
                         isFieldInvalid(
                           "for_008_busc_pers_nume_iden",
@@ -1244,95 +1246,26 @@ const Form008Emergencia = () => {
                            ? "bg-gray-200 text-gray-700 cursor-no-drop"
                            : "bg-white text-gray-700 cursor-pointer"
                        }`}
-                  disabled={variableEstado["for_008_busc_pers_nume_iden"]}
-                />
-              </div>
-              <div className="flex items-center justify-start -mb-4">
-                <button
-                  type="button"
-                  id="btnBuscar"
-                  name="btnBuscar"
-                  className={`${buttonStylePrimario} ${
-                    botonEstado.btnBuscar
-                      ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-                  }`}
-                  onClick={handleSearch}
-                  disabled={botonEstado.btnBuscar}
-                >
-                  {buttonTextBuscar}
-                </button>
+                    disabled={variableEstado["for_008_busc_pers_nume_iden"]}
+                  />
+                  <button
+                    type="button"
+                    id="btnBuscar"
+                    name="btnBuscar"
+                    className={`${buttonStylePrimario} ${
+                      botonEstado.btnBuscar
+                        ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                    }`}
+                    onClick={handleSearch}
+                    disabled={botonEstado.btnBuscar}
+                  >
+                    {buttonTextBuscar}
+                  </button>
+                </div>
               </div>
             </div>
           </fieldset>
-        </form>
-        {showConfirmModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
-              <h3 className="text-lg font-bold mb-4 text-blue-700">
-                {confirmModalText}
-              </h3>
-              <div className="flex justify-end gap-2">
-                <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                  onClick={() => {
-                    setShowConfirmModal(false);
-                    setShowAdmisionModal(true);
-                  }}
-                >
-                  Sí, registrar
-                </button>
-                <button
-                  className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
-                  onClick={() => setShowConfirmModal(false)}
-                >
-                  No
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {showAdmisionModal && admisionData && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50">
-            <div className="relative w-full max-w-7xl mx-auto mt-8 rounded-lg shadow-lg overflow-y-auto max-h-screen">
-              <button
-                className="absolute top-4 right-4 text-red-500 font-bold text-2xl z-10"
-                onClick={() => {
-                  setShowAdmisionModal(false);
-                  setAdmisionData(null);
-                }}
-              >
-                X
-              </button>
-              <Admision
-                id_admision={admisionData.id_adm}
-                tipoIdenInicial={formData.for_008_busc_pers_tipo_iden}
-                numeIdenInicial={formData.for_008_busc_pers_nume_iden}
-                pers_apellidos={[
-                  admisionData.adm_dato_pers_apel_prim,
-                  admisionData.adm_dato_pers_apel_segu,
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                pers_nombres={[
-                  admisionData.adm_dato_pers_nomb_prim,
-                  admisionData.adm_dato_pers_nomb_segu,
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                pers_sexo={admisionData.adm_dato_pers_sexo}
-                pers_correo={admisionData.adm_dato_pers_corr_elec}
-                ejecutarAjustarAdmision={true}
-                btnActualizar={true}
-                onClose={() => {
-                  setShowAdmisionModal(false);
-                  setAdmisionData(null); // Limpia la información al terminar
-                }}
-              />
-            </div>
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="w-full">
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
               Datos de Unidad de Salud
@@ -2241,6 +2174,72 @@ const Form008Emergencia = () => {
           </div>
         </form>
         <EstadoMensajes error={error} successMessage={successMessage} />
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+              <h3 className="text-lg font-bold mb-4 text-blue-700">
+                {confirmModalText}
+              </h3>
+              <div className="flex justify-end gap-2">
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setShowAdmisionModal(true);
+                  }}
+                >
+                  Sí, registrar
+                </button>
+                <button
+                  className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
+                  onClick={() => setShowConfirmModal(false)}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showAdmisionModal && admisionData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50">
+            <div className="relative w-full max-w-7xl mx-auto mt-8 rounded-lg shadow-lg overflow-y-auto max-h-screen">
+              <button
+                className="absolute top-4 right-4 text-red-500 font-bold text-2xl z-10"
+                onClick={() => {
+                  setShowAdmisionModal(false);
+                  setAdmisionData(null);
+                }}
+              >
+                X
+              </button>
+              <Admision
+                id_admision={admisionData.id_adm}
+                tipoIdenInicial={formData.for_008_busc_pers_tipo_iden}
+                numeIdenInicial={formData.for_008_busc_pers_nume_iden}
+                pers_apellidos={[
+                  admisionData.adm_dato_pers_apel_prim,
+                  admisionData.adm_dato_pers_apel_segu,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                pers_nombres={[
+                  admisionData.adm_dato_pers_nomb_prim,
+                  admisionData.adm_dato_pers_nomb_segu,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                pers_sexo={admisionData.adm_dato_pers_sexo}
+                pers_correo={admisionData.adm_dato_pers_corr_elec}
+                ejecutarAjustarAdmision={true}
+                btnActualizar={true}
+                onClose={() => {
+                  setShowAdmisionModal(false);
+                  setAdmisionData(null); // Limpia la información al terminar
+                }}
+              />
+            </div>
+          </div>
+        )}
         {showUnidadModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
