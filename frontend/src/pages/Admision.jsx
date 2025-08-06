@@ -1443,13 +1443,13 @@ const Admision = ({
     // Solo setea si hay valores iniciales y los campos están vacíos
     setFormData((prev) => {
       if (
-        id_admision &&
+        (id_admision === "" || id_admision) &&
         tipoIdenInicial &&
         numeIdenInicial &&
-        pers_apellidos &&
-        pers_nombres &&
-        pers_sexo &&
-        pers_correo &&
+        (pers_apellidos === "" || pers_apellidos) &&
+        (pers_nombres === "" || pers_nombres) &&
+        (pers_sexo === "" || pers_sexo) &&
+        (pers_correo === "" || pers_correo) &&
         !prev.id_adm &&
         !prev.adm_dato_pers_tipo_iden &&
         !prev.adm_dato_pers_nume_iden &&
@@ -1466,7 +1466,7 @@ const Admision = ({
           adm_dato_pers_apel_prim: pers_apellidos,
           adm_dato_pers_nomb_prim: pers_nombres,
           adm_dato_pers_sexo: pers_sexo,
-          adm_dato_pers_corr_elec: pers_correo,
+          adm_dato_pers_corr_elec: pers_correo || "",
         };
       }
       return prev;

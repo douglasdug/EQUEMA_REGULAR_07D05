@@ -381,7 +381,7 @@ const Form008Emergencia = () => {
       setSuccessMessage("");
       toast.error(errorMessage, { position: "bottom-right" });
       if (
-        errorMessage.toLowerCase().includes("no se encontró") ||
+        errorMessage.toLowerCase().includes("base de datos") ||
         errorMessage.toLowerCase().includes("no existe") ||
         errorMessage.toLowerCase().includes("no se pudo obtener")
       ) {
@@ -389,6 +389,9 @@ const Form008Emergencia = () => {
           "¿El paciente tiene que ser admisionado al sistema?"
         );
         setShowConfirmModal(true);
+        if (error.response?.data) {
+          setAdmisionData(error.response.data);
+        }
       }
     }
   };
@@ -768,12 +771,6 @@ const Form008Emergencia = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSubmitBuscar = (e) => {
-    e.preventDefault();
-    setSuccess("Formulario enviado correctamente");
-    setError("");
   };
 
   const handleButtonClick = (e) => {
@@ -1180,7 +1177,6 @@ const Form008Emergencia = () => {
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Formulario 008 Emergencia
         </h2>
-        <form onSubmit={handleSubmitBuscar} className="w-full"></form>
         <form onSubmit={handleSubmit} className="w-full">
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
