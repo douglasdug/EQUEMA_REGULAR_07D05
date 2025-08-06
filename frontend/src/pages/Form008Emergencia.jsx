@@ -260,7 +260,31 @@ const Form008Emergencia = () => {
   const [variableEstado, setVariableEstado] = useState(initialVariableEstado);
   const [botonEstado, setBotonEstado] = useState(initialBotonEstado);
 
-  const requiredFields = [];
+  const requiredFields = [
+    "for_008_busc_pers_tipo_iden",
+    "for_008_busc_pers_nume_iden",
+    "for_008_emer_nomb_esta_salu",
+    "for_008_emer_fech_aten",
+    "for_008_emer_hora_aten",
+    "for_008_emer_apel_comp",
+    "for_008_emer_nomb_comp",
+    "for_008_emer_sexo",
+    "for_008_emer_naci",
+    "for_008_emer_etni",
+    "for_008_emer_grup_prio",
+    "for_008_emer_tipo_segu",
+    "for_008_emer_prov_resi",
+    "for_008_emer_cant_resi",
+    "for_008_emer_parr_resi",
+    "for_008_emer_espe_prof",
+    "for_008_emer_cie_10_prin_diag",
+    "for_008_emer_cond_diag",
+    "for_008_emer_cie_10_caus_exte_diag",
+    "for_008_emer_hosp",
+    "for_008_emer_cond_alta",
+    "for_008_emer_edad_gest",
+    "for_008_emer_ries_obst",
+  ];
 
   const labelMap = {
     for_008_busc_pers_tipo_iden: "TIPO DE IDENTIFICACIÓN:",
@@ -280,7 +304,7 @@ const Form008Emergencia = () => {
     for_008_emer_cant_resi: "CANTON DE RESIDENCIA:",
     for_008_emer_parr_resi: "PARROQUIA DE RESIDENCIA:",
     for_008_emer_unid_salu_resp_segu_aten:
-      "UNIDAD DE SALUD RESPONSABLE DE SEGUIMIENTO DE ATENCIÓN:",
+      "RESPONSABLE DE SEGUIMIENTO DE ATENCIÓN:",
     for_008_emer_dire_domi: "DIRECCIÓN DE DOMICILIO:",
     for_008_emer_tele_paci: "TELEFONO DE PACIENTE:",
     for_008_emer_espe_prof: "ESPECIALIDAD DEL PROFESIONAL:",
@@ -381,7 +405,7 @@ const Form008Emergencia = () => {
       setSuccessMessage("");
       toast.error(errorMessage, { position: "bottom-right" });
       if (
-        errorMessage.toLowerCase().includes("base de datos") ||
+        errorMessage.toLowerCase().includes("no se encontró") ||
         errorMessage.toLowerCase().includes("no existe") ||
         errorMessage.toLowerCase().includes("no se pudo obtener")
       ) {
@@ -389,9 +413,6 @@ const Form008Emergencia = () => {
           "¿El paciente tiene que ser admisionado al sistema?"
         );
         setShowConfirmModal(true);
-        if (error.response?.data) {
-          setAdmisionData(error.response.data);
-        }
       }
     }
   };
@@ -646,6 +667,21 @@ const Form008Emergencia = () => {
     }
   };
 
+  const checkFormValidity = () => {
+    const isValid = requiredFields.filter(isFieldVisible).every((field) => {
+      if (Array.isArray(formData[field])) {
+        return formData[field].length > 0;
+      }
+      return formData[field];
+    });
+    const isValidationError =
+      error && typeof error === "object" && error.type === "validacion";
+    setBotonEstado((prevState) => ({
+      ...prevState,
+      btnRegistrar: !isValid || isValidationError,
+    }));
+  };
+
   // Modificar la función insertarSugerencia para resaltar el texto insertado
   const insertarSugerencia = (sugerencia) => {
     const textoActual = formData["for_008_emer_obse"];
@@ -773,6 +809,12 @@ const Form008Emergencia = () => {
     }
   };
 
+  const handleSubmitBuscar = (e) => {
+    e.preventDefault();
+    setSuccess("Formulario enviado correctamente");
+    setError("");
+  };
+
   const handleButtonClick = (e) => {
     if (botonEstado.btnRegistrar) {
       e.preventDefault();
@@ -798,6 +840,10 @@ const Form008Emergencia = () => {
     setIsEditing(false);
     //setActiveTab("personales");
   };
+
+  useEffect(() => {
+    checkFormValidity();
+  }, [formData, error]);
 
   useEffect(() => {
     const now = new Date();
@@ -1019,7 +1065,7 @@ const Form008Emergencia = () => {
               {/* Diagnóstico principal */}
               <div className="mb-1 flex flex-col">
                 <label
-                  className="block text-gray-700 text-sm font-bold mb-1"
+                  className={labelClass}
                   htmlFor={`for_008_emer_cie_10_prin_diag_${index}`}
                 >
                   {index === 0
@@ -1056,7 +1102,7 @@ const Form008Emergencia = () => {
               {/* Condición del diagnóstico */}
               <div className="mb-1 flex flex-col">
                 <label
-                  className="block text-gray-700 text-sm font-bold mb-1"
+                  className={labelClass}
                   htmlFor={`for_008_emer_cond_diag_${index}`}
                 >
                   {index === 0
@@ -1077,7 +1123,7 @@ const Form008Emergencia = () => {
               {/* Causa externa */}
               <div className="mb-1 flex flex-col">
                 <label
-                  className="block text-gray-700 text-sm font-bold mb-1"
+                  className={labelClass}
                   htmlFor={`for_008_emer_cie_10_caus_exte_diag_${index}`}
                 >
                   {index === 0
@@ -1177,6 +1223,7 @@ const Form008Emergencia = () => {
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Formulario 008 Emergencia
         </h2>
+        <form onSubmit={handleSubmitBuscar} className="w-full"></form>
         <form onSubmit={handleSubmit} className="w-full">
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
@@ -2236,6 +2283,7 @@ const Form008Emergencia = () => {
             </div>
           </div>
         )}
+
         {showUnidadModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
