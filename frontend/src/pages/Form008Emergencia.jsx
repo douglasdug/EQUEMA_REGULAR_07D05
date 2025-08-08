@@ -145,6 +145,7 @@ const Form008Emergencia = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isBuscar, setIsBuscar] = useState(false);
   const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [edad, setEdad] = useState("");
   const fechaActual = new Date().toISOString().slice(0, 10);
@@ -224,8 +225,8 @@ const Form008Emergencia = () => {
 
   const initialVariableEstado = {
     for_008_busc_pers_tipo_iden: false,
-    for_008_busc_pers_nume_iden: false,
-    for_008_emer_nomb_esta_salu: false,
+    for_008_busc_pers_nume_iden: true,
+    for_008_emer_nomb_esta_salu: true,
     for_008_emer_fech_aten: true,
     for_008_emer_hora_aten: true,
     for_008_emer_edad_cond: true,
@@ -254,7 +255,7 @@ const Form008Emergencia = () => {
     for_008_emer_ries_obst: true,
   };
   const initialBotonEstado = {
-    btnBuscar: false,
+    btnBuscar: true,
   };
 
   const [variableEstado, setVariableEstado] = useState(initialVariableEstado);
@@ -348,6 +349,13 @@ const Form008Emergencia = () => {
     let tipoId, numIden;
     tipoId = formData.for_008_busc_pers_tipo_iden;
     numIden = formData.for_008_busc_pers_nume_iden;
+
+    setFormData((prev) => ({
+      ...prev,
+      for_008_emer_nomb_esta_salu: "",
+      for_008_emer_fech_aten: "",
+      for_008_emer_hora_aten: "",
+    }));
 
     if (!tipoId || !numIden) {
       setError("Debe seleccionar el tipo y número de identificación.");
@@ -578,9 +586,43 @@ const Form008Emergencia = () => {
       );
     };
 
+    const resetCamposPersona = () => {
+      limpiarVariables();
+      setVariableEstado(initialVariableEstado);
+      setBotonEstado(initialBotonEstado);
+      setIsBuscar(false);
+    };
+
     switch (name) {
       case "for_008_emer_fech_aten":
         actualizarFechaNacimiento(value, name);
+        break;
+      case "for_008_busc_pers_tipo_iden":
+        // Limpiar el input y activar ambos campos
+        setFormData((prev) => ({
+          ...prev,
+          for_008_busc_pers_tipo_iden: value,
+          for_008_busc_pers_nume_iden: "",
+        }));
+        setVariableEstado((prev) => ({
+          ...prev,
+          for_008_busc_pers_nume_iden: value === "",
+        }));
+        setBotonEstado((prev) => ({
+          ...prev,
+          btnBuscar: true,
+        }));
+        setIsBuscar(false);
+        break;
+      case "for_008_busc_pers_nume_iden":
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+        }));
+        setBotonEstado((prev) => ({
+          ...prev,
+          btnBuscar: value.trim() === "",
+        }));
         break;
       case "for_008_emer_cie_10_prin_diag": {
         // Verificar si el nuevo diagnóstico comienza con S o T
