@@ -617,6 +617,29 @@ const Form008Emergencia = () => {
         // );
         break;
       }
+      case "for_008_emer_espe_prof":
+        setFormData((prev) => {
+          // Si cambia a OBSTETRIZ, no limpiar, solo actualizar
+          // Si cambia a otro valor, limpiar los campos obstétricos
+          if (value === "OBSTETRIZ") {
+            return { ...prev, [name]: value };
+          } else {
+            return {
+              ...prev,
+              [name]: value,
+              for_008_emer_edad_gest: "",
+              for_008_emer_ries_obst: "",
+            };
+          }
+        });
+        setVariableEstado((prev) => ({
+          ...prev,
+          for_008_emer_edad_gest: value !== "OBSTETRIZ",
+          for_008_emer_ries_obst: value !== "OBSTETRIZ",
+        }));
+        // Forzar actualización del botón registrar
+        setTimeout(() => checkFormValidity(), 0);
+        break;
       default:
         setFormData((prev) => ({ ...prev, [name]: value }));
         validarDato(
@@ -715,38 +738,11 @@ const Form008Emergencia = () => {
 
     // Reglas específicas por campo
     const reglas = {
-      adm_dato_repr_fech_naci: () =>
-        formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO",
-      adm_dato_repr_naci: () =>
-        formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO",
-      adm_dato_repr_no_ident_prov: () =>
-        formData.adm_dato_repr_tipo_iden === "NO IDENTIFICADO" &&
-        formData.adm_dato_repr_naci === "ECUATORIANO/A",
-      adm_dato_auto_naci_etni: () =>
-        formData.adm_dato_auto_auto_etni === "INDÍGENA",
-      adm_dato_auto_pueb_kich: () =>
-        formData.adm_dato_auto_naci_etni === "KICHWA",
-      adm_dato_no_ident_prov: () =>
-        formData.adm_dato_naci_naci === "ECUATORIANO/A" &&
-        formData.adm_dato_pers_tipo_iden === "NO IDENTIFICADO",
-      adm_dato_resi_prov: () => formData.adm_dato_resi_pais_resi === "ECUADOR",
-      adm_dato_resi_cant: () => formData.adm_dato_resi_pais_resi === "ECUADOR",
-      adm_dato_resi_parr: () => formData.adm_dato_resi_pais_resi === "ECUADOR",
-      adm_dato_resi_esta_adsc_terr: () =>
-        formData.adm_dato_resi_pais_resi === "ECUADOR",
+      for_008_emer_edad_gest: () =>
+        formData.for_008_emer_espe_prof === "OBSTETRIZ",
+      for_008_emer_ries_obst: () =>
+        formData.for_008_emer_espe_prof === "OBSTETRIZ",
     };
-
-    // Campos del representante solo si es menor de edad
-    const camposRepresentante = [
-      "adm_dato_repr_tipo_iden",
-      "adm_dato_repr_nume_iden",
-      "adm_dato_repr_apel",
-      "adm_dato_repr_nomb",
-      "adm_dato_repr_pare",
-    ];
-    if (camposRepresentante.includes(field)) {
-      return !isNaN(edadNum) && edadNum < 18;
-    }
 
     // Si hay una regla específica, aplícala
     if (reglas[field]) {
@@ -1068,9 +1064,18 @@ const Form008Emergencia = () => {
                   className={labelClass}
                   htmlFor={`for_008_emer_cie_10_prin_diag_${index}`}
                 >
-                  {index === 0
-                    ? "CIE-10 (PRINCIPAL):"
-                    : `CIE-10 (PRINCIPAL) #${index + 1}:`}
+                  {index === 0 ? (
+                    <>
+                      {requiredFields.includes(
+                        "for_008_emer_cie_10_prin_diag"
+                      ) && <span className="text-red-500">* </span>}
+                      {labelMap["for_008_emer_cie_10_prin_diag"]}
+                    </>
+                  ) : (
+                    `${labelMap["for_008_emer_cie_10_prin_diag"]} #${
+                      index + 1
+                    }:`
+                  )}
                 </label>
                 <CustomSelect
                   id={`for_008_emer_cie_10_prin_diag_${index}`}
@@ -1080,6 +1085,16 @@ const Form008Emergencia = () => {
                   options={getOpcionesCIE10Filtradas(index)}
                   disabled={variableEstado["for_008_emer_cie_10_prin_diag"]}
                   variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      `for_008_emer_cie_10_prin_diag_${index}`,
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
                   isLargeList={true}
                   placeholder="Escriba para buscar diagnóstico CIE-10..."
                   minSearchLength={2}
@@ -1235,6 +1250,9 @@ const Form008Emergencia = () => {
                   className={labelClass}
                   htmlFor="for_008_busc_pers_tipo_iden"
                 >
+                  {requiredFields.includes("for_008_busc_pers_tipo_iden") && (
+                    <span className="text-red-500">* </span>
+                  )}
                   {labelMap["for_008_busc_pers_tipo_iden"]}
                 </label>
                 <CustomSelect
@@ -1262,6 +1280,9 @@ const Form008Emergencia = () => {
                   className={labelClass}
                   htmlFor="for_008_busc_pers_nume_iden"
                 >
+                  {requiredFields.includes("for_008_busc_pers_nume_iden") && (
+                    <span className="text-red-500">* </span>
+                  )}
                   {labelMap["for_008_busc_pers_nume_iden"]}
                 </label>
                 <div className="flex items-center gap-1 mb-1">
@@ -2100,83 +2121,92 @@ const Form008Emergencia = () => {
               </div>
             </div>
           </fieldset>
-          <fieldset className="border border-blue-200 rounded p-2 mb-1">
-            <legend className="text-lg font-semibold text-blue-600 px-2">
-              Datos de atencion obstetrica
-            </legend>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="for_008_emer_edad_gest">
-                  {requiredFields.includes("for_008_emer_edad_gest") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["for_008_emer_edad_gest"]}
-                </label>
-                <input
-                  type="text"
-                  id="for_008_emer_edad_gest"
-                  name="for_008_emer_edad_gest"
-                  value={formData["for_008_emer_edad_gest"]}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Permitir vacío para borrar
-                    if (value === "") {
-                      handleChange(e);
-                      return;
+          {formData["for_008_emer_espe_prof"] === "OBSTETRIZ" && (
+            <fieldset className="border border-blue-200 rounded p-2 mb-1">
+              <legend className="text-lg font-semibold text-blue-600 px-2">
+                Datos de atencion obstetrica
+              </legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="for_008_emer_edad_gest"
+                  >
+                    {requiredFields.includes("for_008_emer_edad_gest") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["for_008_emer_edad_gest"]}
+                  </label>
+                  <input
+                    type="text"
+                    id="for_008_emer_edad_gest"
+                    name="for_008_emer_edad_gest"
+                    value={formData["for_008_emer_edad_gest"]}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Permitir vacío para borrar
+                      if (value === "") {
+                        handleChange(e);
+                        return;
+                      }
+                      // Permitir solo semanas 1-60 y días 1-6, formato paso a paso
+                      const partialRegex =
+                        /^([1-9]|[1-5][0-9]|60)?(.([1-6])?)?$/;
+                      if (partialRegex.test(value)) {
+                        handleChange(e);
+                      }
+                    }}
+                    placeholder="Ej: 8.6 (8 semanas. 6 días)"
+                    className={`${inputStyle} ${
+                      isFieldInvalid(
+                        "for_008_emer_edad_gest",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    } ${
+                      variableEstado["for_008_emer_edad_gest"]
+                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                        : "bg-white text-gray-700 cursor-pointer"
+                    }`}
+                    disabled={variableEstado["for_008_emer_edad_gest"]}
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="for_008_emer_ries_obst"
+                  >
+                    {requiredFields.includes("for_008_emer_ries_obst") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["for_008_emer_ries_obst"]}
+                  </label>
+                  <CustomSelect
+                    id="for_008_emer_ries_obst"
+                    name="for_008_emer_ries_obst"
+                    value={formData["for_008_emer_ries_obst"]}
+                    onChange={handleChange}
+                    options={allListForm008.for_008_emer_ries_obst}
+                    disabled={variableEstado["for_008_emer_ries_obst"]}
+                    variableEstado={variableEstado}
+                    className={
+                      isFieldInvalid(
+                        "for_008_emer_ries_obst",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
                     }
-                    // Permitir solo semanas 1-60 y días 1-6, formato paso a paso
-                    const partialRegex = /^([1-9]|[1-5][0-9]|60)?(.([1-6])?)?$/;
-                    if (partialRegex.test(value)) {
-                      handleChange(e);
-                    }
-                  }}
-                  placeholder="Ej: 8.6 (8 semanas. 6 días)"
-                  className={`${inputStyle} ${
-                    isFieldInvalid(
-                      "for_008_emer_edad_gest",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  } ${
-                    variableEstado["for_008_emer_edad_gest"]
-                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                      : "bg-white text-gray-700 cursor-pointer"
-                  }`}
-                  disabled={variableEstado["for_008_emer_edad_gest"]}
-                />
+                  />
+                </div>
               </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="for_008_emer_ries_obst">
-                  {requiredFields.includes("for_008_emer_ries_obst") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["for_008_emer_ries_obst"]}
-                </label>
-                <CustomSelect
-                  id="for_008_emer_ries_obst"
-                  name="for_008_emer_ries_obst"
-                  value={formData["for_008_emer_ries_obst"]}
-                  onChange={handleChange}
-                  options={allListForm008.for_008_emer_ries_obst}
-                  disabled={variableEstado["for_008_emer_ries_obst"]}
-                  variableEstado={variableEstado}
-                  className={
-                    isFieldInvalid(
-                      "for_008_emer_ries_obst",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  }
-                />
-              </div>
-            </div>
-          </fieldset>
+            </fieldset>
+          )}
           <div className="md:col-span-2 flex justify-center mt-1">
             <button
               type="submit"
