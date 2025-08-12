@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Admision from "./Admision.jsx";
 import {
   listarUsuariosApoyoAtencion,
+  listarAtencionesPaciente,
   registerForm008Emer,
   updateForm008Emer,
   buscarUsuarioAdmision,
@@ -56,6 +57,7 @@ const initialState = {
   for_008_emer_apoy_aten_medi: "",
   for_008_emer_edad_gest: "",
   for_008_emer_ries_obst: "",
+  for_008_hist_aten: "",
 };
 
 function calcularEdad(fechaNacimientoStr) {
@@ -162,6 +164,8 @@ const Form008Emergencia = () => {
   const [palabraActual, setPalabraActual] = useState("");
   const [posicionCursor, setPosicionCursor] = useState(0);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+  const [atencionesPrevias, setAtencionesPrevias] = useState([]);
+  const [isHistorialExpandido, setIsHistorialExpandido] = useState(false);
   const navigate = useNavigate();
 
   const frasesMedicas = [
@@ -252,6 +256,7 @@ const Form008Emergencia = () => {
     for_008_emer_apoy_aten_medi: true,
     for_008_emer_edad_gest: true,
     for_008_emer_ries_obst: true,
+    for_008_hist_aten: true,
   };
   const initialBotonEstado = {
     btnBuscar: true,
@@ -506,6 +511,18 @@ const Form008Emergencia = () => {
     };
   }
 
+  // NUEVO: formatea una línea de la atención previa
+  const formatearAtencionLinea = (a) => {
+    const unic = a?.for_008_emer_unic ?? "";
+    const unid = a?.for_008_emer_unid ?? "";
+    const fecha = a?.for_008_emer_fech_aten ?? "";
+    const hora = a?.for_008_emer_hora_aten ?? "";
+    const cie = a?.for_008_emer_cie_10_prin ?? "";
+    const diag = a?.for_008_emer_diag_prin ?? "";
+    const cond = a?.for_008_emer_cond_diag ?? "";
+    return `${unic} ${unid} | ${fecha} ${hora} | ${cie} ${diag} | ${cond}`;
+  };
+
   // Refactor: una sola función con responsabilidades claras y sets agrupados
   const actualizarFormDataConRespuesta = async (data) => {
     try {
@@ -516,6 +533,17 @@ const Form008Emergencia = () => {
         listarUsuariosApoyoAtencion(),
         buscarUsuarioIdUnidadSalud(),
       ]);
+
+      // Obtener atenciones previas del paciente (CORREGIDO)
+      const atencionesData = await listarAtencionesPaciente(
+        data.id_admision_datos
+      );
+      const listaAtenciones = Array.isArray(atencionesData?.data)
+        ? atencionesData.data
+        : Array.isArray(atencionesData)
+        ? atencionesData
+        : [];
+      setAtencionesPrevias(listaAtenciones);
 
       // Formatear médicos
       const medicosListFormatted = Array.isArray(medicosData)
@@ -590,6 +618,7 @@ const Form008Emergencia = () => {
       for_008_emer_apoy_aten_medi: false,
       for_008_emer_edad_gest: false,
       for_008_emer_ries_obst: false,
+      for_008_hist_aten: false,
     }));
   };
 
@@ -927,7 +956,7 @@ const Form008Emergencia = () => {
   };
 
   const isFieldVisible = (field) => {
-    const edadNum = parseInt(edad);
+    //const edadNum = parseInt(edad);
 
     // Reglas específicas por campo
     const reglas = {
@@ -969,6 +998,7 @@ const Form008Emergencia = () => {
         setTimeout(() => setSuccessMessage(""), 10000);
         toast.success(message, { position: "bottom-right" });
       }
+      setRefreshTable((prev) => prev + 1);
       limpiarVariables();
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -978,12 +1008,6 @@ const Form008Emergencia = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSubmitBuscar = (e) => {
-    e.preventDefault();
-    setSuccess("Formulario enviado correctamente");
-    setError("");
   };
 
   const handleButtonClick = (e) => {
@@ -1009,8 +1033,8 @@ const Form008Emergencia = () => {
     setBotonEstado(initialBotonEstado);
     setFechaNacimiento("");
     setEdad("");
+    setAtencionesPrevias("");
     setIsEditing(false);
-    //setActiveTab("personales");
   };
 
   useEffect(() => {
@@ -1112,6 +1136,68 @@ const Form008Emergencia = () => {
       return codigo.startsWith("S") || codigo.startsWith("T");
     };
 
+    // Normalizador seguro para comparar etiquetas/valores
+    const norm = (s) =>
+      String(s ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .trim();
+
+    const esOpcionNoAplica = (op) =>
+      norm(op.label).includes("NO APLICA") || norm(op.value) === "NO APLICA";
+
+    const esOpcionPresuntivo = (op) =>
+      norm(op.label).startsWith("PRESUNTIVO") ||
+      norm(op.value) === "PRESUNTIVO";
+
+    const esOpcionDefInicial = (op) => {
+      const l = norm(op.label);
+      return (
+        (l.startsWith("DEFINITIVO INICIAL") && !l.includes("CONFIRMADO")) ||
+        norm(op.value) === "DEFINITIVO INICIAL"
+      );
+    };
+
+    const esOpcionDefInicialConfLab = (op) => {
+      const l = norm(op.label);
+      return (
+        (l.startsWith("DEFINITIVO INICIAL") && l.includes("CONFIRMADO")) ||
+        l.includes("LABORATORIO") ||
+        norm(op.value) === "DEFINITIVO INICIAL CONFIRMADO POR LABORATORIO"
+      );
+    };
+
+    // NUEVO: verificar si el diagnóstico principal inicia con Z
+    const esDiagnosticoZ = (diagValue) => {
+      const selected = opcionesCIE10Permitidas.find(
+        (op) => op.value === diagValue
+      );
+      const codigo = selected ? selected.label.split(" ")[0] : "";
+      return codigo.startsWith("Z");
+    };
+
+    // NUEVO (robusto): opciones de condición por índice
+    const getOpcionesCondicionPorIndex = (index) => {
+      const listaBase = allListForm008.for_008_emer_cond_diag || [];
+      const diagValue = formData.for_008_emer_cie_10_prin_diag[index];
+
+      if (esDiagnosticoZ(diagValue)) {
+        const soloNoAplica = listaBase.filter(esOpcionNoAplica);
+        // Fallback: si no encontró "NO APLICA", devolver lista completa para no dejar vacío
+        return soloNoAplica.length ? soloNoAplica : listaBase;
+      }
+
+      const filtradas = listaBase.filter(
+        (op) =>
+          esOpcionPresuntivo(op) ||
+          esOpcionDefInicial(op) ||
+          esOpcionDefInicialConfLab(op)
+      );
+      // Fallback: si no matchea nada, devolver lista base
+      return filtradas.length ? filtradas : listaBase;
+    };
+
     const diagInvalido = (index) =>
       String(formData.for_008_emer_cie_10_prin_diag[index] ?? "").trim() === "";
 
@@ -1120,10 +1206,6 @@ const Form008Emergencia = () => {
       String(
         formData.for_008_emer_cie_10_caus_exte_diag[index] ?? ""
       ).trim() === "";
-
-    // NUEVO: estados para mostrar info al enfocar los selects por índice
-    const [infoPrincipalFocus, setInfoPrincipalFocus] = React.useState({});
-    const [infoCausaFocus, setInfoCausaFocus] = React.useState({});
 
     // Manejar cambio en campos de diagnóstico con validación inmediata
     const handleDiagnosticoChange = (e, index) => {
@@ -1144,8 +1226,30 @@ const Form008Emergencia = () => {
         if (name === `for_008_emer_cie_10_prin_diag_${index}`) {
           next.for_008_emer_cie_10_prin_diag[index] = value;
           // Si no es S/T, limpiar su causa externa
-          if (!esDiagnosticoSoT(value)) {
+          const selected = opcionesCIE10Permitidas.find(
+            (op) => op.value === value
+          );
+          const code = selected ? selected.label.split(" ")[0] : "";
+          if (!(code.startsWith("S") || code.startsWith("T"))) {
             next.for_008_emer_cie_10_caus_exte_diag[index] = "";
+          }
+          // Validar/autoasignar condición según opciones filtradas
+          const opcionesCond = getOpcionesCondicionPorIndex(index);
+          const condActual = next.for_008_emer_cond_diag[index];
+
+          const existeActual = opcionesCond.some(
+            (op) => op.value === condActual
+          );
+          if (!existeActual) {
+            // Autoseleccionar NO APLICA si la única opción disponible es esa
+            if (
+              opcionesCond.length === 1 &&
+              esOpcionNoAplica(opcionesCond[0])
+            ) {
+              next.for_008_emer_cond_diag[index] = opcionesCond[0].value;
+            } else {
+              next.for_008_emer_cond_diag[index] = "";
+            }
           }
         } else if (name === `for_008_emer_cond_diag_${index}`) {
           next.for_008_emer_cond_diag[index] = value;
@@ -1226,16 +1330,17 @@ const Form008Emergencia = () => {
                       </div>
                       <ul className="list-disc ml-5 space-y-1">
                         <li>
-                          Registrar solo códigos CIE-10 con letras iniciales de
-                          A a U.
+                          Registrar solo códigos CIE-10 de morbilidad con letras
+                          iniciales de A a U.
                         </li>
                         <li>
                           Excepción: Z027 – Extensión de certificado médico
                           (custodia policial o certificado).
                         </li>
                         <li>
-                          Además de Z027, solo se permiten como principal: Z027,
-                          Z370, Z371, Z372, Z373, Z374, Z375, Z377.
+                          Solo se permite CIE-10 de atención de prevención son
+                          los siguientes: Z000, Z027, Z113, Z206, Z258, Z358,
+                          Z359, Z370, Z371, Z372, Z373, Z374, Z375, Z377, Z390.
                         </li>
                         <li>
                           No se permiten otros códigos que inicien con “Z” como
@@ -1259,8 +1364,8 @@ const Form008Emergencia = () => {
                   )}
                 {requiereCausaExterna(diagValue) && diagValue && (
                   <span className="text-blue-600 text-sm mt-1">
-                    Se tiene que registrar la causa externa para diagnósticos
-                    que comiencen con S o T.
+                    Se tiene que registrar la Causa Externa que comiencen con V,
+                    W, X o Y.
                   </span>
                 )}
               </div>
@@ -1281,7 +1386,7 @@ const Form008Emergencia = () => {
                   name={`for_008_emer_cond_diag_${index}`}
                   value={formData.for_008_emer_cond_diag[index] || ""}
                   onChange={(e) => handleDiagnosticoChange(e, index)}
-                  options={allListForm008.for_008_emer_cond_diag}
+                  options={getOpcionesCondicionPorIndex(index)}
                   disabled={variableEstado["for_008_emer_cond_diag"]}
                   variableEstado={variableEstado}
                   className={
@@ -1351,7 +1456,7 @@ const Form008Emergencia = () => {
                         </li>
                         <li>
                           Usar únicamente códigos CIE-10 que inicien con V, W, X
-                          o Z.
+                          o Y.
                         </li>
                         <li>
                           No registrar códigos fuera de este rango para causas
@@ -1432,63 +1537,63 @@ const Form008Emergencia = () => {
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Formulario 008 Emergencia
         </h2>
-        <form onSubmit={handleSubmitBuscar} className="w-full"></form>
         <form onSubmit={handleSubmit} className="w-full">
-          <fieldset className="border border-blue-200 rounded p-2 mb-1">
-            <legend className="text-lg font-semibold text-blue-600 px-2">
-              Buscar pacientes admisionados
-            </legend>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              <div className={fieldClass}>
-                <label
-                  className={labelClass}
-                  htmlFor="for_008_busc_pers_tipo_iden"
-                >
-                  {requiredFields.includes("for_008_busc_pers_tipo_iden") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["for_008_busc_pers_tipo_iden"]}
-                </label>
-                <CustomSelect
-                  id="for_008_busc_pers_tipo_iden"
-                  name="for_008_busc_pers_tipo_iden"
-                  value={formData["for_008_busc_pers_tipo_iden"]}
-                  onChange={handleChange}
-                  options={allListForm008.for_008_busc_pers_tipo_iden}
-                  disabled={variableEstado["for_008_busc_pers_tipo_iden"]}
-                  variableEstado={variableEstado}
-                  className={
-                    isFieldInvalid(
-                      "for_008_busc_pers_tipo_iden",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  }
-                />
-              </div>
-              <div className={fieldClass}>
-                <label
-                  className={labelClass}
-                  htmlFor="for_008_busc_pers_nume_iden"
-                >
-                  {requiredFields.includes("for_008_busc_pers_nume_iden") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["for_008_busc_pers_nume_iden"]}
-                </label>
-                <div className="flex items-center gap-1 mb-1">
-                  <input
-                    type="text"
-                    id="for_008_busc_pers_nume_iden"
-                    name="for_008_busc_pers_nume_iden"
-                    value={formData["for_008_busc_pers_nume_iden"]}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            <fieldset className="border border-blue-200 rounded p-2 mb-1 sm:col-span-2 md:col-span-2 lg:col-span-2">
+              <legend className="text-lg font-semibold text-blue-600 px-2">
+                Buscar pacientes admisionados
+              </legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="for_008_busc_pers_tipo_iden"
+                  >
+                    {requiredFields.includes("for_008_busc_pers_tipo_iden") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["for_008_busc_pers_tipo_iden"]}
+                  </label>
+                  <CustomSelect
+                    id="for_008_busc_pers_tipo_iden"
+                    name="for_008_busc_pers_tipo_iden"
+                    value={formData["for_008_busc_pers_tipo_iden"]}
                     onChange={handleChange}
-                    placeholder="Información es requerida"
-                    required
-                    className={`${inputStyle}
+                    options={allListForm008.for_008_busc_pers_tipo_iden}
+                    disabled={variableEstado["for_008_busc_pers_tipo_iden"]}
+                    variableEstado={variableEstado}
+                    className={
+                      isFieldInvalid(
+                        "for_008_busc_pers_tipo_iden",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="for_008_busc_pers_nume_iden"
+                  >
+                    {requiredFields.includes("for_008_busc_pers_nume_iden") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["for_008_busc_pers_nume_iden"]}
+                  </label>
+                  <div className="flex items-center gap-1 mb-1">
+                    <input
+                      type="text"
+                      id="for_008_busc_pers_nume_iden"
+                      name="for_008_busc_pers_nume_iden"
+                      value={formData["for_008_busc_pers_nume_iden"]}
+                      onChange={handleChange}
+                      placeholder="Información es requerida"
+                      required
+                      className={`${inputStyle}
                       ${
                         isFieldInvalid(
                           "for_008_busc_pers_nume_iden",
@@ -1504,26 +1609,59 @@ const Form008Emergencia = () => {
                            ? "bg-gray-200 text-gray-700 cursor-no-drop"
                            : "bg-white text-gray-700 cursor-pointer"
                        }`}
-                    disabled={variableEstado["for_008_busc_pers_nume_iden"]}
-                  />
-                  <button
-                    type="button"
-                    id="btnBuscar"
-                    name="btnBuscar"
-                    className={`${buttonStylePrimario} ${
-                      botonEstado.btnBuscar
-                        ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-                    }`}
-                    onClick={handleSearch}
-                    disabled={botonEstado.btnBuscar}
-                  >
-                    {buttonTextBuscar}
-                  </button>
+                      disabled={variableEstado["for_008_busc_pers_nume_iden"]}
+                    />
+                    <button
+                      type="button"
+                      id="btnBuscar"
+                      name="btnBuscar"
+                      className={`${buttonStylePrimario} ${
+                        botonEstado.btnBuscar
+                          ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                          : "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                      }`}
+                      onClick={handleSearch}
+                      disabled={botonEstado.btnBuscar}
+                    >
+                      {buttonTextBuscar}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </fieldset>
+            </fieldset>
+            <fieldset className="border border-blue-200 rounded p-2 mb-1 sm:col-span-2 md:col-span-2 lg:col-span-2">
+              <legend className="text-lg font-semibold text-blue-600 px-2">
+                Historial de Atenciones de paciente por Emergencia.
+              </legend>
+              <div className="mb-2">
+                <label className={labelClass} htmlFor="for_008_hist_aten">
+                  Los 6 atenciones previas del paciente.
+                </label>
+                <textarea
+                  id="for_008_hist_aten"
+                  name="for_008_hist_aten"
+                  readOnly
+                  className={`${inputStyle} font-mono text-xs resize-none transition-all duration-200
+                      ${
+                        isHistorialExpandido
+                          ? "h-48 overflow-auto bg-white cursor-default"
+                          : "h-10 overflow-hidden bg-gray-50 cursor-pointer"
+                      }`}
+                  onFocus={() => setIsHistorialExpandido(true)}
+                  onClick={() => setIsHistorialExpandido(true)}
+                  onBlur={() => setIsHistorialExpandido(false)}
+                  value={
+                    atencionesPrevias && atencionesPrevias.length > 0
+                      ? atencionesPrevias.map(formatearAtencionLinea).join("\n")
+                      : "Sin atenciones previas registradas."
+                  }
+                  placeholder="El historial de atenciones previas se mostrará aquí después de buscar un paciente."
+                  title="Clic para ver todo; clic fuera para comprimir"
+                  disabled={variableEstado["for_008_hist_aten"]}
+                />
+              </div>
+            </fieldset>
+          </div>
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
               Datos de Unidad de Salud
@@ -2337,20 +2475,40 @@ const Form008Emergencia = () => {
                     name="for_008_emer_edad_gest"
                     value={formData["for_008_emer_edad_gest"]}
                     onChange={(e) => {
-                      const value = e.target.value;
-                      // Permitir vacío para borrar
+                      const name = e.target.name;
+                      // Normaliza: coma -> punto y elimina todo lo que no sea dígito o punto
+                      let value = e.target.value
+                        .replace(/,/g, ".")
+                        .replace(/[^\d.]/g, "");
+
+                      // Permitir borrar
                       if (value === "") {
-                        handleChange(e);
+                        handleChange({ target: { name, value } });
                         return;
                       }
-                      // Permitir solo semanas 1-60 y días 1-6, formato paso a paso
+
+                      // Evitar más de un punto decimal
+                      const firstDot = value.indexOf(".");
+                      if (firstDot !== -1) {
+                        value =
+                          value.slice(0, firstDot + 1) +
+                          value.slice(firstDot + 1).replace(/\./g, "");
+                      }
+
+                      // Solo números y punto (validación rápida de tecleo)
+                      if (!/^\d*\.?\d*$/.test(value)) return;
+
+                      // Validación paso a paso: 1-60 semanas y .0-.6 días
                       const partialRegex =
-                        /^([1-9]|[1-5][0-9]|60)?(.([1-6])?)?$/;
+                        /^([1-9]|[1-5][0-9]|60)?(\.([0-6])?)?$/; // se escapa el punto
                       if (partialRegex.test(value)) {
-                        handleChange(e);
+                        handleChange({ target: { name, value } });
                       }
                     }}
                     placeholder="Ej: 8.6 (8 semanas. 6 días)"
+                    inputMode="decimal"
+                    pattern="^\d+(\.\d+)?$"
+                    title="Solo números y punto decimal (ej.: 15 o 12.2)"
                     className={`${inputStyle} ${
                       isFieldInvalid(
                         "for_008_emer_edad_gest",

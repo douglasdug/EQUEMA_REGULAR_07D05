@@ -139,12 +139,8 @@ export const loginUser = async (formData) => {
 // Cerrar sesión del usuario
 export const logoutUser = async () => {
   try {
-    console.log("Iniciando logout");
     const accessToken = getAccessToken();
     const refreshToken = getRefreshToken();
-
-    console.log("Access Token:", accessToken);
-    console.log("Refresh Token:", refreshToken);
 
     if (!accessToken || !refreshToken) {
       throw new Error("Se requieren tokens de acceso y refresco");
@@ -157,16 +153,13 @@ export const logoutUser = async () => {
     };
 
     await axios.post(`${API_URL}/logout/`, { refresh: refreshToken }, config);
-    console.log("Logout exitoso en el servidor");
     clearAuthData();
-    console.log("Datos de autenticación eliminados");
   } catch (error) {
     console.error(
       "Error al cerrar sesión:",
       error.response ? error.response.data : error.message
     );
     clearAuthData();
-    console.log("Datos de autenticación eliminados en catch");
     throw error;
   }
 };
@@ -299,7 +292,6 @@ export const buscarUsuarioIdUnidadSalud = async () => {
 export const listarUsuariosApoyoAtencion = async () => {
   try {
     const userId = await ensureCurrentUserId();
-    console.log("User ID:", userId);
     const response = await axios.get(`${API_URL}/eni-user/listar-filtrado/`, {
       params: { id_eni_user: userId },
     });
@@ -437,6 +429,26 @@ export const listarForm008EmerAtenciones = async () => {
       "Error fetching all form 008 emergency data:",
       error.response ? error.response.data : error.message
     );
+    throw error;
+  }
+};
+
+export const listarAtencionesPaciente = async (admision_datos) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/form-008-emergencia/listar-atenciones-paciente/`,
+      {
+        params: { admision_datos },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching atencion form-008-emergencia data:",
+        error.response ? error.response.data : error.message
+      );
+    }
     throw error;
   }
 };

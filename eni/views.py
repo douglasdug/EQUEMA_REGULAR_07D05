@@ -7614,13 +7614,42 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 self.get_queryset()
                 .filter(eniUser=id_eni_user)
                 .order_by(
-                    '-for_008_emer_fech_aten',
+                    '-for_008_emer_fech_repor',
                     'for_008_emer_prim_apel',
                     'for_008_emer_segu_apel',
                     'for_008_emer_prim_nomb',
                     'for_008_emer_segu_nomb'
                 )[:30]
             )
+
+            serializer = self.get_serializer(qs, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    # , permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get'], url_path='listar-atenciones-paciente')
+    def listar_atenciones_paciente(self, request):
+        try:
+            id_admision_datos = request.query_params.get('admision_datos')
+            if not id_admision_datos:
+                return Response(
+                    {"detail": "El parámetro id_admision_datos es requerido."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            qs = (
+                self.get_queryset()
+                .filter(admision_datos=id_admision_datos)
+                .order_by(
+                    '-for_008_emer_fech_aten',
+                    '-for_008_emer_hora_aten',
+                )[:6]
+            )
+
+            if not qs.exists():
+                return Response({"message": "El paciente no registra atenciones previas de Form-008 Emergencia en el sistema!"}, status=status.HTTP_200_OK)
 
             serializer = self.get_serializer(qs, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)

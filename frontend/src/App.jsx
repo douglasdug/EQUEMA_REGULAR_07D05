@@ -11,6 +11,7 @@ import AvisoUser from "./pages/AvisoUser.jsx";
 import AdminUser from "./pages/AdminUser.jsx";
 import Admision from "./pages/Admision.jsx";
 import Form008Emergencia from "./pages/Form008Emergencia.jsx";
+import ReporteAtenciones from "./pages/ReporteAtenciones.jsx";
 import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
@@ -47,6 +48,10 @@ function App() {
                 <Route
                   path="/form-008-emergencia/"
                   element={<Form008Emergencia />}
+                />
+                <Route
+                  path="/reporte-atenciones/"
+                  element={<ReporteAtenciones />}
                 />
                 <Route path="/create-temprano/" element={<CreateTemprano />} />
                 <Route path="/create-tardio/" element={<CreateTardio />} />
