@@ -16,9 +16,19 @@ export const CustomSelect = ({
   minSearchLength = 2, // Caracteres mínimos para búsqueda
   maxResults = 100, // Máximo de resultados a mostrar
   isClearable = true,
+  onFocus,
+  onBlur,
+  title,
+  tooltipContent,
+  tooltipPosition = "bottom", // "top" | "bottom" | "left" | "right"
+  tooltipTrigger = "both",
+  tooltipMaxWidth = "28rem",
+  tooltipAlign = "start", // "start" | "center" | "end"
+  tooltipOffset = 8,
 }) => {
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [inputValue, setInputValue] = useState("");
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Para isMulti, value debe ser array de objetos; para simple, un objeto
   const selectedOption = isMulti
@@ -39,12 +49,89 @@ export const CustomSelect = ({
     optionsToShow = options;
   }
 
+  // Handlers que también notifican al padre
+  const handleFocus = (e) => {
+    if (tooltipTrigger === "focus" || tooltipTrigger === "both") {
+      setShowTooltip(true);
+    }
+    onFocus?.(e);
+  };
+  const handleBlur = (e) => {
+    if (tooltipTrigger === "focus" || tooltipTrigger === "both") {
+      setShowTooltip(false);
+    }
+    onBlur?.(e);
+  };
+  const handleMouseEnter = () => {
+    if (tooltipTrigger === "hover" || tooltipTrigger === "both") {
+      setShowTooltip(true);
+    }
+  };
+  const handleMouseLeave = () => {
+    if (tooltipTrigger === "hover" || tooltipTrigger === "both") {
+      setShowTooltip(false);
+    }
+  };
+
+  const posIsBottom = tooltipPosition === "bottom";
+
+  const buildTooltipStyle = () => {
+    const style = { maxWidth: tooltipMaxWidth, width: "max-content" };
+    const offset =
+      typeof tooltipOffset === "number" ? `${tooltipOffset}px` : tooltipOffset;
+
+    switch (tooltipPosition) {
+      case "bottom":
+        style.top = "100%";
+        style.marginTop = offset;
+        if (tooltipAlign === "start") style.left = 0;
+        else if (tooltipAlign === "center") {
+          style.left = "50%";
+          style.transform = "translateX(-50%)";
+        } else if (tooltipAlign === "end") style.right = 0;
+        break;
+      case "top":
+        style.bottom = "100%";
+        style.marginBottom = offset;
+        if (tooltipAlign === "start") style.left = 0;
+        else if (tooltipAlign === "center") {
+          style.left = "50%";
+          style.transform = "translateX(-50%)";
+        } else if (tooltipAlign === "end") style.right = 0;
+        break;
+      case "right":
+        style.left = "100%";
+        style.marginLeft = offset;
+        if (tooltipAlign === "start") style.top = 0;
+        else if (tooltipAlign === "center") {
+          style.top = "50%";
+          style.transform = "translateY(-50%)";
+        } else if (tooltipAlign === "end") style.bottom = 0;
+        break;
+      case "left":
+        style.right = "100%";
+        style.marginRight = offset;
+        if (tooltipAlign === "start") style.top = 0;
+        else if (tooltipAlign === "center") {
+          style.top = "50%";
+          style.transform = "translateY(-50%)";
+        } else if (tooltipAlign === "end") style.bottom = 0;
+        break;
+      default:
+        break;
+    }
+    return style;
+  };
+
   return (
     <div
       className={`relative w-full rounded ${className} ${
         disabled ? "cursor-not-allowed" : ""
       }`}
       style={disabled ? { cursor: "not-allowed" } : {}}
+      title={title}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <Select
         inputId={id}
@@ -75,6 +162,16 @@ export const CustomSelect = ({
         styles={selectStyles}
         classNamePrefix="react-select"
         isClearable={isClearable}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onMenuOpen={() => {
+          if (tooltipTrigger !== "hover") setShowTooltip(true);
+          onFocus?.();
+        }}
+        onMenuClose={() => {
+          if (tooltipTrigger !== "hover") setShowTooltip(false);
+          onBlur?.();
+        }}
         // Propiedades adicionales para listas grandes
         onInputChange={
           isLargeList
@@ -117,6 +214,15 @@ export const CustomSelect = ({
         }
         filterOption={isLargeList ? null : undefined} // Desactivar filtro interno para listas grandes
       />
+      {tooltipContent && showTooltip && (
+        <div
+          className="absolute z-50 bg-yellow-50 border border-yellow-400 shadow-lg rounded p-3 text-xs text-gray-800"
+          style={buildTooltipStyle()}
+          role="tooltip"
+        >
+          {tooltipContent}
+        </div>
+      )}
     </div>
   );
 };
@@ -139,6 +245,15 @@ CustomSelect.propTypes = {
   minSearchLength: PropTypes.number,
   maxResults: PropTypes.number,
   isClearable: PropTypes.bool,
+  onFocus: PropTypes.func,
+  onBlur: PropTypes.func,
+  title: PropTypes.string,
+  tooltipContent: PropTypes.node,
+  tooltipTrigger: PropTypes.oneOf(["focus", "hover", "both"]),
+  tooltipMaxWidth: PropTypes.string,
+  tooltipPosition: PropTypes.oneOf(["top", "bottom", "left", "right"]),
+  tooltipAlign: PropTypes.oneOf(["start", "center", "end"]), // NUEVO
+  tooltipOffset: PropTypes.oneOfType([PropTypes.number, PropTypes.string]), // NUEVO
 };
 
 export const inputStyle =

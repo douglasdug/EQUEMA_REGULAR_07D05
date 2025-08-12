@@ -11,17 +11,16 @@ const setTokens = (access, refresh) => {
   localStorage.setItem("accessToken", access);
   localStorage.setItem("refreshToken", refresh);
 };
-const setUserId = (userId) => {
-  localStorage.setItem("userId", userId);
-};
 const setInputFech = (dateActual = new Date().toISOString().slice(0, 10)) => {
   localStorage.setItem("dateInputFech", dateActual);
 };
 const clearAuthData = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
-  localStorage.removeItem("userId");
+  //localStorage.removeItem("userId");
   localStorage.removeItem("dateInputFech");
+  // limpiar caché en memoria
+  cachedUserId = null;
 };
 
 // Función para obtener los encabezados de autenticación
@@ -33,6 +32,56 @@ export const getAuthHeaders = () => {
       "Content-Type": "application/json",
     },
   };
+};
+
+// Caché en memoria del id del usuario actual (no se persiste)
+let cachedUserId = null;
+
+// Utilidades para extraer el userId desde el JWT (sin exponerlo ni guardarlo)
+const parseJwt = (token) => {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+};
+
+export const getUserIdFromToken = () => {
+  const t = getAccessToken();
+  if (!t) return null;
+  const payload = parseJwt(t);
+  // Ajusta las claves según tu backend (sub, user_id, id, etc.)
+  return payload?.user_id ?? payload?.sub ?? payload?.id ?? null;
+};
+
+const getEniUserId = () => getUserIdFromToken();
+
+// Obtiene el id del usuario actual sin exponerlo ni guardarlo en localStorage
+export const ensureCurrentUserId = async () => {
+  // if (cachedUserId) return cachedUserId;
+
+  // const fromToken = getUserIdFromToken();
+  // if (fromToken) {
+  //   cachedUserId = fromToken;
+  //   return cachedUserId;
+  // }
+
+  // try {
+  //   const me = await getUser();
+  //   cachedUserId = me?.id ?? me?.user_id ?? me?.pk ?? null;
+  //   return cachedUserId;
+  // } catch {
+  //   return null;
+  // }
+  return 1;
 };
 
 // Refrescar el token de acceso
@@ -74,8 +123,9 @@ export const loginUser = async (formData) => {
       throw new Error("Datos de respuesta incompletos");
     }
     setTokens(access, refresh);
-    setUserId(response.data.id);
+    cachedUserId = id; // mantenerlo en memoria
     setInputFech();
+    const userId = await ensureCurrentUserId();
     return response.data;
   } catch (error) {
     console.error(
@@ -117,6 +167,19 @@ export const logoutUser = async () => {
     );
     clearAuthData();
     console.log("Datos de autenticación eliminados en catch");
+    throw error;
+  }
+};
+
+export const getAllEniUsers = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/eni-user/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching all eni users:",
+      error.response ? error.response.data : error.message
+    );
     throw error;
   }
 };
@@ -212,14 +275,34 @@ export const resetPasswordWithToken = async ({ uid, token, password }) => {
   }
 };
 
-export const buscarUsuarioIdUnidadSalud = async (id_eni_user) => {
+export const buscarUsuarioIdUnidadSalud = async () => {
   try {
+    const userId = await ensureCurrentUserId();
     const response = await axios.get(
       `${API_URL}/eni-user/buscar-usuario-id-unidad-salud/`,
       {
-        params: { id_eni_user },
+        params: { id_eni_user: userId },
       }
     );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching user unidad de salud data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
+export const listarUsuariosApoyoAtencion = async () => {
+  try {
+    const userId = await ensureCurrentUserId();
+    console.log("User ID:", userId);
+    const response = await axios.get(`${API_URL}/eni-user/listar-filtrado/`, {
+      params: { id_eni_user: userId },
+    });
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
@@ -252,34 +335,25 @@ export const updateUnidadSaludPrincipal = async (formData) => {
 };
 
 //Funciones para los registros de vacunación
-const eniUser_id = 1;
+//const eniUser_id = 1;
 
-export const getAllRegistroVacunado = (month, year) =>
+export const getAllRegistroVacunado = (month, year) => {
+  const eniUserId = getEniUserId();
   axios.get(
-    `${API_URL}/registro-vacunado/?user_id=${eniUser_id}&month=${month}&year=${year}`,
+    `${API_URL}/registro-vacunado/?user_id=${eniUserId}&month=${month}&year=${year}`,
     getAuthHeaders()
   );
+};
 
 export const registroVacunadoCreateApi = (formData) =>
   axios.post(`${API_URL}/registro-vacunado/`, formData, getAuthHeaders());
 
-export const getDescargarCsvRegistroVacunado = (fecha_inicio, fecha_fin) =>
+export const getDescargarCsvRegistroVacunado = (fecha_inicio, fecha_fin) => {
+  const eniUserId = getEniUserId();
   axios.get(
-    `${API_URL}/registro-vacunado/descargar-csv/?fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}&eniUser_id=${eniUser_id}`,
+    `${API_URL}/registro-vacunado/descargar-csv/?fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}&eniUser_id=${eniUserId}`,
     getAuthHeaders()
   );
-
-export const getAllEniUsers = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/eni-user/`);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching all eni users:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
 };
 
 //Funciones para la Admisión de usuario
@@ -321,7 +395,7 @@ export const registerAdmision = async (formData) => {
 export const updateAdmision = async (formData) => {
   try {
     const response = await axios.patch(
-      `${API_URL}/admision-datos/${formData.id_adm}/`,
+      `${API_URL}/admision-datos/${formData.id_admision_datos}/`,
       formData
     );
     return response.data;
@@ -340,6 +414,23 @@ export const updateAdmision = async (formData) => {
 export const getAllForm008Emer = async () => {
   try {
     const response = await axios.get(`${API_URL}/form-008-emergencia/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching all form 008 emergency data:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
+export const listarForm008EmerAtenciones = async () => {
+  try {
+    const userId = await ensureCurrentUserId();
+    const response = await axios.get(
+      `${API_URL}/form-008-emergencia/listar-atenciones-form-008/`,
+      { params: { id_eni_user: userId } }
+    );
     return response.data;
   } catch (error) {
     console.error(
@@ -371,11 +462,12 @@ export const buscarUsuarioForm008Emer = async (tipo, identificacion) => {
 };
 
 export const registerForm008Emer = async (formData) => {
-  //console.log("Registering Form008Emer with data:", formData);
   try {
+    const userId = await ensureCurrentUserId();
+    const formDataToSend = { ...formData, id_eniUser: userId };
     const response = await axios.post(
       `${API_URL}/form-008-emergencia/`,
-      formData
+      formDataToSend
     );
     return response.data;
   } catch (error) {
@@ -392,7 +484,7 @@ export const registerForm008Emer = async (formData) => {
 export const updateForm008Emer = async (formData) => {
   try {
     const response = await axios.patch(
-      `${API_URL}/form-008-emergencia/${formData.id_adm}/`,
+      `${API_URL}/form-008-emergencia/${formData.id_admision_datos}/`,
       formData
     );
     return response.data;

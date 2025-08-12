@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Admision from "./Admision.jsx";
 import {
-  getAllEniUsers,
+  listarUsuariosApoyoAtencion,
   registerForm008Emer,
   updateForm008Emer,
   buscarUsuarioAdmision,
@@ -25,8 +25,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 const initialState = {
-  id_eni_user: "",
-  id_unid_salu: "",
+  id_eniUser: null,
+  id_admision_datos: null,
   for_008_busc_pers_tipo_iden: "",
   for_008_busc_pers_nume_iden: "",
   for_008_emer_nomb_esta_salu: "",
@@ -136,7 +136,6 @@ function calcularEdadConFechaReferencia(
 }
 
 const Form008Emergencia = () => {
-  const storedUserId = localStorage.getItem("userId") || 1;
   const [showAdmisionModal, setShowAdmisionModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalText, setConfirmModalText] = useState("");
@@ -256,6 +255,7 @@ const Form008Emergencia = () => {
   };
   const initialBotonEstado = {
     btnBuscar: true,
+    btnRegistrar: true,
   };
 
   const [variableEstado, setVariableEstado] = useState(initialVariableEstado);
@@ -425,58 +425,137 @@ const Form008Emergencia = () => {
     }
   };
 
-  const actualizarFormDataConRespuesta = (data) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      id_adm: data.id_adm || data.id || "",
-      adm_dato_naci_fech_naci: data.adm_dato_naci_fech_naci || "",
-      for_008_emer_edad_cond: calcularEdad(data.adm_dato_naci_fech_naci),
-      // Combina apellidos
-      for_008_emer_apel_comp: [
-        data.adm_dato_pers_apel_prim || "",
-        data.adm_dato_pers_apel_segu || "",
-      ]
-        .filter(Boolean)
-        .join(" "),
-      for_008_emer_nomb_comp: [
-        data.adm_dato_pers_nomb_prim || "",
-        data.adm_dato_pers_nomb_segu || "",
-      ]
-        .filter(Boolean)
-        .join(" "),
-      for_008_emer_sexo: data.adm_dato_pers_sexo || "",
-      for_008_emer_tele_paci: [
-        data.adm_dato_pers_tele || "",
-        data.adm_dato_pers_celu || "",
-      ]
-        .filter(Boolean)
-        .join(" / "),
-      for_008_emer_naci: data.adm_dato_naci_naci || "",
-      for_008_emer_prov_resi: data.adm_dato_resi_prov || "",
-      for_008_emer_cant_resi: data.adm_dato_resi_cant || "",
-      for_008_emer_parr_resi: data.adm_dato_resi_parr || "",
+  // Helper: construir dirección desde datos de admisión
+  function buildDireccionAdmision(data) {
+    return [
+      data?.adm_dato_resi_barr_sect
+        ? `Barrio: ${data.adm_dato_resi_barr_sect}`
+        : "",
+      data?.adm_dato_resi_call_prin
+        ? `Calle prin.: ${data.adm_dato_resi_call_prin}`
+        : "",
+      data?.adm_dato_resi_call_secu
+        ? `Calle sec.: ${data.adm_dato_resi_call_secu}`
+        : "",
+      data?.adm_dato_resi_refe_resi
+        ? `Referencia: ${data.adm_dato_resi_refe_resi}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" / ");
+  }
+
+  // Helper: formatear HH:mm
+  function formatHora(date = new Date()) {
+    return `${date.getHours().toString().padStart(2, "0")}:${date
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
+  }
+
+  // Helper: mapear respuesta de admisión a los campos del formulario
+  function mapAdmisionToFormData(data, now = new Date()) {
+    const horaActual = formatHora(now);
+    const fechaActual = now.toISOString().slice(0, 10);
+
+    const apellidos = [
+      data?.adm_dato_pers_apel_prim,
+      data?.adm_dato_pers_apel_segu,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const nombres = [
+      data?.adm_dato_pers_nomb_prim,
+      data?.adm_dato_pers_nomb_segu,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const telefonos = [data?.adm_dato_pers_tele, data?.adm_dato_pers_celu]
+      .filter(Boolean)
+      .join(" / ");
+
+    return {
+      // Fecha/hora de atención
+      for_008_emer_hora_aten: horaActual,
+      for_008_emer_fech_aten: fechaActual,
+
+      // Datos de identificación/adm
+      id_admision_datos: data?.id_admision_datos || data?.id || "",
+      adm_dato_naci_fech_naci: data?.adm_dato_naci_fech_naci || "",
+      for_008_emer_edad_cond: calcularEdad(data?.adm_dato_naci_fech_naci),
+
+      // Datos personales
+      for_008_emer_apel_comp: apellidos,
+      for_008_emer_nomb_comp: nombres,
+      for_008_emer_sexo: data?.adm_dato_pers_sexo || "",
+      for_008_emer_tele_paci: telefonos,
+      for_008_emer_naci: data?.adm_dato_naci_naci || "",
+
+      // Residencia
+      for_008_emer_prov_resi: data?.adm_dato_resi_prov || "",
+      for_008_emer_cant_resi: data?.adm_dato_resi_cant || "",
+      for_008_emer_parr_resi: data?.adm_dato_resi_parr || "",
       for_008_emer_unid_salu_resp_segu_aten:
-        data.adm_dato_resi_esta_adsc_terr || "",
-      for_008_emer_dire_domi: [
-        data.adm_dato_resi_barr_sect
-          ? `Barrio: ${data.adm_dato_resi_barr_sect}`
-          : "",
-        data.adm_dato_resi_call_prin
-          ? `Calle prin.: ${data.adm_dato_resi_call_prin}`
-          : "",
-        data.adm_dato_resi_call_secu
-          ? `Calle sec.: ${data.adm_dato_resi_call_secu}`
-          : "",
-        data.adm_dato_resi_refe_resi
-          ? `Referencia: ${data.adm_dato_resi_refe_resi}`
-          : "",
-      ]
-        .filter(Boolean)
-        .join(" / "),
-      for_008_emer_etni: data.adm_dato_auto_auto_etni || "",
-      for_008_emer_grup_prio: data.adm_dato_adic_grup_prio || "",
-      for_008_emer_tipo_segu: data.adm_dato_adic_tipo_segu || "",
-    }));
+        data?.adm_dato_resi_esta_adsc_terr || "",
+      for_008_emer_dire_domi: buildDireccionAdmision(data),
+
+      // Otros
+      for_008_emer_etni: data?.adm_dato_auto_auto_etni || "",
+      for_008_emer_grup_prio: data?.adm_dato_adic_grup_prio || "",
+      for_008_emer_tipo_segu: data?.adm_dato_adic_tipo_segu || "",
+    };
+  }
+
+  // Refactor: una sola función con responsabilidades claras y sets agrupados
+  const actualizarFormDataConRespuesta = async (data) => {
+    try {
+      const now = new Date();
+
+      // Cargar listas en paralelo
+      const [medicosData, unidadSaludData] = await Promise.all([
+        listarUsuariosApoyoAtencion(),
+        buscarUsuarioIdUnidadSalud(),
+      ]);
+
+      // Formatear médicos
+      const medicosListFormatted = Array.isArray(medicosData)
+        ? medicosData.map((medico) => ({
+            value: medico.id?.toString(),
+            label:
+              `${medico.username} ${medico.last_name} ${medico.first_name}`.trim(),
+          }))
+        : [];
+
+      // Formatear unidades de salud
+      const unidades = Array.isArray(unidadSaludData?.data?.unidades_data)
+        ? unidadSaludData.data.unidades_data
+        : [];
+
+      const unidadSaludListFormatted = unidades.map((u) => ({
+        value: u.id?.toString(),
+        label: `${u.uni_unic} - ${u.uni_unid}`,
+      }));
+
+      const principal = unidades.find((u) => u.uni_unid_prin === 1);
+
+      // Actualizar listas
+      setMedicosList(medicosListFormatted);
+      setUnidadSaludList(unidadSaludListFormatted);
+
+      // Actualizar formData en una sola llamada
+      setFormData((prev) => ({
+        ...prev,
+        ...mapAdmisionToFormData(data, now),
+        for_008_emer_nomb_esta_salu: principal
+          ? principal.id?.toString()
+          : prev.for_008_emer_nomb_esta_salu,
+      }));
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      setSuccessMessage("");
+    }
   };
 
   const ajustarVariableEstadoExitoso = () => {
@@ -484,7 +563,7 @@ const Form008Emergencia = () => {
       ...prevState,
       for_008_busc_pers_nume_iden: true,
       for_008_busc_pers_tipo_iden: true,
-      for_008_emer_nomb_esta_salu: true,
+      for_008_emer_nomb_esta_salu: false,
       for_008_emer_fech_aten: false,
       for_008_emer_hora_aten: false,
       for_008_emer_edad_cond: true,
@@ -511,9 +590,6 @@ const Form008Emergencia = () => {
       for_008_emer_apoy_aten_medi: false,
       for_008_emer_edad_gest: false,
       for_008_emer_ries_obst: false,
-    }));
-    setBotonEstado((prevState) => ({
-      btnBuscar: true,
     }));
   };
 
@@ -522,7 +598,7 @@ const Form008Emergencia = () => {
       ...prevState,
       for_008_busc_pers_nume_iden: true,
       for_008_busc_pers_tipo_iden: true,
-      for_008_emer_nomb_esta_salu: true,
+      for_008_emer_nomb_esta_salu: false,
       for_008_emer_fech_aten: false,
       for_008_emer_hora_aten: false,
       for_008_emer_edad_cond: true,
@@ -549,9 +625,6 @@ const Form008Emergencia = () => {
       for_008_emer_apoy_aten_medi: false,
       for_008_emer_edad_gest: false,
       for_008_emer_ries_obst: false,
-    }));
-    setBotonEstado((prevState) => ({
-      btnBuscar: true,
     }));
   };
 
@@ -584,13 +657,6 @@ const Form008Emergencia = () => {
         setError,
         setBotonEstado
       );
-    };
-
-    const resetCamposPersona = () => {
-      limpiarVariables();
-      setVariableEstado(initialVariableEstado);
-      setBotonEstado(initialBotonEstado);
-      setIsBuscar(false);
     };
 
     switch (name) {
@@ -648,40 +714,34 @@ const Form008Emergencia = () => {
           // Solo actualizar el diagnóstico principal
           setFormData((prev) => ({ ...prev, [name]: value }));
         }
-
-        // validarDato(
-        //   e,
-        //   { ...formData, [name]: value },
-        //   setFormData,
-        //   error,
-        //   setError,
-        //   setBotonEstado
-        // );
         break;
       }
-      case "for_008_emer_espe_prof":
+      case "for_008_emer_espe_prof": {
+        // Calcula el siguiente estado y valida inmediatamente con ese estado
         setFormData((prev) => {
-          // Si cambia a OBSTETRIZ, no limpiar, solo actualizar
-          // Si cambia a otro valor, limpiar los campos obstétricos
-          if (value === "OBSTETRIZ") {
-            return { ...prev, [name]: value };
-          } else {
-            return {
-              ...prev,
-              [name]: value,
-              for_008_emer_edad_gest: "",
-              for_008_emer_ries_obst: "",
-            };
-          }
+          const next =
+            value === "OBSTETRIZ"
+              ? { ...prev, [name]: value }
+              : {
+                  ...prev,
+                  [name]: value,
+                  for_008_emer_edad_gest: "",
+                  for_008_emer_ries_obst: "",
+                };
+
+          // Actualiza habilitación de campos obstétricos
+          setVariableEstado((p) => ({
+            ...p,
+            for_008_emer_edad_gest: value !== "OBSTETRIZ",
+            for_008_emer_ries_obst: value !== "OBSTETRIZ",
+          }));
+
+          // Valida con el "next" ya calculado (sin esperar a re-render)
+          checkFormValidity(next);
+          return next;
         });
-        setVariableEstado((prev) => ({
-          ...prev,
-          for_008_emer_edad_gest: value !== "OBSTETRIZ",
-          for_008_emer_ries_obst: value !== "OBSTETRIZ",
-        }));
-        // Forzar actualización del botón registrar
-        setTimeout(() => checkFormValidity(), 0);
         break;
+      }
       default:
         setFormData((prev) => ({ ...prev, [name]: value }));
         validarDato(
@@ -732,18 +792,109 @@ const Form008Emergencia = () => {
     }
   };
 
-  const checkFormValidity = () => {
-    const isValid = requiredFields.filter(isFieldVisible).every((field) => {
-      if (Array.isArray(formData[field])) {
-        return formData[field].length > 0;
+  // Helper para obtener el código CIE-10 (p.ej. "S060") desde el value seleccionado
+  const getCodigoCIE10Prin = (value) => {
+    if (!value) return "";
+    const found = opcionesCIE10Permitidas?.find((op) => op.value === value);
+    if (!found?.label) return "";
+    const [codigo] = found.label.split(" ");
+    return codigo || "";
+  };
+  const getCodigoCIE10CausExte = (value) => {
+    if (!value) return "";
+    const found = opcionesCIE10PermitidasExterno?.find(
+      (op) => op.value === value
+    );
+    if (!found?.label) return "";
+    const [codigo] = found.label.split(" ");
+    return codigo || "";
+  };
+
+  const checkFormValidity = (data = formData) => {
+    // Visibilidad basada en "data" (no en formData global)
+    const isFieldVisibleWith = (field) => {
+      const reglas = {
+        for_008_emer_edad_gest: () =>
+          data.for_008_emer_espe_prof === "OBSTETRIZ",
+        for_008_emer_ries_obst: () =>
+          data.for_008_emer_espe_prof === "OBSTETRIZ",
+      };
+      if (reglas[field]) return reglas[field]();
+      return true;
+    };
+
+    // Recorre todos los requeridos visibles
+    // const isValid = requiredFields.filter(isFieldVisibleWith).every((field) => {
+    //   const val = data[field];
+    //   if (Array.isArray(val)) {
+    //     // Al menos un valor no vacío
+    //     return val.some((v) => String(v ?? "").trim() !== "");
+    //   }
+    //   return Boolean(String(val ?? "").trim());
+    // });
+
+    // Validaciones generales (excepto los 3 selects de diagnósticos)
+    const camposBasicos = requiredFields
+      .filter(isFieldVisibleWith)
+      .filter(
+        (f) =>
+          f !== "for_008_emer_cie_10_prin_diag" &&
+          f !== "for_008_emer_cond_diag" &&
+          f !== "for_008_emer_cie_10_caus_exte_diag"
+      );
+
+    const basicosValidos = camposBasicos.every((field) => {
+      const val = data[field];
+      if (Array.isArray(val)) {
+        return val.some((v) => String(v ?? "").trim() !== "");
       }
-      return formData[field];
+      return Boolean(String(val ?? "").trim());
     });
+
+    // Reglas específicas diagnósticos (todos los índices)
+    const diags = data.for_008_emer_cie_10_prin_diag ?? [];
+    const conds = data.for_008_emer_cond_diag ?? [];
+    const causas = data.for_008_emer_cie_10_caus_exte_diag ?? [];
+
+    let diagnosticosValidos = true;
+    for (let i = 0; i < diags.length; i++) {
+      const diag = String(diags[i] ?? "").trim();
+      const cond = String(conds[i] ?? "").trim();
+      const causa = String(causas[i] ?? "").trim();
+      const codigoDiag = getCodigoCIE10Prin(diag);
+      const codigoCausa = getCodigoCIE10CausExte(causa);
+      // Diagnóstico y condición requeridos
+      if (!diag || !cond) {
+        diagnosticosValidos = false;
+        break;
+      }
+      // El código CIE-10 del diagnóstico principal debe tener exactamente 4 caracteres
+      if (codigoDiag.length !== 4) {
+        diagnosticosValidos = false;
+        break;
+      }
+      // Si diagnóstico principal inicia con S o T, causa externa requerida
+      if (
+        (codigoDiag.startsWith("S") || codigoDiag.startsWith("T")) &&
+        !causa
+      ) {
+        diagnosticosValidos = false;
+        break;
+      }
+      // Si hay causa externa, debe tener exactamente 4 caracteres
+      if (causa && codigoCausa.length !== 4) {
+        diagnosticosValidos = false;
+        break;
+      }
+    }
+
     const isValidationError =
       error && typeof error === "object" && error.type === "validacion";
-    setBotonEstado((prevState) => ({
-      ...prevState,
-      btnRegistrar: !isValid || isValidationError,
+
+    setBotonEstado((prev) => ({
+      ...prev,
+      btnRegistrar:
+        !(basicosValidos && diagnosticosValidos) || isValidationError,
     }));
   };
 
@@ -802,41 +953,23 @@ const Form008Emergencia = () => {
     setIsLoading(true);
     setError("");
     setSuccessMessage("");
-    const formDataToSend = { ...formData, eniUser: storedUserId };
-
-    // Formatear los arrays de diagnóstico para el backend
-    // formDataToSend.for_008_emer_cie_10_prin_diag_array =
-    //   formData.for_008_emer_cie_10_prin_diag;
-    // formDataToSend.for_008_emer_cond_diag_array =
-    //   formData.for_008_emer_cond_diag;
-    // formDataToSend.for_008_emer_cie_10_caus_exte_diag_array =
-    //   formData.for_008_emer_cie_10_caus_exte_diag;
-
-    // Para mantener compatibilidad con el backend, usar el primer elemento como valor principal
-    // formDataToSend.for_008_emer_cie_10_prin_diag =
-    //   formData.for_008_emer_cie_10_prin_diag[0] || "";
-    // formDataToSend.for_008_emer_cond_diag =
-    //   formData.for_008_emer_cond_diag[0] || "";
-    // formDataToSend.for_008_emer_cie_10_caus_exte_diag =
-    //   formData.for_008_emer_cie_10_caus_exte_diag[0] || "";
 
     try {
       let response;
       if (isEditing) {
-        response = await updateForm008Emer(formDataToSend);
+        response = await updateForm008Emer(formData);
         const message = response?.message || "Registro actualizado con éxito!";
         setSuccessMessage(message);
         setTimeout(() => setSuccessMessage(""), 10000);
         toast.success(message, { position: "bottom-right" });
-        limpiarVariables(true);
       } else {
-        const response = await registerForm008Emer(formDataToSend);
+        const response = await registerForm008Emer(formData);
         const message = response?.message || "Registro guardado con éxito!";
         setSuccessMessage(message);
         setTimeout(() => setSuccessMessage(""), 10000);
         toast.success(message, { position: "bottom-right" });
-        limpiarVariables(true);
       }
+      limpiarVariables();
     } catch (error) {
       const errorMessage = getErrorMessage(error);
       setError(errorMessage);
@@ -862,15 +995,16 @@ const Form008Emergencia = () => {
     }
   };
 
-  const limpiarVariables = (esBtnLimpiar = false) => {
-    setFormData(initialState);
-    if (esBtnLimpiar) {
-      setTimeout(() => setSuccessMessage(""), 5000);
-      setTimeout(() => setError(""), 5000);
-    } else {
-      setSuccessMessage("");
-      setError("");
-    }
+  const limpiarVariables = () => {
+    setFormData(() => ({
+      ...initialState,
+      // Fuerza nuevas instancias vacías de las listas
+      for_008_emer_cie_10_prin_diag: [""],
+      for_008_emer_cond_diag: [""],
+      for_008_emer_cie_10_caus_exte_diag: [""],
+    }));
+    setSuccessMessage("");
+    setError("");
     setVariableEstado(initialVariableEstado);
     setBotonEstado(initialBotonEstado);
     setFechaNacimiento("");
@@ -884,82 +1018,19 @@ const Form008Emergencia = () => {
   }, [formData, error]);
 
   useEffect(() => {
-    const now = new Date();
-    const horaActual =
-      now.getHours().toString().padStart(2, "0") +
-      ":" +
-      now.getMinutes().toString().padStart(2, "0");
-    const fechaActual = now.toISOString().slice(0, 10); // formato YYYY-MM-DD
-    setFormData((prev) => ({
-      ...prev,
-      for_008_emer_hora_aten: horaActual,
-      for_008_emer_fech_aten: fechaActual,
-    }));
-  }, []);
-
-  useEffect(() => {
-    const loadMedicosList = async () => {
-      try {
-        const medicosData = await getAllEniUsers();
-        // Formatear los datos para el Select
-        const formattedMedicos = medicosData.map((medico) => ({
-          value: medico.id.toString(),
-          label: `${medico.username} ${medico.last_name} ${medico.first_name}`,
+    // Actualiza la hora cada 60s cuando el campo está habilitado
+    if (variableEstado.for_008_emer_hora_aten === false) {
+      const update = () =>
+        setFormData((prev) => ({
+          ...prev,
+          for_008_emer_hora_aten: formatHora(),
         }));
-        setMedicosList(formattedMedicos);
-      } catch (error) {
-        const errorMessage = getErrorMessage(error);
-        setError(errorMessage);
-        setTimeout(() => setError(""), 10000);
-        setSuccessMessage("");
-      }
-    };
 
-    loadMedicosList();
-  }, []);
-
-  useEffect(() => {
-    let id_eni_user = 1;
-    const loadUnidadSaludList = async () => {
-      try {
-        const unidadSaludData = await buscarUsuarioIdUnidadSalud(id_eni_user);
-
-        let lista = [];
-        if (Array.isArray(unidadSaludData?.data?.unidades_data)) {
-          lista = unidadSaludData.data.unidades_data;
-        } else {
-          setUnidadSaludList([]);
-          setError(
-            "No se pudo cargar la lista de unidades de salud (respuesta inesperada)"
-          );
-          return;
-        }
-
-        // Formatear para el select
-        const formattedUnidadSalud = lista.map((unidad) => ({
-          value: unidad.id.toString(),
-          label: `${unidad.uni_unic} - ${unidad.uni_unid}`,
-        }));
-        setUnidadSaludList(formattedUnidadSalud);
-
-        // Seleccionar automáticamente la unidad principal
-        const principal = lista.find((unidad) => unidad.uni_unid_prin === 1);
-        if (principal) {
-          setFormData((prev) => ({
-            ...prev,
-            for_008_emer_nomb_esta_salu: principal.id.toString(),
-          }));
-        }
-      } catch (error) {
-        const errorMessage = getErrorMessage(error);
-        setError(errorMessage);
-        setTimeout(() => setError(""), 10000);
-        setSuccessMessage("");
-      }
-    };
-
-    loadUnidadSaludList();
-  }, []);
+      update(); // sincroniza inmediatamente
+      const id = setInterval(update, 60000);
+      return () => clearInterval(id);
+    }
+  }, [variableEstado.for_008_emer_hora_aten]);
 
   const opcionesCIE10Permitidas = allListForm008.for_008_emer_cie_10_prin_diag;
   const opcionesCIE10PermitidasExterno =
@@ -1041,28 +1112,50 @@ const Form008Emergencia = () => {
       return codigo.startsWith("S") || codigo.startsWith("T");
     };
 
-    // Manejar cambio en campos de diagnóstico
+    const diagInvalido = (index) =>
+      String(formData.for_008_emer_cie_10_prin_diag[index] ?? "").trim() === "";
+
+    const causaInvalida = (index) =>
+      esDiagnosticoSoT(formData.for_008_emer_cie_10_prin_diag[index]) &&
+      String(
+        formData.for_008_emer_cie_10_caus_exte_diag[index] ?? ""
+      ).trim() === "";
+
+    // NUEVO: estados para mostrar info al enfocar los selects por índice
+    const [infoPrincipalFocus, setInfoPrincipalFocus] = React.useState({});
+    const [infoCausaFocus, setInfoCausaFocus] = React.useState({});
+
+    // Manejar cambio en campos de diagnóstico con validación inmediata
     const handleDiagnosticoChange = (e, index) => {
       const { name, value } = e.target;
 
       setFormData((prev) => {
-        const newData = { ...prev };
+        const next = {
+          ...prev,
+          for_008_emer_cie_10_prin_diag: [
+            ...prev.for_008_emer_cie_10_prin_diag,
+          ],
+          for_008_emer_cond_diag: [...prev.for_008_emer_cond_diag],
+          for_008_emer_cie_10_caus_exte_diag: [
+            ...prev.for_008_emer_cie_10_caus_exte_diag,
+          ],
+        };
 
-        // Actualizar el valor específico en el array correcto
         if (name === `for_008_emer_cie_10_prin_diag_${index}`) {
-          newData.for_008_emer_cie_10_prin_diag[index] = value;
-
-          // Si no es S o T, limpiar causa externa correspondiente
+          next.for_008_emer_cie_10_prin_diag[index] = value;
+          // Si no es S/T, limpiar su causa externa
           if (!esDiagnosticoSoT(value)) {
-            newData.for_008_emer_cie_10_caus_exte_diag[index] = "";
+            next.for_008_emer_cie_10_caus_exte_diag[index] = "";
           }
         } else if (name === `for_008_emer_cond_diag_${index}`) {
-          newData.for_008_emer_cond_diag[index] = value;
+          next.for_008_emer_cond_diag[index] = value;
         } else if (name === `for_008_emer_cie_10_caus_exte_diag_${index}`) {
-          newData.for_008_emer_cie_10_caus_exte_diag[index] = value;
+          next.for_008_emer_cie_10_caus_exte_diag[index] = value;
         }
 
-        return newData;
+        // Validar con el "next" inmediatamente
+        checkFormValidity(next);
+        return next;
       });
     };
 
@@ -1072,11 +1165,6 @@ const Form008Emergencia = () => {
         (op) => op.value === diagValue
       );
       return selected ? selected.label.split(" ")[0] : "";
-    };
-
-    const esDiagnosticoNoValido = (diagValue) => {
-      const codigo = verificarCodigoCIE10(diagValue);
-      return codigo && codigo.length === 3;
     };
 
     const requiereCausaExterna = (diagValue) => {
@@ -1106,18 +1194,9 @@ const Form008Emergencia = () => {
                   className={labelClass}
                   htmlFor={`for_008_emer_cie_10_prin_diag_${index}`}
                 >
-                  {index === 0 ? (
-                    <>
-                      {requiredFields.includes(
-                        "for_008_emer_cie_10_prin_diag"
-                      ) && <span className="text-red-500">* </span>}
-                      {labelMap["for_008_emer_cie_10_prin_diag"]}
-                    </>
-                  ) : (
-                    `${labelMap["for_008_emer_cie_10_prin_diag"]} #${
-                      index + 1
-                    }:`
-                  )}
+                  <span className="text-red-500">*</span>{" "}
+                  {labelMap["for_008_emer_cie_10_prin_diag"]}{" "}
+                  {index > 0 && `#${index + 1}`}
                 </label>
                 <CustomSelect
                   id={`for_008_emer_cie_10_prin_diag_${index}`}
@@ -1128,12 +1207,10 @@ const Form008Emergencia = () => {
                   disabled={variableEstado["for_008_emer_cie_10_prin_diag"]}
                   variableEstado={variableEstado}
                   className={
-                    isFieldInvalid(
-                      `for_008_emer_cie_10_prin_diag_${index}`,
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
+                    diagInvalido(index) ||
+                    getCodigoCIE10Prin(
+                      formData.for_008_emer_cie_10_prin_diag[index]
+                    ).length !== 4
                       ? "border-2 border-red-500"
                       : ""
                   }
@@ -1141,13 +1218,45 @@ const Form008Emergencia = () => {
                   placeholder="Escriba para buscar diagnóstico CIE-10..."
                   minSearchLength={2}
                   maxResults={100}
+                  tooltipTrigger="both"
+                  tooltipContent={
+                    <div>
+                      <div className="font-semibold mb-1">
+                        1️⃣ Registro de Diagnóstico Principal
+                      </div>
+                      <ul className="list-disc ml-5 space-y-1">
+                        <li>
+                          Registrar solo códigos CIE-10 con letras iniciales de
+                          A a U.
+                        </li>
+                        <li>
+                          Excepción: Z027 – Extensión de certificado médico
+                          (custodia policial o certificado).
+                        </li>
+                        <li>
+                          Además de Z027, solo se permiten como principal: Z027,
+                          Z370, Z371, Z372, Z373, Z374, Z375, Z377.
+                        </li>
+                        <li>
+                          No se permiten otros códigos que inicien con “Z” como
+                          diagnóstico principal.
+                        </li>
+                      </ul>
+                    </div>
+                  }
+                  tooltipPosition="top"
+                  tooltipAlign="end"
+                  tooltipOffset={6}
                 />
-                {esDiagnosticoNoValido(diagValue) && (
-                  <span className="text-red-600 text-sm mt-1">
-                    El diagnóstico seleccionado no es válido. Seleccione un
-                    código CIE-10 más específico.
-                  </span>
-                )}
+                {formData.for_008_emer_cie_10_prin_diag[index] &&
+                  getCodigoCIE10Prin(
+                    formData.for_008_emer_cie_10_prin_diag[index]
+                  ).length !== 4 && (
+                    <span className="text-red-600 text-sm mt-1">
+                      El diagnóstico seleccionado no es válido. Seleccione un
+                      código CIE-10 más específico.
+                    </span>
+                  )}
                 {requiereCausaExterna(diagValue) && diagValue && (
                   <span className="text-blue-600 text-sm mt-1">
                     Se tiene que registrar la causa externa para diagnósticos
@@ -1162,6 +1271,7 @@ const Form008Emergencia = () => {
                   className={labelClass}
                   htmlFor={`for_008_emer_cond_diag_${index}`}
                 >
+                  <span className="text-red-500">*</span>{" "}
                   {index === 0
                     ? "CONDICIÓN DEL DIAGNÓSTICO:"
                     : `CONDICIÓN DIAGNÓSTICO #${index + 1}:`}
@@ -1174,6 +1284,11 @@ const Form008Emergencia = () => {
                   options={allListForm008.for_008_emer_cond_diag}
                   disabled={variableEstado["for_008_emer_cond_diag"]}
                   variableEstado={variableEstado}
+                  className={
+                    formData.for_008_emer_cond_diag[index] === ""
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
                 />
               </div>
 
@@ -1183,6 +1298,9 @@ const Form008Emergencia = () => {
                   className={labelClass}
                   htmlFor={`for_008_emer_cie_10_caus_exte_diag_${index}`}
                 >
+                  {esDiagnosticoSoT(
+                    formData.for_008_emer_cie_10_prin_diag[index]
+                  ) && <span className="text-red-500">*</span>}
                   {index === 0
                     ? "CIE-10 (CAUSA EXTERNA):"
                     : `CIE-10 (CAUSA EXTERNA) #${index + 1}:`}
@@ -1202,17 +1320,59 @@ const Form008Emergencia = () => {
                     )
                   }
                   variableEstado={variableEstado}
+                  className={
+                    causaInvalida(index) ||
+                    getCodigoCIE10CausExte(
+                      formData.for_008_emer_cie_10_caus_exte_diag[index]
+                    ).length === 3
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
                   isLargeList={true}
                   placeholder={
                     esDiagnosticoSoT(
                       formData.for_008_emer_cie_10_prin_diag[index]
                     )
                       ? "Escriba para buscar diagnóstico CIE-10..."
-                      : "Solo disponible para diagnósticos S y T"
+                      : "Solo disponible para diagnósticos V, W, X, Y"
                   }
                   minSearchLength={2}
                   maxResults={100}
+                  tooltipTrigger="both"
+                  tooltipContent={
+                    <div>
+                      <div className="font-semibold mb-1">
+                        2️⃣ Registro de Diagnóstico de Causa Externa
+                      </div>
+                      <ul className="list-disc ml-5 space-y-1">
+                        <li>
+                          Corresponde a eventos o circunstancias externas que
+                          originan la lesión o condición.
+                        </li>
+                        <li>
+                          Usar únicamente códigos CIE-10 que inicien con V, W, X
+                          o Z.
+                        </li>
+                        <li>
+                          No registrar códigos fuera de este rango para causas
+                          externas.
+                        </li>
+                      </ul>
+                    </div>
+                  }
+                  tooltipPosition="top"
+                  tooltipAlign="end"
+                  tooltipOffset={6}
                 />
+                {formData.for_008_emer_cie_10_caus_exte_diag[index] &&
+                  getCodigoCIE10CausExte(
+                    formData.for_008_emer_cie_10_caus_exte_diag[index]
+                  ).length !== 4 && (
+                    <span className="text-red-600 text-sm mt-1">
+                      El diagnóstico seleccionado no es válido. Seleccione un
+                      código CIE-10 más específico.
+                    </span>
+                  )}
               </div>
             </div>
           </div>
@@ -1229,14 +1389,6 @@ const Form008Emergencia = () => {
           </button>
         )}
       </div>
-    );
-  };
-
-  // Añadir a las validaciones existentes
-  const esDiagnosticoValido = () => {
-    return (
-      formData.for_008_emer_cie_10_prin_diag[0] &&
-      formData.for_008_emer_cond_diag[0]
     );
   };
 
@@ -2328,7 +2480,7 @@ const Form008Emergencia = () => {
                 X
               </button>
               <Admision
-                id_admision={admisionData.id_adm}
+                id_admision={admisionData.id_admision_datos}
                 tipoIdenInicial={formData.for_008_busc_pers_tipo_iden}
                 numeIdenInicial={formData.for_008_busc_pers_nume_iden}
                 pers_apellidos={[
@@ -2355,7 +2507,6 @@ const Form008Emergencia = () => {
             </div>
           </div>
         )}
-
         {showUnidadModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">

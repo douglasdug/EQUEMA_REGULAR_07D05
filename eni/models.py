@@ -648,14 +648,15 @@ class form_008_emergencia(models.Model):
     for_008_emer_dire_domi = models.CharField(max_length=300, blank=True)
     for_008_emer_tele_paci = models.CharField(max_length=30, blank=True)
     for_008_emer_aten_fina = models.IntegerField(blank=True, null=True)
-    admision_datos = models.ForeignKey(
-        'admision_datos',
-        null=True,
+    eniUser = models.ForeignKey(
+        'eniUser', null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name='formularios_008_emergencia',
-        help_text='Datos de admisión del paciente'
+        help_text='ID de usuario que registra la atencion'
     )
+    admision_datos = models.IntegerField(
+        blank=True, null=True, help_text='ID de admision de datos del paciente')
 
     class Meta:
         verbose_name = 'Formulario 008 Emergencia'

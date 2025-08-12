@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
-import { getAllForm008Emer, deleteUser } from "../api/conexion.api.js";
+import {
+  listarForm008EmerAtenciones,
+  deleteUser,
+} from "../api/conexion.api.js";
 import { toast } from "react-hot-toast";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
@@ -26,14 +29,8 @@ const TablaForm008Emer = ({
   ];
   const STATUS_NAMES = ["INACTIVO", "ACTIVO"];
   const TABLE_HEADERS = [
-    "INSTITUCIÓN DEL SISTEMA",
     "UNICODIGO",
     "NOMBRE DEL ESTABLECIMIENTO DE SALUD",
-    "ZONA",
-    "PROVINCIA",
-    "CANTON",
-    "DISTRITO",
-    "NIVEL",
     "FECHA DE ATENCIÓN",
     "TIPO DE DOCUMENTO DE IDENTIFICACIÓN",
     "NÚMERO DE IDENTIFICACION",
@@ -99,7 +96,7 @@ const TablaForm008Emer = ({
   useEffect(() => {
     const loadEniUsers = async () => {
       try {
-        const data = await getAllForm008Emer();
+        const data = await listarForm008EmerAtenciones();
         setEniUsers(Array.isArray(data) ? data : []);
       } catch (error) {
         setError(error.message);
@@ -267,17 +264,29 @@ const TablaForm008Emer = ({
                     >
                       <FaEdit />
                     </button>
-                    <button
+                    {/* <button
                       className={tableStyles.deleteButton}
                       onClick={() => handleDelete(registro.id)}
                       aria-label="Eliminar"
                     >
                       <FaTrash />
-                    </button>
+                    </button> */}
                   </div>
                 </td>
                 {Object.keys(registro)
-                  .filter((key) => key !== "id" && key !== "admision_datos")
+                  .filter(
+                    (key) =>
+                      key !== "id" &&
+                      key !== "for_008_emer_inst_sist" &&
+                      key !== "for_008_emer_zona" &&
+                      key !== "for_008_emer_prov" &&
+                      key !== "for_008_emer_cant" &&
+                      key !== "for_008_emer_dist" &&
+                      key !== "for_008_emer_nive" &&
+                      key !== "for_008_emer_aten_fina" &&
+                      key !== "admision_datos" &&
+                      key !== "eniUser"
+                  )
                   .map((key) => {
                     let cellContent;
                     switch (key) {
@@ -301,13 +310,10 @@ const TablaForm008Emer = ({
                           </span>
                         );
                         break;
-                      case "for_008_emer_dire_domi":
-                        cellContent = (
-                          <span className="text-xs block max-w-[150px]">
-                            {registro[key]}
-                          </span>
-                        );
+                      case "for_008_emer_edad_gest":
+                        cellContent = <span>{registro[key]}</span>;
                         break;
+                      case "for_008_emer_dire_domi":
                       case "for_008_emer_obse":
                         cellContent = (
                           <span className="text-xs block max-w-[150px]">

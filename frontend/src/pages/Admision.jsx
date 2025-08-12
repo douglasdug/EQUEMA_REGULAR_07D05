@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 const initialState = {
-  id_adm: "",
+  id_admision_datos: "",
   adm_dato_pers_tipo_iden: "",
   adm_dato_pers_nume_iden: "",
   adm_dato_pers_apel_prim: "",
@@ -457,7 +457,7 @@ const Admision = ({
     setEdadRepresentante(calcularEdad(fechaNacRepr));
     setFormData((prevData) => ({
       ...prevData,
-      id_adm: data.id_adm || data.id || "",
+      id_admision_datos: data.id_admision_datos || data.id || "",
       // Combina apellidos
       adm_dato_pers_apel_prim: [
         data.adm_dato_pers_apel_prim || "",
@@ -1450,7 +1450,7 @@ const Admision = ({
         (pers_nombres === "" || pers_nombres) &&
         (pers_sexo === "" || pers_sexo) &&
         (pers_correo === "" || pers_correo) &&
-        !prev.id_adm &&
+        !prev.id_admision_datos &&
         !prev.adm_dato_pers_tipo_iden &&
         !prev.adm_dato_pers_nume_iden &&
         !prev.adm_dato_pers_apel_prim &&
@@ -1460,7 +1460,7 @@ const Admision = ({
       ) {
         return {
           ...prev,
-          id_adm: id_admision,
+          id_admision_datos: id_admision,
           adm_dato_pers_tipo_iden: tipoIdenInicial,
           adm_dato_pers_nume_iden: numeIdenInicial,
           adm_dato_pers_apel_prim: pers_apellidos,

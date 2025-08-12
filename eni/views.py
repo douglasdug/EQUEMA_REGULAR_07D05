@@ -285,6 +285,31 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         except eniUser.DoesNotExist:
             return Response({"error": "No se encontro las unidades de salud del usuario!"}, status=status.HTTP_404_NOT_FOUND)
 
+    # , permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get'], url_path='listar-filtrado')
+    def listar_filtrado(self, request):
+        try:
+            exclude_id = request.query_params.get(
+                'id_eni_user') or getattr(request.user, 'id', None)
+            titulos_excluir = request.query_params.getlist('excluir_fun_titu') or [
+                "BIOQUÍMICO MÉDICO/A",
+                "OTROS/A",
+            ]
+
+            qs = self.get_queryset()
+            if exclude_id:
+                qs = qs.exclude(id=exclude_id)
+            if titulos_excluir:
+                qs = qs.exclude(fun_titu__in=titulos_excluir)
+
+            data = list(
+                qs.order_by('last_name', 'first_name')
+                  .values('id', 'username', 'first_name', 'last_name', 'fun_titu')
+            )
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
         now = timezone.now()
@@ -7472,7 +7497,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 adm_dato_pers_tipo_iden=tipo, adm_dato_pers_nume_iden=identificacion
             )
             data = {
-                "id_adm": user_data.id,
+                "id_admision_datos": user_data.id,
                 "adm_dato_pers_apel_prim": user_data.adm_dato_pers_apel_prim,
                 "adm_dato_pers_apel_segu": user_data.adm_dato_pers_apel_segu,
                 "adm_dato_pers_nomb_prim": user_data.adm_dato_pers_nomb_prim,
@@ -7574,6 +7599,35 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
 
         return queryset.order_by('for_008_emer_fech_aten')
 
+    # , permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get'], url_path='listar-atenciones-form-008')
+    def listar_atenciones_form_008(self, request):
+        try:
+            id_eni_user = request.query_params.get('id_eni_user')
+            if not id_eni_user:
+                return Response(
+                    {"detail": "El parámetro id_eni_user es requerido."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            qs = (
+                self.get_queryset()
+                .filter(eniUser=id_eni_user)
+                .order_by(
+                    '-for_008_emer_fech_aten',
+                    'for_008_emer_prim_apel',
+                    'for_008_emer_segu_apel',
+                    'for_008_emer_prim_nomb',
+                    'for_008_emer_segu_nomb'
+                )[:30]
+            )
+
+            serializer = self.get_serializer(qs, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     def get_eni_user(self, eni_user_id):
         try:
             return eniUser.objects.get(id=eni_user_id)
@@ -7606,7 +7660,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        eni_user_id = data.get('eniUser', '')
+        eni_user_id = data.get('id_eniUser', '')
         medic_apoll_id = data.get('for_008_emer_apoy_aten_medi', '')
         eni_user = self.get_eni_user(eni_user_id)
 
@@ -7672,7 +7726,9 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             )
         else:
             data['for_008_emer_apoy_aten_medi'] = ''
-        data['admision_datos'] = data.get('id_adm', '')
+
+        data['eniUser'] = eni_user_id
+        data['admision_datos'] = data.get('id_admision_datos', '')
 
         created_objects = []
         errors = []
@@ -7697,8 +7753,8 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 errors.append(serializer.errors)
 
         if errors:
-            return Response({"message": "Error al crear la atencion Form_008_Emer", "error": errors}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"message": "Se creo la atencion Form_008_Emer del usuario exitosamente!", "data": created_objects}, status=status.HTTP_201_CREATED)
+            return Response({"message": "Error al crear la atencion del formulario 008-EMERGENCIA", "error": errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Se creo la atencion del formulario 008-EMERGENCIA del usuario exitosamente!", "data": created_objects}, status=status.HTTP_201_CREATED)
 
 
 class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
