@@ -9,8 +9,8 @@ from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLo
 
 from django.db.models import F, Sum
 from django.utils.dateparse import parse_date
-from datetime import datetime, timezone, timedelta
-from django.http import HttpResponse
+from datetime import datetime, timezone, timedelta, time, date
+from django.http import HttpResponse, StreamingHttpResponse
 import csv
 from rest_framework.decorators import action
 
@@ -7656,6 +7656,147 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    class Echo:
+        def write(self, value):
+            return value
+
+    # , permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get'], url_path='reporte-atenciones-csv')
+    def reporte_atenciones_csv(self, request):
+        # 1) Parámetros
+        eni_user = request.query_params.get("eniUser")
+        fecha_min_str = request.query_params.get("for_008_emer_fech_aten_min")
+        fecha_max_str = request.query_params.get("for_008_emer_fech_aten_max")
+
+        if not eni_user:
+            return Response({"detail": "El parámetro eniUser es obligatorio."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not fecha_min_str or not fecha_max_str:
+            return Response(
+                {"detail": "Debe enviar for_008_emer_fech_aten_min y for_008_emer_fech_aten_max en formato YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2) Parsear y validar formato
+        try:
+            start_date = datetime.strptime(fecha_min_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(fecha_max_str, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                {"detail": "Formato de fecha inválido. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3) Validaciones de rango
+        if start_date > end_date:
+            return Response(
+                {"detail": "for_008_emer_fech_aten_min no puede ser mayor que for_008_emer_fech_aten_max."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if (end_date - start_date).days > 31:
+            return Response(
+                {"detail": "Solo puede descargar un rango máximo de un mes (31 días)."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Opción B (alternativa): mismo mes calendario
+        # if fecha_min.year != fecha_max.year or fecha_min.month != fecha_max.month:
+        #     return Response(
+        #         {"detail": "El rango de fechas debe pertenecer al mismo mes calendario."},
+        #         status=status.HTTP_400_BAD_REQUEST
+        #     )
+
+        # 4) Si pasa la validación, continuar con el queryset y la generación del CSV
+        # qs = self.get_queryset().filter(fecha__date__gte=fecha_min, fecha__date__lte=fecha_max)
+        # ... generar y devolver el CSV (StreamingHttpResponse/HttpResponse)
+
+        # start = parse_date(fecha_min)
+        # end = parse_date(fecha_max)
+        # if not start or not end:
+        #     return Response({"detail": "Las fechas deben tener el formato YYYY-MM-DD."},
+        #                     status=status.HTTP_400_BAD_REQUEST)
+        # if start > end:
+        #     return Response({"detail": "fecha_min no puede ser mayor que fecha_max."},
+        #                     status=status.HTTP_400_BAD_REQUEST)
+
+        # 4) Preparar filtros (Date vs DateTime con zona horaria)
+        fecha_field_name = "for_008_emer_fech_aten"
+        try:
+            field = form_008_emergencia._meta.get_field(fecha_field_name)
+            if field.get_internal_type() == "DateTimeField":
+                tz = timezone.get_current_timezone()
+                start_filter = timezone.make_aware(
+                    datetime.combine(start_date, time.min), tz)
+                end_filter = timezone.make_aware(
+                    datetime.combine(end_date, time.max), tz)
+            else:
+                start_filter = start_date
+                end_filter = end_date
+        except Exception:
+            start_filter = start_date
+            end_filter = end_date
+
+        base_qs = (
+            form_008_emergencia.objects
+            .filter(eniUser=eni_user, **{f"{fecha_field_name}__range": (start_filter, end_filter)})
+            .order_by(fecha_field_name)
+        )
+
+        HEADERS = [
+            "INSTITUCIÓN DEL SISTEMA", "UNICODIGO", "NOMBRE DEL ESTABLECIMIENTO DE SALUD", "ZONA",
+            "PROVINCIA", "CANTON", "DISTRITO", "NIVEL", "FECHA DE ATENCIÓN",
+            "TIPO DE DOCUMENTO DE IDENTIFICACIÓN", "NÚMERO DE IDENTIFICACION", "PRIMER APELLIDO",
+            "SEGUNDO APELLIDO", "PRIMER NOMBRE", "SEGUNDO NOMBRE", "SEXO", "EDAD", "CONDICIÓN DE LA EDAD",
+            "NACIONALIDAD", "ETNIA", "GRUPO PRIORITARIO", "TIPO DE SEGURO",
+            "PROVINCIA DE RECIDENCIA", "CANTON DE RECIDENCIA", "PARROQUIA DE RECIDENCIA",
+            "ESPECIALIDAD DEL PROFESIONAL", "CIE-10 (PRINCIPAL)", "DIAGNÓSTICO 1 (PRINCIPAL)",
+            "CONDICIÓN DEL DIAGNÓSTICO", "CIE-10 (CAUSA EXTERNA)", "DIAGNOSTICO (CAUSA  EXTERNA)",
+            "HOSPITALIZACIÓN", "HORA ATENCIÓN", "CONDICIÓN DEL ALTA", "OBSERVACIÓN",
+        ]
+
+        FIELDS = [
+            "for_008_emer_inst_sist", "for_008_emer_unic", "for_008_emer_unid", "for_008_emer_zona",
+            "for_008_emer_prov", "for_008_emer_cant", "for_008_emer_dist", "for_008_emer_nive",
+            "for_008_emer_fech_aten", "for_008_emer_tipo_docu_iden", "for_008_emer_nume_iden",
+            "for_008_emer_prim_apel", "for_008_emer_segu_apel", "for_008_emer_prim_nomb",
+            "for_008_emer_segu_nomb", "for_008_emer_sexo", "for_008_emer_edad", "for_008_emer_cond_edad",
+            "for_008_emer_naci", "for_008_emer_etni", "for_008_emer_grup_prio", "for_008_emer_tipo_segu",
+            "for_008_emer_prov_resi", "for_008_emer_cant_resi", "for_008_emer_parr_resi",
+            "for_008_emer_espe_prof", "for_008_emer_cie_10_prin", "for_008_emer_diag_prin",
+            "for_008_emer_cond_diag", "for_008_emer_cie_10_caus_exte", "for_008_emer_diag_caus_exte",
+            "for_008_emer_hosp", "for_008_emer_hora_aten", "for_008_emer_cond_alta", "for_008_emer_obse",
+        ]
+
+        class Echo:
+            def write(self, value):
+                return value
+
+        def serialize_value(val):
+            if val is None:
+                return ""
+            if isinstance(val, (datetime, date, time)):
+                return val.isoformat()
+            return val
+
+        def row_iter():
+            writer = csv.writer(Echo())
+            # BOM para Excel
+            yield "\ufeff"
+            # Encabezados
+            yield writer.writerow(HEADERS)
+            # Filas en streaming
+            for row in base_qs.values(*FIELDS).iterator(chunk_size=5000):
+                yield writer.writerow([serialize_value(row.get(field)) for field in FIELDS])
+
+        filename = f'form008_emergencia_{eni_user}_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.csv'
+        response = StreamingHttpResponse(
+            row_iter(), content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{filename}'
+        response["X-Accel-Buffering"] = "no"
+        return response
 
     def get_eni_user(self, eni_user_id):
         try:

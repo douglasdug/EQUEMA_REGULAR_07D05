@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const API_BASE_URL =
   import.meta?.env?.VITE_API_URL || "http://localhost:3000/api";
-const ENDPOINT = "/form_008_emergencia/atenciones"; // Ajustar al endpoint real
+const ENDPOINT = "/form_008_emergencia/atenciones";
 
 export default function ReporteAtenciones() {
   const [items, setItems] = useState([]);
@@ -24,6 +24,7 @@ export default function ReporteAtenciones() {
 
   const abortRef = useRef(null);
 
+  // Ajusta/añade variables según las columnas reales de tu tabla form_008_emergencia
   const columns = useMemo(
     () => [
       { key: "fecha_atencion", label: "Fecha", sortable: true },
@@ -38,6 +39,9 @@ export default function ReporteAtenciones() {
       { key: "estado", label: "Estado", sortable: true },
     ],
     []
+  );
+  const [visibleCols, setVisibleCols] = useState(() =>
+    columns.map((c) => c.key)
   );
 
   useEffect(() => {
@@ -70,7 +74,6 @@ export default function ReporteAtenciones() {
       const res = await fetch(url, { signal: abortRef.current.signal });
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const data = await res.json();
-      // Se asume { items: [], total: number }. Ajustar si el backend usa otra forma.
       setItems(Array.isArray(data.items) ? data.items : []);
       setTotal(
         Number.isFinite(data.total)
@@ -118,9 +121,10 @@ export default function ReporteAtenciones() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const exportCSV = () => {
-    const headers = columns.map((c) => c.label);
+    const usedCols = columns.filter((c) => visibleCols.includes(c.key));
+    const headers = usedCols.map((c) => c.label);
     const rows = items.map((row) =>
-      columns.map((c) => sanitizeCSV(valueOf(row, c.key)))
+      usedCols.map((c) => sanitizeCSV(valueOf(row, c.key)))
     );
     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -133,76 +137,76 @@ export default function ReporteAtenciones() {
     URL.revokeObjectURL(url);
   };
 
-  const printReport = () => {
-    window.print();
-  };
+  const printReport = () => window.print();
+
+  // Resúmenes rápidos en la página actual (útil para reportes)
+  const resumenEstado = useMemo(() => countBy(items, "estado"), [items]);
+  const resumenServicio = useMemo(() => countBy(items, "servicio"), [items]);
+
+  const usedColumns = columns.filter((c) => visibleCols.includes(c.key));
 
   return (
-    <div style={{ padding: 16 }}>
-      <h2>Reporte de Atenciones - FORM 008 Emergencia</h2>
+    <div className="p-4">
+      <h2 className="text-xl font-semibold mb-3">
+        Reporte de Atenciones - FORM 008 Emergencia
+      </h2>
 
       <form
         onSubmit={handleSubmit}
-        style={{
-          display: "grid",
-          gap: 8,
-          gridTemplateColumns: "repeat(6, minmax(140px, 1fr))",
-          alignItems: "end",
-          marginBottom: 12,
-        }}
+        className="grid gap-3 md:grid-cols-6 items-end mb-3"
       >
-        <div>
-          <label>Buscar</label>
+        <div className="flex flex-col">
+          <label className="text-sm text-gray-700">Buscar</label>
           <input
             type="text"
             placeholder="Paciente / Documento / Diagnóstico"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={inputStyle}
+            className="w-full px-2 py-1 border border-gray-300 rounded"
           />
         </div>
-        <div>
-          <label>Desde</label>
+        <div className="flex flex-col">
+          <label className="text-sm text-gray-700">Desde</label>
           <input
             type="date"
             value={fechaInicio}
             onChange={(e) => setFechaInicio(e.target.value)}
-            style={inputStyle}
+            className="w-full px-2 py-1 border border-gray-300 rounded"
           />
         </div>
-        <div>
-          <label>Hasta</label>
+        <div className="flex flex-col">
+          <label className="text-sm text-gray-700">Hasta</label>
           <input
             type="date"
             value={fechaFin}
             onChange={(e) => setFechaFin(e.target.value)}
-            style={inputStyle}
+            className="w-full px-2 py-1 border border-gray-300 rounded"
           />
         </div>
-        <div>
-          <label>Servicio</label>
+        <div className="flex flex-col">
+          <label className="text-sm text-gray-700">Servicio</label>
           <input
             type="text"
             value={servicio}
             onChange={(e) => setServicio(e.target.value)}
-            style={inputStyle}
+            className="w-full px-2 py-1 border border-gray-300 rounded"
           />
         </div>
-        <div>
-          <label>Médico</label>
+        <div className="flex flex-col">
+          <label className="text-sm text-gray-700">Médico</label>
           <input
             type="text"
             value={medico}
             onChange={(e) => setMedico(e.target.value)}
-            style={inputStyle}
+            className="w-full px-2 py-1 border border-gray-300 rounded"
           />
         </div>
-        <div>
-          <label>Estado</label>
+        <div className="flex flex-col">
+          <label className="text-sm text-gray-700">Estado</label>
           <select
             value={estado}
             onChange={(e) => setEstado(e.target.value)}
-            style={inputStyle}
+            className="w-full px-2 py-1 border border-gray-300 rounded"
           >
             <option value="">Todos</option>
             <option value="ATENDIDO">Atendido</option>
@@ -212,47 +216,80 @@ export default function ReporteAtenciones() {
           </select>
         </div>
 
-        <div style={{ gridColumn: "1 / -1", display: "flex", gap: 8 }}>
-          <button type="submit" disabled={loading} style={btnPrimary}>
+        <div className="md:col-span-6 flex gap-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
+          >
             {loading ? "Cargando..." : "Buscar"}
           </button>
           <button
             type="button"
             onClick={resetFiltros}
             disabled={loading}
-            style={btnSecondary}
+            className="px-3 py-2 rounded border border-gray-300 bg-gray-100"
           >
             Limpiar
           </button>
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+
+          <div className="ml-auto flex gap-2">
             <button
               type="button"
               onClick={exportCSV}
               disabled={loading || items.length === 0}
-              style={btnSecondary}
+              className="px-3 py-2 rounded border border-gray-300 bg-gray-100 disabled:opacity-60"
             >
               Exportar CSV
             </button>
-            <button type="button" onClick={printReport} style={btnSecondary}>
+            <button
+              type="button"
+              onClick={printReport}
+              className="px-3 py-2 rounded border border-gray-300 bg-gray-100"
+            >
               Imprimir
             </button>
           </div>
         </div>
       </form>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 8,
-        }}
-      >
-        <span>Total: {total}</span>
-        <span>
+      {/* Selector de variables/columnas para el reporte */}
+      <div className="mb-3">
+        <details className="rounded border border-gray-200">
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium">
+            Variables del reporte
+          </summary>
+          <div className="px-3 py-2 grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {columns.map((c) => (
+              <label
+                key={c.key}
+                className="inline-flex items-center gap-2 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  checked={visibleCols.includes(c.key)}
+                  onChange={() =>
+                    setVisibleCols((prev) =>
+                      prev.includes(c.key)
+                        ? prev.filter((k) => k !== c.key)
+                        : [...prev, c.key]
+                    )
+                  }
+                />
+                {c.label}
+              </label>
+            ))}
+          </div>
+        </details>
+      </div>
+
+      {/* Barra de control y paginación */}
+      <div className="flex items-center gap-3 mb-2">
+        <span className="text-sm">Total: {total}</span>
+        <span className="text-sm">
           Página {page} de {totalPages}
         </span>
-        <label>
+        <label className="text-sm">
           Tamaño
           <select
             value={pageSize}
@@ -260,7 +297,7 @@ export default function ReporteAtenciones() {
               setPageSize(Number(e.target.value));
               setPage(1);
             }}
-            style={{ marginLeft: 6 }}
+            className="ml-1 border border-gray-300 rounded px-2 py-1"
           >
             {[10, 20, 50, 100].map((n) => (
               <option key={n} value={n}>
@@ -269,32 +306,36 @@ export default function ReporteAtenciones() {
             ))}
           </select>
         </label>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+        <div className="ml-auto flex gap-1">
           <button
             onClick={() => setPage(1)}
             disabled={page === 1 || loading}
-            style={btnSmall}
+            className="px-2 py-1 border border-gray-300 rounded bg-white disabled:opacity-50"
+            title="Primera"
           >
             «
           </button>
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1 || loading}
-            style={btnSmall}
+            className="px-2 py-1 border border-gray-300 rounded bg-white disabled:opacity-50"
+            title="Anterior"
           >
             ‹
           </button>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages || loading}
-            style={btnSmall}
+            className="px-2 py-1 border border-gray-300 rounded bg-white disabled:opacity-50"
+            title="Siguiente"
           >
             ›
           </button>
           <button
             onClick={() => setPage(totalPages)}
             disabled={page >= totalPages || loading}
-            style={btnSmall}
+            className="px-2 py-1 border border-gray-300 rounded bg-white disabled:opacity-50"
+            title="Última"
           >
             »
           </button>
@@ -302,35 +343,69 @@ export default function ReporteAtenciones() {
       </div>
 
       {err ? (
-        <div style={{ color: "crimson", marginBottom: 8 }}>Error: {err}</div>
+        <div className="text-red-600 mb-2 text-sm">Error: {err}</div>
       ) : null}
 
-      <div
-        style={{ overflow: "auto", border: "1px solid #ddd", borderRadius: 6 }}
-      >
-        <table
-          style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}
-        >
-          <thead style={{ background: "#f6f6f6" }}>
+      {/* Resúmenes (en la página actual) */}
+      <div className="grid gap-3 md:grid-cols-2 mb-3">
+        <div className="border border-gray-200 rounded p-3">
+          <h3 className="font-medium text-sm mb-2">
+            Resumen por Estado (página actual)
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {Object.keys(resumenEstado).length === 0 ? (
+              <span className="text-gray-500 text-sm">Sin datos</span>
+            ) : (
+              Object.entries(resumenEstado).map(([k, v]) => (
+                <span
+                  key={k}
+                  className="text-xs px-2 py-1 rounded bg-gray-100 border border-gray-200"
+                >
+                  {k || "Sin estado"}: {v}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+        <div className="border border-gray-200 rounded p-3">
+          <h3 className="font-medium text-sm mb-2">
+            Resumen por Servicio (página actual)
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {Object.keys(resumenServicio).length === 0 ? (
+              <span className="text-gray-500 text-sm">Sin datos</span>
+            ) : (
+              Object.entries(resumenServicio).map(([k, v]) => (
+                <span
+                  key={k}
+                  className="text-xs px-2 py-1 rounded bg-gray-100 border border-gray-200"
+                >
+                  {k || "Sin servicio"}: {v}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-auto border border-gray-200 rounded">
+        <table className="w-full border-collapse text-sm">
+          <thead className="bg-gray-50">
             <tr>
-              {columns.map((col) => (
+              {usedColumns.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => toggleSort(col.key)}
-                  style={{
-                    textAlign: "left",
-                    padding: "8px 10px",
-                    borderBottom: "1px solid #eaeaea",
-                    cursor: col.sortable ? "pointer" : "default",
-                    whiteSpace: "nowrap",
-                  }}
+                  className={`text-left px-3 py-2 border-b border-gray-200 whitespace-nowrap ${
+                    col.sortable ? "cursor-pointer select-none" : ""
+                  }`}
                 >
-                  {col.label}{" "}
-                  {col.sortable && sortBy === col.key
-                    ? sortDir === "asc"
-                      ? "▲"
-                      : "▼"
-                    : ""}
+                  <span className="inline-flex items-center gap-1">
+                    {col.label}
+                    {col.sortable && sortBy === col.key ? (
+                      <span>{sortDir === "asc" ? "▲" : "▼"}</span>
+                    ) : null}
+                  </span>
                 </th>
               ))}
             </tr>
@@ -339,8 +414,8 @@ export default function ReporteAtenciones() {
             {!loading && items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={columns.length}
-                  style={{ padding: 16, textAlign: "center", color: "#666" }}
+                  colSpan={usedColumns.length}
+                  className="px-4 py-6 text-center text-gray-500"
                 >
                   Sin resultados
                 </td>
@@ -349,13 +424,10 @@ export default function ReporteAtenciones() {
             {items.map((row, idx) => (
               <tr
                 key={row.id || `${row.documento}-${idx}`}
-                style={{ borderBottom: "1px solid #f0f0f0" }}
+                className="border-b border-gray-100"
               >
-                {columns.map((col) => (
-                  <td
-                    key={col.key}
-                    style={{ padding: "8px 10px", verticalAlign: "top" }}
-                  >
+                {usedColumns.map((col) => (
+                  <td key={col.key} className="px-3 py-2 align-top">
                     {formatValue(valueOf(row, col.key), col.key)}
                   </td>
                 ))}
@@ -364,8 +436,8 @@ export default function ReporteAtenciones() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={columns.length}
-                  style={{ padding: 16, textAlign: "center" }}
+                  colSpan={usedColumns.length}
+                  className="px-4 py-6 text-center"
                 >
                   Cargando...
                 </td>
@@ -377,36 +449,6 @@ export default function ReporteAtenciones() {
     </div>
   );
 }
-
-const inputStyle = {
-  width: "100%",
-  padding: "6px 8px",
-  border: "1px solid #ccc",
-  borderRadius: 4,
-};
-const btnPrimary = {
-  padding: "8px 12px",
-  background: "#2563eb",
-  color: "white",
-  border: "none",
-  borderRadius: 4,
-  cursor: "pointer",
-};
-const btnSecondary = {
-  padding: "8px 12px",
-  background: "#f3f4f6",
-  color: "#111",
-  border: "1px solid #e5e7eb",
-  borderRadius: 4,
-  cursor: "pointer",
-};
-const btnSmall = {
-  padding: "6px 10px",
-  border: "1px solid #e5e7eb",
-  background: "#fff",
-  borderRadius: 4,
-  cursor: "pointer",
-};
 
 function valueOf(obj, path) {
   const val = obj?.[path];
@@ -438,4 +480,12 @@ function sanitizeCSV(v) {
   const s = v == null ? "" : String(v);
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
+}
+
+function countBy(arr, key) {
+  return arr.reduce((acc, it) => {
+    const k = it?.[key] ?? "";
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {});
 }
