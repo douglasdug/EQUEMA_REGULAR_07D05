@@ -1,10 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { listarReportesAtenciones } from "../api/conexion.api.js";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
 const API_BASE_URL =
   import.meta?.env?.VITE_API_URL || "http://localhost:3000/api";
 const ENDPOINT = "/form_008_emergencia/atenciones";
 
 export default function ReporteAtenciones() {
+  const [estado, setEstado] = useState("");
+  // === NUEVO: estado para reporte mensual ===
+  const [repoAtenYear, setRepoAtenYear] = useState(
+    String(new Date().getFullYear())
+  );
+  const [reportData, setReportData] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportErr, setReportErr] = useState("");
+
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -15,7 +27,6 @@ export default function ReporteAtenciones() {
   const [fechaFin, setFechaFin] = useState("");
   const [servicio, setServicio] = useState("");
   const [medico, setMedico] = useState("");
-  const [estado, setEstado] = useState("");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -139,6 +150,23 @@ export default function ReporteAtenciones() {
 
   const printReport = () => window.print();
 
+  // === NUEVO: función para llamar al endpoint de reporte mensual ===
+  const buscarReporteMensual = async () => {
+    setReportLoading(true);
+    setReportErr("");
+    try {
+      // Ajusta los params si tu API requiere eniUser y user_rol además de year:
+      // Ej.: const data = await listarReportesAtenciones({ eniUser, user_rol, year: repoAtenYear });
+      const data = await listarReportesAtenciones(repoAtenYear);
+      setReportData(data);
+    } catch (e) {
+      setReportErr(e?.message || "Error al obtener reporte");
+      toast?.error?.("No se pudo cargar el reporte");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   // Resúmenes rápidos en la página actual (útil para reportes)
   const resumenEstado = useMemo(() => countBy(items, "estado"), [items]);
   const resumenServicio = useMemo(() => countBy(items, "servicio"), [items]);
@@ -150,6 +178,47 @@ export default function ReporteAtenciones() {
       <h2 className="text-xl font-semibold mb-3">
         Reporte de Atenciones - FORM 008 Emergencia
       </h2>
+
+      {/* NUEVO: Reporte mensual por año */}
+      <div className="mb-4 border border-gray-200 rounded p-3">
+        <h3 className="font-medium text-sm mb-2">Reporte mensual (por año)</h3>
+        <div className="flex items-end gap-2 mb-3">
+          <div className="flex flex-col">
+            <label htmlFor="repo_aten_year" className="text-sm text-gray-700">
+              Año
+            </label>
+            <input
+              id="repo_aten_year"
+              type="number"
+              min="2000"
+              max="2100"
+              value={repoAtenYear}
+              onChange={(e) => setRepoAtenYear(e.target.value)}
+              className="w-36 px-2 py-1 border border-gray-300 rounded"
+            />
+          </div>
+          <button
+            id="btnBuscar"
+            type="button"
+            onClick={buscarReporteMensual}
+            disabled={reportLoading}
+            className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
+          >
+            {reportLoading ? "Cargando..." : "Buscar"}
+          </button>
+        </div>
+
+        {reportErr ? (
+          <div className="text-red-600 mb-2 text-sm">Error: {reportErr}</div>
+        ) : null}
+
+        {reportData ? (
+          <>
+            <TablaReporteMensual data={reportData} />
+          </>
+        ) : null}
+      </div>
+      {/* FIN NUEVO */}
 
       <form
         onSubmit={handleSubmit}
@@ -489,3 +558,74 @@ function countBy(arr, key) {
     return acc;
   }, {});
 }
+
+// ...existing code...
+function TablaReporteMensual({ data }) {
+  const meses = [
+    "ENERO",
+    "FEBRERO",
+    "MARZO",
+    "ABRIL",
+    "MAYO",
+    "JUNIO",
+    "JULIO",
+    "AGOSTO",
+    "SEPTIEMBRE",
+    "OCTUBRE",
+    "NOVIEMBRE",
+    "DICIEMBRE",
+  ];
+  return (
+    <div className="overflow-auto border border-gray-200 rounded">
+      <table className="w-full border-collapse text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="text-left px-3 py-2 border-b border-gray-200">
+              Concepto
+            </th>
+            {meses.map((m) => (
+              <th
+                key={m}
+                className="text-right px-3 py-2 border-b border-gray-200 whitespace-nowrap"
+              >
+                {m}
+              </th>
+            ))}
+            <th className="text-right px-3 py-2 border-b border-gray-200">
+              TOTAL
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-b border-gray-100">
+            <td className="px-3 py-2">Total registros</td>
+            {meses.map((m) => (
+              <td key={`all-${m}`} className="px-3 py-2 text-right">
+                {data?.meses?.[m]?.[0] ?? 0}
+              </td>
+            ))}
+            <td className="px-3 py-2 text-right font-medium">
+              {data?.total?.[0] ?? 0}
+            </td>
+          </tr>
+          <tr>
+            <td className="px-3 py-2">Atenciones únicas</td>
+            {meses.map((m) => (
+              <td key={`unique-${m}`} className="px-3 py-2 text-right">
+                {data?.meses?.[m]?.[1] ?? 0}
+              </td>
+            ))}
+            <td className="px-3 py-2 text-right font-medium">
+              {data?.total?.[1] ?? 0}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div className="px-3 py-2 text-xs text-gray-600">
+        eniUser: {data?.id_eni_user ?? "-"} · year: {data?.year ?? "-"}
+      </div>
+    </div>
+  );
+}
+// ...existing code...

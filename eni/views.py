@@ -7,16 +7,16 @@ from rest_framework.decorators import action
 from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, registro_vacunado
 from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, Form008EmergenciaRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 
-from django.db.models import F, Sum
+from django.db.models import F, Sum, Count, Max
 from django.utils.dateparse import parse_date
 from datetime import datetime, timezone, timedelta, time, date
 from django.http import HttpResponse, StreamingHttpResponse
 import csv
 from rest_framework.decorators import action
+from django.db.models.functions import ExtractMonth
 
 from django.contrib.auth.models import User
-from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.tokens import default_token_generator, PasswordResetTokenGenerator
 from django.core.mail import send_mail
 from django.urls import reverse
 from rest_framework.views import APIView
@@ -27,7 +27,6 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Max
 
 
 # Create your views here.
@@ -7797,6 +7796,136 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         response["Content-Disposition"] = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{filename}'
         response["X-Accel-Buffering"] = "no"
         return response
+
+    @action(detail=False, methods=['get'], url_path='reporte-mensual')
+    def reporte_mensual(self, request, *args, **kwargs):
+        """
+        GET /form008-emergencia/reporte-mensual/?id_eni_user=ID&form_008_year=YYYY&user_rol=ROL[&for_008_emer_unic=UNICODIGO][&for_008_emer_unid=NOMBRE]
+        Agrupa por unidad de salud (for_008_emer_unic, for_008_emer_unid) y retorna por mes:
+        - total de registros (todas las filas)
+        - total de atenciones únicas (distinct for_008_emer_aten_fina)
+        Respuesta:
+        {
+          "id_eni_user": "1",
+          "year": 2025,
+          "results": [
+            {
+              "unidad_salud": "000592 HOSPITAL BASICO HUAQUILLAS",
+              "for_008_emer_unic": "000592",
+              "for_008_emer_unid": "HOSPITAL BASICO HUAQUILLAS",
+              "meses": { "ENERO": [0,0], ..., "AGOSTO": [52,27], ... },
+              "total": [59,34]
+            },
+            ...
+          ]
+        }
+        """
+        id_eni_user = request.query_params.get('id_eni_user')
+        form_008_year = request.query_params.get(
+            'form_008_year', timezone.now().year)
+        form_008_user_rol = request.query_params.get('user_rol', None)
+        filtro_unic = request.query_params.get('for_008_emer_unic')
+        filtro_unid = request.query_params.get('for_008_emer_unid')
+
+        faltantes = []
+        if not id_eni_user:
+            faltantes.append('id_eni_user')
+        if form_008_user_rol is None:
+            faltantes.append('user_rol')
+        if not form_008_year:
+            faltantes.append('form_008_year')
+        if faltantes:
+            return Response(
+                {"detail": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            year = int(form_008_year)
+            form_008_user_rol = int(form_008_user_rol)
+        except (TypeError, ValueError):
+            return Response({"detail": "Parámetros 'form_008_year' o 'user_rol' inválidos."}, status=status.HTTP_400_BAD_REQUEST)
+
+        base_qs = self.get_queryset().filter(for_008_emer_fech_aten__year=year)
+
+        # Rol 3: solo sus atenciones; Rol 1: total (sin filtro por eniUser)
+        if form_008_user_rol == 3:
+            base_qs = base_qs.filter(eniUser=id_eni_user)
+
+        # Filtros opcionales por unidad de salud
+        if filtro_unic:
+            base_qs = base_qs.filter(for_008_emer_unic=filtro_unic)
+        if filtro_unid:
+            base_qs = base_qs.filter(for_008_emer_unid=filtro_unid)
+
+        qs = (
+            base_qs
+            .annotate(month=ExtractMonth('for_008_emer_fech_aten'))
+            .values('for_008_emer_unic', 'for_008_emer_unid', 'month')
+            .annotate(
+                total_all=Count('for_008_emer_aten_fina'),
+                total_unique=Count('for_008_emer_aten_fina', distinct=True)
+            )
+            .order_by('for_008_emer_unic', 'month')
+        )
+
+        meses_es = [
+            "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
+            "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
+        ]
+
+        # Agrupar por unidad (unic, unid) y armar conteos por mes
+        agrupado = {}
+        for row in qs:
+            unic = row.get('for_008_emer_unic') or ''
+            unid = row.get('for_008_emer_unid') or ''
+            key = (unic, unid)
+            if key not in agrupado:
+                agrupado[key] = {
+                    "for_008_emer_unic": unic,
+                    "for_008_emer_unid": unid,
+                    "meses": {m: [0, 0] for m in meses_es}
+                }
+            num_mes = row.get('month')
+            if num_mes and 1 <= num_mes <= 12:
+                agrupado[key]["meses"][meses_es[num_mes - 1]] = [
+                    row.get('total_all', 0) or 0,
+                    row.get('total_unique', 0) or 0
+                ]
+
+        # Calcular totales por unidad y preparar salida
+        results = []
+        for (unic, unid), data_u in sorted(agrupado.items(), key=lambda x: (x[0][0], x[0][1])):
+            total_all_anual = sum(v[0] for v in data_u["meses"].values())
+            total_unique_anual = sum(v[1] for v in data_u["meses"].values())
+            results.append({
+                "unidad_salud": f"{unic} {unid}".strip(),
+                "for_008_emer_unic": data_u["for_008_emer_unic"],
+                "for_008_emer_unid": data_u["for_008_emer_unid"],
+                "meses": data_u["meses"],
+                "total": [total_all_anual, total_unique_anual]
+            })
+
+        # Si no hay registros y se filtró por una unidad específica, devolver unidad con ceros
+        if not results and (filtro_unic or filtro_unid):
+            label_unic = filtro_unic or ""
+            label_unid = filtro_unid or ""
+            results.append({
+                "unidad_salud": f"{label_unic} {label_unid}".strip(),
+                "for_008_emer_unic": label_unic,
+                "for_008_emer_unid": label_unid,
+                "meses": {m: [0, 0] for m in meses_es},
+                "total": [0, 0]
+            })
+
+        return Response(
+            {
+                "id_eni_user": str(id_eni_user),
+                "year": year,
+                "results": results
+            },
+            status=status.HTTP_200_OK
+        )
 
     def get_eni_user(self, eni_user_id):
         try:

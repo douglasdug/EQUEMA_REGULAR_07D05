@@ -326,6 +326,29 @@ export const updateUnidadSaludPrincipal = async (formData) => {
   }
 };
 
+//Funciones para los reportes de atenciones de Formulario 008 Emergencia
+export const listarReportesAtenciones = async (form_008_year) => {
+  try {
+    const userId = await ensureCurrentUserId();
+    const user_rol = 3;
+    const response = await axios.get(
+      `${API_URL}/form-008-emergencia/reporte-mensual/`,
+      {
+        params: { id_eni_user: userId, form_008_year, user_rol },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching reportes atenciones data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
 //Funciones para los registros de vacunación
 //const eniUser_id = 1;
 
