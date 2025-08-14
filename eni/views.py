@@ -27,6 +27,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Q, Count
 
 
 # Create your views here.
@@ -7800,7 +7801,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='reporte-mensual')
     def reporte_mensual(self, request, *args, **kwargs):
         """
-        GET /form008-emergencia/reporte-mensual/?id_eni_user=ID&form_008_year=YYYY&user_rol=ROL[&for_008_emer_unic=UNICODIGO][&for_008_emer_unid=NOMBRE]
+        GET /form008-emergencia/reporte-mensual/?id_eni_user=ID&form_008_year=YYYY&user_rol=ROL
         Agrupa por unidad de salud (for_008_emer_unic, for_008_emer_unid) y retorna por mes:
         - total de registros (todas las filas)
         - total de atenciones únicas (distinct for_008_emer_aten_fina)
@@ -7810,9 +7811,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
           "year": 2025,
           "results": [
             {
-              "unidad_salud": "000592 HOSPITAL BASICO HUAQUILLAS",
-              "for_008_emer_unic": "000592",
-              "for_008_emer_unid": "HOSPITAL BASICO HUAQUILLAS",
+              "unidad_salud": "000592 HOSPITAL BASICO HUAQUILLAS",              
               "meses": { "ENERO": [0,0], ..., "AGOSTO": [52,27], ... },
               "total": [59,34]
             },
@@ -7824,8 +7823,6 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         form_008_year = request.query_params.get(
             'form_008_year', timezone.now().year)
         form_008_user_rol = request.query_params.get('user_rol', None)
-        filtro_unic = request.query_params.get('for_008_emer_unic')
-        filtro_unid = request.query_params.get('for_008_emer_unid')
 
         faltantes = []
         if not id_eni_user:
@@ -7851,12 +7848,6 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         # Rol 3: solo sus atenciones; Rol 1: total (sin filtro por eniUser)
         if form_008_user_rol == 3:
             base_qs = base_qs.filter(eniUser=id_eni_user)
-
-        # Filtros opcionales por unidad de salud
-        if filtro_unic:
-            base_qs = base_qs.filter(for_008_emer_unic=filtro_unic)
-        if filtro_unid:
-            base_qs = base_qs.filter(for_008_emer_unid=filtro_unid)
 
         qs = (
             base_qs
@@ -7900,20 +7891,16 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             total_unique_anual = sum(v[1] for v in data_u["meses"].values())
             results.append({
                 "unidad_salud": f"{unic} {unid}".strip(),
-                "for_008_emer_unic": data_u["for_008_emer_unic"],
-                "for_008_emer_unid": data_u["for_008_emer_unid"],
                 "meses": data_u["meses"],
                 "total": [total_all_anual, total_unique_anual]
             })
 
         # Si no hay registros y se filtró por una unidad específica, devolver unidad con ceros
-        if not results and (filtro_unic or filtro_unid):
-            label_unic = filtro_unic or ""
-            label_unid = filtro_unid or ""
+        if not results:
+            label_unic = ""
+            label_unid = ""
             results.append({
                 "unidad_salud": f"{label_unic} {label_unid}".strip(),
-                "for_008_emer_unic": label_unic,
-                "for_008_emer_unid": label_unid,
                 "meses": {m: [0, 0] for m in meses_es},
                 "total": [0, 0]
             })
@@ -7922,6 +7909,90 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             {
                 "id_eni_user": str(id_eni_user),
                 "year": year,
+                "results": results
+            },
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=['get'], url_path='reporte-diagnostico')
+    def reporte_diagnostico(self, request, *args, **kwargs):
+        """
+        GET /form008-emergencia/reporte-diagnostico/?id_eni_user=ID&user_rol=ROL
+        """
+
+        id_eni_user = request.query_params.get('id_eni_user')
+        user_rol = request.query_params.get('user_rol')
+
+        if not user_rol:
+            return Response(
+                {"detail": "user_rol es requerido. Valores permitidos: 1 o 3."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        qs = self.get_queryset()
+
+        if str(user_rol) == '3':
+            if not id_eni_user:
+                return Response(
+                    {"detail": "id_eni_user es requerido cuando user_rol = 3."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            qs = qs.filter(eniUser=id_eni_user)
+        elif str(user_rol) not in ('1',):
+            return Response(
+                {"detail": "user_rol inválido. Valores permitidos: 1 o 3."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        qs = qs.exclude(for_008_emer_cie_10_prin__isnull=True).exclude(
+            for_008_emer_cie_10_prin='')
+
+        agg = (
+            qs.values('for_008_emer_cie_10_prin', 'for_008_emer_diag_prin')
+            .annotate(
+                hombre=Count(
+                    'id',
+                    filter=(
+                        Q(for_008_emer_sexo__iexact='HOMBRE') |
+                        Q(for_008_emer_sexo__iexact='H') |
+                        Q(for_008_emer_sexo__istartswith='MASC')
+                    )
+                ),
+                mujer=Count(
+                    'id',
+                    filter=(
+                        Q(for_008_emer_sexo__iexact='MUJER') |
+                        Q(for_008_emer_sexo__iexact='M') |
+                        Q(for_008_emer_sexo__istartswith='FEM')
+                    )
+                ),
+                intersexual=Count(
+                    'id',
+                    filter=(
+                        Q(for_008_emer_sexo__iexact='INTERSEXUAL') |
+                        Q(for_008_emer_sexo__iexact='I') |
+                        Q(for_008_emer_sexo__istartswith='INTER')
+                    )
+                ),
+                total=Count('id')
+            )
+            .order_by('-total')
+        )
+
+        results = [
+            {
+                "diagnostico": f"{row['for_008_emer_cie_10_prin']} {row['for_008_emer_diag_prin']}".strip(),
+                "hombre": row['hombre'] or 0,
+                "intersexual": row['intersexual'] or 0,
+                "mujer": row['mujer'] or 0,
+                "total": row['total'] or 0,
+            }
+            for row in agg
+        ]
+
+        return Response(
+            {
+                "id_eni_user": str(id_eni_user) if id_eni_user is not None else None,
                 "results": results
             },
             status=status.HTTP_200_OK

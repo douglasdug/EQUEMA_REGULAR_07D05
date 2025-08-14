@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { listarReportesAtenciones } from "../api/conexion.api.js";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import PropTypes from "prop-types";
 
 const API_BASE_URL =
   import.meta?.env?.VITE_API_URL || "http://localhost:3000/api";
@@ -158,7 +158,7 @@ export default function ReporteAtenciones() {
       // Ajusta los params si tu API requiere eniUser y user_rol además de year:
       // Ej.: const data = await listarReportesAtenciones({ eniUser, user_rol, year: repoAtenYear });
       const data = await listarReportesAtenciones(repoAtenYear);
-      setReportData(data);
+      setReportData(Array.isArray(data?.results) ? data.results : []);
     } catch (e) {
       setReportErr(e?.message || "Error al obtener reporte");
       toast?.error?.("No se pudo cargar el reporte");
@@ -212,9 +212,10 @@ export default function ReporteAtenciones() {
           <div className="text-red-600 mb-2 text-sm">Error: {reportErr}</div>
         ) : null}
 
-        {reportData ? (
+        {reportData && Array.isArray(reportData) && reportData.length > 0 ? (
           <>
-            <TablaReporteMensual data={reportData} />
+            <TablaReporteMensualUnidades rows={reportData} />
+            <TablaResumenIndicadores rows={reportData} />
           </>
         ) : null}
       </div>
@@ -560,7 +561,7 @@ function countBy(arr, key) {
 }
 
 // ...existing code...
-function TablaReporteMensual({ data }) {
+function TablaReporteMensualUnidades({ rows }) {
   const meses = [
     "ENERO",
     "FEBRERO",
@@ -575,13 +576,21 @@ function TablaReporteMensual({ data }) {
     "NOVIEMBRE",
     "DICIEMBRE",
   ];
+  const parMes = (r, m) => {
+    const par = r?.meses?.[m];
+    if (!Array.isArray(par) || par.length < 2) return [0, 0];
+    return [Number(par[0]) || 0, Number(par[1]) || 0];
+  };
   return (
     <div className="overflow-auto border border-gray-200 rounded">
       <table className="w-full border-collapse text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="text-left px-3 py-2 border-b border-gray-200">
-              Concepto
+            <th className="text-left px-3 py-2 border-b border-gray-200 whitespace-nowrap">
+              UNIDAD DE SALUD
+            </th>
+            <th className="text-left px-3 py-2 border-b border-gray-200 whitespace-nowrap">
+              INDICADOR
             </th>
             {meses.map((m) => (
               <th
@@ -591,6 +600,100 @@ function TablaReporteMensual({ data }) {
                 {m}
               </th>
             ))}
+            <th className="text-right px-3 py-2 border-b border-gray-200 whitespace-nowrap">
+              TOTAL
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const totalDiag = Number(r?.total?.[0]) || 0;
+            const totalPac = Number(r?.total?.[1]) || 0;
+            return (
+              <Fragment key={r.unidad_salud}>
+                <tr className="border-b border-gray-100">
+                  <td className="px-3 py-2 align-top font-medium" rowSpan={2}>
+                    {r.unidad_salud}
+                  </td>
+                  <td className="px-3 py-2">Atenciones por diagnostico</td>
+                  {meses.map((m) => {
+                    const [diag] = parMes(r, m);
+                    return (
+                      <td
+                        key={`${r.unidad_salud}-diag-${m}`}
+                        className="px-3 py-2 text-right"
+                      >
+                        {diag}
+                      </td>
+                    );
+                  })}
+                  <td className="px-3 py-2 text-right font-medium">
+                    {totalDiag}
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="px-3 py-2">Atenciones por paciente</td>
+                  {meses.map((m) => {
+                    const [, pac] = parMes(r, m);
+                    return (
+                      <td
+                        key={`${r.unidad_salud}-pac-${m}`}
+                        className="px-3 py-2 text-right"
+                      >
+                        {pac}
+                      </td>
+                    );
+                  })}
+                  <td className="px-3 py-2 text-right font-medium">
+                    {totalPac}
+                  </td>
+                </tr>
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+TablaReporteMensualUnidades.propTypes = {
+  rows: PropTypes.arrayOf(
+    PropTypes.shape({
+      unidad_salud: PropTypes.string,
+      meses: PropTypes.objectOf(
+        PropTypes.arrayOf(
+          PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+        )
+      ),
+      total: PropTypes.arrayOf(
+        PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+      ),
+    })
+  ).isRequired,
+};
+// ...existing code...
+// NUEVO: tabla de resumen “DETALLES DE LA TABLA”
+function TablaResumenIndicadores({ rows }) {
+  const totals = rows.reduce(
+    (acc, r) => {
+      acc.diag += Number(r?.total?.[0]) || 0;
+      acc.pac += Number(r?.total?.[1]) || 0;
+      return acc;
+    },
+    { diag: 0, pac: 0 }
+  );
+
+  return (
+    <div className="mt-4 border border-gray-200 rounded">
+      <div className="px-3 py-2 font-semibold text-sm">
+        DETALLES DE LA TABLA
+      </div>
+      <table className="w-full border-t border-gray-200 text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="text-left px-3 py-2 border-b border-gray-200">
+              INDICADOR
+            </th>
             <th className="text-right px-3 py-2 border-b border-gray-200">
               TOTAL
             </th>
@@ -598,34 +701,25 @@ function TablaReporteMensual({ data }) {
         </thead>
         <tbody>
           <tr className="border-b border-gray-100">
-            <td className="px-3 py-2">Total registros</td>
-            {meses.map((m) => (
-              <td key={`all-${m}`} className="px-3 py-2 text-right">
-                {data?.meses?.[m]?.[0] ?? 0}
-              </td>
-            ))}
-            <td className="px-3 py-2 text-right font-medium">
-              {data?.total?.[0] ?? 0}
-            </td>
+            <td className="px-3 py-2">Atenciones por diagnostico</td>
+            <td className="px-3 py-2 text-right">{totals.diag}</td>
           </tr>
           <tr>
-            <td className="px-3 py-2">Atenciones únicas</td>
-            {meses.map((m) => (
-              <td key={`unique-${m}`} className="px-3 py-2 text-right">
-                {data?.meses?.[m]?.[1] ?? 0}
-              </td>
-            ))}
-            <td className="px-3 py-2 text-right font-medium">
-              {data?.total?.[1] ?? 0}
-            </td>
+            <td className="px-3 py-2">Atenciones por paciente</td>
+            <td className="px-3 py-2 text-right">{totals.pac}</td>
           </tr>
         </tbody>
       </table>
-
-      <div className="px-3 py-2 text-xs text-gray-600">
-        eniUser: {data?.id_eni_user ?? "-"} · year: {data?.year ?? "-"}
-      </div>
     </div>
   );
 }
-// ...existing code...
+
+TablaResumenIndicadores.propTypes = {
+  rows: PropTypes.arrayOf(
+    PropTypes.shape({
+      total: PropTypes.arrayOf(
+        PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+      ),
+    })
+  ).isRequired,
+};
