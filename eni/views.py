@@ -7698,22 +7698,40 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     # , permission_classes=[IsAuthenticated])
     @action(detail=False, methods=['get'], url_path='reporte-atenciones-csv')
     def reporte_atenciones_csv(self, request):
+        """
+        GET /form-008-emergencia/reporte-atenciones-csv/?id_eni_user=ID&for_008_emer_fech_aten_min=YYYY-MM-DD&for_008_emer_fech_aten_max=YYYY-MM-DD&user_rol=ROL        
+        """
         # 1) Parámetros
-        eni_user = request.query_params.get("eniUser")
+        id_eni_user = request.query_params.get("id_eni_user")
         fecha_min_str = request.query_params.get("for_008_emer_fech_aten_min")
         fecha_max_str = request.query_params.get("for_008_emer_fech_aten_max")
+        form_008_user_rol = request.query_params.get('user_rol', None)
 
-        if not eni_user:
-            return Response({"detail": "El parámetro eniUser es obligatorio."},
-                            status=status.HTTP_400_BAD_REQUEST)
-
+        faltantes = []
+        if form_008_user_rol is None:
+            faltantes.append('user_rol')
         if not fecha_min_str or not fecha_max_str:
+            faltantes.append(
+                'for_008_emer_fech_aten_min/for_008_emer_fech_aten_max')
+        if faltantes:
             return Response(
-                {"detail": "Debe enviar for_008_emer_fech_aten_min y for_008_emer_fech_aten_max en formato YYYY-MM-DD."},
+                {"detail": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 2) Parsear y validar formato
+        # 2) Validar user_rol y requerir id_eni_user solo si user_rol == 3
+        if str(form_008_user_rol) not in ('1', '3'):
+            return Response(
+                {"detail": "user_rol inválido. Valores permitidos: 1 o 3."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if str(form_008_user_rol) == '3' and not id_eni_user:
+            return Response(
+                {"detail": "id_eni_user es requerido cuando user_rol = 3."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3) Parsear y validar formato de fechas
         try:
             start_date = datetime.strptime(fecha_min_str, "%Y-%m-%d").date()
             end_date = datetime.strptime(fecha_max_str, "%Y-%m-%d").date()
@@ -7723,40 +7741,19 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 3) Validaciones de rango
+        # 4) Validaciones de rango
         if start_date > end_date:
             return Response(
                 {"detail": "for_008_emer_fech_aten_min no puede ser mayor que for_008_emer_fech_aten_max."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
         if (end_date - start_date).days > 31:
             return Response(
                 {"detail": "Solo puede descargar un rango máximo de un mes (31 días)."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Opción B (alternativa): mismo mes calendario
-        # if fecha_min.year != fecha_max.year or fecha_min.month != fecha_max.month:
-        #     return Response(
-        #         {"detail": "El rango de fechas debe pertenecer al mismo mes calendario."},
-        #         status=status.HTTP_400_BAD_REQUEST
-        #     )
-
-        # 4) Si pasa la validación, continuar con el queryset y la generación del CSV
-        # qs = self.get_queryset().filter(fecha__date__gte=fecha_min, fecha__date__lte=fecha_max)
-        # ... generar y devolver el CSV (StreamingHttpResponse/HttpResponse)
-
-        # start = parse_date(fecha_min)
-        # end = parse_date(fecha_max)
-        # if not start or not end:
-        #     return Response({"detail": "Las fechas deben tener el formato YYYY-MM-DD."},
-        #                     status=status.HTTP_400_BAD_REQUEST)
-        # if start > end:
-        #     return Response({"detail": "fecha_min no puede ser mayor que fecha_max."},
-        #                     status=status.HTTP_400_BAD_REQUEST)
-
-        # 4) Preparar filtros (Date vs DateTime con zona horaria)
+        # 5) Preparar filtros (Date vs DateTime con zona horaria)
         fecha_field_name = "for_008_emer_fech_aten"
         try:
             field = form_008_emergencia._meta.get_field(fecha_field_name)
@@ -7773,11 +7770,14 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             start_filter = start_date
             end_filter = end_date
 
+        # 6) Query según user_rol
         base_qs = (
             form_008_emergencia.objects
-            .filter(eniUser=eni_user, **{f"{fecha_field_name}__range": (start_filter, end_filter)})
-            .order_by(fecha_field_name)
+            .filter(**{f"{fecha_field_name}__range": (start_filter, end_filter)})
         )
+        if str(form_008_user_rol) == '3':
+            base_qs = base_qs.filter(eniUser=id_eni_user)
+        base_qs = base_qs.order_by(fecha_field_name)
 
         HEADERS = [
             "INSTITUCIÓN DEL SISTEMA", "UNICODIGO", "NOMBRE DEL ESTABLECIMIENTO DE SALUD", "ZONA",
@@ -7825,7 +7825,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             for row in base_qs.values(*FIELDS).iterator(chunk_size=5000):
                 yield writer.writerow([serialize_value(row.get(field)) for field in FIELDS])
 
-        filename = f'form008_emergencia_{eni_user}_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.csv'
+        filename = f'form008_emergencia_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.csv'
         response = StreamingHttpResponse(
             row_iter(), content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{filename}'
@@ -7873,7 +7873,12 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         base_qs = self.get_queryset().filter(for_008_emer_fech_aten__year=year)
 
         # Rol 3: solo sus atenciones; Rol 1: total (sin filtro por eniUser)
-        if form_008_user_rol == 3:
+        if str(form_008_user_rol) == '3':
+            if not id_eni_user:
+                return Response(
+                    {"detail": "id_eni_user es requerido cuando user_rol = 3."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             base_qs = base_qs.filter(eniUser=id_eni_user)
 
         qs = (
@@ -7944,28 +7949,43 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='reporte-diagnostico')
     def reporte_diagnostico(self, request, *args, **kwargs):
         """
-        GET /form008-emergencia/reporte-diagnostico/?id_eni_user=ID&user_rol=ROL
+        GET /form008-emergencia/reporte-diagnostico/?id_eni_user=ID&form_008_year=YYYY&user_rol=ROL
         """
 
         id_eni_user = request.query_params.get('id_eni_user')
-        user_rol = request.query_params.get('user_rol')
+        form_008_year = request.query_params.get(
+            'form_008_year', timezone.now().year)
+        form_008_user_rol = request.query_params.get('user_rol')
 
-        if not user_rol:
+        faltantes = []
+        if not id_eni_user:
+            faltantes.append('id_eni_user')
+        if form_008_user_rol is None:
+            faltantes.append('user_rol')
+        if not form_008_year:
+            faltantes.append('form_008_year')
+        if faltantes:
             return Response(
-                {"detail": "user_rol es requerido. Valores permitidos: 1 o 3."},
+                {"detail": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        qs = self.get_queryset()
+        try:
+            year = int(form_008_year)
+            form_008_user_rol = int(form_008_user_rol)
+        except (TypeError, ValueError):
+            return Response({"detail": "Parámetros 'form_008_year' o 'user_rol' inválidos."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if str(user_rol) == '3':
+        qs = self.get_queryset().filter(for_008_emer_fech_aten__year=year)
+
+        if str(form_008_user_rol) == '3':
             if not id_eni_user:
                 return Response(
                     {"detail": "id_eni_user es requerido cuando user_rol = 3."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             qs = qs.filter(eniUser=id_eni_user)
-        elif str(user_rol) not in ('1',):
+        elif str(form_008_user_rol) not in ('1',):
             return Response(
                 {"detail": "user_rol inválido. Valores permitidos: 1 o 3."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -8020,6 +8040,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         return Response(
             {
                 "id_eni_user": str(id_eni_user) if id_eni_user is not None else None,
+                "year": year,
                 "results": results
             },
             status=status.HTTP_200_OK

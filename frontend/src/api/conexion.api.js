@@ -380,6 +380,64 @@ export const listarReportesAtenciones = async (form_008_year) => {
   }
 };
 
+export const listarReporteDiagnostico = async (form_008_year) => {
+  try {
+    const userId = await ensureCurrentUserId();
+    const user_rol = 3;
+    const response = await axios.get(
+      `${API_URL}/form-008-emergencia/reporte-diagnostico/`,
+      {
+        params: { id_eni_user: userId, form_008_year, user_rol },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching reportes diagnostico data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
+export const reporteDescargaAtencionesCsv = async (
+  for_008_emer_fech_aten_min,
+  for_008_emer_fech_aten_max
+) => {
+  try {
+    const userId = await ensureCurrentUserId();
+    const user_rol = 3;
+    const response = await axios.get(
+      `${API_URL}/form-008-emergencia/reporte-atenciones-csv/`,
+      {
+        params: {
+          id_eni_user: userId,
+          for_008_emer_fech_aten_min,
+          for_008_emer_fech_aten_max,
+          user_rol,
+        },
+        responseType: "blob",
+      }
+    );
+    const cd = response.headers["content-disposition"] || "";
+    const match = cd.match(/filename="?([^"]+)"?/i);
+    const filename =
+      match?.[1] ||
+      `reporte_atenciones_${for_008_emer_fech_aten_min}_${for_008_emer_fech_aten_max}.csv`;
+    return { blob: response.data, filename };
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching reportes atenciones en CSV data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
 //Funciones para los registros de vacunación
 //const eniUser_id = 1;
 

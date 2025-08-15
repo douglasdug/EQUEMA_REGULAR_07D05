@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { listarReportesAtenciones } from "../api/conexion.api.js";
+import {
+  listarReportesAtenciones,
+  listarReporteDiagnostico,
+  reporteDescargaAtencionesCsv,
+} from "../api/conexion.api.js";
 import { toast } from "react-hot-toast";
 import PropTypes from "prop-types";
 
@@ -13,6 +17,11 @@ export default function ReporteAtenciones() {
   const [repoAtenYear, setRepoAtenYear] = useState(
     String(new Date().getFullYear())
   );
+  // === NUEVO: estado para reporte por diagnóstico ===
+  const [diagRows, setDiagRows] = useState([]);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagErr, setDiagErr] = useState("");
+
   const [reportData, setReportData] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportErr, setReportErr] = useState("");
@@ -159,11 +168,82 @@ export default function ReporteAtenciones() {
       // Ej.: const data = await listarReportesAtenciones({ eniUser, user_rol, year: repoAtenYear });
       const data = await listarReportesAtenciones(repoAtenYear);
       setReportData(Array.isArray(data?.results) ? data.results : []);
+      buscarReporteDiagnostico();
     } catch (e) {
       setReportErr(e?.message || "Error al obtener reporte");
       toast?.error?.("No se pudo cargar el reporte");
     } finally {
       setReportLoading(false);
+    }
+  };
+
+  // === NUEVO: función para reporte por diagnóstico (top 10 + OTROS) ===
+  const buscarReporteDiagnostico = async () => {
+    setDiagLoading(true);
+    setDiagErr("");
+    try {
+      const data = await listarReporteDiagnostico(repoAtenYear);
+      const rows = Array.isArray(data?.results) ? data.results : [];
+      // ordenar por total desc
+      const sorted = [...rows].sort(
+        (a, b) => (Number(b?.total) || 0) - (Number(a?.total) || 0)
+      );
+      const top10 = sorted.slice(0, 10);
+      const rest = sorted.slice(10);
+      if (rest.length > 0) {
+        const otros = rest.reduce(
+          (acc, r) => ({
+            diagnostico: "OTROS DIAGNOSTICOS",
+            hombre: acc.hombre + (Number(r?.hombre) || 0),
+            mujer: acc.mujer + (Number(r?.mujer) || 0),
+            intersexual: acc.intersexual + (Number(r?.intersexual) || 0),
+            total: acc.total + (Number(r?.total) || 0),
+          }),
+          {
+            diagnostico: "OTROS DIAGNOSTICOS",
+            hombre: 0,
+            mujer: 0,
+            intersexual: 0,
+            total: 0,
+          }
+        );
+        setDiagRows([...top10, otros]);
+      } else {
+        setDiagRows(top10);
+      }
+    } catch (e) {
+      const msg = e?.message || "Error al obtener reporte de diagnóstico";
+      setDiagErr(msg);
+      toast?.error?.(msg);
+    } finally {
+      setDiagLoading(false);
+    }
+  };
+
+  // === NUEVO: descarga CSV desde backend (requiere fechas YYYY-MM-DD) ===
+  const descargarCsvAtenciones = async () => {
+    try {
+      const rx = /^\d{4}-\d{2}-\d{2}$/;
+      if (!fechaInicio || !fechaFin) {
+        toast.error("Debe seleccionar fecha inicio y fin");
+        return;
+      }
+      if (!rx.test(fechaInicio) || !rx.test(fechaFin)) {
+        toast.error("Formato de fecha inválido (use YYYY-MM-DD)");
+        return;
+      }
+      const { blob, filename } = await reporteDescargaAtencionesCsv(
+        fechaInicio,
+        fechaFin
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error(e?.message || "No se pudo descargar el CSV");
     }
   };
 
@@ -178,7 +258,6 @@ export default function ReporteAtenciones() {
       <h2 className="text-xl font-semibold mb-3">
         Reporte de Atenciones - FORM 008 Emergencia
       </h2>
-
       {/* NUEVO: Reporte mensual por año */}
       <div className="mb-4 border border-gray-200 rounded p-3">
         <h3 className="font-medium text-sm mb-2">Reporte mensual (por año)</h3>
@@ -219,81 +298,48 @@ export default function ReporteAtenciones() {
           </>
         ) : null}
       </div>
-      {/* FIN NUEVO */}
+      {/* NUEVO: Reporte por diagnóstico (Top 10 + OTROS) */}
+      <div className="mb-4 border border-gray-200 rounded p-3">
+        <h3 className="font-medium text-sm mb-2">Reporte por diagnóstico</h3>
+        <div className="flex items-end gap-2 mb-3"></div>
+        {diagErr ? (
+          <div className="text-red-600 mb-2 text-sm">Error: {diagErr}</div>
+        ) : null}
+        {diagRows.length > 0 ? <TablaDiagnosticoTop rows={diagRows} /> : null}
+      </div>
 
       <form
         onSubmit={handleSubmit}
         className="grid gap-3 md:grid-cols-6 items-end mb-3"
       >
         <div className="flex flex-col">
-          <label className="text-sm text-gray-700">Buscar</label>
-          <input
-            type="text"
-            placeholder="Paciente / Documento / Diagnóstico"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-2 py-1 border border-gray-300 rounded"
-          />
-        </div>
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-700">Desde</label>
+          <label className="text-sm text-gray-700" htmlFor="repo_fecha_inicio">
+            Desde
+          </label>
           <input
             type="date"
+            id="repo_fecha_inicio"
+            name="repo_fecha_inicio"
             value={fechaInicio}
             onChange={(e) => setFechaInicio(e.target.value)}
             className="w-full px-2 py-1 border border-gray-300 rounded"
           />
         </div>
         <div className="flex flex-col">
-          <label className="text-sm text-gray-700">Hasta</label>
+          <label className="text-sm text-gray-700" htmlFor="repo_fecha_fin">
+            Hasta
+          </label>
           <input
             type="date"
+            id="repo_fecha_fin"
+            name="repo_fecha_fin"
             value={fechaFin}
             onChange={(e) => setFechaFin(e.target.value)}
             className="w-full px-2 py-1 border border-gray-300 rounded"
           />
         </div>
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-700">Servicio</label>
-          <input
-            type="text"
-            value={servicio}
-            onChange={(e) => setServicio(e.target.value)}
-            className="w-full px-2 py-1 border border-gray-300 rounded"
-          />
-        </div>
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-700">Médico</label>
-          <input
-            type="text"
-            value={medico}
-            onChange={(e) => setMedico(e.target.value)}
-            className="w-full px-2 py-1 border border-gray-300 rounded"
-          />
-        </div>
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-700">Estado</label>
-          <select
-            value={estado}
-            onChange={(e) => setEstado(e.target.value)}
-            className="w-full px-2 py-1 border border-gray-300 rounded"
-          >
-            <option value="">Todos</option>
-            <option value="ATENDIDO">Atendido</option>
-            <option value="EN_ESPERA">En espera</option>
-            <option value="REFERIDO">Referido</option>
-            <option value="DERIVADO">Derivado</option>
-          </select>
-        </div>
 
         <div className="md:col-span-6 flex gap-2">
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
-          >
-            {loading ? "Cargando..." : "Buscar"}
-          </button>
           <button
             type="button"
             onClick={resetFiltros}
@@ -306,11 +352,13 @@ export default function ReporteAtenciones() {
           <div className="ml-auto flex gap-2">
             <button
               type="button"
-              onClick={exportCSV}
-              disabled={loading || items.length === 0}
+              id="btnReporteDiagnosticoCsv"
+              name="btnReporteDiagnosticoCsv"
+              onClick={descargarCsvAtenciones}
+              disabled={loading || !fechaInicio || !fechaFin}
               className="px-3 py-2 rounded border border-gray-300 bg-gray-100 disabled:opacity-60"
             >
-              Exportar CSV
+              Descargar CSV
             </button>
             <button
               type="button"
@@ -323,199 +371,9 @@ export default function ReporteAtenciones() {
         </div>
       </form>
 
-      {/* Selector de variables/columnas para el reporte */}
-      <div className="mb-3">
-        <details className="rounded border border-gray-200">
-          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium">
-            Variables del reporte
-          </summary>
-          <div className="px-3 py-2 grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {columns.map((c) => (
-              <label
-                key={c.key}
-                className="inline-flex items-center gap-2 text-sm"
-              >
-                <input
-                  type="checkbox"
-                  checked={visibleCols.includes(c.key)}
-                  onChange={() =>
-                    setVisibleCols((prev) =>
-                      prev.includes(c.key)
-                        ? prev.filter((k) => k !== c.key)
-                        : [...prev, c.key]
-                    )
-                  }
-                />
-                {c.label}
-              </label>
-            ))}
-          </div>
-        </details>
-      </div>
-
-      {/* Barra de control y paginación */}
-      <div className="flex items-center gap-3 mb-2">
-        <span className="text-sm">Total: {total}</span>
-        <span className="text-sm">
-          Página {page} de {totalPages}
-        </span>
-        <label className="text-sm">
-          Tamaño
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setPage(1);
-            }}
-            className="ml-1 border border-gray-300 rounded px-2 py-1"
-          >
-            {[10, 20, 50, 100].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="ml-auto flex gap-1">
-          <button
-            onClick={() => setPage(1)}
-            disabled={page === 1 || loading}
-            className="px-2 py-1 border border-gray-300 rounded bg-white disabled:opacity-50"
-            title="Primera"
-          >
-            «
-          </button>
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1 || loading}
-            className="px-2 py-1 border border-gray-300 rounded bg-white disabled:opacity-50"
-            title="Anterior"
-          >
-            ‹
-          </button>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages || loading}
-            className="px-2 py-1 border border-gray-300 rounded bg-white disabled:opacity-50"
-            title="Siguiente"
-          >
-            ›
-          </button>
-          <button
-            onClick={() => setPage(totalPages)}
-            disabled={page >= totalPages || loading}
-            className="px-2 py-1 border border-gray-300 rounded bg-white disabled:opacity-50"
-            title="Última"
-          >
-            »
-          </button>
-        </div>
-      </div>
-
       {err ? (
         <div className="text-red-600 mb-2 text-sm">Error: {err}</div>
       ) : null}
-
-      {/* Resúmenes (en la página actual) */}
-      <div className="grid gap-3 md:grid-cols-2 mb-3">
-        <div className="border border-gray-200 rounded p-3">
-          <h3 className="font-medium text-sm mb-2">
-            Resumen por Estado (página actual)
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {Object.keys(resumenEstado).length === 0 ? (
-              <span className="text-gray-500 text-sm">Sin datos</span>
-            ) : (
-              Object.entries(resumenEstado).map(([k, v]) => (
-                <span
-                  key={k}
-                  className="text-xs px-2 py-1 rounded bg-gray-100 border border-gray-200"
-                >
-                  {k || "Sin estado"}: {v}
-                </span>
-              ))
-            )}
-          </div>
-        </div>
-        <div className="border border-gray-200 rounded p-3">
-          <h3 className="font-medium text-sm mb-2">
-            Resumen por Servicio (página actual)
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {Object.keys(resumenServicio).length === 0 ? (
-              <span className="text-gray-500 text-sm">Sin datos</span>
-            ) : (
-              Object.entries(resumenServicio).map(([k, v]) => (
-                <span
-                  key={k}
-                  className="text-xs px-2 py-1 rounded bg-gray-100 border border-gray-200"
-                >
-                  {k || "Sin servicio"}: {v}
-                </span>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="overflow-auto border border-gray-200 rounded">
-        <table className="w-full border-collapse text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              {usedColumns.map((col) => (
-                <th
-                  key={col.key}
-                  onClick={() => toggleSort(col.key)}
-                  className={`text-left px-3 py-2 border-b border-gray-200 whitespace-nowrap ${
-                    col.sortable ? "cursor-pointer select-none" : ""
-                  }`}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {col.label}
-                    {col.sortable && sortBy === col.key ? (
-                      <span>{sortDir === "asc" ? "▲" : "▼"}</span>
-                    ) : null}
-                  </span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {!loading && items.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={usedColumns.length}
-                  className="px-4 py-6 text-center text-gray-500"
-                >
-                  Sin resultados
-                </td>
-              </tr>
-            ) : null}
-            {items.map((row, idx) => (
-              <tr
-                key={row.id || `${row.documento}-${idx}`}
-                className="border-b border-gray-100"
-              >
-                {usedColumns.map((col) => (
-                  <td key={col.key} className="px-3 py-2 align-top">
-                    {formatValue(valueOf(row, col.key), col.key)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-            {loading ? (
-              <tr>
-                <td
-                  colSpan={usedColumns.length}
-                  className="px-4 py-6 text-center"
-                >
-                  Cargando...
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
@@ -720,6 +578,89 @@ TablaResumenIndicadores.propTypes = {
       total: PropTypes.arrayOf(
         PropTypes.oneOfType([PropTypes.number, PropTypes.string])
       ),
+    })
+  ).isRequired,
+};
+
+// === NUEVO: Tabla de diagnóstico (Top 10 + OTROS) ===
+function TablaDiagnosticoTop({ rows }) {
+  // Totales de lo mostrado (incluye "OTROS" si existe)
+  const totals = rows.reduce(
+    (acc, r) => {
+      acc.hombre += Number(r?.hombre) || 0;
+      acc.mujer += Number(r?.mujer) || 0;
+      acc.intersexual += Number(r?.intersexual) || 0;
+      acc.total += Number(r?.total) || 0;
+      return acc;
+    },
+    { hombre: 0, mujer: 0, intersexual: 0, total: 0 }
+  );
+  return (
+    <div className="overflow-auto border border-gray-200 rounded">
+      <table className="w-full border-collapse text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="text-left px-3 py-2 border-b border-gray-200">#</th>
+            <th className="text-left px-3 py-2 border-b border-gray-200">
+              DIAGNÓSTICO
+            </th>
+            <th className="text-right px-3 py-2 border-b border-gray-200">
+              HOMBRE
+            </th>
+            <th className="text-right px-3 py-2 border-b border-gray-200">
+              MUJER
+            </th>
+            <th className="text-right px-3 py-2 border-b border-gray-200">
+              INTERSEXUAL
+            </th>
+            <th className="text-right px-3 py-2 border-b border-gray-200">
+              TOTAL
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, idx) => (
+            <tr
+              key={`${r.diagnostico}-${idx}`}
+              className="border-b border-gray-100"
+            >
+              <td className="px-3 py-2">{idx < 10 ? idx + 1 : ""}</td>
+              <td className="px-3 py-2">{r.diagnostico}</td>
+              <td className="px-3 py-2 text-right">{Number(r?.hombre) || 0}</td>
+              <td className="px-3 py-2 text-right">{Number(r?.mujer) || 0}</td>
+              <td className="px-3 py-2 text-right">
+                {Number(r?.intersexual) || 0}
+              </td>
+              <td className="px-3 py-2 text-right font-medium">
+                {Number(r?.total) || 0}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="bg-gray-50 font-semibold">
+            <td className="px-3 py-2 text-right" colSpan={2}>
+              TOTAL
+            </td>
+            <td className="px-3 py-2 text-right">{totals.hombre}</td>
+            <td className="px-3 py-2 text-right">{totals.mujer}</td>
+            <td className="px-3 py-2 text-right">{totals.intersexual}</td>
+            <td className="px-3 py-2 text-right">{totals.total}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+TablaDiagnosticoTop.propTypes = {
+  rows: PropTypes.arrayOf(
+    PropTypes.shape({
+      diagnostico: PropTypes.string,
+      hombre: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      mujer: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      intersexual: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      total: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     })
   ).isRequired,
 };
