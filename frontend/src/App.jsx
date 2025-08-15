@@ -18,6 +18,7 @@ import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
 import CreateInfluenza from "./pages/CreateInfluenza.jsx";
 import CreateReporteENI from "./pages/CreateReporteENI.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./components/AuthContext.jsx";
 import { Toaster } from "react-hot-toast";
 
@@ -43,37 +44,41 @@ function App() {
                 />
                 <Route path="/register-user/" element={<RegisterUser />} />
                 <Route path="/aviso-user/" element={<AvisoUser />} />
-                <Route path="/admin-user/" element={<AdminUser />} />
-                <Route path="/admision/" element={<Admision />} />
-                <Route
-                  path="/form-008-emergencia/"
-                  element={<Form008Emergencia />}
-                />
-                <Route
-                  path="/reporte-atenciones/"
-                  element={<ReporteAtenciones />}
-                />
-                <Route
-                  path="/create-temprano/"
-                  element={<CreateTemprano allowed={[1, 3]} />}
-                />
-                <Route path="/create-tardio/" element={<CreateTardio />} />
-                <Route
-                  path="/create-desperdicio/"
-                  element={<CreateDesperdicio />}
-                />
-                <Route
-                  path="/create-influenza/"
-                  element={<CreateInfluenza />}
-                />
-                <Route
-                  path="/create-reporte-eni/"
-                  element={<CreateReporteENI />}
-                />
-                <Route
-                  path="/create-registro-vacunado/"
-                  element={<CreateRegistroVacunado />}
-                />
+
+                {/* Rutas protegidas por rol */}
+                <Route element={<ProtectedRoute allowed={[1, 3]} />}>
+                  <Route path="/admin-user/" element={<AdminUser />} />
+                  <Route path="/admision/" element={<Admision />} />
+                  <Route
+                    path="/form-008-emergencia/"
+                    element={<Form008Emergencia />}
+                  />
+                  <Route
+                    path="/reporte-atenciones/"
+                    element={<ReporteAtenciones />}
+                  />
+                  <Route
+                    path="/create-temprano/"
+                    element={<CreateTemprano />}
+                  />
+                  <Route path="/create-tardio/" element={<CreateTardio />} />
+                  <Route
+                    path="/create-desperdicio/"
+                    element={<CreateDesperdicio />}
+                  />
+                  <Route
+                    path="/create-influenza/"
+                    element={<CreateInfluenza />}
+                  />
+                  <Route
+                    path="/create-reporte-eni/"
+                    element={<CreateReporteENI />}
+                  />
+                  <Route
+                    path="/create-registro-vacunado/"
+                    element={<CreateRegistroVacunado />}
+                  />
+                </Route>
               </Routes>
             </div>
           }

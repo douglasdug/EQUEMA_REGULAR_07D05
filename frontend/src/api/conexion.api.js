@@ -17,7 +17,6 @@ const setInputFech = (dateActual = new Date().toISOString().slice(0, 10)) => {
 const clearAuthData = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
-  //localStorage.removeItem("userId");
   localStorage.removeItem("dateInputFech");
   // limpiar caché en memoria
   cachedUserId = null;
@@ -86,7 +85,6 @@ export const ensureCurrentUserId = async () => {
   } catch {
     return null;
   }
-  return null;
 };
 
 // Helper opcional para traer el rol actual
@@ -387,7 +385,7 @@ export const listarReporteDiagnostico = async (form_008_year) => {
     const response = await axios.get(
       `${API_URL}/form-008-emergencia/reporte-diagnostico/`,
       {
-        params: { id_eni_user: userId, form_008_year, user_rol },
+        params: { form_008_year },
       }
     );
     return response.data;
@@ -413,10 +411,8 @@ export const reporteDescargaAtencionesCsv = async (
       `${API_URL}/form-008-emergencia/reporte-atenciones-csv/`,
       {
         params: {
-          id_eni_user: userId,
           for_008_emer_fech_aten_min,
           for_008_emer_fech_aten_max,
-          user_rol,
         },
         responseType: "blob",
       }

@@ -7832,6 +7832,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         response["X-Accel-Buffering"] = "no"
         return response
 
+    # , permission_classes=[IsAuthenticated])
     @action(detail=False, methods=['get'], url_path='reporte-mensual')
     def reporte_mensual(self, request, *args, **kwargs):
         """
@@ -7949,78 +7950,34 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='reporte-diagnostico')
     def reporte_diagnostico(self, request, *args, **kwargs):
         """
-        GET /form008-emergencia/reporte-diagnostico/?id_eni_user=ID&form_008_year=YYYY&user_rol=ROL
+        GET /form008-emergencia/reporte-diagnostico/?form_008_year=YYYY
         """
-
-        id_eni_user = request.query_params.get('id_eni_user')
-        form_008_year = request.query_params.get(
-            'form_008_year', timezone.now().year)
-        form_008_user_rol = request.query_params.get('user_rol')
-
-        faltantes = []
-        if not id_eni_user:
-            faltantes.append('id_eni_user')
-        if form_008_user_rol is None:
-            faltantes.append('user_rol')
-        if not form_008_year:
-            faltantes.append('form_008_year')
-        if faltantes:
-            return Response(
-                {"detail": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
         try:
-            year = int(form_008_year)
-            form_008_user_rol = int(form_008_user_rol)
+            form_008_year = int(request.query_params.get(
+                'form_008_year', timezone.now().year))
         except (TypeError, ValueError):
-            return Response({"detail": "Parámetros 'form_008_year' o 'user_rol' inválidos."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Parámetro 'form_008_year' inválido."}, status=status.HTTP_400_BAD_REQUEST)
 
-        qs = self.get_queryset().filter(for_008_emer_fech_aten__year=year)
+        id_eni_user = getattr(request.user, 'id', None)
+        form_008_user_rol = int(getattr(request.user, 'fun_admi_rol', 0) or 0)
+        if not id_eni_user or form_008_user_rol not in (1, 3):
+            return Response({"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
 
-        if str(form_008_user_rol) == '3':
-            if not id_eni_user:
-                return Response(
-                    {"detail": "id_eni_user es requerido cuando user_rol = 3."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        qs = self.get_queryset().filter(for_008_emer_fech_aten__year=form_008_year)
+        if form_008_user_rol == 3:
             qs = qs.filter(eniUser=id_eni_user)
-        elif str(form_008_user_rol) not in ('1',):
-            return Response(
-                {"detail": "user_rol inválido. Valores permitidos: 1 o 3."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
         qs = qs.exclude(for_008_emer_cie_10_prin__isnull=True).exclude(
             for_008_emer_cie_10_prin='')
-
         agg = (
             qs.values('for_008_emer_cie_10_prin', 'for_008_emer_diag_prin')
             .annotate(
-                hombre=Count(
-                    'id',
-                    filter=(
-                        Q(for_008_emer_sexo__iexact='HOMBRE') |
-                        Q(for_008_emer_sexo__iexact='H') |
-                        Q(for_008_emer_sexo__istartswith='MASC')
-                    )
-                ),
-                mujer=Count(
-                    'id',
-                    filter=(
-                        Q(for_008_emer_sexo__iexact='MUJER') |
-                        Q(for_008_emer_sexo__iexact='M') |
-                        Q(for_008_emer_sexo__istartswith='FEM')
-                    )
-                ),
-                intersexual=Count(
-                    'id',
-                    filter=(
-                        Q(for_008_emer_sexo__iexact='INTERSEXUAL') |
-                        Q(for_008_emer_sexo__iexact='I') |
-                        Q(for_008_emer_sexo__istartswith='INTER')
-                    )
-                ),
+                hombre=Count('id', filter=Q(
+                    for_008_emer_sexo__iregex=r'^(H|HOMBRE|MASC)')),
+                mujer=Count('id', filter=Q(
+                    for_008_emer_sexo__iregex=r'^(M|MUJER|FEM)')),
+                intersexual=Count('id', filter=Q(
+                    for_008_emer_sexo__istartswith='INTER')),
                 total=Count('id')
             )
             .order_by('-total')
@@ -8040,7 +7997,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         return Response(
             {
                 "id_eni_user": str(id_eni_user) if id_eni_user is not None else None,
-                "year": year,
+                "year": form_008_year,
                 "results": results
             },
             status=status.HTTP_200_OK
