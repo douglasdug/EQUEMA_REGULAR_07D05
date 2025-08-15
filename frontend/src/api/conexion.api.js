@@ -54,34 +54,59 @@ const parseJwt = (token) => {
   }
 };
 
-export const getUserIdFromToken = () => {
-  const t = getAccessToken();
-  if (!t) return null;
-  const payload = parseJwt(t);
-  // Ajusta las claves según tu backend (sub, user_id, id, etc.)
-  return payload?.user_id ?? payload?.sub ?? payload?.id ?? null;
+const getUserIdFromToken = () => {
+  const token = getAccessToken();
+  if (!token) return null;
+  try {
+    const [, payloadB64] = token.split(".");
+    const json = JSON.parse(atob(payloadB64));
+    // Ajusta claves según tu backend
+    return json?.user_id ?? json?.sub ?? json?.id ?? null;
+  } catch {
+    return null;
+  }
 };
 
 const getEniUserId = () => getUserIdFromToken();
 
 // Obtiene el id del usuario actual sin exponerlo ni guardarlo en localStorage
 export const ensureCurrentUserId = async () => {
-  // if (cachedUserId) return cachedUserId;
+  if (cachedUserId) return cachedUserId;
 
-  // const fromToken = getUserIdFromToken();
-  // if (fromToken) {
-  //   cachedUserId = fromToken;
-  //   return cachedUserId;
-  // }
+  const fromToken = getUserIdFromToken();
+  if (fromToken) {
+    cachedUserId = fromToken;
+    return cachedUserId;
+  }
 
-  // try {
-  //   const me = await getUser();
-  //   cachedUserId = me?.id ?? me?.user_id ?? me?.pk ?? null;
-  //   return cachedUserId;
-  // } catch {
-  //   return null;
-  // }
-  return 1;
+  try {
+    const me = await getUser();
+    cachedUserId = me?.id ?? me?.user_id ?? me?.pk ?? null;
+    return cachedUserId;
+  } catch {
+    return null;
+  }
+  return null;
+};
+
+// Helper opcional para traer el rol actual
+export const getCurrentUserRole = async () => {
+  // Si el rol está en el token, léelo aquí y retorna
+  // const roleFromToken = getRoleFromToken();
+  // if (roleFromToken != null) return roleFromToken;
+
+  const userId = await ensureCurrentUserId();
+  if (!userId) return null;
+  // Consulta la API de usuario por id y retorna fun_admi_rol
+  try {
+    const res = await axios.get(
+      `${API_URL}/eni-user/${userId}/`,
+      getAuthHeaders()
+    );
+    return res?.data?.fun_admi_rol ?? null;
+  } catch {
+    return null;
+  }
 };
 
 // Refrescar el token de acceso
@@ -331,10 +356,16 @@ export const listarReportesAtenciones = async (form_008_year) => {
   try {
     const userId = await ensureCurrentUserId();
     const user_rol = 3;
+    // const response = await axios.get(
+    //   `${API_URL}/form-008-emergencia/reporte-mensual/`,
+    //   {
+    //     params: { id_eni_user: userId, form_008_year, user_rol },
+    //   }
+    // );
     const response = await axios.get(
       `${API_URL}/form-008-emergencia/reporte-mensual/`,
       {
-        params: { id_eni_user: userId, form_008_year, user_rol },
+        params: { form_008_year },
       }
     );
     return response.data;

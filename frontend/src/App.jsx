@@ -53,7 +53,10 @@ function App() {
                   path="/reporte-atenciones/"
                   element={<ReporteAtenciones />}
                 />
-                <Route path="/create-temprano/" element={<CreateTemprano />} />
+                <Route
+                  path="/create-temprano/"
+                  element={<CreateTemprano allowed={[1, 3]} />}
+                />
                 <Route path="/create-tardio/" element={<CreateTardio />} />
                 <Route
                   path="/create-desperdicio/"

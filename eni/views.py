@@ -1,9 +1,10 @@
 from rest_framework import status, permissions, viewsets
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission, SAFE_METHODS
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.views import APIView
 from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, registro_vacunado
 from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, Form008EmergenciaRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 
@@ -12,14 +13,13 @@ from django.utils.dateparse import parse_date
 from datetime import datetime, timezone, timedelta, time, date
 from django.http import HttpResponse, StreamingHttpResponse
 import csv
-from rest_framework.decorators import action
+
 from django.db.models.functions import ExtractMonth
 
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator, PasswordResetTokenGenerator
 from django.core.mail import send_mail
 from django.urls import reverse
-from rest_framework.views import APIView
 from django.conf import settings
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from django.core.mail import EmailMultiAlternatives
@@ -83,6 +83,28 @@ class UserInfoAPIView(RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class HasRole(BasePermission):
+    """
+    Permiso que valida que el usuario autenticado tenga un rol permitido.
+    Úsalo junto con IsAuthenticated.
+    Configura allowed_roles en la vista (lista de enteros).
+    """
+    message = "No tiene permisos para realizar esta acción."
+
+    def has_permission(self, request, view):
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
+            return False
+        allowed = getattr(view, 'allowed_roles', None)
+        if not allowed:
+            # Si no se configuró, por defecto permitir a cualquier rol autenticado
+            return True
+        try:
+            return int(getattr(user, 'fun_admi_rol', 0)) in allowed
+        except (TypeError, ValueError):
+            return False
 
 
 class NewPasswordResetAPIView(APIView):
@@ -7581,7 +7603,19 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
 class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = Form008EmergenciaRegistrationSerializer
     queryset = form_008_emergencia.objects.all()
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+
+    def get_permissions(self):
+        # Puedes ajustar por acción
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            self.allowed_roles = [1, 3]
+        elif self.action in ('reporte_mensual', 'reporte_diagnostico'):
+            self.allowed_roles = [1, 3]
+        else:
+            self.allowed_roles = [1, 3]
+        return [IsAuthenticated(), HasRole()]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
@@ -7804,25 +7838,18 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         GET /form008-emergencia/reporte-mensual/?id_eni_user=ID&form_008_year=YYYY&user_rol=ROL
         Agrupa por unidad de salud (for_008_emer_unic, for_008_emer_unid) y retorna por mes:
         - total de registros (todas las filas)
-        - total de atenciones únicas (distinct for_008_emer_aten_fina)
-        Respuesta:
-        {
-          "id_eni_user": "1",
-          "year": 2025,
-          "results": [
-            {
-              "unidad_salud": "000592 HOSPITAL BASICO HUAQUILLAS",              
-              "meses": { "ENERO": [0,0], ..., "AGOSTO": [52,27], ... },
-              "total": [59,34]
-            },
-            ...
-          ]
-        }
+        - total de atenciones únicas (distinct for_008_emer_aten_fina)        
         """
-        id_eni_user = request.query_params.get('id_eni_user')
-        form_008_year = request.query_params.get(
-            'form_008_year', timezone.now().year)
-        form_008_user_rol = request.query_params.get('user_rol', None)
+        # id_eni_user = request.query_params.get('id_eni_user')
+        id_eni_user = getattr(request.user, 'id', None)
+        try:
+            form_008_year = int(request.query_params.get(
+                'form_008_year', timezone.now().year))
+        except (TypeError, ValueError):
+            return Response({"detail": "Parámetro 'form_008_year' inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # form_008_user_rol = request.query_params.get('user_rol', None)
+        form_008_user_rol = getattr(request.user, 'fun_admi_rol', None)
 
         faltantes = []
         if not id_eni_user:
