@@ -1,8 +1,8 @@
 import { useState } from "react";
-import {
-  getAllRegistroVacunado,
-  getDescargarCsvRegistroVacunado,
-} from "../api/conexion.api.js";
+// import {
+//   getAllRegistroVacunado,
+//   getDescargarCsvRegistroVacunado,
+// } from "../api/conexion.api.js";
 import { useNavigate } from "react-router-dom";
 
 export function RegistroVacunadoList() {

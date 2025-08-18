@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import { getMesTemprano, deleteTemprano } from "../api/conexion.api.js";
+//import { getMesTemprano, deleteTemprano } from "../api/conexion.api.js";
 import {
   buttonStylePrimario,
   buttonStyleSecundario,
@@ -94,20 +94,20 @@ const TablaTemprano = ({
     return months[parseInt(monthNumber, 10) - 1];
   };
 
-  useEffect(() => {
-    if (fechaInput) {
-      localStorage.setItem("dateInputFech", fechaInput);
-    }
-    const loadTemprano = async () => {
-      try {
-        const data = await getMesTemprano(storedUserId, monthTem, yearTem);
-        setEniUsers(Array.isArray(data) ? data : []);
-      } catch (error) {
-        setError(error.message);
-      }
-    };
-    loadTemprano();
-  }, [fechaInput, monthTem, yearTem, storedUserId, setError]);
+  // useEffect(() => {
+  //   if (fechaInput) {
+  //     localStorage.setItem("dateInputFech", fechaInput);
+  //   }
+  //   const loadTemprano = async () => {
+  //     try {
+  //       const data = await getMesTemprano(storedUserId, monthTem, yearTem);
+  //       setEniUsers(Array.isArray(data) ? data : []);
+  //     } catch (error) {
+  //       setError(error.message);
+  //     }
+  //   };
+  //   loadTemprano();
+  // }, [fechaInput, monthTem, yearTem, storedUserId, setError]);
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -163,16 +163,16 @@ const TablaTemprano = ({
     );
   };
 
-  const deleteUserAndUpdateState = async (id, formData) => {
-    const response = await deleteTemprano(id, formData);
-    setSuccessMessage("Registro eliminado con éxito!");
-    const message = response.message || "Registro eliminado con éxito!";
-    toast.success(message, {
-      position: "bottom-right",
-    });
-    // Actualiza la lista de usuarios después de la eliminación
-    setEniUsers(eniUsers.filter((u) => u.id !== id));
-  };
+  // const deleteUserAndUpdateState = async (id, formData) => {
+  //   const response = await deleteTemprano(id, formData);
+  //   setSuccessMessage("Registro eliminado con éxito!");
+  //   const message = response.message || "Registro eliminado con éxito!";
+  //   toast.success(message, {
+  //     position: "bottom-right",
+  //   });
+  //   // Actualiza la lista de usuarios después de la eliminación
+  //   setEniUsers(eniUsers.filter((u) => u.id !== id));
+  // };
 
   const handleDeleteError = (error) => {
     let errorMessage = "Hubo un error en la operación";

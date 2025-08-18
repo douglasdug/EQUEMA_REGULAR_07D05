@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  registerDesperdicio,
-  updateDesperdicio,
-  deleteDesperdicio,
-} from "../api/conexion.api.js";
+// import {
+//   registerDesperdicio,
+//   updateDesperdicio,
+//   deleteDesperdicio,
+// } from "../api/conexion.api.js";
 import {
   validarDato,
   validarRegistroDesperdicio,

@@ -19,8 +19,14 @@ import CreateInfluenza from "./pages/CreateInfluenza.jsx";
 import CreateReporteENI from "./pages/CreateReporteENI.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import RequireRole from "./routes/RequireRole.jsx";
+import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";
 import { Toaster } from "react-hot-toast";
+
+function Unauthorized() {
+  return <div className="p-6 text-red-600">No autorizado</div>;
+}
 
 function App() {
   return (
@@ -46,16 +52,24 @@ function App() {
                 <Route path="/aviso-user/" element={<AvisoUser />} />
 
                 {/* Rutas protegidas por rol */}
-                <Route element={<ProtectedRoute allowed={[1, 3]} />}>
+                <Route
+                  element={
+                    <RequireRole allowed={[ROLES.ADMIN, ROLES.MEDICO]} />
+                  }
+                >
+                  <Route
+                    path="/reporte-atenciones/"
+                    element={<ReporteAtenciones />}
+                  />
+                </Route>
+                <Route element={<RequireRole allowed={[ROLES.ADMIN]} />}>
                   <Route path="/admin-user/" element={<AdminUser />} />
+                </Route>
+                <Route element={<RequireRole allowed={[ROLES.MEDICO]} />}>
                   <Route path="/admision/" element={<Admision />} />
                   <Route
                     path="/form-008-emergencia/"
                     element={<Form008Emergencia />}
-                  />
-                  <Route
-                    path="/reporte-atenciones/"
-                    element={<ReporteAtenciones />}
                   />
                   <Route
                     path="/create-temprano/"
@@ -79,6 +93,8 @@ function App() {
                     element={<CreateRegistroVacunado />}
                   />
                 </Route>
+                {/* fallback de no autorizado */}
+                <Route path="/unauthorized" element={<Unauthorized />} />
               </Routes>
             </div>
           }

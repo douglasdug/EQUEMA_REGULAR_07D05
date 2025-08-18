@@ -229,15 +229,27 @@ class ChangePasswordTokenAPIView(APIView):
 class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = EniUserRegistrationSerializer
     queryset = eniUser.objects.all()
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 3]
+
+    def get_permissions(self):
+        # Público solo para buscar_usuario
+        if getattr(self, 'action', None) == 'buscar_usuario':
+            return [AllowAny()]
+        # El resto requiere login
+        return [IsAuthenticated()]
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset().order_by('last_name')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['get'], url_path='buscar-usuario')
+    @action(detail=False, methods=['get'], url_path='buscar-usuario', permission_classes=[permissions.AllowAny])
     def buscar_usuario(self, request):
+        """
+        GET /eni-user/buscar-usuario/?tipo=<tipo>&identificacion=<identificacion>
+        """
         tipo = request.query_params.get('tipo')
         identificacion = request.query_params.get('identificacion')
 
@@ -287,8 +299,10 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='buscar-usuario-id-unidad-salud')
     def buscar_usuario_id_unidad_salud(self, request):
-        id_eni_user = request.query_params.get('id_eni_user')
-
+        """
+        GET /eni-user/buscar-usuario-id-unidad-salud/
+        """
+        id_eni_user = getattr(request.user, 'id', None)
         # Primera búsqueda en eniUser
         try:
             user_data = eniUser.objects.get(
@@ -307,12 +321,13 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         except eniUser.DoesNotExist:
             return Response({"error": "No se encontro las unidades de salud del usuario!"}, status=status.HTTP_404_NOT_FOUND)
 
-    # , permission_classes=[IsAuthenticated])
     @action(detail=False, methods=['get'], url_path='listar-filtrado')
     def listar_filtrado(self, request):
+        """
+        GET /eni-user/listar-filtrado/
+        """
         try:
-            exclude_id = request.query_params.get(
-                'id_eni_user') or getattr(request.user, 'id', None)
+            exclude_id = getattr(request.user, 'id', None)
             titulos_excluir = request.query_params.getlist('excluir_fun_titu') or [
                 "BIOQUÍMICO MÉDICO/A",
                 "OTROS/A",
@@ -562,6 +577,9 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'], url_path='eliminar-usuario')
     def delete_by_username(self, request):
+        """
+        DELETE /eni-user/eliminar-usuario/
+        """
         username = request.data.get('username')
         if not username:
             return Response({"error": "El parámetro de identificacion es requerido!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -611,6 +629,668 @@ class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
         serializer = self.get_serializer(unidad)
 
         return Response({"message": "La unidad de salud principal se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
+
+
+class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
+    serializer_class = AdmisionDatosRegistrationSerializer
+    queryset = admision_datos.objects.all()
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        user_id = self.request.query_params.get('user_id', None)
+        month = self.request.query_params.get('month', None)
+        year = self.request.query_params.get('year', None)
+
+        queryset = self.queryset
+
+        if user_id is not None:
+            queryset = queryset.filter(eniUser=user_id)
+
+        if month is not None and year is not None:
+            queryset = queryset.filter(
+                adm_dato_admi_fech_admi__year=year, adm_dato_admi_fech_admi__month=month)
+
+        return queryset.order_by('adm_dato_admi_fech_admi')
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        fecha_admision = datetime.now()
+        data['adm_dato_admi_fech_admi'] = fecha_admision.strftime(
+            '%Y-%m-%d %H:%M:%S')
+
+        # Procesar nombres y apellidos correctamente
+        apellidos = data.get('adm_dato_pers_apel_prim',
+                             '').strip().split(' ', 1)
+        nombres = data.get('adm_dato_pers_nomb_prim', '').strip().split(' ', 1)
+
+        data['adm_dato_pers_apel_prim'] = apellidos[0] if apellidos else ''
+        data['adm_dato_pers_apel_segu'] = apellidos[1] if len(
+            apellidos) > 1 else ''
+        data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
+        data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
+            nombres) > 1 else ''
+        data['adm_dato_paci_falt_dato'] = 1
+
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Se creo la admision del usuario exitosamente!", "data": serializer.data}, status=status.HTTP_201_CREATED)
+        return Response({"message": "Error al crear la admision", "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'], url_path='buscar-admision')
+    def buscar_admision(self, request):
+        tipo = request.query_params.get('tipo')
+        identificacion = request.query_params.get('identificacion')
+
+        if not tipo or not identificacion:
+            return Response({"error": "El parámetro identificacion es requerido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_data = admision_datos.objects.get(
+                adm_dato_pers_tipo_iden=tipo, adm_dato_pers_nume_iden=identificacion
+            )
+            data = {
+                "id_admision_datos": user_data.id,
+                "adm_dato_pers_apel_prim": user_data.adm_dato_pers_apel_prim,
+                "adm_dato_pers_apel_segu": user_data.adm_dato_pers_apel_segu,
+                "adm_dato_pers_nomb_prim": user_data.adm_dato_pers_nomb_prim,
+                "adm_dato_pers_nomb_segu": user_data.adm_dato_pers_nomb_segu,
+                'adm_dato_pers_esta_civi': user_data.adm_dato_pers_esta_civi,
+                'adm_dato_pers_sexo': user_data.adm_dato_pers_sexo,
+                'adm_dato_pers_tele': user_data.adm_dato_pers_tele,
+                'adm_dato_pers_celu': user_data.adm_dato_pers_celu,
+                'adm_dato_pers_corr_elec': user_data.adm_dato_pers_corr_elec,
+                'adm_dato_naci_luga_naci': user_data.adm_dato_naci_luga_naci,
+                'adm_dato_naci_naci': user_data.adm_dato_naci_naci,
+                'adm_dato_naci_fech_naci': user_data.adm_dato_naci_fech_naci,
+                'adm_dato_resi_pais_resi': user_data.adm_dato_resi_pais_resi,
+                'adm_dato_resi_prov': user_data.adm_dato_resi_prov,
+                'adm_dato_resi_cant': user_data.adm_dato_resi_cant,
+                'adm_dato_resi_parr': user_data.adm_dato_resi_parr,
+                'adm_dato_resi_esta_adsc_terr': user_data.adm_dato_resi_esta_adsc_terr,
+                'adm_dato_resi_barr_sect': user_data.adm_dato_resi_barr_sect,
+                'adm_dato_resi_call_prin': user_data.adm_dato_resi_call_prin,
+                'adm_dato_resi_call_secu': user_data.adm_dato_resi_call_secu,
+                'adm_dato_resi_refe_resi': user_data.adm_dato_resi_refe_resi,
+                'adm_dato_auto_auto_etni': user_data.adm_dato_auto_auto_etni,
+                'adm_dato_auto_naci_etni': user_data.adm_dato_auto_naci_etni,
+                'adm_dato_auto_pueb_kich': user_data.adm_dato_auto_pueb_kich,
+                'adm_dato_adic_grup_prio': user_data.adm_dato_adic_grup_prio,
+                'adm_dato_adic_nive_educ': user_data.adm_dato_adic_nive_educ,
+                'adm_dato_adic_esta_nive_educ': user_data.adm_dato_adic_esta_nive_educ,
+                'adm_dato_adic_tipo_empr_trab': user_data.adm_dato_adic_tipo_empr_trab,
+                'adm_dato_adic_ocup_prof_prin': user_data.adm_dato_adic_ocup_prof_prin,
+                'adm_dato_adic_tipo_segu': user_data.adm_dato_adic_tipo_segu,
+                'adm_dato_adic_tien_disc': user_data.adm_dato_adic_tien_disc,
+                'adm_dato_repr_tipo_iden': user_data.adm_dato_repr_tipo_iden,
+                'adm_dato_repr_nume_iden': user_data.adm_dato_repr_nume_iden,
+                'adm_dato_repr_apel': user_data.adm_dato_repr_apel,
+                'adm_dato_repr_nomb': user_data.adm_dato_repr_nomb,
+                'adm_dato_repr_fech_naci': user_data.adm_dato_repr_fech_naci,
+                'adm_dato_repr_pare': user_data.adm_dato_repr_pare,
+                'adm_dato_repr_nume_tele': user_data.adm_dato_repr_nume_tele,
+                'adm_dato_repr_naci': user_data.adm_dato_repr_naci,
+                'adm_dato_cont_enca_nece_llam': user_data.adm_dato_cont_enca_nece_llam,
+                'adm_dato_cont_pare': user_data.adm_dato_cont_pare,
+                'adm_dato_cont_dire': user_data.adm_dato_cont_dire,
+                'adm_dato_cont_tele': user_data.adm_dato_cont_tele,
+                'adm_dato_paci_falt_dato': user_data.adm_dato_paci_falt_dato,
+            }
+            return Response({"message": "El usuario está registrado en admision!", "data": data}, status=status.HTTP_200_OK)
+        except admision_datos.DoesNotExist:
+            return Response({"error": "El usuario ingresado no existe en la base de datos."}, status=status.HTTP_404_NOT_FOUND)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        data = request.data.copy()
+        admision_id = pk
+        if not admision_id:
+            return Response({"error": "El parámetro 'id' es requerido para actualizar el registro!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            admision = admision_datos.objects.get(id=admision_id)
+        except admision_datos.DoesNotExist:
+            return Response({"error": "Registro de admisión no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+
+        apellidos = data.get('adm_dato_pers_apel_prim',
+                             '').strip().split(' ', 1)
+        nombres = data.get('adm_dato_pers_nomb_prim', '').strip().split(' ', 1)
+
+        data['adm_dato_pers_apel_prim'] = apellidos[0] if apellidos else ''
+        data['adm_dato_pers_apel_segu'] = apellidos[1] if len(
+            apellidos) > 1 else ''
+        data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
+        data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
+            nombres) > 1 else ''
+        data['adm_dato_paci_falt_dato'] = 1
+
+        serializer = self.get_serializer(
+            admision, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({"message": "La admisión se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
+
+
+class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
+    serializer_class = Form008EmergenciaRegistrationSerializer
+    queryset = form_008_emergencia.objects.all()
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+
+    def get_permissions(self):
+        # Usa los permisos definidos a nivel de clase; evita lógica redundante
+        return [perm() for perm in self.permission_classes]
+
+    def get_queryset(self):
+        user_id = self.request.query_params.get('user_id', None)
+        month = self.request.query_params.get('month', None)
+        year = self.request.query_params.get('year', None)
+
+        queryset = self.queryset
+
+        if user_id is not None:
+            queryset = queryset.filter(eniUser=user_id)
+
+        if month is not None and year is not None:
+            queryset = queryset.filter(
+                for_008_emer_fech_aten__year=year, for_008_emer_fech_aten__month=month)
+
+        return queryset.order_by('for_008_emer_fech_aten')
+
+    @action(detail=False, methods=['get'], url_path='listar-atenciones-form-008')
+    def listar_atenciones_form_008(self, request):
+        """
+        GET /form-008-emergencia/listar-atenciones-form-008/        
+        """
+        id_eni_user = getattr(request.user, 'id', None)
+        try:
+            if not id_eni_user:
+                return Response(
+                    {"detail": "El parámetro id_eni_user es requerido."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            qs = (
+                self.get_queryset()
+                .filter(eniUser=id_eni_user)
+                .order_by(
+                    '-for_008_emer_fech_repor',
+                    'for_008_emer_prim_apel',
+                    'for_008_emer_segu_apel',
+                    'for_008_emer_prim_nomb',
+                    'for_008_emer_segu_nomb'
+                )[:30]
+            )
+
+            serializer = self.get_serializer(qs, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'], url_path='listar-atenciones-paciente')
+    def listar_atenciones_paciente(self, request):
+        try:
+            id_admision_datos = request.query_params.get('admision_datos')
+            if not id_admision_datos:
+                return Response(
+                    {"detail": "El parámetro id_admision_datos es requerido."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            qs = (
+                self.get_queryset()
+                .filter(admision_datos=id_admision_datos)
+                .order_by(
+                    '-for_008_emer_fech_aten',
+                    '-for_008_emer_hora_aten',
+                )[:6]
+            )
+
+            if not qs.exists():
+                return Response({"message": "El paciente no registra atenciones previas de Form-008 Emergencia en el sistema!"}, status=status.HTTP_200_OK)
+
+            serializer = self.get_serializer(qs, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    class Echo:
+        def write(self, value):
+            return value
+
+    @action(detail=False, methods=['get'], url_path='reporte-atenciones-csv')
+    def reporte_atenciones_csv(self, request):
+        """
+        GET /form-008-emergencia/reporte-atenciones-csv/?for_008_emer_fech_aten_min=YYYY-MM-DD&for_008_emer_fech_aten_max=YYYY-MM-DD        
+        """
+        # 1) Parámetros
+        id_eni_user = getattr(request.user, 'id', None)
+        fecha_min_str = request.query_params.get("for_008_emer_fech_aten_min")
+        fecha_max_str = request.query_params.get("for_008_emer_fech_aten_max")
+        form_008_user_rol = getattr(request.user, 'fun_admi_rol', None)
+
+        faltantes = []
+        if form_008_user_rol is None:
+            faltantes.append('user_rol')
+        if not fecha_min_str or not fecha_max_str:
+            faltantes.append(
+                'for_008_emer_fech_aten_min/for_008_emer_fech_aten_max')
+        if faltantes:
+            return Response(
+                {"detail": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2) Validar user_rol y requerir id_eni_user solo si user_rol == 3
+        if str(form_008_user_rol) not in ('1', '3'):
+            return Response(
+                {"detail": "user_rol inválido. Valores permitidos: 1 o 3."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if str(form_008_user_rol) == '3' and not id_eni_user:
+            return Response(
+                {"detail": "id_eni_user es requerido cuando user_rol = 3."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3) Parsear y validar formato de fechas
+        try:
+            start_date = datetime.strptime(fecha_min_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(fecha_max_str, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                {"detail": "Formato de fecha inválido. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 4) Validaciones de rango
+        if start_date > end_date:
+            return Response(
+                {"detail": "for_008_emer_fech_aten_min no puede ser mayor que for_008_emer_fech_aten_max."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if (end_date - start_date).days > 31:
+            return Response(
+                {"detail": "Solo puede descargar un rango máximo de un mes (31 días)."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 5) Preparar filtros (Date vs DateTime con zona horaria)
+        fecha_field_name = "for_008_emer_fech_aten"
+        try:
+            field = form_008_emergencia._meta.get_field(fecha_field_name)
+            if field.get_internal_type() == "DateTimeField":
+                tz = timezone.get_current_timezone()
+                start_filter = timezone.make_aware(
+                    datetime.combine(start_date, time.min), tz)
+                end_filter = timezone.make_aware(
+                    datetime.combine(end_date, time.max), tz)
+            else:
+                start_filter = start_date
+                end_filter = end_date
+        except Exception:
+            start_filter = start_date
+            end_filter = end_date
+
+        # 6) Query según user_rol
+        base_qs = (
+            form_008_emergencia.objects
+            .filter(**{f"{fecha_field_name}__range": (start_filter, end_filter)})
+        )
+        if str(form_008_user_rol) == '3':
+            base_qs = base_qs.filter(eniUser=id_eni_user)
+        base_qs = base_qs.order_by(fecha_field_name)
+
+        HEADERS = [
+            "INSTITUCIÓN DEL SISTEMA", "UNICODIGO", "NOMBRE DEL ESTABLECIMIENTO DE SALUD", "ZONA",
+            "PROVINCIA", "CANTON", "DISTRITO", "NIVEL", "FECHA DE ATENCIÓN",
+            "TIPO DE DOCUMENTO DE IDENTIFICACIÓN", "NÚMERO DE IDENTIFICACION", "PRIMER APELLIDO",
+            "SEGUNDO APELLIDO", "PRIMER NOMBRE", "SEGUNDO NOMBRE", "SEXO", "EDAD", "CONDICIÓN DE LA EDAD",
+            "NACIONALIDAD", "ETNIA", "GRUPO PRIORITARIO", "TIPO DE SEGURO",
+            "PROVINCIA DE RECIDENCIA", "CANTON DE RECIDENCIA", "PARROQUIA DE RECIDENCIA",
+            "ESPECIALIDAD DEL PROFESIONAL", "CIE-10 (PRINCIPAL)", "DIAGNÓSTICO 1 (PRINCIPAL)",
+            "CONDICIÓN DEL DIAGNÓSTICO", "CIE-10 (CAUSA EXTERNA)", "DIAGNOSTICO (CAUSA  EXTERNA)",
+            "HOSPITALIZACIÓN", "HORA ATENCIÓN", "CONDICIÓN DEL ALTA", "OBSERVACIÓN",
+        ]
+
+        FIELDS = [
+            "for_008_emer_inst_sist", "for_008_emer_unic", "for_008_emer_unid", "for_008_emer_zona",
+            "for_008_emer_prov", "for_008_emer_cant", "for_008_emer_dist", "for_008_emer_nive",
+            "for_008_emer_fech_aten", "for_008_emer_tipo_docu_iden", "for_008_emer_nume_iden",
+            "for_008_emer_prim_apel", "for_008_emer_segu_apel", "for_008_emer_prim_nomb",
+            "for_008_emer_segu_nomb", "for_008_emer_sexo", "for_008_emer_edad", "for_008_emer_cond_edad",
+            "for_008_emer_naci", "for_008_emer_etni", "for_008_emer_grup_prio", "for_008_emer_tipo_segu",
+            "for_008_emer_prov_resi", "for_008_emer_cant_resi", "for_008_emer_parr_resi",
+            "for_008_emer_espe_prof", "for_008_emer_cie_10_prin", "for_008_emer_diag_prin",
+            "for_008_emer_cond_diag", "for_008_emer_cie_10_caus_exte", "for_008_emer_diag_caus_exte",
+            "for_008_emer_hosp", "for_008_emer_hora_aten", "for_008_emer_cond_alta", "for_008_emer_obse",
+        ]
+
+        class Echo:
+            def write(self, value):
+                return value
+
+        def serialize_value(val):
+            if val is None:
+                return ""
+            if isinstance(val, (datetime, date, time)):
+                return val.isoformat()
+            return val
+
+        def row_iter():
+            writer = csv.writer(Echo())
+            # BOM para Excel
+            yield "\ufeff"
+            # Encabezados
+            yield writer.writerow(HEADERS)
+            # Filas en streaming
+            for row in base_qs.values(*FIELDS).iterator(chunk_size=5000):
+                yield writer.writerow([serialize_value(row.get(field)) for field in FIELDS])
+
+        filename = f'form008_emergencia_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.csv'
+        response = StreamingHttpResponse(
+            row_iter(), content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{filename}'
+        response["X-Accel-Buffering"] = "no"
+        return response
+
+    @action(detail=False, methods=['get'], url_path='reporte-mensual')
+    def reporte_mensual(self, request, *args, **kwargs):
+        """
+        GET /form008-emergencia/reporte-mensual/?form_008_year=YYYY
+        Agrupa por unidad de salud (for_008_emer_unic, for_008_emer_unid) y retorna por mes:
+        - total de registros (todas las filas)
+        - total de atenciones únicas (distinct for_008_emer_aten_fina)        
+        """
+        id_eni_user = getattr(request.user, 'id', None)
+        try:
+            form_008_year = int(request.query_params.get(
+                'form_008_year', timezone.now().year))
+        except (TypeError, ValueError):
+            return Response({"detail": "Parámetro 'form_008_year' inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        form_008_user_rol = getattr(request.user, 'fun_admi_rol', None)
+
+        faltantes = []
+        if not id_eni_user:
+            faltantes.append('id_eni_user')
+        if form_008_user_rol is None:
+            faltantes.append('user_rol')
+        if not form_008_year:
+            faltantes.append('form_008_year')
+        if faltantes:
+            return Response(
+                {"detail": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            year = int(form_008_year)
+            form_008_user_rol = int(form_008_user_rol)
+        except (TypeError, ValueError):
+            return Response({"detail": "Parámetros 'form_008_year' o 'user_rol' inválidos."}, status=status.HTTP_400_BAD_REQUEST)
+
+        base_qs = self.get_queryset().filter(for_008_emer_fech_aten__year=year)
+
+        # Rol 3: solo sus atenciones; Rol 1: total (sin filtro por eniUser)
+        if str(form_008_user_rol) == '3':
+            if not id_eni_user:
+                return Response(
+                    {"detail": "id_eni_user es requerido cuando user_rol = 3."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            base_qs = base_qs.filter(eniUser=id_eni_user)
+
+        qs = (
+            base_qs
+            .annotate(month=ExtractMonth('for_008_emer_fech_aten'))
+            .values('for_008_emer_unic', 'for_008_emer_unid', 'month')
+            .annotate(
+                total_all=Count('for_008_emer_aten_fina'),
+                total_unique=Count('for_008_emer_aten_fina', distinct=True)
+            )
+            .order_by('for_008_emer_unic', 'month')
+        )
+
+        meses_es = [
+            "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
+            "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
+        ]
+
+        # Agrupar por unidad (unic, unid) y armar conteos por mes
+        agrupado = {}
+        for row in qs:
+            unic = row.get('for_008_emer_unic') or ''
+            unid = row.get('for_008_emer_unid') or ''
+            key = (unic, unid)
+            if key not in agrupado:
+                agrupado[key] = {
+                    "for_008_emer_unic": unic,
+                    "for_008_emer_unid": unid,
+                    "meses": {m: [0, 0] for m in meses_es}
+                }
+            num_mes = row.get('month')
+            if num_mes and 1 <= num_mes <= 12:
+                agrupado[key]["meses"][meses_es[num_mes - 1]] = [
+                    row.get('total_all', 0) or 0,
+                    row.get('total_unique', 0) or 0
+                ]
+
+        # Calcular totales por unidad y preparar salida
+        results = []
+        for (unic, unid), data_u in sorted(agrupado.items(), key=lambda x: (x[0][0], x[0][1])):
+            total_all_anual = sum(v[0] for v in data_u["meses"].values())
+            total_unique_anual = sum(v[1] for v in data_u["meses"].values())
+            results.append({
+                "unidad_salud": f"{unic} {unid}".strip(),
+                "meses": data_u["meses"],
+                "total": [total_all_anual, total_unique_anual]
+            })
+
+        # Si no hay registros y se filtró por una unidad específica, devolver unidad con ceros
+        if not results:
+            label_unic = ""
+            label_unid = ""
+            results.append({
+                "unidad_salud": f"{label_unic} {label_unid}".strip(),
+                "meses": {m: [0, 0] for m in meses_es},
+                "total": [0, 0]
+            })
+
+        return Response(
+            {
+                "id_eni_user": str(id_eni_user),
+                "year": year,
+                "results": results
+            },
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=['get'], url_path='reporte-diagnostico')
+    def reporte_diagnostico(self, request, *args, **kwargs):
+        """
+        GET /form008-emergencia/reporte-diagnostico/?form_008_year=YYYY
+        """
+        try:
+            form_008_year = int(request.query_params.get(
+                'form_008_year', timezone.now().year))
+        except (TypeError, ValueError):
+            return Response({"detail": "Parámetro 'form_008_year' inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        id_eni_user = getattr(request.user, 'id', None)
+        form_008_user_rol = int(getattr(request.user, 'fun_admi_rol', 0) or 0)
+        if not id_eni_user or form_008_user_rol not in (1, 3):
+            return Response({"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = self.get_queryset().filter(for_008_emer_fech_aten__year=form_008_year)
+        if form_008_user_rol == 3:
+            qs = qs.filter(eniUser=id_eni_user)
+
+        qs = qs.exclude(for_008_emer_cie_10_prin__isnull=True).exclude(
+            for_008_emer_cie_10_prin='')
+        agg = (
+            qs.values('for_008_emer_cie_10_prin', 'for_008_emer_diag_prin')
+            .annotate(
+                hombre=Count('id', filter=Q(
+                    for_008_emer_sexo__iregex=r'^(H|HOMBRE|MASC)')),
+                mujer=Count('id', filter=Q(
+                    for_008_emer_sexo__iregex=r'^(M|MUJER|FEM)')),
+                intersexual=Count('id', filter=Q(
+                    for_008_emer_sexo__istartswith='INTER')),
+                total=Count('id')
+            )
+            .order_by('-total')
+        )
+
+        results = [
+            {
+                "diagnostico": f"{row['for_008_emer_cie_10_prin']} {row['for_008_emer_diag_prin']}".strip(),
+                "hombre": row['hombre'] or 0,
+                "intersexual": row['intersexual'] or 0,
+                "mujer": row['mujer'] or 0,
+                "total": row['total'] or 0,
+            }
+            for row in agg
+        ]
+
+        return Response(
+            {
+                "id_eni_user": str(id_eni_user) if id_eni_user is not None else None,
+                "year": form_008_year,
+                "results": results
+            },
+            status=status.HTTP_200_OK
+        )
+
+    def get_eni_user(self, eni_user_id):
+        try:
+            return eniUser.objects.get(id=eni_user_id)
+        except eniUser.DoesNotExist:
+            return None
+
+    def get_unidad_salud(self, eni_user):
+        try:
+            return unidad_salud.objects.get(eniUser=eni_user, uni_unid_prin=1)
+        except unidad_salud.DoesNotExist:
+            return None
+
+    def get_next_codigo_atencion(self):
+        max_valor = form_008_emergencia.objects.aggregate(Max('for_008_emer_aten_fina'))[
+            'for_008_emer_aten_fina__max'] or 1
+        return max_valor + 1
+
+    def split_nombre_apellido(self, nombre_completo):
+        partes = nombre_completo.strip().split(' ', 1)
+        return partes[0], partes[1] if len(partes) > 1 else ''
+
+    def procesar_diagnosticos(self, cie10_list):
+        cie10 = []
+        diag = []
+        for code in cie10_list:
+            cie10.append(code[:4])
+            diag.append(code[4:])
+        return cie10, diag
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        id_eni_user = getattr(request.user, 'id', None)
+        medic_apoll_id = data.get('for_008_emer_apoy_aten_medi', '')
+        eni_user = self.get_eni_user(id_eni_user)
+
+        medic_apoll = None
+        if medic_apoll_id:
+            medic_apoll = self.get_eni_user(medic_apoll_id)
+
+        if not eni_user:
+            return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+        unidad_salud_data = self.get_unidad_salud(eni_user)
+        if not unidad_salud_data:
+            return Response({'error': 'Unidad de salud no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+        nuevo_codigo_atencion = self.get_next_codigo_atencion()
+
+        # Datos de unidad de salud
+        # Asignar campos de unidad_salud a los campos correspondientes en data
+        data['for_008_emer_inst_sist'] = getattr(
+            unidad_salud_data, 'uni_inst_sist')
+        for field in ['uni_unic', 'uni_unid', 'uni_zona', 'uni_prov', 'uni_cant', 'uni_dist', 'uni_nive']:
+            data[f'for_008_emer_{field.split("_")[1]}'] = getattr(
+                unidad_salud_data, field)
+
+        tipo_docu_iden = data.get('for_008_busc_pers_tipo_iden', '')
+        nume_iden = data.get('for_008_busc_pers_nume_iden', '')
+        data['for_008_emer_tipo_docu_iden'] = tipo_docu_iden
+        data['for_008_emer_nume_iden'] = nume_iden
+
+        # Edad y condición
+        edad_cond_str = data.get('for_008_emer_edad_cond', '').strip()
+        parts = edad_cond_str.split(' ')
+        data['for_008_emer_edad'] = parts[0] if parts and parts[0] else ''
+        data['for_008_emer_cond_edad'] = parts[1] if len(parts) > 1 else ''
+
+        # Nombres y apellidos
+        apellidos = self.split_nombre_apellido(
+            data.get('for_008_emer_apel_comp', ''))
+        nombres = self.split_nombre_apellido(
+            data.get('for_008_emer_nomb_comp', ''))
+        data['for_008_emer_prim_apel'], data['for_008_emer_segu_apel'] = apellidos
+        data['for_008_emer_prim_nomb'], data['for_008_emer_segu_nomb'] = nombres
+
+        # Diagnósticos
+        cie10_prin_diag = data.get('for_008_emer_cie_10_prin_diag', [])
+        cond_diag = data.get('for_008_emer_cond_diag', [])
+        cie10_secu_diag = data.get('for_008_emer_cie_10_caus_exte_diag', [])
+
+        if not (len(cie10_prin_diag) == len(cond_diag) == len(cie10_secu_diag)):
+            return Response(
+                {"detail": "Los arrays de diagnósticos deben tener la misma longitud."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        cie10_prin, diag_prin = self.procesar_diagnosticos(cie10_prin_diag)
+        cie10_caus_exte, diag_caus_exte = self.procesar_diagnosticos(
+            cie10_secu_diag)
+
+        data['for_008_emer_resp_aten_medi'] = f"{eni_user.username or ''} {eni_user.last_name or ''} {eni_user.first_name or ''}".strip(
+        )
+        if medic_apoll:
+            data['for_008_emer_apoy_aten_medi'] = f"{medic_apoll.username or ''} {medic_apoll.last_name or ''} {medic_apoll.first_name or ''}".strip(
+            )
+        else:
+            data['for_008_emer_apoy_aten_medi'] = ''
+
+        data['eniUser'] = id_eni_user
+        data['admision_datos'] = data.get('id_admision_datos', '')
+
+        created_objects = []
+        errors = []
+
+        for i in range(len(cie10_prin_diag)):
+            data_item = data.copy()
+            data_item.update({
+                'for_008_emer_cie_10_prin_diag': cie10_prin_diag[i],
+                'for_008_emer_cond_diag': cond_diag[i],
+                'for_008_emer_cie_10_caus_exte_diag': cie10_secu_diag[i],
+                'for_008_emer_cie_10_prin': cie10_prin[i],
+                'for_008_emer_diag_prin': diag_prin[i],
+                'for_008_emer_cie_10_caus_exte': cie10_caus_exte[i],
+                'for_008_emer_diag_caus_exte': diag_caus_exte[i],
+                'for_008_emer_aten_fina': nuevo_codigo_atencion,
+            })
+            serializer = self.get_serializer(data=data_item)
+            if serializer.is_valid():
+                self.perform_create(serializer)
+                created_objects.append(serializer.data)
+            else:
+                errors.append(serializer.errors)
+
+        if errors:
+            return Response({"message": "Error al crear la atencion del formulario 008-EMERGENCIA", "error": errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Se creo la atencion del formulario 008-EMERGENCIA del usuario exitosamente!", "data": created_objects}, status=status.HTTP_201_CREATED)
 
 
 Error_Fecha_Registrada = "La fecha ya ha sido registrada desea Actualizar la información!."
@@ -7458,678 +8138,6 @@ class ReporteENIRegistrationAPIView(viewsets.ModelViewSet):
                 rep_fech__year=year, rep_fech__month=month)
 
         return queryset.order_by('rep_fech', 'rep_eni')
-
-
-class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
-    serializer_class = AdmisionDatosRegistrationSerializer
-    queryset = admision_datos.objects.all()
-    permission_classes = [permissions.AllowAny]
-
-    def get_queryset(self):
-        user_id = self.request.query_params.get('user_id', None)
-        month = self.request.query_params.get('month', None)
-        year = self.request.query_params.get('year', None)
-
-        queryset = self.queryset
-
-        if user_id is not None:
-            queryset = queryset.filter(eniUser=user_id)
-
-        if month is not None and year is not None:
-            queryset = queryset.filter(
-                adm_dato_admi_fech_admi__year=year, adm_dato_admi_fech_admi__month=month)
-
-        return queryset.order_by('adm_dato_admi_fech_admi')
-
-    def create(self, request, *args, **kwargs):
-        data = request.data.copy()
-        fecha_admision = datetime.now()
-        data['adm_dato_admi_fech_admi'] = fecha_admision.strftime(
-            '%Y-%m-%d %H:%M:%S')
-
-        # Procesar nombres y apellidos correctamente
-        apellidos = data.get('adm_dato_pers_apel_prim',
-                             '').strip().split(' ', 1)
-        nombres = data.get('adm_dato_pers_nomb_prim', '').strip().split(' ', 1)
-
-        data['adm_dato_pers_apel_prim'] = apellidos[0] if apellidos else ''
-        data['adm_dato_pers_apel_segu'] = apellidos[1] if len(
-            apellidos) > 1 else ''
-        data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
-        data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
-            nombres) > 1 else ''
-        data['adm_dato_paci_falt_dato'] = 1
-
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Se creo la admision del usuario exitosamente!", "data": serializer.data}, status=status.HTTP_201_CREATED)
-        return Response({"message": "Error al crear la admision", "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=['get'], url_path='buscar-admision')
-    def buscar_admision(self, request):
-        tipo = request.query_params.get('tipo')
-        identificacion = request.query_params.get('identificacion')
-
-        if not tipo or not identificacion:
-            return Response({"error": "El parámetro identificacion es requerido."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user_data = admision_datos.objects.get(
-                adm_dato_pers_tipo_iden=tipo, adm_dato_pers_nume_iden=identificacion
-            )
-            data = {
-                "id_admision_datos": user_data.id,
-                "adm_dato_pers_apel_prim": user_data.adm_dato_pers_apel_prim,
-                "adm_dato_pers_apel_segu": user_data.adm_dato_pers_apel_segu,
-                "adm_dato_pers_nomb_prim": user_data.adm_dato_pers_nomb_prim,
-                "adm_dato_pers_nomb_segu": user_data.adm_dato_pers_nomb_segu,
-                'adm_dato_pers_esta_civi': user_data.adm_dato_pers_esta_civi,
-                'adm_dato_pers_sexo': user_data.adm_dato_pers_sexo,
-                'adm_dato_pers_tele': user_data.adm_dato_pers_tele,
-                'adm_dato_pers_celu': user_data.adm_dato_pers_celu,
-                'adm_dato_pers_corr_elec': user_data.adm_dato_pers_corr_elec,
-                'adm_dato_naci_luga_naci': user_data.adm_dato_naci_luga_naci,
-                'adm_dato_naci_naci': user_data.adm_dato_naci_naci,
-                'adm_dato_naci_fech_naci': user_data.adm_dato_naci_fech_naci,
-                'adm_dato_resi_pais_resi': user_data.adm_dato_resi_pais_resi,
-                'adm_dato_resi_prov': user_data.adm_dato_resi_prov,
-                'adm_dato_resi_cant': user_data.adm_dato_resi_cant,
-                'adm_dato_resi_parr': user_data.adm_dato_resi_parr,
-                'adm_dato_resi_esta_adsc_terr': user_data.adm_dato_resi_esta_adsc_terr,
-                'adm_dato_resi_barr_sect': user_data.adm_dato_resi_barr_sect,
-                'adm_dato_resi_call_prin': user_data.adm_dato_resi_call_prin,
-                'adm_dato_resi_call_secu': user_data.adm_dato_resi_call_secu,
-                'adm_dato_resi_refe_resi': user_data.adm_dato_resi_refe_resi,
-                'adm_dato_auto_auto_etni': user_data.adm_dato_auto_auto_etni,
-                'adm_dato_auto_naci_etni': user_data.adm_dato_auto_naci_etni,
-                'adm_dato_auto_pueb_kich': user_data.adm_dato_auto_pueb_kich,
-                'adm_dato_adic_grup_prio': user_data.adm_dato_adic_grup_prio,
-                'adm_dato_adic_nive_educ': user_data.adm_dato_adic_nive_educ,
-                'adm_dato_adic_esta_nive_educ': user_data.adm_dato_adic_esta_nive_educ,
-                'adm_dato_adic_tipo_empr_trab': user_data.adm_dato_adic_tipo_empr_trab,
-                'adm_dato_adic_ocup_prof_prin': user_data.adm_dato_adic_ocup_prof_prin,
-                'adm_dato_adic_tipo_segu': user_data.adm_dato_adic_tipo_segu,
-                'adm_dato_adic_tien_disc': user_data.adm_dato_adic_tien_disc,
-                'adm_dato_repr_tipo_iden': user_data.adm_dato_repr_tipo_iden,
-                'adm_dato_repr_nume_iden': user_data.adm_dato_repr_nume_iden,
-                'adm_dato_repr_apel': user_data.adm_dato_repr_apel,
-                'adm_dato_repr_nomb': user_data.adm_dato_repr_nomb,
-                'adm_dato_repr_fech_naci': user_data.adm_dato_repr_fech_naci,
-                'adm_dato_repr_pare': user_data.adm_dato_repr_pare,
-                'adm_dato_repr_nume_tele': user_data.adm_dato_repr_nume_tele,
-                'adm_dato_repr_naci': user_data.adm_dato_repr_naci,
-                'adm_dato_cont_enca_nece_llam': user_data.adm_dato_cont_enca_nece_llam,
-                'adm_dato_cont_pare': user_data.adm_dato_cont_pare,
-                'adm_dato_cont_dire': user_data.adm_dato_cont_dire,
-                'adm_dato_cont_tele': user_data.adm_dato_cont_tele,
-                'adm_dato_paci_falt_dato': user_data.adm_dato_paci_falt_dato,
-            }
-            return Response({"message": "El usuario está registrado en admision!", "data": data}, status=status.HTTP_200_OK)
-        except admision_datos.DoesNotExist:
-            return Response({"error": "El usuario ingresado no existe en la base de datos."}, status=status.HTTP_404_NOT_FOUND)
-
-    def update(self, request, pk=None, *args, **kwargs):
-        data = request.data.copy()
-        admision_id = pk
-        if not admision_id:
-            return Response({"error": "El parámetro 'id' es requerido para actualizar el registro!"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            admision = admision_datos.objects.get(id=admision_id)
-        except admision_datos.DoesNotExist:
-            return Response({"error": "Registro de admisión no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
-
-        apellidos = data.get('adm_dato_pers_apel_prim',
-                             '').strip().split(' ', 1)
-        nombres = data.get('adm_dato_pers_nomb_prim', '').strip().split(' ', 1)
-
-        data['adm_dato_pers_apel_prim'] = apellidos[0] if apellidos else ''
-        data['adm_dato_pers_apel_segu'] = apellidos[1] if len(
-            apellidos) > 1 else ''
-        data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
-        data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
-            nombres) > 1 else ''
-        data['adm_dato_paci_falt_dato'] = 1
-
-        serializer = self.get_serializer(
-            admision, data=data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        return Response({"message": "La admisión se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
-
-
-class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
-    serializer_class = Form008EmergenciaRegistrationSerializer
-    queryset = form_008_emergencia.objects.all()
-    # permission_classes = [permissions.AllowAny]
-    permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
-
-    def get_permissions(self):
-        # Puedes ajustar por acción
-        if self.action in ('create', 'update', 'partial_update', 'destroy'):
-            self.allowed_roles = [1, 3]
-        elif self.action in ('reporte_mensual', 'reporte_diagnostico'):
-            self.allowed_roles = [1, 3]
-        else:
-            self.allowed_roles = [1, 3]
-        return [IsAuthenticated(), HasRole()]
-
-    def get_queryset(self):
-        user_id = self.request.query_params.get('user_id', None)
-        month = self.request.query_params.get('month', None)
-        year = self.request.query_params.get('year', None)
-
-        queryset = self.queryset
-
-        if user_id is not None:
-            queryset = queryset.filter(eniUser=user_id)
-
-        if month is not None and year is not None:
-            queryset = queryset.filter(
-                for_008_emer_fech_aten__year=year, for_008_emer_fech_aten__month=month)
-
-        return queryset.order_by('for_008_emer_fech_aten')
-
-    # , permission_classes=[IsAuthenticated])
-    @action(detail=False, methods=['get'], url_path='listar-atenciones-form-008')
-    def listar_atenciones_form_008(self, request):
-        try:
-            id_eni_user = request.query_params.get('id_eni_user')
-            if not id_eni_user:
-                return Response(
-                    {"detail": "El parámetro id_eni_user es requerido."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            qs = (
-                self.get_queryset()
-                .filter(eniUser=id_eni_user)
-                .order_by(
-                    '-for_008_emer_fech_repor',
-                    'for_008_emer_prim_apel',
-                    'for_008_emer_segu_apel',
-                    'for_008_emer_prim_nomb',
-                    'for_008_emer_segu_nomb'
-                )[:30]
-            )
-
-            serializer = self.get_serializer(qs, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    # , permission_classes=[IsAuthenticated])
-    @action(detail=False, methods=['get'], url_path='listar-atenciones-paciente')
-    def listar_atenciones_paciente(self, request):
-        try:
-            id_admision_datos = request.query_params.get('admision_datos')
-            if not id_admision_datos:
-                return Response(
-                    {"detail": "El parámetro id_admision_datos es requerido."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            qs = (
-                self.get_queryset()
-                .filter(admision_datos=id_admision_datos)
-                .order_by(
-                    '-for_008_emer_fech_aten',
-                    '-for_008_emer_hora_aten',
-                )[:6]
-            )
-
-            if not qs.exists():
-                return Response({"message": "El paciente no registra atenciones previas de Form-008 Emergencia en el sistema!"}, status=status.HTTP_200_OK)
-
-            serializer = self.get_serializer(qs, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    class Echo:
-        def write(self, value):
-            return value
-
-    # , permission_classes=[IsAuthenticated])
-    @action(detail=False, methods=['get'], url_path='reporte-atenciones-csv')
-    def reporte_atenciones_csv(self, request):
-        """
-        GET /form-008-emergencia/reporte-atenciones-csv/?id_eni_user=ID&for_008_emer_fech_aten_min=YYYY-MM-DD&for_008_emer_fech_aten_max=YYYY-MM-DD&user_rol=ROL        
-        """
-        # 1) Parámetros
-        id_eni_user = request.query_params.get("id_eni_user")
-        fecha_min_str = request.query_params.get("for_008_emer_fech_aten_min")
-        fecha_max_str = request.query_params.get("for_008_emer_fech_aten_max")
-        form_008_user_rol = request.query_params.get('user_rol', None)
-
-        faltantes = []
-        if form_008_user_rol is None:
-            faltantes.append('user_rol')
-        if not fecha_min_str or not fecha_max_str:
-            faltantes.append(
-                'for_008_emer_fech_aten_min/for_008_emer_fech_aten_max')
-        if faltantes:
-            return Response(
-                {"detail": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 2) Validar user_rol y requerir id_eni_user solo si user_rol == 3
-        if str(form_008_user_rol) not in ('1', '3'):
-            return Response(
-                {"detail": "user_rol inválido. Valores permitidos: 1 o 3."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if str(form_008_user_rol) == '3' and not id_eni_user:
-            return Response(
-                {"detail": "id_eni_user es requerido cuando user_rol = 3."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 3) Parsear y validar formato de fechas
-        try:
-            start_date = datetime.strptime(fecha_min_str, "%Y-%m-%d").date()
-            end_date = datetime.strptime(fecha_max_str, "%Y-%m-%d").date()
-        except ValueError:
-            return Response(
-                {"detail": "Formato de fecha inválido. Use YYYY-MM-DD."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 4) Validaciones de rango
-        if start_date > end_date:
-            return Response(
-                {"detail": "for_008_emer_fech_aten_min no puede ser mayor que for_008_emer_fech_aten_max."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if (end_date - start_date).days > 31:
-            return Response(
-                {"detail": "Solo puede descargar un rango máximo de un mes (31 días)."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 5) Preparar filtros (Date vs DateTime con zona horaria)
-        fecha_field_name = "for_008_emer_fech_aten"
-        try:
-            field = form_008_emergencia._meta.get_field(fecha_field_name)
-            if field.get_internal_type() == "DateTimeField":
-                tz = timezone.get_current_timezone()
-                start_filter = timezone.make_aware(
-                    datetime.combine(start_date, time.min), tz)
-                end_filter = timezone.make_aware(
-                    datetime.combine(end_date, time.max), tz)
-            else:
-                start_filter = start_date
-                end_filter = end_date
-        except Exception:
-            start_filter = start_date
-            end_filter = end_date
-
-        # 6) Query según user_rol
-        base_qs = (
-            form_008_emergencia.objects
-            .filter(**{f"{fecha_field_name}__range": (start_filter, end_filter)})
-        )
-        if str(form_008_user_rol) == '3':
-            base_qs = base_qs.filter(eniUser=id_eni_user)
-        base_qs = base_qs.order_by(fecha_field_name)
-
-        HEADERS = [
-            "INSTITUCIÓN DEL SISTEMA", "UNICODIGO", "NOMBRE DEL ESTABLECIMIENTO DE SALUD", "ZONA",
-            "PROVINCIA", "CANTON", "DISTRITO", "NIVEL", "FECHA DE ATENCIÓN",
-            "TIPO DE DOCUMENTO DE IDENTIFICACIÓN", "NÚMERO DE IDENTIFICACION", "PRIMER APELLIDO",
-            "SEGUNDO APELLIDO", "PRIMER NOMBRE", "SEGUNDO NOMBRE", "SEXO", "EDAD", "CONDICIÓN DE LA EDAD",
-            "NACIONALIDAD", "ETNIA", "GRUPO PRIORITARIO", "TIPO DE SEGURO",
-            "PROVINCIA DE RECIDENCIA", "CANTON DE RECIDENCIA", "PARROQUIA DE RECIDENCIA",
-            "ESPECIALIDAD DEL PROFESIONAL", "CIE-10 (PRINCIPAL)", "DIAGNÓSTICO 1 (PRINCIPAL)",
-            "CONDICIÓN DEL DIAGNÓSTICO", "CIE-10 (CAUSA EXTERNA)", "DIAGNOSTICO (CAUSA  EXTERNA)",
-            "HOSPITALIZACIÓN", "HORA ATENCIÓN", "CONDICIÓN DEL ALTA", "OBSERVACIÓN",
-        ]
-
-        FIELDS = [
-            "for_008_emer_inst_sist", "for_008_emer_unic", "for_008_emer_unid", "for_008_emer_zona",
-            "for_008_emer_prov", "for_008_emer_cant", "for_008_emer_dist", "for_008_emer_nive",
-            "for_008_emer_fech_aten", "for_008_emer_tipo_docu_iden", "for_008_emer_nume_iden",
-            "for_008_emer_prim_apel", "for_008_emer_segu_apel", "for_008_emer_prim_nomb",
-            "for_008_emer_segu_nomb", "for_008_emer_sexo", "for_008_emer_edad", "for_008_emer_cond_edad",
-            "for_008_emer_naci", "for_008_emer_etni", "for_008_emer_grup_prio", "for_008_emer_tipo_segu",
-            "for_008_emer_prov_resi", "for_008_emer_cant_resi", "for_008_emer_parr_resi",
-            "for_008_emer_espe_prof", "for_008_emer_cie_10_prin", "for_008_emer_diag_prin",
-            "for_008_emer_cond_diag", "for_008_emer_cie_10_caus_exte", "for_008_emer_diag_caus_exte",
-            "for_008_emer_hosp", "for_008_emer_hora_aten", "for_008_emer_cond_alta", "for_008_emer_obse",
-        ]
-
-        class Echo:
-            def write(self, value):
-                return value
-
-        def serialize_value(val):
-            if val is None:
-                return ""
-            if isinstance(val, (datetime, date, time)):
-                return val.isoformat()
-            return val
-
-        def row_iter():
-            writer = csv.writer(Echo())
-            # BOM para Excel
-            yield "\ufeff"
-            # Encabezados
-            yield writer.writerow(HEADERS)
-            # Filas en streaming
-            for row in base_qs.values(*FIELDS).iterator(chunk_size=5000):
-                yield writer.writerow([serialize_value(row.get(field)) for field in FIELDS])
-
-        filename = f'form008_emergencia_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.csv'
-        response = StreamingHttpResponse(
-            row_iter(), content_type="text/csv; charset=utf-8")
-        response["Content-Disposition"] = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{filename}'
-        response["X-Accel-Buffering"] = "no"
-        return response
-
-    # , permission_classes=[IsAuthenticated])
-    @action(detail=False, methods=['get'], url_path='reporte-mensual')
-    def reporte_mensual(self, request, *args, **kwargs):
-        """
-        GET /form008-emergencia/reporte-mensual/?id_eni_user=ID&form_008_year=YYYY&user_rol=ROL
-        Agrupa por unidad de salud (for_008_emer_unic, for_008_emer_unid) y retorna por mes:
-        - total de registros (todas las filas)
-        - total de atenciones únicas (distinct for_008_emer_aten_fina)        
-        """
-        # id_eni_user = request.query_params.get('id_eni_user')
-        id_eni_user = getattr(request.user, 'id', None)
-        try:
-            form_008_year = int(request.query_params.get(
-                'form_008_year', timezone.now().year))
-        except (TypeError, ValueError):
-            return Response({"detail": "Parámetro 'form_008_year' inválido."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # form_008_user_rol = request.query_params.get('user_rol', None)
-        form_008_user_rol = getattr(request.user, 'fun_admi_rol', None)
-
-        faltantes = []
-        if not id_eni_user:
-            faltantes.append('id_eni_user')
-        if form_008_user_rol is None:
-            faltantes.append('user_rol')
-        if not form_008_year:
-            faltantes.append('form_008_year')
-        if faltantes:
-            return Response(
-                {"detail": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            year = int(form_008_year)
-            form_008_user_rol = int(form_008_user_rol)
-        except (TypeError, ValueError):
-            return Response({"detail": "Parámetros 'form_008_year' o 'user_rol' inválidos."}, status=status.HTTP_400_BAD_REQUEST)
-
-        base_qs = self.get_queryset().filter(for_008_emer_fech_aten__year=year)
-
-        # Rol 3: solo sus atenciones; Rol 1: total (sin filtro por eniUser)
-        if str(form_008_user_rol) == '3':
-            if not id_eni_user:
-                return Response(
-                    {"detail": "id_eni_user es requerido cuando user_rol = 3."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            base_qs = base_qs.filter(eniUser=id_eni_user)
-
-        qs = (
-            base_qs
-            .annotate(month=ExtractMonth('for_008_emer_fech_aten'))
-            .values('for_008_emer_unic', 'for_008_emer_unid', 'month')
-            .annotate(
-                total_all=Count('for_008_emer_aten_fina'),
-                total_unique=Count('for_008_emer_aten_fina', distinct=True)
-            )
-            .order_by('for_008_emer_unic', 'month')
-        )
-
-        meses_es = [
-            "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
-            "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
-        ]
-
-        # Agrupar por unidad (unic, unid) y armar conteos por mes
-        agrupado = {}
-        for row in qs:
-            unic = row.get('for_008_emer_unic') or ''
-            unid = row.get('for_008_emer_unid') or ''
-            key = (unic, unid)
-            if key not in agrupado:
-                agrupado[key] = {
-                    "for_008_emer_unic": unic,
-                    "for_008_emer_unid": unid,
-                    "meses": {m: [0, 0] for m in meses_es}
-                }
-            num_mes = row.get('month')
-            if num_mes and 1 <= num_mes <= 12:
-                agrupado[key]["meses"][meses_es[num_mes - 1]] = [
-                    row.get('total_all', 0) or 0,
-                    row.get('total_unique', 0) or 0
-                ]
-
-        # Calcular totales por unidad y preparar salida
-        results = []
-        for (unic, unid), data_u in sorted(agrupado.items(), key=lambda x: (x[0][0], x[0][1])):
-            total_all_anual = sum(v[0] for v in data_u["meses"].values())
-            total_unique_anual = sum(v[1] for v in data_u["meses"].values())
-            results.append({
-                "unidad_salud": f"{unic} {unid}".strip(),
-                "meses": data_u["meses"],
-                "total": [total_all_anual, total_unique_anual]
-            })
-
-        # Si no hay registros y se filtró por una unidad específica, devolver unidad con ceros
-        if not results:
-            label_unic = ""
-            label_unid = ""
-            results.append({
-                "unidad_salud": f"{label_unic} {label_unid}".strip(),
-                "meses": {m: [0, 0] for m in meses_es},
-                "total": [0, 0]
-            })
-
-        return Response(
-            {
-                "id_eni_user": str(id_eni_user),
-                "year": year,
-                "results": results
-            },
-            status=status.HTTP_200_OK
-        )
-
-    @action(detail=False, methods=['get'], url_path='reporte-diagnostico')
-    def reporte_diagnostico(self, request, *args, **kwargs):
-        """
-        GET /form008-emergencia/reporte-diagnostico/?form_008_year=YYYY
-        """
-        try:
-            form_008_year = int(request.query_params.get(
-                'form_008_year', timezone.now().year))
-        except (TypeError, ValueError):
-            return Response({"detail": "Parámetro 'form_008_year' inválido."}, status=status.HTTP_400_BAD_REQUEST)
-
-        id_eni_user = getattr(request.user, 'id', None)
-        form_008_user_rol = int(getattr(request.user, 'fun_admi_rol', 0) or 0)
-        if not id_eni_user or form_008_user_rol not in (1, 3):
-            return Response({"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
-
-        qs = self.get_queryset().filter(for_008_emer_fech_aten__year=form_008_year)
-        if form_008_user_rol == 3:
-            qs = qs.filter(eniUser=id_eni_user)
-
-        qs = qs.exclude(for_008_emer_cie_10_prin__isnull=True).exclude(
-            for_008_emer_cie_10_prin='')
-        agg = (
-            qs.values('for_008_emer_cie_10_prin', 'for_008_emer_diag_prin')
-            .annotate(
-                hombre=Count('id', filter=Q(
-                    for_008_emer_sexo__iregex=r'^(H|HOMBRE|MASC)')),
-                mujer=Count('id', filter=Q(
-                    for_008_emer_sexo__iregex=r'^(M|MUJER|FEM)')),
-                intersexual=Count('id', filter=Q(
-                    for_008_emer_sexo__istartswith='INTER')),
-                total=Count('id')
-            )
-            .order_by('-total')
-        )
-
-        results = [
-            {
-                "diagnostico": f"{row['for_008_emer_cie_10_prin']} {row['for_008_emer_diag_prin']}".strip(),
-                "hombre": row['hombre'] or 0,
-                "intersexual": row['intersexual'] or 0,
-                "mujer": row['mujer'] or 0,
-                "total": row['total'] or 0,
-            }
-            for row in agg
-        ]
-
-        return Response(
-            {
-                "id_eni_user": str(id_eni_user) if id_eni_user is not None else None,
-                "year": form_008_year,
-                "results": results
-            },
-            status=status.HTTP_200_OK
-        )
-
-    def get_eni_user(self, eni_user_id):
-        try:
-            return eniUser.objects.get(id=eni_user_id)
-        except eniUser.DoesNotExist:
-            return None
-
-    def get_unidad_salud(self, eni_user):
-        try:
-            return unidad_salud.objects.get(eniUser=eni_user, uni_unid_prin=1)
-        except unidad_salud.DoesNotExist:
-            return None
-
-    def get_next_codigo_atencion(self):
-        max_valor = form_008_emergencia.objects.aggregate(Max('for_008_emer_aten_fina'))[
-            'for_008_emer_aten_fina__max'] or 1
-        return max_valor + 1
-
-    def split_nombre_apellido(self, nombre_completo):
-        partes = nombre_completo.strip().split(' ', 1)
-        return partes[0], partes[1] if len(partes) > 1 else ''
-
-    def procesar_diagnosticos(self, cie10_list):
-        cie10 = []
-        diag = []
-        for code in cie10_list:
-            cie10.append(code[:4])
-            diag.append(code[4:])
-        return cie10, diag
-
-    @transaction.atomic
-    def create(self, request, *args, **kwargs):
-        data = request.data.copy()
-        eni_user_id = data.get('id_eniUser', '')
-        medic_apoll_id = data.get('for_008_emer_apoy_aten_medi', '')
-        eni_user = self.get_eni_user(eni_user_id)
-
-        medic_apoll = None
-        if medic_apoll_id:
-            medic_apoll = self.get_eni_user(medic_apoll_id)
-
-        if not eni_user:
-            return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
-
-        unidad_salud_data = self.get_unidad_salud(eni_user)
-        if not unidad_salud_data:
-            return Response({'error': 'Unidad de salud no encontrada'}, status=status.HTTP_404_NOT_FOUND)
-
-        nuevo_codigo_atencion = self.get_next_codigo_atencion()
-
-        # Datos de unidad de salud
-        # Asignar campos de unidad_salud a los campos correspondientes en data
-        data['for_008_emer_inst_sist'] = getattr(
-            unidad_salud_data, 'uni_inst_sist')
-        for field in ['uni_unic', 'uni_unid', 'uni_zona', 'uni_prov', 'uni_cant', 'uni_dist', 'uni_nive']:
-            data[f'for_008_emer_{field.split("_")[1]}'] = getattr(
-                unidad_salud_data, field)
-
-        tipo_docu_iden = data.get('for_008_busc_pers_tipo_iden', '')
-        nume_iden = data.get('for_008_busc_pers_nume_iden', '')
-        data['for_008_emer_tipo_docu_iden'] = tipo_docu_iden
-        data['for_008_emer_nume_iden'] = nume_iden
-
-        # Edad y condición
-        edad_cond_str = data.get('for_008_emer_edad_cond', '').strip()
-        parts = edad_cond_str.split(' ')
-        data['for_008_emer_edad'] = parts[0] if parts and parts[0] else ''
-        data['for_008_emer_cond_edad'] = parts[1] if len(parts) > 1 else ''
-
-        # Nombres y apellidos
-        apellidos = self.split_nombre_apellido(
-            data.get('for_008_emer_apel_comp', ''))
-        nombres = self.split_nombre_apellido(
-            data.get('for_008_emer_nomb_comp', ''))
-        data['for_008_emer_prim_apel'], data['for_008_emer_segu_apel'] = apellidos
-        data['for_008_emer_prim_nomb'], data['for_008_emer_segu_nomb'] = nombres
-
-        # Diagnósticos
-        cie10_prin_diag = data.get('for_008_emer_cie_10_prin_diag', [])
-        cond_diag = data.get('for_008_emer_cond_diag', [])
-        cie10_secu_diag = data.get('for_008_emer_cie_10_caus_exte_diag', [])
-
-        if not (len(cie10_prin_diag) == len(cond_diag) == len(cie10_secu_diag)):
-            return Response(
-                {"detail": "Los arrays de diagnósticos deben tener la misma longitud."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        cie10_prin, diag_prin = self.procesar_diagnosticos(cie10_prin_diag)
-        cie10_caus_exte, diag_caus_exte = self.procesar_diagnosticos(
-            cie10_secu_diag)
-
-        data['for_008_emer_resp_aten_medi'] = f"{eni_user.username or ''} {eni_user.last_name or ''} {eni_user.first_name or ''}".strip(
-        )
-        if medic_apoll:
-            data['for_008_emer_apoy_aten_medi'] = f"{medic_apoll.username or ''} {medic_apoll.last_name or ''} {medic_apoll.first_name or ''}".strip(
-            )
-        else:
-            data['for_008_emer_apoy_aten_medi'] = ''
-
-        data['eniUser'] = eni_user_id
-        data['admision_datos'] = data.get('id_admision_datos', '')
-
-        created_objects = []
-        errors = []
-
-        for i in range(len(cie10_prin_diag)):
-            data_item = data.copy()
-            data_item.update({
-                'for_008_emer_cie_10_prin_diag': cie10_prin_diag[i],
-                'for_008_emer_cond_diag': cond_diag[i],
-                'for_008_emer_cie_10_caus_exte_diag': cie10_secu_diag[i],
-                'for_008_emer_cie_10_prin': cie10_prin[i],
-                'for_008_emer_diag_prin': diag_prin[i],
-                'for_008_emer_cie_10_caus_exte': cie10_caus_exte[i],
-                'for_008_emer_diag_caus_exte': diag_caus_exte[i],
-                'for_008_emer_aten_fina': nuevo_codigo_atencion,
-            })
-            serializer = self.get_serializer(data=data_item)
-            if serializer.is_valid():
-                self.perform_create(serializer)
-                created_objects.append(serializer.data)
-            else:
-                errors.append(serializer.errors)
-
-        if errors:
-            return Response({"message": "Error al crear la atencion del formulario 008-EMERGENCIA", "error": errors}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"message": "Se creo la atencion del formulario 008-EMERGENCIA del usuario exitosamente!", "data": created_objects}, status=status.HTTP_201_CREATED)
 
 
 class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):

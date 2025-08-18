@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  registerTardio,
-  updateTardio,
-  deleteTardio,
-} from "../api/conexion.api.js";
+// import {
+//   registerTardio,
+//   updateTardio,
+//   deleteTardio,
+// } from "../api/conexion.api.js";
 import { validarDato, validarRegistroTardio } from "../api/validadorUtil.js";
 import {
   inputStyle,

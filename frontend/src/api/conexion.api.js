@@ -3,7 +3,13 @@ const API_URL = "http://localhost:8000/api/v1";
 //const API_URL = "https://111529j9-8000.brs.devtunnels.ms/api/v1";
 
 // Funciones auxiliares para manejar tokens y almacenamiento local
-const getAccessToken = () => localStorage.getItem("accessToken");
+export const getAccessToken = () => {
+  try {
+    return localStorage.getItem("accessToken"); // ajusta si usas otro storage/clave
+  } catch {
+    return null;
+  }
+};
 const getRefreshToken = () => {
   return localStorage.getItem("refreshToken");
 };
@@ -24,10 +30,10 @@ const clearAuthData = () => {
 
 // Función para obtener los encabezados de autenticación
 export const getAuthHeaders = () => {
-  const token = localStorage.getItem("accessToken");
+  const token = getAccessToken(); // usa el helper
   return {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: token ? `Bearer ${token}` : undefined,
       "Content-Type": "application/json",
     },
   };
@@ -53,18 +59,94 @@ const parseJwt = (token) => {
   }
 };
 
-const getUserIdFromToken = () => {
-  const token = getAccessToken();
-  if (!token) return null;
+const decodeJwt = (token) => {
   try {
     const [, payloadB64] = token.split(".");
     const json = JSON.parse(atob(payloadB64));
-    // Ajusta claves según tu backend
-    return json?.user_id ?? json?.sub ?? json?.id ?? null;
+    return json || {};
+  } catch {
+    return {};
+  }
+};
+
+export const getRoleFromToken = () => {
+  const t = getAccessToken();
+  if (!t) return null;
+  const payload = decodeJwt(t);
+  // Ajusta las claves según tu backend JWT
+  return payload?.fun_admi_rol ?? payload?.role ?? null;
+};
+
+export const getUserIdFromToken = () => {
+  const t = getAccessToken();
+  if (!t) return null;
+  const payload = decodeJwt(t);
+  return payload?.user_id ?? payload?.sub ?? payload?.id ?? null;
+};
+
+// Si el rol no viene en el token, lo consulta al backend
+export const getCurrentUserRole = async () => {
+  const fromToken = getRoleFromToken();
+  if (fromToken != null) return Number(fromToken);
+
+  const userId = getUserIdFromToken();
+  if (!userId) return null;
+
+  try {
+    const res = await axios.get(`${API_URL}/eni-user/${userId}/`, {
+      headers: { Authorization: `Bearer ${getAccessToken()}` },
+    });
+    return Number(res?.data?.fun_admi_rol ?? null);
   } catch {
     return null;
   }
 };
+
+// Helper: detectar endpoints de auth para no adjuntar Authorization y evitar loops
+const isAuthEndpoint = (url = "") =>
+  /\/login\/|\/token\/refresh\/|\/new-password\//.test(url);
+
+// Single-flight del refresh para evitar múltiples llamadas concurrentes
+let refreshPromise = null;
+
+// Interceptor de request: evita enviar Authorization en endpoints de auth
+axios.interceptors.request.use((config) => {
+  const t = getAccessToken();
+  const url = config?.url || "";
+  if (t && !isAuthEndpoint(url)) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${t}`;
+  }
+  return config;
+});
+
+// Interceptor de response: refresh en 401 y reintento (una vez)
+axios.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const original = error.config || {};
+    const status = error?.response?.status;
+    const code = error?.response?.data?.code;
+    const url = original?.url || "";
+
+    const isTokenErr =
+      (status === 401 || code === "token_not_valid") && !isAuthEndpoint(url);
+
+    if (isTokenErr && !original._retry) {
+      original._retry = true;
+      try {
+        await refreshAccessToken(); // serializado
+        original.headers = original.headers || {};
+        original.headers.Authorization = `Bearer ${getAccessToken()}`;
+        return axios(original);
+      } catch (e) {
+        // Si no se pudo refrescar, limpiar y propagar error
+        clearAuthData();
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 const getEniUserId = () => getUserIdFromToken();
 
@@ -87,42 +169,46 @@ export const ensureCurrentUserId = async () => {
   }
 };
 
-// Helper opcional para traer el rol actual
-export const getCurrentUserRole = async () => {
-  // Si el rol está en el token, léelo aquí y retorna
-  // const roleFromToken = getRoleFromToken();
-  // if (roleFromToken != null) return roleFromToken;
-
-  const userId = await ensureCurrentUserId();
-  if (!userId) return null;
-  // Consulta la API de usuario por id y retorna fun_admi_rol
-  try {
-    const res = await axios.get(
-      `${API_URL}/eni-user/${userId}/`,
-      getAuthHeaders()
-    );
-    return res?.data?.fun_admi_rol ?? null;
-  } catch {
-    return null;
-  }
-};
-
-// Refrescar el token de acceso
+// Refrescar el token de acceso (maneja rotación + single-flight)
 const refreshAccessToken = async () => {
-  try {
-    const refreshToken = getRefreshToken();
-    const response = await axios.post(`${API_URL}/token/refresh/`, {
-      refresh: refreshToken,
-    });
-    localStorage.setItem("accessToken", response.data.access);
-  } catch (error) {
-    console.error(
-      "Error al refrescar el token de acceso:",
-      error.response ? error.response.data : error.message
-    );
-    clearAuthData();
-    throw error;
+  // Si ya hay un refresh en curso, reutilizarlo
+  if (refreshPromise) return refreshPromise;
+
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    const err = new Error("No refresh token available");
+    console.error("Error al refrescar el token de acceso:", err.message);
+    throw err;
   }
+
+  refreshPromise = axios
+    .post(`${API_URL}/token/refresh/`, { refresh: refreshToken })
+    .then((response) => {
+      const { access, refresh } = response.data || {};
+      if (!access) {
+        throw new Error("Respuesta de refresh sin access token");
+      }
+      // IMPORTANTE: guardar refresh si el backend rota y lo envía
+      if (refresh) {
+        setTokens(access, refresh);
+      } else {
+        localStorage.setItem("accessToken", access);
+      }
+      return access;
+    })
+    .catch((error) => {
+      console.error(
+        "Error al refrescar el token de acceso:",
+        error?.response ? error.response.data : error.message
+      );
+      clearAuthData();
+      throw error;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
 };
 
 // Obtener información del usuario
@@ -149,6 +235,7 @@ export const loginUser = async (formData) => {
     cachedUserId = id; // mantenerlo en memoria
     setInputFech();
     const userId = await ensureCurrentUserId();
+    console.log("Usuario:", response.data);
     return response.data;
   } catch (error) {
     console.error(
@@ -177,15 +264,31 @@ export const logoutUser = async () => {
 
     await axios.post(`${API_URL}/logout/`, { refresh: refreshToken }, config);
     clearAuthData();
+    // Notificar a otras pestañas
+    try {
+      localStorage.setItem("logout_broadcast", String(Date.now()));
+    } catch {}
   } catch (error) {
     console.error(
       "Error al cerrar sesión:",
       error.response ? error.response.data : error.message
     );
     clearAuthData();
+    try {
+      localStorage.setItem("logout_broadcast", String(Date.now()));
+    } catch {}
     throw error;
   }
 };
+
+// Escuchar logout en otras pestañas y limpiar credenciales
+try {
+  window.addEventListener("storage", (e) => {
+    if (e.key === "logout_broadcast") {
+      clearAuthData();
+    }
+  });
+} catch {}
 
 export const getAllEniUsers = async () => {
   try {
@@ -293,12 +396,8 @@ export const resetPasswordWithToken = async ({ uid, token, password }) => {
 
 export const buscarUsuarioIdUnidadSalud = async () => {
   try {
-    const userId = await ensureCurrentUserId();
     const response = await axios.get(
-      `${API_URL}/eni-user/buscar-usuario-id-unidad-salud/`,
-      {
-        params: { id_eni_user: userId },
-      }
+      `${API_URL}/eni-user/buscar-usuario-id-unidad-salud/`
     );
     return response.data;
   } catch (error) {
@@ -314,10 +413,7 @@ export const buscarUsuarioIdUnidadSalud = async () => {
 
 export const listarUsuariosApoyoAtencion = async () => {
   try {
-    const userId = await ensureCurrentUserId();
-    const response = await axios.get(`${API_URL}/eni-user/listar-filtrado/`, {
-      params: { id_eni_user: userId },
-    });
+    const response = await axios.get(`${API_URL}/eni-user/listar-filtrado/`);
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
@@ -352,14 +448,6 @@ export const updateUnidadSaludPrincipal = async (formData) => {
 //Funciones para los reportes de atenciones de Formulario 008 Emergencia
 export const listarReportesAtenciones = async (form_008_year) => {
   try {
-    const userId = await ensureCurrentUserId();
-    const user_rol = 3;
-    // const response = await axios.get(
-    //   `${API_URL}/form-008-emergencia/reporte-mensual/`,
-    //   {
-    //     params: { id_eni_user: userId, form_008_year, user_rol },
-    //   }
-    // );
     const response = await axios.get(
       `${API_URL}/form-008-emergencia/reporte-mensual/`,
       {
@@ -380,8 +468,6 @@ export const listarReportesAtenciones = async (form_008_year) => {
 
 export const listarReporteDiagnostico = async (form_008_year) => {
   try {
-    const userId = await ensureCurrentUserId();
-    const user_rol = 3;
     const response = await axios.get(
       `${API_URL}/form-008-emergencia/reporte-diagnostico/`,
       {
@@ -405,8 +491,6 @@ export const reporteDescargaAtencionesCsv = async (
   for_008_emer_fech_aten_max
 ) => {
   try {
-    const userId = await ensureCurrentUserId();
-    const user_rol = 3;
     const response = await axios.get(
       `${API_URL}/form-008-emergencia/reporte-atenciones-csv/`,
       {
@@ -432,28 +516,6 @@ export const reporteDescargaAtencionesCsv = async (
     }
     throw error;
   }
-};
-
-//Funciones para los registros de vacunación
-//const eniUser_id = 1;
-
-export const getAllRegistroVacunado = (month, year) => {
-  const eniUserId = getEniUserId();
-  axios.get(
-    `${API_URL}/registro-vacunado/?user_id=${eniUserId}&month=${month}&year=${year}`,
-    getAuthHeaders()
-  );
-};
-
-export const registroVacunadoCreateApi = (formData) =>
-  axios.post(`${API_URL}/registro-vacunado/`, formData, getAuthHeaders());
-
-export const getDescargarCsvRegistroVacunado = (fecha_inicio, fecha_fin) => {
-  const eniUserId = getEniUserId();
-  axios.get(
-    `${API_URL}/registro-vacunado/descargar-csv/?fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}&eniUser_id=${eniUserId}`,
-    getAuthHeaders()
-  );
 };
 
 //Funciones para la Admisión de usuario
@@ -526,10 +588,8 @@ export const getAllForm008Emer = async () => {
 
 export const listarForm008EmerAtenciones = async () => {
   try {
-    const userId = await ensureCurrentUserId();
     const response = await axios.get(
-      `${API_URL}/form-008-emergencia/listar-atenciones-form-008/`,
-      { params: { id_eni_user: userId } }
+      `${API_URL}/form-008-emergencia/listar-atenciones-form-008/`
     );
     return response.data;
   } catch (error) {
@@ -583,11 +643,9 @@ export const buscarUsuarioForm008Emer = async (tipo, identificacion) => {
 
 export const registerForm008Emer = async (formData) => {
   try {
-    const userId = await ensureCurrentUserId();
-    const formDataToSend = { ...formData, id_eniUser: userId };
     const response = await axios.post(
       `${API_URL}/form-008-emergencia/`,
-      formDataToSend
+      formData
     );
     return response.data;
   } catch (error) {
@@ -619,421 +677,442 @@ export const updateForm008Emer = async (formData) => {
   }
 };
 
+//Funciones para los registros de vacunación
+
+// export const getAllRegistroVacunado = (month, year) => {
+//   const eniUserId = getEniUserId();
+//   axios.get(
+//     `${API_URL}/registro-vacunado/?user_id=${eniUserId}&month=${month}&year=${year}`,
+//     getAuthHeaders()
+//   );
+// };
+
+// export const registroVacunadoCreateApi = (formData) =>
+//   axios.post(`${API_URL}/registro-vacunado/`, formData, getAuthHeaders());
+
+// export const getDescargarCsvRegistroVacunado = (fecha_inicio, fecha_fin) => {
+//   const eniUserId = getEniUserId();
+//   axios.get(
+//     `${API_URL}/registro-vacunado/descargar-csv/?fecha_inicio=${fecha_inicio}&fecha_fin=${fecha_fin}&eniUser_id=${eniUserId}`,
+//     getAuthHeaders()
+//   );
+// };
+
 //Funciones de Temprano
-export const getMesTemprano = async (user_id, month, year) => {
-  try {
-    const response = await axios.get(`${API_URL}/temprano/`, {
-      params: { user_id, month, year },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getMesTemprano = async (user_id, month, year) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/temprano/`, {
+//       params: { user_id, month, year },
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const registerTemprano = async (formData) => {
-  try {
-    const response = await axios.post(
-      `${API_URL}/temprano/crear-temprano/`,
-      formData
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error creating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const registerTemprano = async (formData) => {
+//   try {
+//     const response = await axios.post(
+//       `${API_URL}/temprano/crear-temprano/`,
+//       formData
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error creating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const updateTemprano = async (id, formData) => {
-  try {
-    const response = await axios.put(
-      `${API_URL}/temprano/${id}/actualizar-temprano/`,
-      formData
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error updating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const updateTemprano = async (id, formData) => {
+//   try {
+//     const response = await axios.put(
+//       `${API_URL}/temprano/${id}/actualizar-temprano/`,
+//       formData
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error updating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const deleteTemprano = async (id, formData) => {
-  try {
-    const response = await axios.delete(
-      `${API_URL}/temprano/${id}/eliminar-temprano/`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: formData,
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error deleting early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const deleteTemprano = async (id, formData) => {
+//   try {
+//     const response = await axios.delete(
+//       `${API_URL}/temprano/${id}/eliminar-temprano/`,
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         data: formData,
+//       }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error deleting early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const getTemprano = async (id) => {
-  try {
-    const response = await axios.get(`${API_URL}/temprano/${id}/`);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getTemprano = async (id) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/temprano/${id}/`);
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-//Funciones de Tardio
-export const getMesTardio = async (user_id, month, year) => {
-  try {
-    const response = await axios.get(`${API_URL}/tardio/`, {
-      params: { user_id, month, year },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// //Funciones de Tardio
+// export const getMesTardio = async (user_id, month, year) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/tardio/`, {
+//       params: { user_id, month, year },
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const registerTardio = async (formData) => {
-  try {
-    const response = await axios.post(
-      `${API_URL}/tardio/crear-tardio/`,
-      formData
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error creating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const registerTardio = async (formData) => {
+//   try {
+//     const response = await axios.post(
+//       `${API_URL}/tardio/crear-tardio/`,
+//       formData
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error creating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const updateTardio = async (id, formData) => {
-  try {
-    const response = await axios.put(
-      `${API_URL}/tardio/${id}/actualizar-tardio/`,
-      formData
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error updating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const updateTardio = async (id, formData) => {
+//   try {
+//     const response = await axios.put(
+//       `${API_URL}/tardio/${id}/actualizar-tardio/`,
+//       formData
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error updating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const deleteTardio = async (id, formData) => {
-  try {
-    const response = await axios.delete(
-      `${API_URL}/tardio/${id}/eliminar-tardio/`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: formData,
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error deleting early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const deleteTardio = async (id, formData) => {
+//   try {
+//     const response = await axios.delete(
+//       `${API_URL}/tardio/${id}/eliminar-tardio/`,
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         data: formData,
+//       }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error deleting early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const getTardio = async (id) => {
-  try {
-    const response = await axios.get(`${API_URL}/tardio/${id}/`);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getTardio = async (id) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/tardio/${id}/`);
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
 //Funciones de Desperdicio
-export const getMesDesperdicio = async (user_id, month, year) => {
-  try {
-    const response = await axios.get(`${API_URL}/desperdicio/`, {
-      params: { user_id, month, year },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getMesDesperdicio = async (user_id, month, year) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/desperdicio/`, {
+//       params: { user_id, month, year },
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const getTotalDesperdicio = async (user_id) => {
-  try {
-    const response = await axios.get(
-      `${API_URL}/desperdicio/total-desperdicio/`,
-      {
-        params: { user_id },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getTotalDesperdicio = async (user_id) => {
+//   try {
+//     const response = await axios.get(
+//       `${API_URL}/desperdicio/total-desperdicio/`,
+//       {
+//         params: { user_id },
+//       }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const registerDesperdicio = async (formData) => {
-  try {
-    const response = await axios.post(
-      `${API_URL}/desperdicio/crear-desperdicio/`,
-      formData
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error creating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const registerDesperdicio = async (formData) => {
+//   try {
+//     const response = await axios.post(
+//       `${API_URL}/desperdicio/crear-desperdicio/`,
+//       formData
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error creating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const updateDesperdicio = async (id, formData) => {
-  try {
-    const response = await axios.put(
-      `${API_URL}/desperdicio/${id}/actualizar-desperdicio/`,
-      formData
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error updating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const updateDesperdicio = async (id, formData) => {
+//   try {
+//     const response = await axios.put(
+//       `${API_URL}/desperdicio/${id}/actualizar-desperdicio/`,
+//       formData
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error updating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const deleteDesperdicio = async (id, formData) => {
-  try {
-    const response = await axios.delete(
-      `${API_URL}/desperdicio/${id}/eliminar-desperdicio/`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: formData,
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error deleting early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const deleteDesperdicio = async (id, formData) => {
+//   try {
+//     const response = await axios.delete(
+//       `${API_URL}/desperdicio/${id}/eliminar-desperdicio/`,
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         data: formData,
+//       }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error deleting early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const getDesperdicio = async (id) => {
-  try {
-    const response = await axios.get(`${API_URL}/desperdicio/${id}/`);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getDesperdicio = async (id) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/desperdicio/${id}/`);
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
 //Funciones de Influenza
-export const getMesInfluenza = async (user_id, month, year) => {
-  try {
-    const response = await axios.get(`${API_URL}/influenza/`, {
-      params: { user_id, month, year },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getMesInfluenza = async (user_id, month, year) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/influenza/`, {
+//       params: { user_id, month, year },
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const registerInfluenza = async (formData) => {
-  try {
-    const response = await axios.post(
-      `${API_URL}/influenza/crear-influenza/`,
-      formData
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error creating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const registerInfluenza = async (formData) => {
+//   try {
+//     const response = await axios.post(
+//       `${API_URL}/influenza/crear-influenza/`,
+//       formData
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error creating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const updateInfluenza = async (id, formData) => {
-  try {
-    const response = await axios.put(
-      `${API_URL}/influenza/${id}/actualizar-influenza/`,
-      formData
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error updating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const updateInfluenza = async (id, formData) => {
+//   try {
+//     const response = await axios.put(
+//       `${API_URL}/influenza/${id}/actualizar-influenza/`,
+//       formData
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error updating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const deleteInfluenza = async (id, formData) => {
-  try {
-    const response = await axios.delete(
-      `${API_URL}/influenza/${id}/eliminar-influenza/`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: formData,
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error deleting early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const deleteInfluenza = async (id, formData) => {
+//   try {
+//     const response = await axios.delete(
+//       `${API_URL}/influenza/${id}/eliminar-influenza/`,
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         data: formData,
+//       }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error deleting early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const getInfluenza = async (id) => {
-  try {
-    const response = await axios.get(`${API_URL}/influenza/${id}/`);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getInfluenza = async (id) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/influenza/${id}/`);
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
 //Funciones de ReporteENI
-export const getMesReporteENI = async (user_id, month, year) => {
-  try {
-    const response = await axios.get(`${API_URL}/reporte-eni/`, {
-      params: { user_id, month, year },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getMesReporteENI = async (user_id, month, year) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/reporte-eni/`, {
+//       params: { user_id, month, year },
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const registerReporteENI = async (formData) => {
-  try {
-    const response = await axios.post(`${API_URL}/reporte-eni/`, formData);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error creating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const registerReporteENI = async (formData) => {
+//   try {
+//     const response = await axios.post(`${API_URL}/reporte-eni/`, formData);
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error creating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const updateReporteENI = async (id, formData) => {
-  try {
-    const response = await axios.put(`${API_URL}/reporte-eni/${id}/`, formData);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error updating early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const updateReporteENI = async (id, formData) => {
+//   try {
+//     const response = await axios.put(`${API_URL}/reporte-eni/${id}/`, formData);
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error updating early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const deleteReporteENI = async (id, formData) => {
-  try {
-    const response = await axios.delete(`${API_URL}/reporte-eni/${id}/`, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      data: formData,
-    });
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error deleting early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const deleteReporteENI = async (id, formData) => {
+//   try {
+//     const response = await axios.delete(`${API_URL}/reporte-eni/${id}/`, {
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       data: formData,
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error deleting early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };
 
-export const getReporteENI = async (id) => {
-  try {
-    const response = await axios.get(`${API_URL}/reporte-eni/${id}/`);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error fetching early data:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-};
+// export const getReporteENI = async (id) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/reporte-eni/${id}/`);
+//     return response.data;
+//   } catch (error) {
+//     console.error(
+//       "Error fetching early data:",
+//       error.response ? error.response.data : error.message
+//     );
+//     throw error;
+//   }
+// };

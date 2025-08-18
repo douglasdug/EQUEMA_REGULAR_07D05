@@ -79,6 +79,12 @@ export default function Login() {
   const { setAuthData } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  const initialBotonEstado = {
+    btnLogin: true,
+  };
+
+  const [botonEstado, setBotonEstado] = useState(initialBotonEstado);
+
   const labelMap = {
     username: "Cédula de Identificación",
     password: "Clave de acceso",
@@ -130,17 +136,18 @@ export default function Login() {
         user: response, // Actualiza el contexto con los datos del usuario
       });
       setSuccessMessage("Login con éxito!");
-      setTimeout(() => setSuccessMessage(""), 10000);
+      setTimeout(() => setSuccessMessage(""), 8000);
       const message = response.message || "Login con éxito!";
       toast.success(message, {
         position: "bottom-right",
       });
-      setTimeout(() => navigate("/"), 4000);
+      setTimeout(() => navigate("/"), 2000);
+      limpiarVariables();
     } catch (error) {
       formData.password = "";
       const errorMessage = getErrorMessage(error);
       setError(errorMessage);
-      setTimeout(() => setError(""), 10000);
+      setTimeout(() => setError(""), 8000);
       toast.error(errorMessage, { position: "bottom-right" });
     } finally {
       setIsLoading(false);
@@ -149,7 +156,24 @@ export default function Login() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      // Si ambos campos tienen valor, aseguramos que btnLogin sea true
+      if (
+        (updated.username ?? "").trim() !== "" &&
+        (updated.password ?? "").trim() !== ""
+      ) {
+        setBotonEstado((prevEstado) => ({ ...prevEstado, btnLogin: false }));
+      }
+      return updated;
+    });
+  };
+
+  const limpiarVariables = () => {
+    setFormData(initialState);
+    setSuccessMessage("");
+    setError("");
+    setBotonEstado(initialBotonEstado);
   };
 
   const EstadoMensajes = ({ error, successMessage }) => (
@@ -233,14 +257,17 @@ export default function Login() {
             </Link>
           </div>
           <button
-            type="submit"
-            disabled={isLoading || !formData.username || !formData.password}
+            type="button"
+            id="btnLogin"
+            name="btnLogin"
             className={`w-full py-3 rounded-lg font-semibold text-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400
             ${
               isLoading || !formData.username || !formData.password
                 ? "bg-gray-400 text-gray-100 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
+            onClick={handleSubmit}
+            disabled={botonEstado.btnLogin}
           >
             {isLoading ? "Ingresando..." : "Login"}
           </button>

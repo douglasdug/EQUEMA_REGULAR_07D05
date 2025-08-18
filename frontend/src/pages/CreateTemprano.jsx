@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  registerTemprano,
-  updateTemprano,
-  deleteTemprano,
-} from "../api/conexion.api.js";
+// import {
+//   registerTemprano,
+//   updateTemprano,
+//   deleteTemprano,
+// } from "../api/conexion.api.js";
 import { validarDato, validarRegistroTemprano } from "../api/validadorUtil.js";
 import {
   inputStyle,

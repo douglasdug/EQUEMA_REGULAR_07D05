@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  registerInfluenza,
-  updateInfluenza,
-  deleteInfluenza,
-} from "../api/conexion.api.js";
+// import {
+//   registerInfluenza,
+//   updateInfluenza,
+//   deleteInfluenza,
+// } from "../api/conexion.api.js";
 import { validarDato, validarRegistroInfluenza } from "../api/validadorUtil.js";
 import {
   inputStyle,

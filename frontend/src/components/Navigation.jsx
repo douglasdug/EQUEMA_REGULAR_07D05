@@ -1,6 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import UserLoginLogout from "./UserLoginLogout.jsx";
+
+// Helper para obtener el rol (1=ADMIN, 3=MEDICO). Ajusta según tu almacenamiento.
+function getUserRole() {
+  try {
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) {
+      const user = JSON.parse(rawUser);
+      return user?.fun_admi_rol ?? null;
+    }
+    const access = localStorage.getItem("access");
+    if (access) {
+      const payload = JSON.parse(atob(access.split(".")[1]));
+      return payload?.fun_admi_rol ?? payload?.role ?? null;
+    }
+  } catch (e) {
+    // silencioso
+  }
+  return null;
+}
 
 export function Navigation() {
   const [state, setState] = useState({
@@ -25,14 +44,33 @@ export function Navigation() {
     textDecoration: "none",
   });
 
+  // const role = getUserRole(); // null si no autenticado
+  const [role, setRole] = useState(getUserRole());
+
+  useEffect(() => {
+    const updateRole = () => setRole(getUserRole());
+    // Se dispara cuando cambia localStorage en otra pestaña
+    window.addEventListener("storage", updateRole);
+    // Evento custom para cambios en la misma pestaña (lo dispararás en login/logout)
+    window.addEventListener("auth-changed", updateRole);
+    return () => {
+      window.removeEventListener("storage", updateRole);
+      window.removeEventListener("auth-changed", updateRole);
+    };
+  }, []);
+
   const navLinks = [
-    { to: "/", label: "Home" },
-    { to: "/register-user/", label: "Registro" },
-    { to: "/admin-user/", label: "Administrador" },
-    { to: "/admision/", label: "Admision" },
-    { to: "/form-008-emergencia/", label: "Formulario 008" },
-    { to: "/reporte-atenciones/", label: "Reporte de Atenciones" },
-    { to: "/contact/", label: "Contact" },
+    { to: "/", label: "Home", roles: ["public"] },
+    { to: "/register-user/", label: "Registro", roles: ["public"] },
+    { to: "/admision/", label: "Admision", roles: [1, 3] },
+    { to: "/form-008-emergencia/", label: "Formulario 008", roles: [3] },
+    {
+      to: "/reporte-atenciones/",
+      label: "Reporte de Atenciones",
+      roles: [3, 1],
+    },
+    { to: "/admin-user/", label: "Administrador", roles: [1] },
+    { to: "/contact/", label: "Contact", roles: ["public"] },
   ];
 
   const dropdownLinks = [
@@ -44,7 +82,14 @@ export function Navigation() {
     { to: "/create-registro-vacunado/", label: "Registro Vacunado" },
   ];
 
-  const mobileLinks = [...navLinks];
+  // Filtra según rol
+  const filteredNavLinks = navLinks.filter((link) => {
+    if (link.roles?.includes("public")) return true;
+    if (!role) return false;
+    return link.roles?.includes(role);
+  });
+
+  const mobileLinks = [...filteredNavLinks];
 
   return (
     <header className="bg-blue-100 p-4 mb-4 rounded-2xl fixed top-0 left-2 right-2 z-50">
@@ -88,7 +133,7 @@ export function Navigation() {
             id="primary-navigation"
             className="hidden lg:flex uppercase font-bold"
           >
-            {navLinks.map((link) => (
+            {filteredNavLinks.map((link) => (
               <li key={link.to} className="mr-10">
                 <NavLink
                   to={link.to}
@@ -100,7 +145,7 @@ export function Navigation() {
               </li>
             ))}
 
-            <li
+            {/* <li
               className="relative"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
@@ -152,7 +197,7 @@ export function Navigation() {
                   </ul>
                 </div>
               )}
-            </li>
+            </li> */}
           </ul>
         </nav>
 
@@ -183,7 +228,7 @@ export function Navigation() {
               </li>
             ))}
 
-            <li className="relative">
+            {/* <li className="relative">
               <button
                 type="button"
                 className="w-full text-left px-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
@@ -232,7 +277,7 @@ export function Navigation() {
                   </ul>
                 </div>
               )}
-            </li>
+            </li> */}
           </ul>
         </div>
       )}

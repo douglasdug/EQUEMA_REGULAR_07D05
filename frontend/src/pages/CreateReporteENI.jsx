@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import {
-  getTotalDesperdicio,
-  registerReporteENI,
-  updateReporteENI,
-  deleteReporteENI,
-} from "../api/conexion.api.js";
+// import {
+//   getTotalDesperdicio,
+//   registerReporteENI,
+//   updateReporteENI,
+//   deleteReporteENI,
+// } from "../api/conexion.api.js";
 import { validarDato, validarRegistroInfluenza } from "../api/validadorUtil.js";
 import {
   inputStyle,

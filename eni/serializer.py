@@ -12,7 +12,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = eniUser
         fields = (
-            "id", "username", "last_name", "first_name", "email", "fun_titu",
+            "id", "username", "last_name", "first_name", "email", "fun_titu", "fun_admi_rol",
         )
 
 
