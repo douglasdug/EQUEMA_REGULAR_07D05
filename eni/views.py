@@ -234,11 +234,11 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     allowed_roles = [1, 3]
 
     def get_permissions(self):
-        # Público solo para buscar_usuario
-        if getattr(self, 'action', None) == 'buscar_usuario':
+        # Público para registro (create) y búsqueda
+        if getattr(self, 'action', None) in ('buscar_usuario', 'create'):
             return [AllowAny()]
-        # El resto requiere login
-        return [IsAuthenticated()]
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset().order_by('last_name')

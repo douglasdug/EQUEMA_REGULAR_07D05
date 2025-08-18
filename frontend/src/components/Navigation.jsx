@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import { NavLink } from "react-router-dom";
 import UserLoginLogout from "./UserLoginLogout.jsx";
+import { AuthContext } from "../components/AuthContext.jsx";
 
 // Helper para obtener el rol (1=ADMIN, 3=MEDICO). Ajusta según tu almacenamiento.
 function getUserRole() {
@@ -44,25 +45,15 @@ export function Navigation() {
     textDecoration: "none",
   });
 
-  // const role = getUserRole(); // null si no autenticado
-  const [role, setRole] = useState(getUserRole());
-
-  useEffect(() => {
-    const updateRole = () => setRole(getUserRole());
-    // Se dispara cuando cambia localStorage en otra pestaña
-    window.addEventListener("storage", updateRole);
-    // Evento custom para cambios en la misma pestaña (lo dispararás en login/logout)
-    window.addEventListener("auth-changed", updateRole);
-    return () => {
-      window.removeEventListener("storage", updateRole);
-      window.removeEventListener("auth-changed", updateRole);
-    };
-  }, []);
+  // Obtener rol desde el AuthContext
+  const { authData } = useContext(AuthContext);
+  const roleRaw = authData?.user?.fun_admi_rol ?? authData?.fun_admi_rol;
+  const role = roleRaw != null ? Number(roleRaw) : null;
 
   const navLinks = [
     { to: "/", label: "Home", roles: ["public"] },
     { to: "/register-user/", label: "Registro", roles: ["public"] },
-    { to: "/admision/", label: "Admision", roles: [1, 3] },
+    { to: "/admision/", label: "Admision", roles: [3] },
     { to: "/form-008-emergencia/", label: "Formulario 008", roles: [3] },
     {
       to: "/reporte-atenciones/",
@@ -82,7 +73,7 @@ export function Navigation() {
     { to: "/create-registro-vacunado/", label: "Registro Vacunado" },
   ];
 
-  // Filtra según rol
+  // Filtra según rol del contexto
   const filteredNavLinks = navLinks.filter((link) => {
     if (link.roles?.includes("public")) return true;
     if (!role) return false;

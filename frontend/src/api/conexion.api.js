@@ -1,6 +1,6 @@
 import axios from "axios";
 const API_URL = "http://localhost:8000/api/v1";
-//const API_URL = "https://111529j9-8000.brs.devtunnels.ms/api/v1";
+//const API_URL = "https://wxzqzvhg-8000.brs.devtunnels.ms/api/v1";
 
 // Funciones auxiliares para manejar tokens y almacenamiento local
 export const getAccessToken = () => {
@@ -235,7 +235,6 @@ export const loginUser = async (formData) => {
     cachedUserId = id; // mantenerlo en memoria
     setInputFech();
     const userId = await ensureCurrentUserId();
-    console.log("Usuario:", response.data);
     return response.data;
   } catch (error) {
     console.error(
