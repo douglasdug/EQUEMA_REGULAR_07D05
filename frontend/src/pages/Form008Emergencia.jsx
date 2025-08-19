@@ -166,6 +166,7 @@ const Form008Emergencia = () => {
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const [atencionesPrevias, setAtencionesPrevias] = useState([]);
   const [isHistorialExpandido, setIsHistorialExpandido] = useState(false);
+  const [showAgreementModal, setShowAgreementModal] = useState(true);
   const navigate = useNavigate();
 
   const frasesMedicas = [
@@ -1533,6 +1534,175 @@ const Form008Emergencia = () => {
 
   return (
     <div className="w-auto h-auto flex items-stretch justify-stretch bg-gray-100">
+      {showAgreementModal && (
+        <div className="fixed inset-0 z-[100] bg-black/60">
+          <div className="flex h-screen w-screen items-stretch justify-center">
+            <div className="bg-white w-screen h-screen md:w-[1000px] md:h-[90vh] md:rounded-lg md:my-6 shadow-xl flex flex-col">
+              {/* Cabecera fija */}
+              <div className="px-3 py-1 md:px-3 md:py-1 border-b sticky top-0 bg-white z-10">
+                <h2 className="text-lg md:text-xl font-bold text-blue-700 text-center">
+                  ACUERDO DE CONFIDENCIALIDAD
+                </h2>
+              </div>
+              {/* Contenido con scroll (más compacto) */}
+              <div className="flex-1 overflow-y-auto px-5 py-1 md:px-6 md:py-2 text-justify text-[13px] md:text-sm leading-snug text-gray-800 space-y-2">
+                <section className="space-y-1">
+                  <h3 className="font-bold">1. Objeto</h3>
+                  <p>
+                    El presente Acuerdo de Confidencialidad tiene como finalidad
+                    garantizar la reserva, protección y uso adecuado de la
+                    información personal, sensible, estadística y clínica a la
+                    que tenga acceso el personal operativo, administrativo,
+                    técnico o profesional dentro de sus funciones en el Sistema
+                    Nacional de Salud y en el marco de las normativas vigentes
+                    en el Ecuador.
+                  </p>
+                </section>
+
+                <section className="space-y-1">
+                  <h3 className="font-bold">2. Marco Legal Aplicable</h3>
+                  <p>Este acuerdo se sustenta en:</p>
+
+                  <p className="font-semibold">
+                    Acuerdo Ministerial 5216 – Reglamento de Información
+                    Confidencial en el Sistema Nacional de Salud.
+                  </p>
+                  <p>
+                    <span className="font-semibold">Art. 9.</span> El personal
+                    operativo y administrativo de los establecimientos del
+                    Sistema Nacional de Salud que tenga acceso a información de
+                    los/las usuarios/as deberá guardar reserva de manera
+                    indefinida respecto de dicha información.
+                  </p>
+                  <p>
+                    <span className="font-semibold">Art. 10.</span> Los
+                    documentos que contengan información confidencial se
+                    mantendrán reservados, salvo en casos justificados como
+                    estudios epidemiológicos, auditorías de calidad u otros
+                    debidamente autorizados.
+                  </p>
+                  <p>
+                    <span className="font-semibold">Art. 61.</span> Las
+                    instituciones y profesionales de salud deben garantizar la
+                    confidencialidad de la información entregada y recibida,
+                    incluso en el marco del reporte obligatorio de enfermedades
+                    de notificación obligatoria.
+                  </p>
+
+                  <p className="font-semibold">
+                    Ley de Estadística (Registro Oficial N.º 323 del 7 de mayo
+                    de 1976)
+                  </p>
+                  <p>
+                    <span className="font-semibold">Art. 25.</span> Las personas
+                    que intervengan en investigaciones realizadas por entidades
+                    del Sistema Estadístico Nacional no podrán requerir ni
+                    utilizar información distinta de la autorizada, bajo
+                    sanciones establecidas en la Ley de Servicio Civil y Carrera
+                    Administrativa.
+                  </p>
+
+                  <p className="font-semibold">
+                    Ley Orgánica de Protección de Datos Personales (Registro
+                    Oficial Suplemento N.º 459, 26 de mayo de 2021)
+                  </p>
+                  <ul className="list-disc ml-4 space-y-0.5">
+                    <li>
+                      Reconoce y garantiza el derecho fundamental a la
+                      protección de los datos personales.
+                    </li>
+                    <li>
+                      Establece que el tratamiento de datos personales deberá
+                      ser lícito, leal, transparente, seguro y confidencial, con
+                      sujeción al principio de finalidad específica.
+                    </li>
+                    <li>
+                      Prohíbe la transferencia, difusión o divulgación de datos
+                      personales sin consentimiento expreso, salvo en los casos
+                      excepcionales establecidos en la ley.
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-1">
+                  <h3 className="font-bold">3. Obligaciones del Firmante</h3>
+                  <p>El personal que suscribe este acuerdo se compromete a:</p>
+                  <ul className="list-disc ml-4 space-y-0.5">
+                    <li>
+                      Mantener estricta confidencialidad respecto de toda la
+                      información sensible, personal, clínica o estadística a la
+                      que tenga acceso en el cumplimiento de sus funciones.
+                    </li>
+                    <li>
+                      No divulgar, copiar, almacenar, ni transferir información
+                      sin la debida autorización de la autoridad competente.
+                    </li>
+                    <li>
+                      Cumplir con las disposiciones establecidas en el Acuerdo
+                      Ministerial 5216, la Ley de Estadística y la Ley Orgánica
+                      de Protección de Datos Personales.
+                    </li>
+                    <li>
+                      Garantizar la seguridad de los documentos físicos y
+                      electrónicos, evitando accesos no autorizados.
+                    </li>
+                    <li>
+                      Reportar de manera inmediata cualquier incidente de
+                      seguridad de la información que implique vulneración,
+                      pérdida o acceso indebido a los datos.
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-1">
+                  <h3 className="font-bold">4. Vigencia</h3>
+                  <p>
+                    La obligación de confidencialidad tendrá carácter
+                    indefinido, incluso después de que el firmante cese en sus
+                    funciones o relación contractual con la institución.
+                  </p>
+                </section>
+
+                <section className="space-y-1">
+                  <h3 className="font-bold">5. Sanciones</h3>
+                  <p>
+                    El incumplimiento de este acuerdo podrá dar lugar a
+                    sanciones disciplinarias, administrativas, civiles y/o
+                    penales de acuerdo con la normativa vigente en el Ecuador.
+                  </p>
+                </section>
+
+                <section className="space-y-1">
+                  <h3 className="font-bold">6. Aceptación</h3>
+                  <p>
+                    Mediante el presente documento, el/la suscriptor/a declara
+                    haber leído, comprendido y aceptado las disposiciones aquí
+                    descritas, obligándose a cumplirlas de manera íntegra y
+                    responsable.
+                  </p>
+                </section>
+              </div>
+              {/* Pie fijo */}
+              <div className="px-3 py-1 md:px-3 md:py-1 border-t bg-white sticky bottom-0 z-10 flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded"
+                  onClick={() => navigate("/")}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded"
+                  onClick={() => setShowAgreementModal(false)}
+                >
+                  Aceptar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="w-full h-full p-4 m-4 bg-white rounded-lg shadow-md mt-1">
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Formulario 008 Emergencia
