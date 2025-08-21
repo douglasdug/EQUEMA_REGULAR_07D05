@@ -426,6 +426,15 @@ const Form008Emergencia = () => {
         setConfirmModalText(
           "¿El paciente tiene que ser admisionado al sistema?"
         );
+        setAdmisionData({
+          id_admision_datos: null,
+          adm_dato_pers_apel_prim: "",
+          adm_dato_pers_apel_segu: "",
+          adm_dato_pers_nomb_prim: "",
+          adm_dato_pers_nomb_segu: "",
+          adm_dato_pers_sexo: "",
+          adm_dato_pers_corr_elec: "",
+        });
         setShowConfirmModal(true);
       }
     }
@@ -918,13 +927,25 @@ const Form008Emergencia = () => {
       }
     }
 
+    // Regla global: máximo 3 "PRESUNTIVO" en todas las condiciones
+    const presCount = (data.for_008_emer_cond_diag ?? []).filter((v) =>
+      String(v ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .trim()
+        .startsWith("PRESUNTIVO")
+    ).length;
+    const presuntivoLimiteOk = presCount <= 3;
+
     const isValidationError =
       error && typeof error === "object" && error.type === "validacion";
 
     setBotonEstado((prev) => ({
       ...prev,
       btnRegistrar:
-        !(basicosValidos && diagnosticosValidos) || isValidationError,
+        +!(basicosValidos && diagnosticosValidos && presuntivoLimiteOk) ||
+        +isValidationError,
     }));
   };
 
@@ -1072,6 +1093,7 @@ const Form008Emergencia = () => {
     opcionesCIE10PermitidasExterno,
     allListForm008,
   }) => {
+    const MAX_DIAGS = 6;
     // NUEVO: Función para filtrar opciones ya seleccionadas en la lista principal
     const getOpcionesCIE10Filtradas = (index) => {
       const seleccionados = formData.for_008_emer_cie_10_prin_diag.filter(
@@ -1094,7 +1116,7 @@ const Form008Emergencia = () => {
 
     // Función para agregar un nuevo diagnóstico (máximo 3)
     const agregarDiagnostico = () => {
-      if (formData.for_008_emer_cie_10_prin_diag.length < 3) {
+      if (formData.for_008_emer_cie_10_prin_diag.length < MAX_DIAGS) {
         setFormData((prev) => ({
           ...prev,
           for_008_emer_cie_10_prin_diag: [
@@ -1151,6 +1173,8 @@ const Form008Emergencia = () => {
     const esOpcionPresuntivo = (op) =>
       norm(op.label).startsWith("PRESUNTIVO") ||
       norm(op.value) === "PRESUNTIVO";
+    // Detecta si un valor (value del select) es PRESUNTIVO
+    const isPresuntivoValue = (val) => norm(val).startsWith("PRESUNTIVO");
 
     const esOpcionDefInicial = (op) => {
       const l = norm(op.label);
@@ -1253,6 +1277,23 @@ const Form008Emergencia = () => {
             }
           }
         } else if (name === `for_008_emer_cond_diag_${index}`) {
+          // Limitar a máximo 3 selecciones "PRESUNTIVO" en total
+          if (isPresuntivoValue(value)) {
+            const currentCount = next.for_008_emer_cond_diag.reduce(
+              (acc, v, i) =>
+                acc + (i === index ? 0 : isPresuntivoValue(v) ? 1 : 0),
+              0
+            );
+            if (currentCount >= 3) {
+              toast.error(
+                "Solo puede seleccionar PRESUNTIVO hasta 3 diagnósticos.",
+                {
+                  position: "bottom-right",
+                }
+              );
+              return prev; // cancelar el cambio
+            }
+          }
           next.for_008_emer_cond_diag[index] = value;
         } else if (name === `for_008_emer_cie_10_caus_exte_diag_${index}`) {
           next.for_008_emer_cie_10_caus_exte_diag[index] = value;
@@ -1484,7 +1525,7 @@ const Form008Emergencia = () => {
           </div>
         ))}
 
-        {formData.for_008_emer_cie_10_prin_diag.length < 3 && (
+        {formData.for_008_emer_cie_10_prin_diag.length < MAX_DIAGS && (
           <button
             type="button"
             onClick={agregarDiagnostico}
