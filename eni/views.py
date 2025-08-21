@@ -28,7 +28,8 @@ from django.utils.encoding import force_bytes
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q, Count
-
+import unicodedata
+import re
 
 # Create your views here.
 
@@ -635,6 +636,15 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = AdmisionDatosRegistrationSerializer
     queryset = admision_datos.objects.all()
     permission_classes = [permissions.AllowAny]
+    # permission_classes = [IsAuthenticated, HasRole]
+    # allowed_roles = [1, 3]
+
+    # def get_permissions(self):
+    #     # Público para registro (create) y búsqueda
+    #     if getattr(self, 'action', None) in ('buscar_admision' , 'buscar_admisionados', 'create', 'update'):
+    #         return [AllowAny()]
+    #     # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+    #     return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
@@ -679,6 +689,9 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='buscar-admision')
     def buscar_admision(self, request):
+        """
+        GET /admision-datos/buscar-admision/?tipo=<tipo>&identificacion=<identificacion>
+        """
         tipo = request.query_params.get('tipo')
         identificacion = request.query_params.get('identificacion')
 
@@ -739,6 +752,97 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
             return Response({"message": "El usuario está registrado en admision!", "data": data}, status=status.HTTP_200_OK)
         except admision_datos.DoesNotExist:
             return Response({"error": "El usuario ingresado no existe en la base de datos."}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get', 'post'], url_path='buscar-admisionados')
+    def buscar_admisionados(self, request):
+        """
+        GET /admision-datos/buscar-admisionados/?apellidos=<apellidos>&nombres=<nombres>
+        """
+        # Puedes cambiar a request.data si lo llamas vía POST
+        apellidos = (request.query_params.get('apellidos') or '').strip()
+        nombres = (request.query_params.get('nombres') or '').strip()
+
+        def normalizar(texto):
+            texto = unicodedata.normalize('NFKD', texto)
+            texto = ''.join(c for c in texto if not unicodedata.combining(c))
+            texto = re.sub(r'\s+', ' ', texto)
+            return texto.upper().strip()
+
+        apellidos = normalizar(apellidos)
+        nombres = normalizar(nombres)
+
+        # Separar en partes
+        ape_parts = apellidos.split(' ') if apellidos else []
+        nom_parts = nombres.split(' ') if nombres else []
+
+        # Inicializar variables (None si no están)
+        ape1 = ape_parts[0] if len(ape_parts) >= 1 else ''
+        ape2 = ape_parts[1] if len(ape_parts) >= 2 else ''
+        nom1 = nom_parts[0] if len(nom_parts) >= 1 else ''
+        nom2 = nom_parts[1] if len(nom_parts) >= 2 else ''
+
+        # Construir Q dinámicamente solo con partes válidas (>3 chars)
+        q = Q()
+        filtros_usados = 0
+
+        if len(ape1) >= 3:
+            q &= Q(adm_dato_pers_apel_prim__istartswith=ape1)
+            filtros_usados += 1
+        if len(ape2) >= 3:
+            q &= Q(adm_dato_pers_apel_segu__istartswith=ape2)
+            filtros_usados += 1
+        if len(nom1) >= 3:
+            q &= Q(adm_dato_pers_nomb_prim__istartswith=nom1)
+            filtros_usados += 1
+        if len(nom2) >= 3:
+            q &= Q(adm_dato_pers_nomb_segu__istartswith=nom2)
+            filtros_usados += 1
+
+        if filtros_usados == 0:
+            return Response(
+                {
+                    "mensaje": "Ingrese al menos un apellido o nombre con más de 3 caracteres.",
+                    "cantidad": 0,
+                    "resultados": []
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Ejecutar la consulta
+        qs = admision_datos.objects.filter(q).order_by(
+            "adm_dato_pers_apel_prim",
+            "adm_dato_pers_apel_segu",
+            "adm_dato_pers_nomb_prim",
+            "adm_dato_pers_nomb_segu"
+        )
+
+        # Limitar a 50
+        limite = 50
+        resultados = list(qs[:limite])
+        serializer = self.get_serializer(resultados, many=True)
+
+        if cantidad == 0:
+            return Response(
+                {
+                    "mensaje": "Los apellidos o nombres ingresados no tienen resultado.",
+                    "cantidad": 0,
+                    "resultados": []
+                },
+                status=status.HTTP_200_OK
+            )
+
+        mensaje = ""
+        if len(resultados) == limite:
+            mensaje = "La búsqueda produjo muchos resultados. Por favor detalle más los apellidos y nombres."
+
+        return Response(
+            {
+                "mensaje": mensaje,
+                "cantidad": len(resultados),
+                "resultados": serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
 
     def update(self, request, pk=None, *args, **kwargs):
         data = request.data.copy()

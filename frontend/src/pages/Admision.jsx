@@ -1443,7 +1443,7 @@ const Admision = ({
     // Solo setea si hay valores iniciales y los campos están vacíos
     setFormData((prev) => {
       if (
-        (id_admision === "" || id_admision) &&
+        (id_admision === "" || id_admision || id_admision === null) &&
         tipoIdenInicial &&
         numeIdenInicial &&
         (pers_apellidos === "" || pers_apellidos) &&

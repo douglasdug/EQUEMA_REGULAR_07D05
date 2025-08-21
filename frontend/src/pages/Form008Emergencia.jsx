@@ -167,6 +167,10 @@ const Form008Emergencia = () => {
   const [atencionesPrevias, setAtencionesPrevias] = useState([]);
   const [isHistorialExpandido, setIsHistorialExpandido] = useState(false);
   const [showAgreementModal, setShowAgreementModal] = useState(true);
+  const [admisionInit, setAdmisionInit] = useState({
+    tipoIdenInicial: "",
+    numeIdenInicial: "",
+  });
   const navigate = useNavigate();
 
   const frasesMedicas = [
@@ -389,6 +393,7 @@ const Form008Emergencia = () => {
       const response = await buscarUsuarioAdmision(tipoId, numIden);
       if (!response)
         throw new Error("No se pudo obtener una respuesta de la API.");
+
       if (parseInt(response.data.adm_dato_paci_falt_dato) === 0) {
         if (
           response.message.toLowerCase().includes("usuario está registrado") ||
@@ -413,7 +418,6 @@ const Form008Emergencia = () => {
       });
     } catch (error) {
       const errorMessage = getErrorMessage(error);
-      ajustarVariableEstadoFalso();
       setError(errorMessage);
       setTimeout(() => setError(""), 10000);
       setSuccessMessage("");
@@ -629,41 +633,6 @@ const Form008Emergencia = () => {
       for_008_emer_edad_gest: false,
       for_008_emer_ries_obst: false,
       for_008_hist_aten: false,
-    }));
-  };
-
-  const ajustarVariableEstadoFalso = () => {
-    setVariableEstado((prevState) => ({
-      ...prevState,
-      for_008_busc_pers_nume_iden: true,
-      for_008_busc_pers_tipo_iden: true,
-      for_008_emer_nomb_esta_salu: false,
-      for_008_emer_fech_aten: false,
-      for_008_emer_hora_aten: false,
-      for_008_emer_edad_cond: true,
-      for_008_emer_apel_comp: true,
-      for_008_emer_nomb_comp: true,
-      for_008_emer_sexo: true,
-      for_008_emer_naci: true,
-      for_008_emer_etni: true,
-      for_008_emer_grup_prio: true,
-      for_008_emer_tipo_segu: true,
-      for_008_emer_prov_resi: true,
-      for_008_emer_cant_resi: true,
-      for_008_emer_parr_resi: true,
-      for_008_emer_unid_salu_resp_segu_aten: true,
-      for_008_emer_dire_domi: true,
-      for_008_emer_tele_paci: true,
-      for_008_emer_espe_prof: false,
-      for_008_emer_cie_10_prin_diag: false,
-      for_008_emer_cond_diag: false,
-      for_008_emer_cie_10_caus_exte_diag: false,
-      for_008_emer_hosp: false,
-      for_008_emer_cond_alta: false,
-      for_008_emer_obse: false,
-      for_008_emer_apoy_aten_medi: false,
-      for_008_emer_edad_gest: false,
-      for_008_emer_ries_obst: false,
     }));
   };
 
@@ -2820,6 +2789,14 @@ const Form008Emergencia = () => {
                 <button
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
                   onClick={() => {
+                    setAdmisionInit({
+                      tipoIdenInicial: String(
+                        formData.for_008_busc_pers_tipo_iden || ""
+                      ).trim(),
+                      numeIdenInicial: String(
+                        formData.for_008_busc_pers_nume_iden || ""
+                      ).trim(),
+                    });
                     setShowConfirmModal(false);
                     setShowAdmisionModal(true);
                   }}
@@ -2850,8 +2827,8 @@ const Form008Emergencia = () => {
               </button>
               <Admision
                 id_admision={admisionData.id_admision_datos}
-                tipoIdenInicial={formData.for_008_busc_pers_tipo_iden}
-                numeIdenInicial={formData.for_008_busc_pers_nume_iden}
+                tipoIdenInicial={admisionInit.tipoIdenInicial}
+                numeIdenInicial={admisionInit.numeIdenInicial}
                 pers_apellidos={[
                   admisionData.adm_dato_pers_apel_prim,
                   admisionData.adm_dato_pers_apel_segu,
@@ -2867,7 +2844,7 @@ const Form008Emergencia = () => {
                 pers_sexo={admisionData.adm_dato_pers_sexo}
                 pers_correo={admisionData.adm_dato_pers_corr_elec}
                 ejecutarAjustarAdmision={true}
-                btnActualizar={true}
+                btnActualizar={admisionData.id_admision_datos !== null}
                 onClose={() => {
                   setShowAdmisionModal(false);
                   setAdmisionData(null); // Limpia la información al terminar
