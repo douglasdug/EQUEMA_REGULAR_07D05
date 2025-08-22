@@ -538,6 +538,26 @@ export const buscarUsuarioAdmision = async (tipo, identificacion) => {
   }
 };
 
+export const busquedaAvanzadaAdmisionados = async (apellidos, nombres) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/admision-datos/buscar-admisionados/`,
+      {
+        params: { apellidos, nombres },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching user admission data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
 export const registerAdmision = async (formData) => {
   try {
     const response = await axios.post(`${API_URL}/admision-datos/`, formData);

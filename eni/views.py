@@ -801,7 +801,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         if filtros_usados == 0:
             return Response(
                 {
-                    "mensaje": "Ingrese al menos un apellido o nombre con más de 3 caracteres.",
+                    "message": "Ingrese al menos un apellido o nombre con más de 3 caracteres.",
                     "cantidad": 0,
                     "resultados": []
                 },
@@ -809,11 +809,23 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
             )
 
         # Ejecutar la consulta
-        qs = admision_datos.objects.filter(q).order_by(
-            "adm_dato_pers_apel_prim",
-            "adm_dato_pers_apel_segu",
-            "adm_dato_pers_nomb_prim",
-            "adm_dato_pers_nomb_segu"
+        qs = (
+            admision_datos.objects
+            .filter(q)
+            .order_by(
+                "adm_dato_pers_apel_prim",
+                "adm_dato_pers_apel_segu",
+                "adm_dato_pers_nomb_prim",
+                "adm_dato_pers_nomb_segu"
+            ).values(
+                'id',
+                'adm_dato_pers_tipo_iden',
+                'adm_dato_pers_nume_iden',
+                'adm_dato_pers_apel_prim',
+                'adm_dato_pers_apel_segu',
+                'adm_dato_pers_nomb_prim',
+                'adm_dato_pers_nomb_segu',
+            )
         )
 
         # Limitar a 50
@@ -824,7 +836,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         if cantidad == 0:
             return Response(
                 {
-                    "mensaje": "Los apellidos o nombres ingresados no tienen resultado.",
+                    "message": "Los apellidos o nombres ingresados no tienen resultado.",
                     "cantidad": 0,
                     "resultados": []
                 },
@@ -836,12 +848,12 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         else:
             mensaje = f"Se encontraron {cantidad} registro(s)."
 
-        serializer = self.get_serializer(resultados, many=True)
+        # serializer = self.get_serializer(resultados, many=True)
         return Response(
             {
-                "mensaje": mensaje,
+                "message": mensaje,
                 "cantidad": len(resultados),
-                "resultados": serializer.data
+                "resultados": resultados
             },
             status=status.HTTP_200_OK
         )

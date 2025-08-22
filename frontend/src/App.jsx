@@ -22,6 +22,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RequireRole from "./routes/RequireRole.jsx";
 import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";
+import BuscarAdmisionados from "./components/BuscarAdmisionados.jsx";
 import { Toaster } from "react-hot-toast";
 
 function Unauthorized() {
@@ -43,6 +44,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/home/" />} />
                 <Route path="/home/" element={<Home />} />
+                <Route path="/buscar/" element={<BuscarAdmisionados />} />
                 <Route path="/olvido-clave/" element={<OlvidoClave />} />
                 <Route
                   path="/new-password/:uid/:token"
