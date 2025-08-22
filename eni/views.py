@@ -819,7 +819,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         # Limitar a 50
         limite = 50
         resultados = list(qs[:limite])
-        serializer = self.get_serializer(resultados, many=True)
+        cantidad = len(resultados)
 
         if cantidad == 0:
             return Response(
@@ -831,10 +831,12 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK
             )
 
-        mensaje = ""
-        if len(resultados) == limite:
-            mensaje = "La búsqueda produjo muchos resultados. Por favor detalle más los apellidos y nombres."
+        if cantidad == limite:
+            mensaje = "La búsqueda produjo 50 registros. Por favor detalle más los apellidos y nombres para refinar el resultado."
+        else:
+            mensaje = f"Se encontraron {cantidad} registro(s)."
 
+        serializer = self.get_serializer(resultados, many=True)
         return Response(
             {
                 "mensaje": mensaje,
