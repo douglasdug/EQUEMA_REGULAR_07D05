@@ -62,9 +62,9 @@
   ],
   "fun_admi_rol": [
     { "value": 1, "label": "01 ADMINISTRADOR" },
-    { "value": 2, "label": "02 VACUNADOR" },
+    { "value": 2, "label": "02 REPORTE" },
     { "value": 3, "label": "03 MEDICO" },
-    { "value": 4, "label": "04 VACUNADOR Y MEDICO" }
+    { "value": 4, "label": "04 VACUNADOR" }
   ],
   "fun_esta": [
     { "value": 1, "label": "01 ACTIVO" },

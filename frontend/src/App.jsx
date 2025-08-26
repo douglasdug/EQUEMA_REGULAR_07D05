@@ -12,6 +12,7 @@ import AdminUser from "./pages/AdminUser.jsx";
 import Admision from "./pages/Admision.jsx";
 import Form008Emergencia from "./pages/Form008Emergencia.jsx";
 import ReporteAtenciones from "./pages/ReporteAtenciones.jsx";
+import Contacto from "./pages/Contacto.jsx";
 import CreateTemprano from "./pages/CreateTemprano.jsx";
 import CreateTardio from "./pages/CreateTardio.jsx";
 import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
@@ -22,11 +23,38 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RequireRole from "./routes/RequireRole.jsx";
 import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";
-import BuscarAdmisionados from "./components/BuscarAdmisionados.jsx";
 import { Toaster } from "react-hot-toast";
 
 function Unauthorized() {
-  return <div className="p-6 text-red-600">No autorizado</div>;
+  return (
+    <div className="max-w-md mx-auto mt-24 rounded-md border border-red-300 bg-red-50 p-6 text-center shadow">
+      <div className="mb-3 text-5xl">🚫</div>
+      <h1 className="mb-2 text-xl font-semibold text-red-700">
+        Acceso denegado
+      </h1>
+      <p className="text-sm text-red-600">
+        No tienes permiso para acceder a esta página.
+      </p>
+      <p className="mt-4 text-xs text-red-500">
+        Si crees que es un error, contacta al administrador del sistema.
+      </p>
+    </div>
+  );
+}
+
+function Footer() {
+  const year = new Date().getFullYear();
+  return (
+    <footer
+      className="mt-8 w-full text-center py-4 text-xs md:text-sm text-gray-600 border-t border-gray-200 bg-white/70 backdrop-blur"
+      role="contentinfo"
+    >
+      <p className="tracking-wide">
+        Copyright © {year}. Todos los derechos reservados -{" "}
+        <span className="font-semibold">DDOM</span>
+      </p>
+    </footer>
+  );
 }
 
 function App() {
@@ -44,7 +72,6 @@ function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/home/" />} />
                 <Route path="/home/" element={<Home />} />
-                <Route path="/buscar/" element={<BuscarAdmisionados />} />
                 <Route path="/olvido-clave/" element={<OlvidoClave />} />
                 <Route
                   path="/new-password/:uid/:token"
@@ -52,11 +79,14 @@ function App() {
                 />
                 <Route path="/register-user/" element={<RegisterUser />} />
                 <Route path="/aviso-user/" element={<AvisoUser />} />
+                <Route path="/contacto/" element={<Contacto />} />
 
                 {/* Rutas protegidas por rol */}
                 <Route
                   element={
-                    <RequireRole allowed={[ROLES.ADMIN, ROLES.MEDICO]} />
+                    <RequireRole
+                      allowed={[ROLES.ADMIN, ROLES.REPORTE, ROLES.MEDICO]}
+                    />
                   }
                 >
                   <Route
@@ -73,6 +103,8 @@ function App() {
                     path="/form-008-emergencia/"
                     element={<Form008Emergencia />}
                   />
+                </Route>
+                <Route element={<RequireRole allowed={[ROLES.VACUNADOR]} />}>
                   <Route
                     path="/create-temprano/"
                     element={<CreateTemprano />}
@@ -102,6 +134,7 @@ function App() {
           }
         />
       </Routes>
+      <Footer />
       <Toaster />
     </AuthProvider>
   );

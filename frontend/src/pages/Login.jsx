@@ -257,7 +257,7 @@ export default function Login() {
             </Link>
           </div>
           <button
-            type="button"
+            type="submit"
             id="btnLogin"
             name="btnLogin"
             className={`w-full py-3 rounded-lg font-semibold text-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400

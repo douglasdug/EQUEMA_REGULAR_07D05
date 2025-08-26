@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { busquedaAvanzadaAdmisionados } from "../api/conexion.api.js";
+import {
+  inputStyle,
+  buttonStylePrimario,
+  buttonStyleSecundario,
+  buttonStyleEliminar,
+} from "../components/EstilosCustom.jsx";
 import { toast } from "react-hot-toast";
 
 // /src/components/BuscarAdmisionados.jsx
@@ -14,16 +20,20 @@ const initialState = {
   resultados: [],
 };
 
-function BuscarAdmisionados() {
-  const [apellidos, setApellidos] = useState("");
-  const [nombres, setNombres] = useState("");
-  const [data, setData] = useState(initialState);
+function BuscarAdmisionados({
+  inModal = false,
+  onClose = () => {},
+  onSelect = () => {},
+}) {
+  const [formData, setFormData] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [page, setPage] = useState(1);
   const [touched, setTouched] = useState(false);
+  const [tablaFiltro, setTablaFiltro] = useState("");
 
+  const { apellidos, nombres } = formData;
   const disableBuscar = !apellidos.trim() && !nombres.trim();
 
   const getErrorMessage = (error) => {
@@ -60,7 +70,12 @@ function BuscarAdmisionados() {
         nombresParam.trim()
       );
       // Se asume que response ya es el JSON mostrado; ajustar si la API responde distinto
-      setData(response || initialState);
+      setFormData((prev) => ({
+        ...prev,
+        ...(response || {}),
+        apellidos: prev.apellidos,
+        nombres: prev.nombres,
+      }));
       setPage(1);
       const message =
         response?.message || "Se encontro resultado de la busqueda!";
@@ -72,7 +87,11 @@ function BuscarAdmisionados() {
       setError(errorMessage);
       setTimeout(() => setError(""), 10000);
       toast.error(errorMessage, { position: "bottom-right" });
-      setData(initialState);
+      setFormData((prev) => ({
+        ...initialState,
+        apellidos: prev.apellidos,
+        nombres: prev.nombres,
+      }));
     } finally {
       setLoading(false);
     }
@@ -82,35 +101,64 @@ function BuscarAdmisionados() {
     e.preventDefault();
     setTouched(true);
     if (disableBuscar) return;
-    fetchData({ apellidosParam: apellidos, nombresParam: nombres });
+    fetchData({
+      apellidosParam: formData.apellidos,
+      nombresParam: formData.nombres,
+    });
   };
 
   const limpiarVariables = () => {
-    setApellidos("");
-    setNombres("");
-    setData(initialState);
+    setFormData(initialState);
     setError("");
     setPage(1);
     setTouched(false);
+    setTablaFiltro("");
   };
 
-  const resultados = data.resultados || [];
-  const totalPages = Math.max(1, Math.ceil(resultados.length / PAGE_SIZE));
+  const resultados = formData.resultados || [];
+  // Filtrado local de la tabla
+  const resultadosFiltrados = useMemo(() => {
+    if (!tablaFiltro.trim()) return resultados;
+    const term = tablaFiltro.trim().toUpperCase();
+    return resultados.filter((r) => {
+      const tipo = (r.adm_dato_pers_tipo_iden ?? "").toUpperCase();
+      const num = (r.adm_dato_pers_nume_iden ?? "").toUpperCase();
+      const ap1 = (r.adm_dato_pers_apel_prim ?? "").toUpperCase();
+      const ap2 = (r.adm_dato_pers_apel_segu ?? "").toUpperCase();
+      const no1 = (r.adm_dato_pers_nomb_prim ?? "").toUpperCase();
+      const no2 = (r.adm_dato_pers_nomb_segu ?? "").toUpperCase();
+      const full = [ap1, ap2, no1, no2]
+        .filter(Boolean)
+        .join(" ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      return tipo.includes(term) || num.includes(term) || full.includes(term);
+    });
+  }, [resultados, tablaFiltro]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(resultadosFiltrados.length / PAGE_SIZE)
+  );
 
   const paginated = useMemo(
     () =>
-      resultados.slice(
+      resultadosFiltrados.slice(
         (page - 1) * PAGE_SIZE,
         (page - 1) * PAGE_SIZE + PAGE_SIZE
       ),
-    [resultados, page]
+    [resultadosFiltrados, page]
   );
 
-  const handleChangeApellidos = (e) => {
-    setApellidos(e.target.value.toUpperCase());
-  };
-  const handleChangeNombres = (e) => {
-    setNombres(e.target.value.toUpperCase());
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let cleaned = value
+      .replace(/[\r\n]+/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .toUpperCase();
+    if (name === "apellidos" || name === "nombres") {
+      setFormData((prev) => ({ ...prev, [name]: cleaned }));
+    }
   };
 
   const handlePageChange = (newPage) => {
@@ -124,6 +172,96 @@ function BuscarAdmisionados() {
       handleSubmit(e);
     }
   };
+
+  const handleGlobalKey = useCallback(
+    (e) => {
+      if (e.key === "Escape") {
+        if (apellidos || nombres) {
+          limpiarVariables();
+        } else if (inModal) {
+          onClose();
+        }
+      }
+    },
+    [apellidos, nombres, inModal, onClose]
+  );
+
+  useEffect(() => {
+    if (inModal) {
+      window.addEventListener("keydown", handleGlobalKey);
+      return () => window.removeEventListener("keydown", handleGlobalKey);
+    }
+  }, [handleGlobalKey, inModal]);
+
+  const highlight = (text) => {
+    const term = (formData.apellidos + " " + formData.nombres).trim();
+    if (!term) return text;
+    try {
+      const regex = new RegExp(
+        "(" +
+          term
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+            .join("|") +
+          ")",
+        "gi"
+      );
+      return text.split(regex).map((frag, i) =>
+        regex.test(frag) ? (
+          <mark key={i} className="bg-yellow-200 text-slate-900 rounded px-0.5">
+            {frag}
+          </mark>
+        ) : (
+          <span key={i}>{frag}</span>
+        )
+      );
+    } catch {
+      return text;
+    }
+  };
+
+  // Resalta coincidencia del filtro de tabla (independiente del de apellidos/nombres)
+  const highlightFiltro = (text) => {
+    if (!tablaFiltro.trim()) return text;
+    try {
+      const term = tablaFiltro.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`(${term})`, "gi");
+      return text.split(regex).map((frag, i) =>
+        regex.test(frag) ? (
+          <mark key={i} className="bg-green-200 text-slate-900 rounded px-0.5">
+            {frag}
+          </mark>
+        ) : (
+          <span key={i}>{frag}</span>
+        )
+      );
+    } catch {
+      return text;
+    }
+  };
+
+  const handleTablaFiltroChange = (e) => {
+    let v = e.target.value.toUpperCase();
+    v = v.replace(/[^A-Z0-9 ]+/g, "");
+    v = v.replace(/\s+/g, " ");
+    v = v.replace(/^ /, "");
+    setPage(1);
+    setTablaFiltro(v);
+  };
+
+  const buildFullName = (row) =>
+    [
+      row.adm_dato_pers_apel_prim,
+      row.adm_dato_pers_apel_segu,
+      row.adm_dato_pers_nomb_prim,
+      row.adm_dato_pers_nomb_segu,
+    ]
+      .map((p) => (p || "").toString().trim())
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
 
   const EstadoMensajes = ({ error, successMessage }) => (
     <div className="bg-white rounded-lg shadow-md">
@@ -158,98 +296,134 @@ function BuscarAdmisionados() {
   const labelClass = "block text-gray-700 text-sm font-bold mb-1";
 
   return (
-    <div className="w-full px-4 py-6 mx-auto max-w-7xl">
-      <h1 className="text-2xl font-semibold text-slate-800 mb-4">
-        Búsqueda Avanzada de Pacientes
-      </h1>
-
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-lg shadow p-4 md:p-6 space-y-4 border border-slate-200"
+    <div
+      className={
+        inModal
+          ? "w-full h-full flex flex-col"
+          : "w-full px-4 py-6 mx-auto max-w-7xl"
+      }
+    >
+      <div
+        className={`${
+          inModal
+            ? "bg-white rounded-t-lg shadow px-4 py-3 border-b border-slate-200 flex items-center justify-between sticky top-0 z-10"
+            : "hidden"
+        }`}
       >
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="flex flex-col">
-            <label
-              htmlFor="apellidos"
-              className="text-sm font-medium text-slate-700 mb-1"
-            >
-              Apellidos
-            </label>
-            <input
-              id="apellidos"
-              name="apellidos"
-              type="text"
-              placeholder="Ej: PEREZ LOPEZ"
-              value={apellidos}
-              onChange={handleChangeApellidos}
-              onKeyDown={handleKeyDown}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400"
+        <h2 className="text-sm font-semibold text-slate-700 tracking-wide">
+          Búsqueda de Pacientes
+        </h2>
+        <div className="flex items-center gap-2">
+          {loading && (
+            <span
+              className="inline-block h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"
+              aria-label="Cargando"
             />
-          </div>
-
-          <div className="flex flex-col">
-            <label
-              htmlFor="nombres"
-              className="text-sm font-medium text-slate-700 mb-1"
-            >
-              Nombres
-            </label>
-            <input
-              id="nombres"
-              name="nombres"
-              type="text"
-              placeholder="Ej: JUAN CARLOS"
-              value={nombres}
-              onChange={handleChangeNombres}
-              onKeyDown={handleKeyDown}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 pt-2">
-          <button
-            type="submit"
-            disabled={disableBuscar || loading}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition
-                                                    ${
-                                                      disableBuscar || loading
-                                                        ? "bg-slate-300 text-slate-600 cursor-not-allowed"
-                                                        : "bg-blue-600 hover:bg-blue-700 text-white"
-                                                    }`}
-          >
-            {loading && (
-              <span className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            )}
-            Buscar
-          </button>
+          )}
           <button
             type="button"
-            onClick={limpiarVariables}
-            disabled={loading}
-            className="inline-flex items-center rounded-md px-4 py-2 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-60"
+            onClick={onClose}
+            className="p-2 rounded-md text-slate-500 hover:text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400/40"
+            aria-label="Cerrar buscador"
           >
-            Limpiar
+            ✕
           </button>
         </div>
-
-        {touched && disableBuscar && (
-          <p className="text-xs text-red-600">
-            Ingrese al menos un apellido o nombre para buscar.
+      </div>
+      <form
+        onSubmit={handleSubmit}
+        className={`w-full bg-white ${
+          inModal
+            ? "rounded-none border-0 shadow-none"
+            : "rounded-lg shadow border border-slate-200"
+        } p-4 md:p-5 space-y-3`}
+        role="search"
+        aria-label="Buscar pacientes"
+      >
+        <fieldset className="border border-blue-200 rounded p-2 mb-1">
+          <legend className="text-lg font-semibold text-blue-600 px-2">
+            Búsqueda Avanzada de Pacientes
+          </legend>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className={fieldClass}>
+              <label htmlFor="apellidos" className={labelClass}>
+                Apellidos
+              </label>
+              <input
+                id="apellidos"
+                name="apellidos"
+                type="text"
+                placeholder="Ej: PEREZ LOPEZ"
+                value={formData.apellidos}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                className={`${inputStyle} focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400 bg-white`}
+              />
+            </div>
+            <div className={fieldClass}>
+              <label htmlFor="nombres" className={labelClass}>
+                Nombres
+              </label>
+              <div className="flex w-full gap-1 mb-1">
+                <input
+                  id="nombres"
+                  name="nombres"
+                  type="text"
+                  placeholder="Ej: JUAN CARLOS"
+                  value={formData.nombres}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
+                  className={`${"flex-1"} ${inputStyle} focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400 bg-white`}
+                />
+                <button
+                  type="submit"
+                  disabled={disableBuscar || loading}
+                  className={`${buttonStyleSecundario} inline-flex items-center transition focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${
+                    disableBuscar || loading
+                      ? "bg-slate-300 text-slate-600 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  {loading && (
+                    <span className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
+                  Buscar
+                </button>
+                <button
+                  type="button"
+                  onClick={limpiarVariables}
+                  disabled={loading}
+                  className={`${buttonStyleSecundario} inline-flex items-center hover:bg-blue-300 disabled:opacity-60 focus:ring-2 focus:ring-slate-400/40`}
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-[12px] text-black">
+            Para realizar la búsqueda tiene que ingresar un APELLIDO o NOMBRE
+            con al menos tres caracteres como mínimo.
           </p>
-        )}
+        </fieldset>
       </form>
-
-      <div className="mt-6">
-        <EstadoMensajes error={error} successMessage={successMessage} />
-
+      <div
+        className={`${
+          inModal
+            ? "flex-1 overflow-y-auto p-4 bg-white rounded-b-lg border-t border-slate-200"
+            : "mt-6"
+        }`}
+        aria-live="polite"
+      >
         {loading && (
-          <div className="flex items-center gap-3 text-slate-600 text-sm">
-            <span className="inline-block h-5 w-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-            Cargando resultados...
+          <div className="space-y-2">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="h-10 w-full animate-pulse rounded bg-slate-100"
+              />
+            ))}
           </div>
         )}
-
         {!loading &&
           !error &&
           resultados.length === 0 &&
@@ -259,16 +433,57 @@ function BuscarAdmisionados() {
               No se encontraron registros para los criterios proporcionados.
             </div>
           )}
-
         {!loading && resultados.length > 0 && (
           <div className="space-y-3">
-            <div className="text-sm text-slate-700">
-              {data.message} (Mostrando {paginated.length} de {data.cantidad})
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center justify-between md:justify-start gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="font-medium text-slate-700">
+                      {formData.message}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">
+                      {formData.cantidad}
+                    </span>
+                  </span>
+                  <span className="italic">
+                    Mostrando {paginated.length} / {resultadosFiltrados.length}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 w-full md:w-72">
+                <input
+                  type="text"
+                  value={tablaFiltro}
+                  onChange={handleTablaFiltroChange}
+                  placeholder="Filtrar en la tabla..."
+                  className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400"
+                  aria-label="Filtrar resultados en tabla"
+                  inputMode="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                {tablaFiltro && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTablaFiltro("");
+                      setPage(1);
+                    }}
+                    className="px-2 py-1 text-xs rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600"
+                    title="Limpiar filtro"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
-
-            <div className="table-auto overflow-x-auto border border-slate-200 rounded-lg shadow-sm">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
+            <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-sm">
+              <table
+                className="min-w-full divide-y divide-slate-200 text-sm"
+                aria-busy={loading ? "true" : "false"}
+              >
+                <thead className="bg-slate-50 sticky top-0 z-10">
                   <tr>
                     <Th>Opciones</Th>
                     <Th>Tipo Identificación</Th>
@@ -278,22 +493,21 @@ function BuscarAdmisionados() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {paginated.map((row) => {
-                    const apels = `${row.adm_dato_pers_apel_prim ?? ""} ${
-                      row.adm_dato_pers_apel_segu ?? ""
-                    }`.trim();
-                    const noms = `${row.adm_dato_pers_nomb_prim ?? ""} ${
-                      row.adm_dato_pers_nomb_segu ?? ""
-                    }`.trim();
-                    const fullName = `${apels} ${noms}`.trim();
+                    const fullName = buildFullName(row);
                     return (
                       <tr
                         key={row.id}
-                        className="hover:bg-blue-50/50 focus-within:bg-blue-50"
+                        className="hover:bg-blue-50/50 focus-within:bg-blue-50 even:bg-slate-50/40"
                       >
                         <Td>
                           <button
                             type="button"
-                            onClick={() => console.log("Ver paciente", row)}
+                            id={`btnVerDetalle${row.id}`}
+                            name={`btnVerDetalle${row.id}`}
+                            onClick={() => {
+                              onSelect(row);
+                              if (inModal) onClose();
+                            }}
                             className="p-1 rounded-md text-blue-600 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             title="Ver detalles"
                             aria-label={`Ver detalles de ${fullName}`}
@@ -312,18 +526,26 @@ function BuscarAdmisionados() {
                             </svg>
                           </button>
                         </Td>
-                        <Td>{row.adm_dato_pers_tipo_iden}</Td>
-                        <Td className="font-mono">
-                          {row.adm_dato_pers_nume_iden}
+                        <Td>
+                          {highlightFiltro(row.adm_dato_pers_tipo_iden ?? "")}
                         </Td>
-                        <Td>{fullName}</Td>
+                        <Td className="font-bold">
+                          {highlightFiltro(row.adm_dato_pers_nume_iden ?? "")}
+                        </Td>
+                        <Td>
+                          {highlightFiltro(
+                            highlight(fullName).props
+                              ? fullName // si highlight devuelve nodos complejos, aplicamos filtro a texto plano
+                              : fullName
+                          )}
+                          {/* Si quieres combinar ambos resaltados simultáneamente podrías refactorizar */}
+                        </Td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-
             <Pagination
               page={page}
               totalPages={totalPages}
@@ -332,6 +554,7 @@ function BuscarAdmisionados() {
           </div>
         )}
       </div>
+      <EstadoMensajes error={error} successMessage={successMessage} />
     </div>
   );
 }

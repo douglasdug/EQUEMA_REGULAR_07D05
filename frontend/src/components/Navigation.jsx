@@ -3,38 +3,11 @@ import { NavLink } from "react-router-dom";
 import UserLoginLogout from "./UserLoginLogout.jsx";
 import { AuthContext } from "../components/AuthContext.jsx";
 
-// Helper para obtener el rol (1=ADMIN, 3=MEDICO). Ajusta según tu almacenamiento.
-function getUserRole() {
-  try {
-    const rawUser = localStorage.getItem("user");
-    if (rawUser) {
-      const user = JSON.parse(rawUser);
-      return user?.fun_admi_rol ?? null;
-    }
-    const access = localStorage.getItem("access");
-    if (access) {
-      const payload = JSON.parse(atob(access.split(".")[1]));
-      return payload?.fun_admi_rol ?? payload?.role ?? null;
-    }
-  } catch (e) {
-    // silencioso
-  }
-  return null;
-}
-
 export function Navigation() {
   const [state, setState] = useState({
     nav: false,
     isDropdownVisible: false,
   });
-
-  const handleMouseEnter = () => {
-    setState((prevState) => ({ ...prevState, isDropdownVisible: true }));
-  };
-
-  const handleMouseLeave = () => {
-    setState((prevState) => ({ ...prevState, isDropdownVisible: false }));
-  };
 
   const toggleNav = () => {
     setState((prevState) => ({ ...prevState, nav: !prevState.nav }));
@@ -49,228 +22,161 @@ export function Navigation() {
   const { authData } = useContext(AuthContext);
   const roleRaw = authData?.user?.fun_admi_rol ?? authData?.fun_admi_rol;
   const role = roleRaw != null ? Number(roleRaw) : null;
+  const isLoggedIn = !!authData?.user;
 
   const navLinks = [
     { to: "/", label: "Home", roles: ["public"] },
     { to: "/register-user/", label: "Registro", roles: ["public"] },
     { to: "/admision/", label: "Admision", roles: [3] },
-    { to: "/form-008-emergencia/", label: "Formulario 008", roles: [3] },
+    { to: "/form-008-emergencia/", label: "Formulario-008", roles: [3] },
     {
       to: "/reporte-atenciones/",
       label: "Reporte de Atenciones",
-      roles: [3, 1],
+      roles: [1, 2, 3],
     },
     { to: "/admin-user/", label: "Administrador", roles: [1] },
-    { to: "/contact/", label: "Contact", roles: ["public"] },
+    { to: "/contacto/", label: "Contact", roles: ["public"] },
   ];
 
-  const dropdownLinks = [
-    { to: "/create-temprano/", label: "Temprano" },
-    { to: "/create-tardio/", label: "Tardio" },
-    { to: "/create-desperdicio/", label: "Desperdicio" },
-    { to: "/create-influenza/", label: "Influenza" },
-    { to: "/create-reporte-eni/", label: "Reporte ENI" },
-    { to: "/create-registro-vacunado/", label: "Registro Vacunado" },
-  ];
+  const canSee = (rolesArr) =>
+    rolesArr?.includes("public") || (role && rolesArr?.includes(role));
+  const filteredNavLinks = navLinks.filter(
+    (l) => !(isLoggedIn && l.to === "/register-user/") && canSee(l.roles)
+  );
 
-  // Filtra según rol del contexto
-  const filteredNavLinks = navLinks.filter((link) => {
-    if (link.roles?.includes("public")) return true;
-    if (!role) return false;
-    return link.roles?.includes(role);
-  });
+  const mainLinks = filteredNavLinks.filter((l) => l.group !== "esquema");
 
-  const mobileLinks = [...filteredNavLinks];
+  const mobileLinks = [...mainLinks];
 
   return (
-    <header className="bg-blue-100 p-4 mb-4 rounded-2xl fixed top-0 left-2 right-2 z-50">
-      <div className="flex">
+    <header className="fixed top-0 left-0 right-0 z-50 shadow-lg bg-gradient-to-r from-blue-100 via-sky-100 to-blue-50/90 backdrop-blur supports-[backdrop-filter]:bg-blue-100/70 border-b border-blue-200 sm:left-2 sm:right-2 sm:rounded-2xl sm:border sm:border-blue-200">
+      <div className="flex items-stretch px-2 sm:px-3 py-2 gap-2 min-h-[60px]">
         <a
           href="/"
-          className="focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
+          className="group flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
         >
-          <h1 className="my-auto font-bold text-[22px] lg:text-3xl pr-2 mr-2 border-r-2 border-blue-600 lg:pr-5 lg:mr-5">
+          <h1 className="font-extrabold tracking-tight text-[1.25rem] leading-6 sm:text-3xl pr-3 sm:pr-2 mr-3 sm:mr-1 sm:border-r border-blue-300 text-blue-900 group-hover:text-blue-700 transition-colors">
             SIRA-07D05
           </h1>
         </a>
 
+        <nav
+          className="hidden lg:flex items-center"
+          aria-label="Navegación principal"
+        >
+          <ul className="flex gap-1 uppercase font-semibold text-sm">
+            {mainLinks.map((link) => (
+              <li key={link.to} className="relative">
+                <NavLink
+                  to={link.to}
+                  style={linkStyle}
+                  className={({ isActive }) =>
+                    [
+                      "px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-200",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                      "hover:bg-white/70 hover:text-blue-800",
+                      isActive
+                        ? "bg-white text-green-700 shadow-sm ring-1 ring-green-500"
+                        : "text-gray-700",
+                    ].join(" ")
+                  }
+                >
+                  <span className="relative">
+                    {link.label}
+                    <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-green-600 transition-all duration-300 group-hover:w-full" />
+                  </span>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         <button
           type="button"
-          className="my-auto mr-2 lg:hidden rounded p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          className="lg:hidden ml-1 inline-flex items-center justify-center rounded-lg p-2 w-12 h-12 text-blue-800 hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 transition"
           onClick={toggleNav}
           aria-controls="primary-navigation"
           aria-expanded={state.nav}
           aria-label={state.nav ? "Cerrar menú" : "Abrir menú"}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
-            className="w-6 h-6"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
-            />
-          </svg>
+          {state.nav ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-8 h-8"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2.2"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18 18 6M6 6l12 12"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-8 h-8"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2.2"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 6.75h16.5M3.75 12h16.5m-10.5 5.25h10.5"
+              />
+            </svg>
+          )}
         </button>
 
-        <nav className="my-auto" aria-label="Navegación principal">
-          <ul
-            id="primary-navigation"
-            className="hidden lg:flex uppercase font-bold"
-          >
-            {filteredNavLinks.map((link) => (
-              <li key={link.to} className="mr-10">
-                <NavLink
-                  to={link.to}
-                  style={linkStyle}
-                  className="block p-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                >
-                  {link.label}
-                </NavLink>
-              </li>
-            ))}
-
-            {/* <li
-              className="relative"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <button
-                type="button"
-                className="align-baseline mr-10 px-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                aria-haspopup="true"
-                aria-expanded={state.isDropdownVisible}
-                aria-controls="esquema-menu"
-                onClick={() =>
-                  setState((prev) => ({
-                    ...prev,
-                    isDropdownVisible: !prev.isDropdownVisible,
-                  }))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setState((prev) => ({ ...prev, isDropdownVisible: false }));
-                  }
-                }}
-              >
-                Esquema Regula
-              </button>
-
-              {state.isDropdownVisible && (
-                <div
-                  id="esquema-menu"
-                  className="dropdown-menu absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10"
-                >
-                  <ul className="py-1">
-                    {dropdownLinks.map((link) => (
-                      <li key={link.to}>
-                        <NavLink
-                          to={link.to}
-                          style={linkStyle}
-                          className="block px-3 py-2 mr-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                          onClick={() =>
-                            setState((prev) => ({
-                              ...prev,
-                              isDropdownVisible: false,
-                            }))
-                          }
-                        >
-                          {link.label}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </li> */}
-          </ul>
-        </nav>
-
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center">
           <UserLoginLogout />
         </div>
       </div>
 
       {state.nav && (
-        <div
+        <dialog
           id="menu"
-          className="menu mt-5 p-5 bg-white border-2 border-blue-600 rounded-2xl uppercase lg:hidden"
-          role="dialog"
-          aria-modal="true"
+          className="fixed top-[60px] sm:top-[72px] left-0 right-0 bottom-0 m-0 px-1 pt-1 pb-1 w-full bg-white/95 border-t border-blue-300 lg:hidden open:animate-[fadeIn_.25s_ease] backdrop:backdrop-blur overflow-y-auto"
+          open
           aria-label="Menú móvil"
         >
-          <ul className="font-bold">
+          <ul className="font-semibold text-base tracking-wide space-y-1">
             {mobileLinks.map((link) => (
-              <li key={link.to} className="mb-2">
+              <li key={link.to}>
                 <NavLink
                   to={link.to}
                   style={linkStyle}
-                  className="block py-2 hover:text-green-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
+                  className={({ isActive }) =>
+                    [
+                      "block w-full rounded-xl px-5 py-4 transition-all duration-200",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                      "hover:bg-blue-50 hover:text-blue-800",
+                      "border border-transparent hover:border-blue-200",
+                      isActive
+                        ? "bg-blue-100 text-green-700 font-bold border-blue-300"
+                        : "text-gray-800",
+                    ].join(" ")
+                  }
                   onClick={() => setState((prev) => ({ ...prev, nav: false }))}
                 >
                   {link.label}
                 </NavLink>
               </li>
             ))}
-
-            {/* <li className="relative">
+            <li className="pt-3">
               <button
-                type="button"
-                className="w-full text-left px-1 border-2 border-transparent hover:text-black hover:border-blue-600 hover:bg-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                aria-haspopup="true"
-                aria-expanded={state.isDropdownVisible}
-                aria-controls="esquema-menu-mobile"
-                onClick={() =>
-                  setState((prev) => ({
-                    ...prev,
-                    isDropdownVisible: !prev.isDropdownVisible,
-                  }))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setState((prev) => ({ ...prev, isDropdownVisible: false }));
-                  }
-                }}
+                onClick={() => setState((p) => ({ ...p, nav: false }))}
+                className="w-full text-center text-sm text-blue-700 hover:text-blue-900 underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
               >
-                Esquema Regula
+                Cerrar
               </button>
-
-              {state.isDropdownVisible && (
-                <div
-                  id="esquema-menu-mobile"
-                  className="mt-2 w-full bg-white rounded-md shadow-lg"
-                >
-                  <ul className="py-1">
-                    {dropdownLinks.map((link) => (
-                      <li key={link.to}>
-                        <NavLink
-                          to={link.to}
-                          style={linkStyle}
-                          className="block px-3 py-2 hover:bg-blue-50 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                          onClick={() =>
-                            setState((prev) => ({
-                              ...prev,
-                              nav: false,
-                              isDropdownVisible: false,
-                            }))
-                          }
-                        >
-                          {link.label}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </li> */}
+            </li>
           </ul>
-        </div>
+        </dialog>
       )}
     </header>
   );

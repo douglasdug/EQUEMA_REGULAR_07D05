@@ -7,29 +7,25 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, registro_vacunado
 from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, Form008EmergenciaRegistrationSerializer, RegistroVacunadoRegistrationSerializer
-
-from django.db.models import F, Sum, Count, Max
-from django.utils.dateparse import parse_date
-from datetime import datetime, timezone, timedelta, time, date
-from django.http import HttpResponse, StreamingHttpResponse
-import csv
-
+from django.db.models import F, Sum, Count, Max, Q, Count
 from django.db.models.functions import ExtractMonth
-
-from django.contrib.auth.models import User
+from django.db import transaction
 from django.contrib.auth.tokens import default_token_generator, PasswordResetTokenGenerator
-from django.core.mail import send_mail
 from django.urls import reverse
 from django.conf import settings
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
-from django.core.mail import EmailMultiAlternatives
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.utils import timezone
-from django.db import transaction
-from django.db.models import Q, Count
+from django.utils.dateparse import parse_date
+from django.core.cache import cache
+from django.core.mail import send_mail, EmailMultiAlternatives
+from django.http import HttpResponse, StreamingHttpResponse
+from datetime import datetime, timedelta, time, date
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+import csv
 import unicodedata
 import re
+
 
 # Create your views here.
 
@@ -132,6 +128,10 @@ class NewPasswordResetAPIView(APIView):
 
         try:
             user = eniUser.objects.get(username=username)
+            # Validar si el usuario ya solicitó un cambio en los últimos 60 minutos
+            cache_key = f"password_reset_{user.pk}"
+            if cache.get(cache_key):
+                return Response({'error': 'Ya solicitaste un cambio de contraseña recientemente. Por favor, espera 60 minutos antes de volver a intentarlo.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
             email = user.email or ''
             if not email:
                 return Response({'error': 'No existe un correo registrado con el Usuario. Por favor, comuníquese con el Administrador.'}, status=status.HTTP_404_NOT_FOUND)
@@ -173,8 +173,11 @@ class NewPasswordResetAPIView(APIView):
                 )
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
-            except Exception as e:
+            except Exception:
                 return Response({'error': 'No se pudo enviar el correo. Intente más tarde.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Guardar en caché la solicitud por 60 minutos (3600 segundos)
+            cache.set(cache_key, True, timeout=3600)
 
             return Response({'email': censored_email}, status=status.HTTP_200_OK)
         except eniUser.DoesNotExist:
@@ -182,6 +185,8 @@ class NewPasswordResetAPIView(APIView):
 
     def get(self, request, token=None):
         """Verificar token y permitir cambio de contraseña"""
+        _ = getattr(request, "method",
+                    None)  # Referencia para evitar advertencia de argumento no usado
         if not token:
             return Response({'error': 'Token no proporcionado'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -232,7 +237,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     queryset = eniUser.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 3]
+    allowed_roles = [1, 2, 3]
 
     def get_permissions(self):
         # Público para registro (create) y búsqueda
@@ -597,7 +602,13 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
 class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = UnidadSaludRegistrationSerializer
     queryset = unidad_salud.objects.all()
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3]
+
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     @action(detail=False, methods=['patch'], url_path='unidad-salud-principal')
     def update_unidad_salud_principal(self, request):
@@ -635,16 +646,16 @@ class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
 class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = AdmisionDatosRegistrationSerializer
     queryset = admision_datos.objects.all()
-    permission_classes = [permissions.AllowAny]
-    # permission_classes = [IsAuthenticated, HasRole]
-    # allowed_roles = [1, 3]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3]
 
-    # def get_permissions(self):
-    #     # Público para registro (create) y búsqueda
-    #     if getattr(self, 'action', None) in ('buscar_admision' , 'buscar_admisionados', 'create', 'update'):
-    #         return [AllowAny()]
-    #     # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
-    #     return [perm() for perm in self.permission_classes]
+    def get_permissions(self):
+        # Público para registro (create) y búsqueda
+        if getattr(self, 'action', None) in ('buscar_admision', 'buscar_admisionados', 'create'):
+            return [AllowAny()]
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
@@ -661,31 +672,6 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
                 adm_dato_admi_fech_admi__year=year, adm_dato_admi_fech_admi__month=month)
 
         return queryset.order_by('adm_dato_admi_fech_admi')
-
-    def create(self, request, *args, **kwargs):
-        data = request.data.copy()
-        fecha_admision = datetime.now()
-        data['adm_dato_admi_fech_admi'] = fecha_admision.strftime(
-            '%Y-%m-%d %H:%M:%S')
-
-        # Procesar nombres y apellidos correctamente
-        apellidos = data.get('adm_dato_pers_apel_prim',
-                             '').strip().split(' ', 1)
-        nombres = data.get('adm_dato_pers_nomb_prim', '').strip().split(' ', 1)
-
-        data['adm_dato_pers_apel_prim'] = apellidos[0] if apellidos else ''
-        data['adm_dato_pers_apel_segu'] = apellidos[1] if len(
-            apellidos) > 1 else ''
-        data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
-        data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
-            nombres) > 1 else ''
-        data['adm_dato_paci_falt_dato'] = 1
-
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Se creo la admision del usuario exitosamente!", "data": serializer.data}, status=status.HTTP_201_CREATED)
-        return Response({"message": "Error al crear la admision", "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'], url_path='buscar-admision')
     def buscar_admision(self, request):
@@ -788,20 +774,20 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         if len(ape1) >= 3:
             q &= Q(adm_dato_pers_apel_prim__istartswith=ape1)
             filtros_usados += 1
-        if len(ape2) >= 3:
+        if len(ape2) >= 1:
             q &= Q(adm_dato_pers_apel_segu__istartswith=ape2)
             filtros_usados += 1
         if len(nom1) >= 3:
             q &= Q(adm_dato_pers_nomb_prim__istartswith=nom1)
             filtros_usados += 1
-        if len(nom2) >= 3:
+        if len(nom2) >= 1:
             q &= Q(adm_dato_pers_nomb_segu__istartswith=nom2)
             filtros_usados += 1
 
         if filtros_usados == 0:
             return Response(
                 {
-                    "message": "Ingrese al menos un apellido o nombre con más de 3 caracteres.",
+                    "message": "Ingrese al menos un APELLIDO o NOMBRE con más de 3 caracteres.",
                     "cantidad": 0,
                     "resultados": []
                 },
@@ -836,7 +822,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         if cantidad == 0:
             return Response(
                 {
-                    "message": "Los apellidos o nombres ingresados no tienen resultado.",
+                    "message": "Los APELLIDOS o NOMBRES ingresados no tienen resultado.",
                     "cantidad": 0,
                     "resultados": []
                 },
@@ -844,7 +830,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
             )
 
         if cantidad == limite:
-            mensaje = "La búsqueda produjo 50 registros. Por favor detalle más los apellidos y nombres para refinar el resultado."
+            mensaje = "La búsqueda produjo {cantidad} registros. Por favor detalle más los APELLIDOS y NOMBRES para refinar el resultado."
         else:
             mensaje = f"Se encontraron {cantidad} registro(s)."
 
@@ -857,6 +843,31 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
             },
             status=status.HTTP_200_OK
         )
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        fecha_admision = datetime.now()
+        data['adm_dato_admi_fech_admi'] = fecha_admision.strftime(
+            '%Y-%m-%d %H:%M:%S')
+
+        # Procesar nombres y apellidos correctamente
+        apellidos = data.get('adm_dato_pers_apel_prim',
+                             '').strip().split(' ', 1)
+        nombres = data.get('adm_dato_pers_nomb_prim', '').strip().split(' ', 1)
+
+        data['adm_dato_pers_apel_prim'] = apellidos[0] if apellidos else ''
+        data['adm_dato_pers_apel_segu'] = apellidos[1] if len(
+            apellidos) > 1 else ''
+        data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
+        data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
+            nombres) > 1 else ''
+        data['adm_dato_paci_falt_dato'] = 1
+
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Se creo la admision del usuario exitosamente!", "data": serializer.data}, status=status.HTTP_201_CREATED)
+        return Response({"message": "Error al crear la admision", "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None, *args, **kwargs):
         data = request.data.copy()
@@ -893,10 +904,10 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = Form008EmergenciaRegistrationSerializer
     queryset = form_008_emergencia.objects.all()
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
     def get_permissions(self):
-        # Usa los permisos definidos a nivel de clase; evita lógica redundante
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
         return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
@@ -1002,9 +1013,9 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             )
 
         # 2) Validar user_rol y requerir id_eni_user solo si user_rol == 3
-        if str(form_008_user_rol) not in ('1', '3'):
+        if str(form_008_user_rol) not in ('1', '2'):
             return Response(
-                {"detail": "user_rol inválido. Valores permitidos: 1 o 3."},
+                {"detail": "user_rol inválido. Valores permitidos: 1 o 2."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         if str(form_008_user_rol) == '3' and not id_eni_user:
@@ -1117,10 +1128,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='reporte-mensual')
     def reporte_mensual(self, request, *args, **kwargs):
         """
-        GET /form008-emergencia/reporte-mensual/?form_008_year=YYYY
-        Agrupa por unidad de salud (for_008_emer_unic, for_008_emer_unid) y retorna por mes:
-        - total de registros (todas las filas)
-        - total de atenciones únicas (distinct for_008_emer_aten_fina)        
+        GET /form008-emergencia/reporte-mensual/?form_008_year=YYYY          
         """
         id_eni_user = getattr(request.user, 'id', None)
         try:
@@ -1239,7 +1247,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
 
         id_eni_user = getattr(request.user, 'id', None)
         form_008_user_rol = int(getattr(request.user, 'fun_admi_rol', 0) or 0)
-        if not id_eni_user or form_008_user_rol not in (1, 3):
+        if not id_eni_user or form_008_user_rol not in (1, 2, 3):
             return Response({"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
 
         qs = self.get_queryset().filter(for_008_emer_fech_aten__year=form_008_year)

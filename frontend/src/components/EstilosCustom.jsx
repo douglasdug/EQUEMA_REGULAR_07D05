@@ -305,13 +305,13 @@ export const selectStyles = {
 };
 
 export const buttonStylePrimario =
-  "ml-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-black";
+  "ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline text-black";
 
 export const buttonStyleSecundario =
-  "bg-blue-500 hover:bg-blue-700 text-white ml-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline";
+  "bg-blue-500 hover:bg-blue-700 text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline";
 
 export const buttonStyleEliminar =
-  "bg-red-500 hover:bg-red-700 text-white ml-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline cursor-pointer";
+  "bg-red-500 hover:bg-red-700 text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
 
 export function isFieldInvalid(
   field,

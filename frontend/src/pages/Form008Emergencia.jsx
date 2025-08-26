@@ -22,6 +22,7 @@ import {
   buttonStyleSecundario,
 } from "../components/EstilosCustom.jsx";
 import TablaForm008Emer from "../components/TablaForm008Emer.jsx";
+import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
@@ -171,6 +172,7 @@ const Form008Emergencia = () => {
     tipoIdenInicial: "",
     numeIdenInicial: "",
   });
+  const [showBusquedaAvanzada, setShowBusquedaAvanzada] = useState(false);
   const navigate = useNavigate();
 
   const frasesMedicas = [
@@ -1537,6 +1539,45 @@ const Form008Emergencia = () => {
     </div>
   );
 
+  const handleSeleccionarAdmisionado = (registro) => {
+    const tipo =
+      registro.adm_dato_pers_tipo_iden ||
+      registro.for_008_busc_pers_tipo_iden ||
+      registro.tipo_identificacion ||
+      registro.tipoId ||
+      "";
+    const num =
+      registro.adm_dato_pers_nume_iden ||
+      registro.for_008_busc_pers_nume_iden ||
+      registro.numero_identificacion ||
+      registro.numeId ||
+      "";
+
+    if (!tipo || !num) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      for_008_busc_pers_tipo_iden: tipo,
+      for_008_busc_pers_nume_iden: num,
+    }));
+
+    // Ajusta estados para permitir (o forzar) la búsqueda inmediata
+    setVariableEstado((prev) => ({
+      ...prev,
+      for_008_busc_pers_tipo_iden: false,
+      for_008_busc_pers_nume_iden: false,
+    }));
+    setBotonEstado((prev) => ({
+      ...prev,
+      btnBuscar: false, // habilita botón "Buscar" como acción disponible
+    }));
+    setIsBuscar(false);
+    setShowBusquedaAvanzada(false);
+
+    // Si quieres cargar de inmediato los demás datos:
+    setTimeout(() => handleSearch("paciente"), 0);
+  };
+
   const fieldClass = "mb-1 flex flex-col";
   const labelClass = "block text-gray-700 text-sm font-bold mb-1";
   const buttonTextRegistro = isEditing ? "Actualizar Registro" : "Registrar";
@@ -1755,16 +1796,49 @@ const Form008Emergencia = () => {
                   />
                 </div>
                 <div className={fieldClass}>
-                  <label
-                    className={labelClass}
-                    htmlFor="for_008_busc_pers_nume_iden"
-                  >
-                    {requiredFields.includes("for_008_busc_pers_nume_iden") && (
-                      <span className="text-red-500">* </span>
-                    )}
-                    {labelMap["for_008_busc_pers_nume_iden"]}
-                  </label>
-                  <div className="flex items-center gap-1 mb-1">
+                  <div className="flex items-center justify-between">
+                    <label
+                      className={labelClass}
+                      htmlFor="for_008_busc_pers_nume_iden"
+                    >
+                      {requiredFields.includes(
+                        "for_008_busc_pers_nume_iden"
+                      ) && <span className="text-red-500">* </span>}
+                      {labelMap["for_008_busc_pers_nume_iden"]}
+                    </label>
+                    <button
+                      type="button"
+                      id="btnBusquedaAvanzada"
+                      name="btnBusquedaAvanzada"
+                      onClick={() => {
+                        limpiarVariables();
+                        setShowBusquedaAvanzada(true);
+                      }}
+                      className={`ml-2 inline-flex items-center gap-1 px-2 py-[2px] text-[11px] rounded-full border
+                          ${
+                            showBusquedaAvanzada
+                              ? "bg-indigo-600 text-white border-indigo-700 shadow"
+                              : "bg-indigo-100 text-black border-indigo-400 hover:bg-indigo-300"
+                          } transition-colors`}
+                      title="Abrir búsqueda avanzada"
+                      aria-pressed={showBusquedaAvanzada}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-3.5 w-3.5"
+                        viewBox="0 0 18 18"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M12.9 14.32a8 8 0 111.414-1.414l3.387 3.386a1 1 0 01-1.414 1.415l-3.387-3.387zM14 8a6 6 0 11-12 0 6 6 0 0112 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Avanzada
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-0 mb-0">
                     <input
                       type="text"
                       id="for_008_busc_pers_nume_iden"
@@ -2890,6 +2964,23 @@ const Form008Emergencia = () => {
                   Cancelar
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+        {showBusquedaAvanzada && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white w-[95%] max-w-6xl max-h-[90vh] overflow-auto rounded shadow-lg p-4 relative">
+              <button
+                type="button"
+                onClick={() => setShowBusquedaAvanzada(false)}
+                className="absolute top-2 right-2 text-white bg-red-600 hover:bg-red-700 rounded px-2 py-1 text-sm"
+              >
+                X
+              </button>
+              <BuscarAdmisionados
+                onSelect={handleSeleccionarAdmisionado}
+                onClose={() => setShowBusquedaAvanzada(false)}
+              />
             </div>
           </div>
         )}

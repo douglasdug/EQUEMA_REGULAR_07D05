@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useRef, useState, Fragment } from "react";
+import { useMemo, useRef, useState, Fragment, useContext } from "react";
 import {
   listarReportesAtenciones,
   listarReporteDiagnostico,
   reporteDescargaAtencionesCsv,
 } from "../api/conexion.api.js";
+import { AuthContext } from "../components/AuthContext.jsx";
 import { toast } from "react-hot-toast";
 import PropTypes from "prop-types";
-
-const API_BASE_URL =
-  import.meta?.env?.VITE_API_URL || "http://localhost:3000/api";
-const ENDPOINT = "/form_008_emergencia/atenciones";
 
 export default function ReporteAtenciones() {
   const [estado, setEstado] = useState("");
@@ -44,6 +41,11 @@ export default function ReporteAtenciones() {
 
   const abortRef = useRef(null);
 
+  // Obtener rol desde el AuthContext
+  const { authData } = useContext(AuthContext);
+  const roleRaw = authData?.user?.fun_admi_rol ?? authData?.fun_admi_rol;
+  const role = roleRaw != null ? Number(roleRaw) : null;
+
   // Ajusta/añade variables según las columnas reales de tu tabla form_008_emergencia
   const columns = useMemo(
     () => [
@@ -64,11 +66,6 @@ export default function ReporteAtenciones() {
     columns.map((c) => c.key)
   );
 
-  useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, sortBy, sortDir]);
-
   const buildQuery = () => {
     const q = new URLSearchParams();
     if (search) q.set("search", search.trim());
@@ -84,38 +81,12 @@ export default function ReporteAtenciones() {
     return q.toString();
   };
 
-  const fetchData = async () => {
-    setLoading(true);
-    setErr("");
-    if (abortRef.current) abortRef.current.abort();
-    abortRef.current = new AbortController();
-    try {
-      const url = `${API_BASE_URL}${ENDPOINT}?${buildQuery()}`;
-      const res = await fetch(url, { signal: abortRef.current.signal });
-      if (!res.ok) throw new Error(`Error ${res.status}`);
-      const data = await res.json();
-      setItems(Array.isArray(data.items) ? data.items : []);
-      setTotal(
-        Number.isFinite(data.total)
-          ? data.total
-          : Array.isArray(data.items)
-          ? data.items.length
-          : 0
-      );
-    } catch (e) {
-      if (e.name !== "AbortError") setErr(e.message || "Error al cargar datos");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     setPage(1);
-    fetchData();
   };
 
-  const resetFiltros = () => {
+  const limpiarVariables = () => {
     setSearch("");
     setFechaInicio("");
     setFechaFin("");
@@ -125,7 +96,8 @@ export default function ReporteAtenciones() {
     setPage(1);
     setSortBy("fecha_atencion");
     setSortDir("desc");
-    fetchData();
+    setReportData(null);
+    setDiagRows([]);
   };
 
   const toggleSort = (key) => {
@@ -285,6 +257,21 @@ export default function ReporteAtenciones() {
           >
             {reportLoading ? "Cargando..." : "Buscar"}
           </button>
+          <button
+            type="button"
+            onClick={limpiarVariables}
+            disabled={loading}
+            className="px-3 py-2 rounded border border-gray-300 bg-gray-100"
+          >
+            Limpiar
+          </button>
+          <button
+            type="button"
+            onClick={printReport}
+            className="px-3 py-2 rounded border border-gray-300 bg-gray-100"
+          >
+            Imprimir
+          </button>
         </div>
 
         {reportErr ? (
@@ -292,15 +279,18 @@ export default function ReporteAtenciones() {
         ) : null}
 
         {reportData && Array.isArray(reportData) && reportData.length > 0 ? (
-          <>
-            <TablaReporteMensualUnidades rows={reportData} />
-            <TablaResumenIndicadores rows={reportData} />
-          </>
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 min-w-0">
+              <TablaReporteMensualUnidades rows={reportData} />
+            </div>
+            <div className="w-full lg:w-64 xl:w-72 shrink-0">
+              <TablaResumenIndicadores rows={reportData} />
+            </div>
+          </div>
         ) : null}
       </div>
       {/* NUEVO: Reporte por diagnóstico (Top 10 + OTROS) */}
       <div className="mb-4 border border-gray-200 rounded p-3">
-        <h3 className="font-medium text-sm mb-2">Reporte por diagnóstico</h3>
         <div className="flex items-end gap-2 mb-3"></div>
         {diagErr ? (
           <div className="text-red-600 mb-2 text-sm">Error: {diagErr}</div>
@@ -308,48 +298,41 @@ export default function ReporteAtenciones() {
         {diagRows.length > 0 ? <TablaDiagnosticoTop rows={diagRows} /> : null}
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="grid gap-3 md:grid-cols-6 items-end mb-3"
-      >
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-700" htmlFor="repo_fecha_inicio">
-            Desde
-          </label>
-          <input
-            type="date"
-            id="repo_fecha_inicio"
-            name="repo_fecha_inicio"
-            value={fechaInicio}
-            onChange={(e) => setFechaInicio(e.target.value)}
-            className="w-full px-2 py-1 border border-gray-300 rounded"
-          />
-        </div>
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-700" htmlFor="repo_fecha_fin">
-            Hasta
-          </label>
-          <input
-            type="date"
-            id="repo_fecha_fin"
-            name="repo_fecha_fin"
-            value={fechaFin}
-            onChange={(e) => setFechaFin(e.target.value)}
-            className="w-full px-2 py-1 border border-gray-300 rounded"
-          />
-        </div>
-
-        <div className="md:col-span-6 flex gap-2">
-          <button
-            type="button"
-            onClick={resetFiltros}
-            disabled={loading}
-            className="px-3 py-2 rounded border border-gray-300 bg-gray-100"
-          >
-            Limpiar
-          </button>
-
-          <div className="ml-auto flex gap-2">
+      {(role === 1 || role === 2) && (
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-3 md:grid-cols-6 items-end mb-3"
+        >
+          <div className="flex flex-col">
+            <label
+              className="text-sm text-gray-700"
+              htmlFor="repo_fecha_inicio"
+            >
+              Desde
+            </label>
+            <input
+              type="date"
+              id="repo_fecha_inicio"
+              name="repo_fecha_inicio"
+              value={fechaInicio}
+              onChange={(e) => setFechaInicio(e.target.value)}
+              className="w-full px-2 py-1 border border-gray-300 rounded"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-sm text-gray-700" htmlFor="repo_fecha_fin">
+              Hasta
+            </label>
+            <input
+              type="date"
+              id="repo_fecha_fin"
+              name="repo_fecha_fin"
+              value={fechaFin}
+              onChange={(e) => setFechaFin(e.target.value)}
+              className="w-full px-2 py-1 border border-gray-300 rounded"
+            />
+          </div>
+          <div className="md:col-span-6 flex gap-2">
             <button
               type="button"
               id="btnReporteDiagnosticoCsv"
@@ -360,16 +343,9 @@ export default function ReporteAtenciones() {
             >
               Descargar CSV
             </button>
-            <button
-              type="button"
-              onClick={printReport}
-              className="px-3 py-2 rounded border border-gray-300 bg-gray-100"
-            >
-              Imprimir
-            </button>
           </div>
-        </div>
-      </form>
+        </form>
+      )}
 
       {err ? (
         <div className="text-red-600 mb-2 text-sm">Error: {err}</div>
@@ -441,6 +417,9 @@ function TablaReporteMensualUnidades({ rows }) {
   };
   return (
     <div className="overflow-auto border border-gray-200 rounded">
+      <div className="px-2 py-2 font-semibold text-sm">
+        TOTAL DE ATENCIONES POR UNIDAD DE SALUD
+      </div>
       <table className="w-full border-collapse text-sm">
         <thead className="bg-gray-50">
           <tr>
@@ -529,7 +508,6 @@ TablaReporteMensualUnidades.propTypes = {
     })
   ).isRequired,
 };
-// ...existing code...
 // NUEVO: tabla de resumen “DETALLES DE LA TABLA”
 function TablaResumenIndicadores({ rows }) {
   const totals = rows.reduce(
@@ -542,8 +520,8 @@ function TablaResumenIndicadores({ rows }) {
   );
 
   return (
-    <div className="mt-4 border border-gray-200 rounded">
-      <div className="px-3 py-2 font-semibold text-sm">
+    <div className="overflow-auto border border-gray-200 rounded">
+      <div className="px-2 py-2 font-semibold text-sm">
         DETALLES DE LA TABLA
       </div>
       <table className="w-full border-t border-gray-200 text-sm">
@@ -597,6 +575,9 @@ function TablaDiagnosticoTop({ rows }) {
   );
   return (
     <div className="overflow-auto border border-gray-200 rounded">
+      <div className="px-2 py-2 font-semibold text-sm">
+        LAS 10 PRINCIPALES CAUSAS DE ATENCIÓN (POR DIAGNÓSTICO)
+      </div>
       <table className="w-full border-collapse text-sm">
         <thead className="bg-gray-50">
           <tr>

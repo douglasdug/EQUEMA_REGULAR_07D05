@@ -17,13 +17,7 @@ const TablaUsers = ({
   const [eniUsers, setEniUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
-  const ROLE_NAMES = [
-    "",
-    "ADMINISTRADOR",
-    "VACUNADOR",
-    "MEDICO",
-    "VACUNADOR Y MEDICO",
-  ];
+  const ROLE_NAMES = ["", "ADMINISTRADOR", "REPORTE", "MEDICO", "VACUNADOR"];
   const STATUS_NAMES = ["INACTIVO", "ACTIVO"];
   const TABLE_HEADERS = [
     "Tipo de Identificacion",
@@ -33,7 +27,6 @@ const TablaUsers = ({
     "Sexo",
     "Correo Electrónico",
     "Titulo del Funcionario",
-    //"Clave",
     "Rol de usuario",
     "Activar cuenta",
     "Unidad de Salud",
@@ -149,6 +142,7 @@ const TablaUsers = ({
     fun_admi_rol >= 1 && fun_admi_rol <= 4 ? fun_admi_rol : 0;
 
   const getFormData = (user, funAdmiRol) => ({
+    id_eniUser: user.id || "",
     fun_tipo_iden: user.fun_tipo_iden || "",
     username: user.username || "",
     first_name: user.first_name || "",

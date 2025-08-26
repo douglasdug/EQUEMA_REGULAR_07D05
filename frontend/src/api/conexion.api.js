@@ -140,7 +140,6 @@ axios.interceptors.response.use(
         original.headers.Authorization = `Bearer ${getAccessToken()}`;
         return axios(original);
       } catch (e) {
-        // Si no se pudo refrescar, limpiar y propagar error
         clearAuthData();
       }
     }
@@ -234,7 +233,6 @@ export const loginUser = async (formData) => {
     setTokens(access, refresh);
     cachedUserId = id; // mantenerlo en memoria
     setInputFech();
-    const userId = await ensureCurrentUserId();
     return response.data;
   } catch (error) {
     console.error(
