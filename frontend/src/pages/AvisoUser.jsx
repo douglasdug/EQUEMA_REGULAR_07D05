@@ -75,9 +75,9 @@ export default function AvisoUser() {
                 </span>
                 Para activar su acceso al sistema, el administrador debe validar
                 su usuario. Una vez que el proceso de validación esté completo,
-                recibirá un correo de confirmación en su correo institucional
-                Zimbra, el cual contendrá la información necesaria para ingresar
-                al sistema.
+                recibirá un correo o se lo notificará de confirmación en su
+                correo institucional, el cual contendrá la información necesaria
+                para ingresar al sistema.
                 <br />
                 Agradecemos su paciencia y comprensión en este proceso.
               </p>

@@ -861,6 +861,11 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
         data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
             nombres) > 1 else ''
+        pais_residencia = data.get('adm_dato_resi_pais_resi', '').strip()
+        if pais_residencia != 'ECUADOR':
+            data['adm_dato_resi_prov'] = pais_residencia
+            data['adm_dato_resi_cant'] = pais_residencia
+            data['adm_dato_resi_parr'] = pais_residencia
         data['adm_dato_paci_falt_dato'] = 1
 
         serializer = self.get_serializer(data=data)
@@ -890,6 +895,11 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         data['adm_dato_pers_nomb_prim'] = nombres[0] if nombres else ''
         data['adm_dato_pers_nomb_segu'] = nombres[1] if len(
             nombres) > 1 else ''
+        pais_residencia = data.get('adm_dato_resi_pais_resi', '').strip()
+        if pais_residencia != 'ECUADOR':
+            data['adm_dato_resi_prov'] = pais_residencia
+            data['adm_dato_resi_cant'] = pais_residencia
+            data['adm_dato_resi_parr'] = pais_residencia
         data['adm_dato_paci_falt_dato'] = 1
 
         serializer = self.get_serializer(
