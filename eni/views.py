@@ -106,7 +106,8 @@ class HasRole(BasePermission):
 
 class NewPasswordResetAPIView(APIView):
     # Constante para la URL del frontend
-    FRONTEND_URL = "http://localhost:5173/new-password"
+    # FRONTEND_URL = "http://localhost:5173/new-password"
+    FRONTEND_URL = "http://181.211.163.253/new-password"
 
     @staticmethod
     def censurar_email(email):
