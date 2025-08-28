@@ -2586,7 +2586,7 @@ const Form008Emergencia = () => {
                   id="for_008_emer_obse"
                   name="for_008_emer_obse"
                   value={formData["for_008_emer_obse"]}
-                  onChange={handleObservacionesChange}
+                  onChange={handleChange}
                   placeholder="Máximo 350 caracteres"
                   maxLength={350}
                   onFocus={() => setIsIndicacionesFocused(true)}
