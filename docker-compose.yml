@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: sira_0705
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root0705
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  backend:
+    build: .
+    command: gunicorn esquema_regular_07d05.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=esquema_regular_07d05.settings
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=0
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      - db
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_data:
