@@ -6,7 +6,7 @@ import Home from "./pages/Home.jsx";
 import RegisterUser from "./pages/RegisterUser.jsx";
 import Login from "./pages/Login.jsx";
 import OlvidoClave from "./pages/OlvidoClave.jsx";
-import NewPassword from "./pages/newPassword.jsx";
+import NewPassword from "./pages/NewPassword.jsx";
 import AvisoUser from "./pages/AvisoUser.jsx";
 import AdminUser from "./pages/AdminUser.jsx";
 import Admision from "./pages/Admision.jsx";
