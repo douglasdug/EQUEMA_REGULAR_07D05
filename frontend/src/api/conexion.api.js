@@ -1,6 +1,5 @@
 import axios from "axios";
 //const API_URL = "http://localhost:8000/api/v1";
-//const API_URL = "https://wxzqzvhg-8000.brs.devtunnels.ms/api/v1";
 const API_URL = import.meta.env.VITE_API_URL;
 
 // Funciones auxiliares para manejar tokens y almacenamiento local
