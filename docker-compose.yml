@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: sira_0705
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root0705
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
@@ -19,7 +19,7 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=esquema_regular_07d05.settings
       - SECRET_KEY=${SECRET_KEY}
-      - DEBUG=0
+      - DEBUG=${DEBUG}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
