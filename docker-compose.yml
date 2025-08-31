@@ -30,8 +30,6 @@ services:
     depends_on:
       - db
     restart: always
-    ports:
-      - "8000:8000"
 
   frontend:
     build:
