@@ -647,16 +647,16 @@ class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
 class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = AdmisionDatosRegistrationSerializer
     queryset = admision_datos.objects.all()
-    # permission_classes = [permissions.AllowAny]
-    permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]
+    permission_classes = [permissions.AllowAny]
+    # permission_classes = [IsAuthenticated, HasRole]
+    # allowed_roles = [1, 2, 3]
 
-    def get_permissions(self):
-        # Público para registro (create) y búsqueda
-        if getattr(self, 'action', None) in ('buscar_admision', 'buscar_admisionados', 'create'):
-            return [AllowAny()]
-        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
-        return [perm() for perm in self.permission_classes]
+    # def get_permissions(self):
+    #     # Público para registro (create) y búsqueda
+    #     if getattr(self, 'action', None) in ('buscar_admision', 'buscar_admisionados', 'create'):
+    #         return [AllowAny()]
+    #     # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+    #     return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
