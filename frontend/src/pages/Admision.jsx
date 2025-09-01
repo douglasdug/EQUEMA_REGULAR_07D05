@@ -1641,6 +1641,12 @@ const Admision = ({
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Admisión de Pacientes
         </h2>
+        <p className="text-base text-center text-black">
+          <strong>Nota:</strong> Los campos con{" "}
+          <span className="text-red-500">*</span> son obligatorios y en caso de
+          no tener datos poner <strong>NNN</strong>.
+        </p>
+
         {/* NAV TABS */}
         <nav className="w-full flex overflow-x-auto no-scrollbar space-x-2 border-b border-blue-200 mb-1 bg-white items-center justify-center px-2 py-1 relative">
           {tabs.map((tab) =>

@@ -101,10 +101,10 @@ class admision_datos(models.Model):
     adm_dato_resi_cant = models.CharField(max_length=60, blank=True)
     adm_dato_resi_parr = models.CharField(max_length=60, blank=True)
     adm_dato_resi_esta_adsc_terr = models.CharField(max_length=100, blank=True)
-    adm_dato_resi_barr_sect = models.CharField(max_length=60, blank=True)
-    adm_dato_resi_call_prin = models.CharField(max_length=60, blank=True)
-    adm_dato_resi_call_secu = models.CharField(max_length=60, blank=True)
-    adm_dato_resi_refe_resi = models.CharField(max_length=60, blank=True)
+    adm_dato_resi_barr_sect = models.CharField(max_length=100, blank=True)
+    adm_dato_resi_call_prin = models.CharField(max_length=100, blank=True)
+    adm_dato_resi_call_secu = models.CharField(max_length=100, blank=True)
+    adm_dato_resi_refe_resi = models.CharField(max_length=100, blank=True)
     adm_dato_auto_auto_etni = models.CharField(max_length=40, blank=True)
     adm_dato_auto_naci_etni = models.CharField(max_length=40, blank=True)
     adm_dato_auto_pueb_kich = models.CharField(max_length=40, blank=True)
@@ -185,7 +185,7 @@ class form_008_emergencia(models.Model):
     for_008_emer_ries_obst = models.CharField(max_length=15, blank=True)
     for_008_emer_unid_salu_resp_segu_aten = models.CharField(
         max_length=100, blank=True)
-    for_008_emer_dire_domi = models.CharField(max_length=300, blank=True)
+    for_008_emer_dire_domi = models.CharField(max_length=460, blank=True)
     for_008_emer_tele_paci = models.CharField(max_length=30, blank=True)
     for_008_emer_aten_fina = models.IntegerField(blank=True, null=True)
     eniUser = models.ForeignKey(
@@ -223,6 +223,37 @@ class form_008_emergencia(models.Model):
         # Solo validaciones críticas que afectan la integridad de los datos
         if self.for_008_emer_edad is not None and self.for_008_emer_edad < 0:
             raise ValidationError('La edad no puede ser negativa')
+
+# Crea la tabla de Agenda de Diagnóstico por Imagen
+
+
+class agenda_diagnostico_imagen(models.Model):
+    age_diag_imag_unid_salu = models.CharField(max_length=120, blank=True)
+    age_diag_imag_tipo_docu_iden = models.CharField(max_length=25, blank=True)
+    age_diag_imag_nume_iden = models.CharField(max_length=25, blank=True)
+    age_diag_imag_apel = models.CharField(max_length=80, blank=True)
+    age_diag_imag_nomb = models.CharField(max_length=80, blank=True)
+    age_diag_imag_sexo = models.CharField(max_length=15, blank=True)
+    age_diag_imag_fech_naci = models.DateField(blank=True, null=True)
+    age_diag_imag_tele = models.CharField(max_length=15, blank=True)
+    age_diag_imag_corr = models.CharField(max_length=40, blank=True)
+    age_diag_imag_dire = models.CharField(max_length=460, blank=True)
+    age_diag_imag_fech_cita = models.DateField(blank=True, null=True)
+    age_diag_imag_hora_cita = models.TimeField(blank=True, null=True)
+    age_diag_imag_esta_cita = models.IntegerField(blank=True, null=True)
+    age_diag_imag_tipo_serv = models.CharField(max_length=20, blank=True)
+    age_diag_imag_prof_agen_cita = models.CharField(max_length=105, blank=True)
+    age_diag_imag_obse = models.CharField(max_length=350, blank=True)
+    eniUser = models.ForeignKey(
+        'eniUser', null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='agent_diagnostico_imagen',
+        help_text='ID de usuario que registra la atencion'
+    )
+    admision_datos = models.IntegerField(
+        blank=True, null=True, help_text='ID de admision de datos del paciente')
+
 
 # Crea la tabla de Reporte de ENI
 

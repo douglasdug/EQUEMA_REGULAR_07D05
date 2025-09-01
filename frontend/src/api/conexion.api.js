@@ -1,12 +1,5 @@
 import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL;
-if (!API_URL) {
-  console.warn("Url", API_URL);
-  console.log("Env", import.meta.env);
-} else {
-  console.log("API_URL is defined:", API_URL);
-  console.log("Env2", import.meta.env);
-}
 
 // Funciones auxiliares para manejar tokens y almacenamiento local
 export const getAccessToken = () => {

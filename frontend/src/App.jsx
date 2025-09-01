@@ -11,6 +11,7 @@ import AvisoUser from "./pages/AvisoUser.jsx";
 import AdminUser from "./pages/AdminUser.jsx";
 import Admision from "./pages/Admision.jsx";
 import Form008Emergencia from "./pages/Form008Emergencia.jsx";
+import AgendaDiagnosticoImagen from "./pages/AgendaDiagnosticoImagen.jsx";
 import ReporteAtenciones from "./pages/ReporteAtenciones.jsx";
 import Contacto from "./pages/Contacto.jsx";
 import CreateTemprano from "./pages/CreateTemprano.jsx";
@@ -80,6 +81,10 @@ function App() {
                 <Route path="/register-user/" element={<RegisterUser />} />
                 <Route path="/aviso-user/" element={<AvisoUser />} />
                 <Route path="/contacto/" element={<Contacto />} />
+                <Route
+                  path="/agenda-diagnostico-imagen/"
+                  element={<AgendaDiagnosticoImagen />}
+                />
 
                 {/* Rutas protegidas por rol */}
                 <Route

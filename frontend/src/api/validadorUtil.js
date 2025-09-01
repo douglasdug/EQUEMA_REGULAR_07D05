@@ -252,7 +252,7 @@ const validarCedula = (username) => {
 };
 
 const validarPasaporte = (username) => {
-  if (username.length < 7 || username.length > 15) {
+  if (username.length <= 7 || username.length >= 15) {
     return {
       valido: false,
       mensaje: "El pasaporte debe tener entre 7 y 15 caracteres.",
@@ -271,26 +271,21 @@ const validarPasaporte = (username) => {
 };
 
 const validarVisa = (username) => {
-  if (username.length < 7 || username.length > 20) {
+  const value = username.trim().toUpperCase(); // Normaliza (acepta letras y números)
+
+  if (value.length <= 7 || value.length >= 20) {
     return {
       valido: false,
       mensaje: "La visa debe tener entre 7 y 20 caracteres.",
     };
   }
 
-  const visaRegex = /^[a-zA-Z0-9]+$/;
-  if (!visaRegex.test(username)) {
+  const visaRegex = /^[A-Z0-9]+$/; // Solo letras (A-Z) y números
+  if (!visaRegex.test(value)) {
     return {
       valido: false,
-      mensaje: "La visa debe ser alfanumérica.",
-    };
-  }
-
-  const visaPrefixRegex = /^(V|VE)/;
-  if (!visaPrefixRegex.test(username)) {
-    return {
-      valido: false,
-      mensaje: "La visa debe comenzar con 'V' o 'VE'.",
+      mensaje:
+        "La visa solo puede contener letras y números (sin espacios ni símbolos).",
     };
   }
 
@@ -298,26 +293,22 @@ const validarVisa = (username) => {
 };
 
 const validarCarnetRefugiado = (username) => {
-  if (username.length < 8 || username.length > 12) {
+  const value = username.trim();
+
+  // Longitud permitida: 7 a 12 caracteres (inclusive)
+  if (value.length < 7 || value.length > 12) {
     return {
       valido: false,
-      mensaje: "El carné de refugiado debe tener entre 8 y 12 caracteres.",
+      mensaje: "El carné de refugiado debe tener entre 7 y 12 caracteres.",
     };
   }
 
-  const carnetRefugiadoRegex = /^[a-zA-Z0-9]+$/;
-  if (!carnetRefugiadoRegex.test(username)) {
+  // Solo letras y números
+  const carnetRefugiadoRegex = /^[A-Za-z0-9]+$/;
+  if (!carnetRefugiadoRegex.test(value)) {
     return {
       valido: false,
-      mensaje: "El carné de refugiado debe ser alfanumérico.",
-    };
-  }
-
-  const carnetRefugiadoPrefixRegex = /^(R|RF)/;
-  if (!carnetRefugiadoPrefixRegex.test(username)) {
-    return {
-      valido: false,
-      mensaje: "El carné de refugiado debe comenzar con 'R' o 'RF'.",
+      mensaje: "El carné de refugiado solo debe contener letras y números.",
     };
   }
 
