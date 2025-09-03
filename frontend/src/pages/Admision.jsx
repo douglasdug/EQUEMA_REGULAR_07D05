@@ -18,7 +18,7 @@ import {
   buttonStyleSecundario,
 } from "../components/EstilosCustom.jsx";
 import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
-import Loader from "../components/loader.jsx";
+import Loader from "../components/Loader.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 

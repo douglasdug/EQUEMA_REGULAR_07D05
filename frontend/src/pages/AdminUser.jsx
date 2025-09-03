@@ -21,7 +21,7 @@ import {
 } from "../components/EstilosCustom.jsx";
 import TablaUsers from "../components/TablaUsers.jsx";
 import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
-import Loader from "../components/loader.jsx";
+import Loader from "../components/Loader.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 

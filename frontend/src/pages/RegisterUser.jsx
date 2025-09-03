@@ -13,7 +13,7 @@ import {
   buttonStyleSecundario,
 } from "../components/EstilosCustom.jsx";
 import { useNavigate } from "react-router-dom";
-import Loader from "../components/loader.jsx";
+import Loader from "../components/Loader.jsx";
 import { toast } from "react-hot-toast";
 
 const initialState = {

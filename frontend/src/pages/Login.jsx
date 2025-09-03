@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../api/conexion.api.js";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/AuthContext.jsx";
-import Loader from "../components/loader.jsx";
+import Loader from "../components/Loader.jsx";
 import { toast } from "react-hot-toast";
 
 const initialState = {
