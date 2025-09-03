@@ -18,6 +18,7 @@ import {
   buttonStyleSecundario,
 } from "../components/EstilosCustom.jsx";
 import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
+import Loader from "../components/loader.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
@@ -1668,6 +1669,15 @@ const Admision = ({
             )
           )}
         </nav>
+        {isLoading && (
+          <Loader
+            modal
+            isOpen={isLoading}
+            title="Iniciando sesión"
+            text="Por favor espere..."
+            closeButton={false}
+          />
+        )}
         <form onSubmit={handleSubmit} className="w-full">
           {/* DATOS PERSONALES */}
           {activeTab === "personales" && (

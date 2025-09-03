@@ -306,14 +306,14 @@ function BuscarAdmisionados({
       <div
         className={`${
           inModal
-            ? "bg-white rounded-t-lg shadow px-4 py-3 border-b border-slate-200 flex items-center justify-between sticky top-0 z-10"
+            ? "bg-white rounded-t-lg shadow px-1 py-1 border-b border-slate-200 flex items-center justify-between sticky top-0 z-10"
             : "hidden"
         }`}
       >
         <h2 className="text-sm font-semibold text-slate-700 tracking-wide">
           Búsqueda de Pacientes
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {loading && (
             <span
               className="inline-block h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"
@@ -340,8 +340,8 @@ function BuscarAdmisionados({
         role="search"
         aria-label="Buscar pacientes"
       >
-        <fieldset className="border border-blue-200 rounded p-2 mb-1">
-          <legend className="text-lg font-semibold text-blue-600 px-2">
+        <fieldset className="border border-blue-200 rounded p-1 mb-1">
+          <legend className="text-lg font-semibold text-blue-600 px-1">
             Búsqueda Avanzada de Pacientes
           </legend>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

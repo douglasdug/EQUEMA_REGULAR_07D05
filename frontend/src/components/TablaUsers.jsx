@@ -16,6 +16,7 @@ const TablaUsers = ({
 }) => {
   const [eniUsers, setEniUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 10;
   const ROLE_NAMES = ["", "ADMINISTRADOR", "REPORTE", "MEDICO", "VACUNADOR"];
   const STATUS_NAMES = ["INACTIVO", "ACTIVO"];
@@ -70,19 +71,53 @@ const TablaUsers = ({
     loadEniUsers();
   }, [setError, refreshTable]);
 
+  useEffect(() => {
+    const loadEniUsers = async () => {
+      try {
+        const data = await getAllEniUsers();
+        setEniUsers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        setError(error.message);
+        setTimeout(() => setError(""), 8000);
+      }
+    };
+    loadEniUsers();
+  }, [setError, refreshTable]);
+
+  // Reinicia página cuando cambia el término de búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Filtrado (case-insensitive) antes de paginar
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm.trim()) return eniUsers;
+    const q = searchTerm.toLowerCase();
+    return eniUsers.filter((u) => {
+      return [
+        u.fun_tipo_iden,
+        u.username,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.fun_titu,
+        ROLE_NAMES[u.fun_admi_rol],
+      ]
+        .filter(Boolean)
+        .some((field) => field.toString().toLowerCase().includes(q));
+    });
+  }, [eniUsers, searchTerm]);
+
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const totalPages = useMemo(
-    () => Math.ceil(eniUsers.length / rowsPerPage),
-    [eniUsers.length, rowsPerPage]
+    () => Math.max(1, Math.ceil(filteredUsers.length / rowsPerPage)),
+    [filteredUsers.length]
   );
 
   const currentRows = useMemo(
-    () =>
-      Array.isArray(eniUsers)
-        ? eniUsers.slice(indexOfFirstRow, indexOfLastRow)
-        : [],
-    [eniUsers, indexOfFirstRow, indexOfLastRow]
+    () => filteredUsers.slice(indexOfFirstRow, indexOfLastRow),
+    [filteredUsers, indexOfFirstRow, indexOfLastRow]
   );
 
   const handleEdit = (id) => {
@@ -203,6 +238,19 @@ const TablaUsers = ({
 
   return (
     <div className="mt-4 mx-2 sm:mx-0">
+      {/* Buscador */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Buscar por identificación, nombres, correo, título o rol..."
+          className="w-full sm:max-w-sm px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+        />
+        <span className="text-xs text-gray-500">
+          {filteredUsers.length} registro(s){searchTerm && " filtrados"}
+        </span>
+      </div>
       <div className={tableStyles.container}>
         <table className={tableStyles.table}>
           <thead className={tableStyles.thead}>
@@ -308,6 +356,18 @@ const TablaUsers = ({
                   })}
               </tr>
             ))}
+            {currentRows.length === 0 && (
+              <tr>
+                <td
+                  colSpan={1 + TABLE_HEADERS.length}
+                  className="px-4 py-6 text-center text-sm text-gray-500"
+                >
+                  {searchTerm
+                    ? "No hay resultados para la búsqueda."
+                    : "No hay registros."}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

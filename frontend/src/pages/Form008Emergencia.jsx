@@ -23,6 +23,7 @@ import {
 } from "../components/EstilosCustom.jsx";
 import TablaForm008Emer from "../components/TablaForm008Emer.jsx";
 import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
+import Loader from "../components/loader.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
@@ -146,14 +147,22 @@ const Form008Emergencia = () => {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const [isEditing, setIsEditing] = useState(false);
   const [isBuscar, setIsBuscar] = useState(false);
   const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [edad, setEdad] = useState("");
-  const fechaActual = new Date().toISOString().slice(0, 10);
-  const fechaMinima = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const fechaHoraSistema = new Date();
+  const formatoFecha = new Intl.DateTimeFormat("es-EC", {
+    timeZone: "America/Guayaquil",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const fechaActual = formatoFecha.format(fechaHoraSistema);
+  const fechaMinima = formatoFecha.format(
+    fechaHoraSistema - 7 * 24 * 60 * 60 * 1000
+  ); // 7 días * 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
   const [refreshTable, setRefreshTable] = useState(0);
   const [isIndicacionesFocused, setIsIndicacionesFocused] = useState(false);
   const [unidadSaludList, setUnidadSaludList] = useState([]);
@@ -766,41 +775,41 @@ const Form008Emergencia = () => {
     }
   };
 
-  const handleObservacionesChange = (e) => {
-    const { value, selectionStart } = e.target;
-    const { name } = e.target;
+  // const handleObservacionesChange = (e) => {
+  //   const { value, selectionStart } = e.target;
+  //   const { name } = e.target;
 
-    // Actualiza el formData como lo haces normalmente
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  //   // Actualiza el formData como lo haces normalmente
+  //   setFormData((prev) => ({ ...prev, [name]: value }));
 
-    validarDato(
-      e,
-      { ...formData, [name]: value },
-      setFormData,
-      error,
-      setError,
-      setBotonEstado
-    );
+  //   validarDato(
+  //     e,
+  //     { ...formData, [name]: value },
+  //     setFormData,
+  //     error,
+  //     setError,
+  //     setBotonEstado
+  //   );
 
-    // Obtiene la palabra actual donde está el cursor
-    const textoPrevio = value.substring(0, selectionStart);
-    const palabras = textoPrevio.split(/\s+/);
-    const palabraActual = palabras[palabras.length - 1];
+  //   // Obtiene la palabra actual donde está el cursor
+  //   const textoPrevio = value.substring(0, selectionStart);
+  //   const palabras = textoPrevio.split(/\s+/);
+  //   const palabraActual = palabras[palabras.length - 1];
 
-    // Si la palabra tiene al menos 3 caracteres, buscar sugerencias
-    if (palabraActual && palabraActual.length >= 3) {
-      const coincidencias = frasesMedicas.filter((frase) =>
-        frase.toLowerCase().startsWith(palabraActual.toLowerCase())
-      );
+  //   // Si la palabra tiene al menos 3 caracteres, buscar sugerencias
+  //   if (palabraActual && palabraActual.length >= 3) {
+  //     const coincidencias = frasesMedicas.filter((frase) =>
+  //       frase.toLowerCase().startsWith(palabraActual.toLowerCase())
+  //     );
 
-      setSugerencias(coincidencias);
-      setPalabraActual(palabraActual);
-      setPosicionCursor(selectionStart);
-      setMostrarSugerencias(coincidencias.length > 0);
-    } else {
-      setMostrarSugerencias(false);
-    }
-  };
+  //     setSugerencias(coincidencias);
+  //     setPalabraActual(palabraActual);
+  //     setPosicionCursor(selectionStart);
+  //     setMostrarSugerencias(coincidencias.length > 0);
+  //   } else {
+  //     setMostrarSugerencias(false);
+  //   }
+  // };
 
   // Helper para obtener el código CIE-10 (p.ej. "S060") desde el value seleccionado
   const getCodigoCIE10Prin = (value) => {
@@ -833,17 +842,6 @@ const Form008Emergencia = () => {
       return true;
     };
 
-    // Recorre todos los requeridos visibles
-    // const isValid = requiredFields.filter(isFieldVisibleWith).every((field) => {
-    //   const val = data[field];
-    //   if (Array.isArray(val)) {
-    //     // Al menos un valor no vacío
-    //     return val.some((v) => String(v ?? "").trim() !== "");
-    //   }
-    //   return Boolean(String(val ?? "").trim());
-    // });
-
-    // Validaciones generales (excepto los 3 selects de diagnósticos)
     const camposBasicos = requiredFields
       .filter(isFieldVisibleWith)
       .filter(
@@ -920,33 +918,33 @@ const Form008Emergencia = () => {
     }));
   };
 
-  // Modificar la función insertarSugerencia para resaltar el texto insertado
-  const insertarSugerencia = (sugerencia) => {
-    const textoActual = formData["for_008_emer_obse"];
-    // Encuentra el inicio de la palabra actual antes del cursor
-    const inicioPalabra = textoActual
-      .substring(0, posicionCursor)
-      .lastIndexOf(palabraActual);
-    const textoAntes = textoActual.substring(0, inicioPalabra);
-    const textoDespues = textoActual.substring(posicionCursor);
+  // // Modificar la función insertarSugerencia para resaltar el texto insertado
+  // const insertarSugerencia = (sugerencia) => {
+  //   const textoActual = formData["for_008_emer_obse"];
+  //   // Encuentra el inicio de la palabra actual antes del cursor
+  //   const inicioPalabra = textoActual
+  //     .substring(0, posicionCursor)
+  //     .lastIndexOf(palabraActual);
+  //   const textoAntes = textoActual.substring(0, inicioPalabra);
+  //   const textoDespues = textoActual.substring(posicionCursor);
 
-    // Reemplaza la palabra actual con la sugerencia
-    const nuevoTexto = textoAntes + sugerencia + " " + textoDespues;
+  //   // Reemplaza la palabra actual con la sugerencia
+  //   const nuevoTexto = textoAntes + sugerencia + " " + textoDespues;
 
-    setFormData((prev) => ({ ...prev, for_008_emer_obse: nuevoTexto }));
-    setMostrarSugerencias(false);
+  //   setFormData((prev) => ({ ...prev, for_008_emer_obse: nuevoTexto }));
+  //   setMostrarSugerencias(false);
 
-    // Selecciona la frase insertada para edición inmediata
-    setTimeout(() => {
-      const textarea = document.getElementById("for_008_emer_obse");
-      if (textarea) {
-        textarea.focus();
-        const inicioSeleccion = textoAntes.length;
-        const finSeleccion = textoAntes.length + sugerencia.length;
-        textarea.setSelectionRange(inicioSeleccion, finSeleccion);
-      }
-    }, 10);
-  };
+  //   // Selecciona la frase insertada para edición inmediata
+  //   setTimeout(() => {
+  //     const textarea = document.getElementById("for_008_emer_obse");
+  //     if (textarea) {
+  //       textarea.focus();
+  //       const inicioSeleccion = textoAntes.length;
+  //       const finSeleccion = textoAntes.length + sugerencia.length;
+  //       textarea.setSelectionRange(inicioSeleccion, finSeleccion);
+  //     }
+  //   }, 10);
+  // };
 
   const isFieldVisible = (field) => {
     //const edadNum = parseInt(edad);
@@ -1543,13 +1541,11 @@ const Form008Emergencia = () => {
     const tipo =
       registro.adm_dato_pers_tipo_iden ||
       registro.for_008_busc_pers_tipo_iden ||
-      registro.tipo_identificacion ||
       registro.tipoId ||
       "";
     const num =
       registro.adm_dato_pers_nume_iden ||
       registro.for_008_busc_pers_nume_iden ||
-      registro.numero_identificacion ||
       registro.numeId ||
       "";
 
@@ -1758,6 +1754,15 @@ const Form008Emergencia = () => {
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Formulario 008 Emergencia
         </h2>
+        {isLoading && (
+          <Loader
+            modal
+            isOpen={isLoading}
+            title="Iniciando sesión"
+            text="Por favor espere..."
+            closeButton={false}
+          />
+        )}
         <form onSubmit={handleSubmit} className="w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             <fieldset className="border border-blue-200 rounded p-2 mb-1 sm:col-span-2 md:col-span-2 lg:col-span-2">

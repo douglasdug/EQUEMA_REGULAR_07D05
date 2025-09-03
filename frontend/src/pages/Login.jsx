@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../api/conexion.api.js";
 import PropTypes from "prop-types";
 import { AuthContext } from "../components/AuthContext.jsx";
+import Loader from "../components/loader.jsx";
 import { toast } from "react-hot-toast";
 
 const initialState = {
@@ -141,7 +142,7 @@ export default function Login() {
       toast.success(message, {
         position: "bottom-right",
       });
-      setTimeout(() => navigate("/"), 2000);
+      setTimeout(() => navigate("/"), 1000);
       limpiarVariables();
     } catch (error) {
       formData.password = "";
@@ -216,6 +217,15 @@ export default function Login() {
         <h2 className="text-3xl font-extrabold mb-6 text-center text-blue-700 tracking-tight">
           Iniciar Sesión
         </h2>
+        {isLoading && (
+          <Loader
+            modal
+            isOpen={isLoading}
+            title="Iniciando sesión"
+            text="Por favor espere..."
+            closeButton={false}
+          />
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           <InputField
             htmlFor="username"

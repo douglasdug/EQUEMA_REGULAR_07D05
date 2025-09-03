@@ -259,7 +259,7 @@ const TablaForm008Emer = ({
                   <div className="flex space-x-2">
                     <button
                       className={tableStyles.actionButton}
-                      onClick={() => handleEdit(registro.id)}
+                      // onClick={() => handleEdit(registro.id)}
                       aria-label="Editar"
                     >
                       <FaEdit />

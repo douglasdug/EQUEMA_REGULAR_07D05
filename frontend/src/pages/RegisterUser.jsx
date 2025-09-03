@@ -13,6 +13,7 @@ import {
   buttonStyleSecundario,
 } from "../components/EstilosCustom.jsx";
 import { useNavigate } from "react-router-dom";
+import Loader from "../components/loader.jsx";
 import { toast } from "react-hot-toast";
 
 const initialState = {
@@ -408,6 +409,15 @@ const RegisterUser = () => {
             </em>
           </p>
         </article>
+        {isLoading && (
+          <Loader
+            modal
+            isOpen={isLoading}
+            title="Iniciando sesión"
+            text="Por favor espere..."
+            closeButton={false}
+          />
+        )}
         <form onSubmit={handleSubmit} className="w-full">
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">

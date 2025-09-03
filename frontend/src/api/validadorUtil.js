@@ -62,7 +62,7 @@ export const validarDato = (
       }
     }
   } else if (type === "textarea") {
-    formattedValue = value.replace(/\s{2,}/g, " ");
+    formattedValue = value.toUpperCase().replace(/\s{2,}/g, " ");
   } else if (type === "number") {
     formattedValue = value.replace(/[^0-9]/g, "");
   } else if (type === "date") {
@@ -252,7 +252,7 @@ const validarCedula = (username) => {
 };
 
 const validarPasaporte = (username) => {
-  if (username.length <= 7 || username.length >= 15) {
+  if (username.length < 7 || username.length > 15) {
     return {
       valido: false,
       mensaje: "El pasaporte debe tener entre 7 y 15 caracteres.",
@@ -272,8 +272,7 @@ const validarPasaporte = (username) => {
 
 const validarVisa = (username) => {
   const value = username.trim().toUpperCase(); // Normaliza (acepta letras y números)
-
-  if (value.length <= 7 || value.length >= 20) {
+  if (value.length < 7 || value.length > 20) {
     return {
       valido: false,
       mensaje: "La visa debe tener entre 7 y 20 caracteres.",

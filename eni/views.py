@@ -252,7 +252,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['get'], url_path='buscar-usuario', permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=['get'], url_path='buscar-usuario')
     def buscar_usuario(self, request):
         """
         GET /eni-user/buscar-usuario/?tipo=<tipo>&identificacion=<identificacion>
@@ -368,6 +368,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         apellidos = last_name.split(' ', 1)
         nombres = first_name.split(' ', 1)
         email = data.get('email', '').strip()
+        fun_esta = data.get('fun_esta')
 
         try:
             with transaction.atomic():
@@ -375,6 +376,21 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                 serializer = self.get_serializer(data=data)
                 serializer.is_valid(raise_exception=True)
                 user = serializer.save()
+
+                if fun_esta == 1 and email:
+                    send_mail(
+                        subject='¡Tu usuario ha sido validado!',
+                        message=(
+                            f'Estimado {last_name} {first_name} con el usuario {identificacion},\n\n'
+                            'Te informamos que tu usuario ha sido validado por el administrador. '
+                            'Ahora puedes ingresar al sistema "SIRA-07D05" con tu usuario y clave registrados.\n\n'
+                            'Saludos cordiales,\nEl equipo de soporte.\n'
+                            'Nota: Este correo es informativo, favor no responder a esta direccion de correo.'
+                        ),
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[email],
+                        fail_silently=False,
+                    )
 
                 # Buscar registros en admision_datos
                 if not admision_datos.objects.filter(
@@ -504,6 +520,26 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
+        username = data.get('username')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        fun_esta = data.get('fun_esta')
+        email = data.get('email')
+        if fun_esta == 1 and email:
+            send_mail(
+                subject='¡Tu usuario ha sido validado!',
+                message=(
+                    f'Estimado {last_name} {first_name} con el usuario {username},\n\n'
+                    'Te informamos que tu usuario ha sido validado por el administrador. '
+                    'Ahora puedes ingresar al sistema "SIRA-07D05" con tu usuario y clave registrados.\n\n'
+                    'Saludos cordiales,\nEl equipo de soporte.\n'
+                    'Nota: Este correo es informativo, favor no responder a esta direccion de correo.'
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+
         # Actualizar unidades de salud
         uni_unic_list = data.get('uni_unic')
         if isinstance(uni_unic_list, list) and len(uni_unic_list) > 0:
@@ -616,7 +652,6 @@ class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
         # 1. Obtener el id de la unidad a actualizar desde el frontend
         # O request.data['id'] si es obligatorio
         unidad_id = request.data.get('id_unid_salu')
-        print(f"Unidad ID: {unidad_id}")
 
         if not unidad_id:
             return Response({'error': 'No se proporcionó el id de la unidad de salud.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -818,6 +853,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
         # Limitar a 50
         limite = 50
         resultados = list(qs[:limite])
+        total = len(list(qs))
         cantidad = len(resultados)
 
         if cantidad == 0:
@@ -831,7 +867,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
             )
 
         if cantidad == limite:
-            mensaje = "La búsqueda produjo {cantidad} registros. Por favor detalle más los APELLIDOS y NOMBRES para refinar el resultado."
+            mensaje = f"La búsqueda produjo {total} registros. Por favor detalle más los APELLIDOS y NOMBRES para refinar el resultado."
         else:
             mensaje = f"Se encontraron {cantidad} registro(s)."
 
@@ -1081,6 +1117,12 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         )
         if str(form_008_user_rol) == '3':
             base_qs = base_qs.filter(eniUser=id_eni_user)
+        elif str(form_008_user_rol) == '2':
+            # Obtener los uni_unic asociados al usuario
+            unidades = unidad_salud.objects.filter(
+                eniUser=id_eni_user).values_list('uni_unic', flat=True)
+            base_qs = base_qs.filter(for_008_emer_unic__in=list(unidades))
+
         base_qs = base_qs.order_by(fecha_field_name)
 
         HEADERS = [
@@ -1093,6 +1135,8 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             "ESPECIALIDAD DEL PROFESIONAL", "CIE-10 (PRINCIPAL)", "DIAGNÓSTICO 1 (PRINCIPAL)",
             "CONDICIÓN DEL DIAGNÓSTICO", "CIE-10 (CAUSA EXTERNA)", "DIAGNOSTICO (CAUSA  EXTERNA)",
             "HOSPITALIZACIÓN", "HORA ATENCIÓN", "CONDICIÓN DEL ALTA", "OBSERVACIÓN",
+            "FECHA DE REPORTE", "MEDICO QUE ATENDIO", "MEDICO QUE AYUDO", "EDAD GESTACIONAL", "RIESGO OBSTÉTRICO",
+            "UNIDAD SALUD CERCANA", "DIRECCIÓN DOMICILIARIA", "TELÉFONO DE PACIENTE"
         ]
 
         FIELDS = [
@@ -1106,6 +1150,9 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             "for_008_emer_espe_prof", "for_008_emer_cie_10_prin", "for_008_emer_diag_prin",
             "for_008_emer_cond_diag", "for_008_emer_cie_10_caus_exte", "for_008_emer_diag_caus_exte",
             "for_008_emer_hosp", "for_008_emer_hora_aten", "for_008_emer_cond_alta", "for_008_emer_obse",
+            "for_008_emer_fech_repor", "for_008_emer_resp_aten_medi", "for_008_emer_apoy_aten_medi",
+            "for_008_emer_edad_gest", "for_008_emer_ries_obst", "for_008_emer_unid_salu_resp_segu_aten",
+            "for_008_emer_dire_domi", "for_008_emer_tele_paci"
         ]
 
         class Echo:
@@ -1120,7 +1167,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             return val
 
         def row_iter():
-            writer = csv.writer(Echo())
+            writer = csv.writer(Echo(), delimiter=';')
             # BOM para Excel
             yield "\ufeff"
             # Encabezados
@@ -1179,6 +1226,11 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             base_qs = base_qs.filter(eniUser=id_eni_user)
+
+        if str(form_008_user_rol) == '2':
+            unidades = unidad_salud.objects.filter(
+                eniUser=id_eni_user).values_list('uni_unic', flat=True)
+            base_qs = base_qs.filter(for_008_emer_unic__in=list(unidades))
 
         qs = (
             base_qs
@@ -1264,6 +1316,11 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         qs = self.get_queryset().filter(for_008_emer_fech_aten__year=form_008_year)
         if form_008_user_rol == 3:
             qs = qs.filter(eniUser=id_eni_user)
+
+        if form_008_user_rol == 2:
+            unidades = unidad_salud.objects.filter(
+                eniUser=id_eni_user).values_list('uni_unic', flat=True)
+            qs = qs.filter(for_008_emer_unic__in=list(unidades))
 
         qs = qs.exclude(for_008_emer_cie_10_prin__isnull=True).exclude(
             for_008_emer_cie_10_prin='')
