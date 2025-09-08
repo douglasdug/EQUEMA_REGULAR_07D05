@@ -1,4 +1,4 @@
-import { useState, Fragment, useContext } from "react";
+import { useState, useContext, Fragment, useCallback } from "react";
 import {
   listarReportesAtenciones,
   listarReporteDiagnostico,
@@ -6,117 +6,157 @@ import {
   buscarAtencionForm008Emer,
 } from "../api/conexion.api.js";
 import { AuthContext } from "../components/AuthContext.jsx";
+import Loader from "../components/Loader.jsx";
 import { toast } from "react-hot-toast";
 import PropTypes from "prop-types";
 
-const initialState = {
+/* ===================== CONSTANTES / UTILIDADES ===================== */
+const INITIAL_FORM = {
   busc_paci_emer_fecha_min: "",
   busc_paci_emer_fecha_max: "",
   busc_paci_emer_identidad: "",
 };
 
+const MONTHS = [
+  "ENERO",
+  "FEBRERO",
+  "MARZO",
+  "ABRIL",
+  "MAYO",
+  "JUNIO",
+  "JULIO",
+  "AGOSTO",
+  "SEPTIEMBRE",
+  "OCTUBRE",
+  "NOVIEMBRE",
+  "DICIEMBRE",
+];
+
+function isValidIsoDate(v) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(v);
+}
+
+function getErrorMessage(error) {
+  if (error?.response?.data instanceof Blob) {
+    const data = error.response.data;
+    if (data.type === "application/json") {
+      return data.text().then((t) => {
+        try {
+          const j = JSON.parse(t);
+          return j.detail || j.message || JSON.stringify(j);
+        } catch {
+          return t;
+        }
+      });
+    }
+    return "Error desconocido (blob)";
+  }
+  const data = error?.response?.data;
+  if (data) {
+    if (typeof data === "object") {
+      if (data.message) return data.message;
+      if (data.error) return data.error;
+      const k = Object.keys(data)[0];
+      const first = data[k];
+      if (Array.isArray(first) && first.length) return first[0];
+      if (typeof first === "string") return first;
+      return JSON.stringify(data);
+    }
+    if (typeof data === "string") return data;
+  } else if (error?.request) return "No se recibió respuesta del servidor";
+  else if (error?.message) return error.message;
+  return "Error desconocido";
+}
+
+function resolveAndToastError(err, setError) {
+  const msg = getErrorMessage(err);
+  if (msg instanceof Promise) {
+    msg.then((m) => {
+      setError(m);
+      toast.error(m, { position: "bottom-right" });
+    });
+  } else {
+    setError(msg);
+    toast.error(msg, { position: "bottom-right" });
+  }
+}
+
+/* ===================== COMPONENTE PRINCIPAL ===================== */
 export default function ReporteAtenciones() {
-  const [formData, setFormData] = useState(initialState);
+  const [formData, setFormData] = useState(INITIAL_FORM);
+
+  // Mensajes generales (bloque búsqueda detallada)
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [repoAtenYear, setRepoAtenYear] = useState(
+
+  // Reporte mensual
+  const [anioReporte, setAnioReporte] = useState(
     String(new Date().getFullYear())
   );
-  const [diagRows, setDiagRows] = useState([]);
-  const [diagLoading, setDiagLoading] = useState(false);
-  const [diagErr, setDiagErr] = useState("");
   const [reportData, setReportData] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportErr, setReportErr] = useState("");
+
+  // Diagnósticos
+  const [diagRows, setDiagRows] = useState([]);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagErr, setDiagErr] = useState("");
+
+  // Búsqueda detallada
   const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Paginación
   const [page, setPage] = useState(1);
+
   const { authData } = useContext(AuthContext);
   const roleRaw = authData?.user?.fun_admi_rol ?? authData?.fun_admi_rol;
   const role = roleRaw != null ? Number(roleRaw) : null;
 
-  const getErrorMessage = (error) => {
-    // Si la respuesta es un Blob (por ejemplo, error 400 con JSON)
-    if (error?.response?.data instanceof Blob) {
-      const data = error.response.data;
-      if (data.type === "application/json") {
-        // Retorna una promesa para manejar el texto del blob
-        return data.text().then((text) => {
-          try {
-            const json = JSON.parse(text);
-            return json.detail || json.message || JSON.stringify(json);
-          } catch {
-            return text;
-          }
-        });
-      }
-      return "Error desconocido (blob)";
-    }
+  const resetMessagesLater = (setter) => setTimeout(() => setter(""), 10000);
 
-    if (error.response?.data) {
-      const data = error.response.data;
-      if (typeof data === "object" && data !== null) {
-        if (data.message) return data.message;
-        if (data.error) return data.error;
-        const firstKey = Object.keys(data)[0];
-        const firstError = data[firstKey];
-        if (Array.isArray(firstError) && firstError.length > 0) {
-          return firstError[0];
-        } else if (typeof firstError === "string") {
-          return firstError;
-        }
-        return JSON.stringify(data);
-      } else if (typeof data === "string") {
-        return data;
-      }
-    } else if (error.request) {
-      return "No se recibió respuesta del servidor";
-    } else if (error.message) {
-      return error.message;
-    }
-    return "Error desconocido";
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const limpiarVariables = useCallback(() => {
+    setFormData(INITIAL_FORM);
     setPage(1);
-  };
+    setReportData(null);
+    setItems([]);
+    setDiagRows([]);
+    setError("");
+    setSuccessMessage("");
+    setReportErr("");
+    setDiagErr("");
+  }, []);
 
   const printReport = () => window.print();
 
-  // === NUEVO: función para llamar al endpoint de reporte mensual ===
-  const buscarReporteMensual = async () => {
+  /* ====== Reporte mensual (unidades + diagnóstico top) ====== */
+  const buscarReporteMensual = useCallback(async () => {
     setReportLoading(true);
     setReportErr("");
     try {
-      // Ajusta los params si tu API requiere eniUser y user_rol además de year:
-      // Ej.: const data = await listarReportesAtenciones({ eniUser, user_rol, year: repoAtenYear });
-      const data = await listarReportesAtenciones(repoAtenYear);
+      const data = await listarReportesAtenciones(anioReporte);
       setReportData(Array.isArray(data?.results) ? data.results : []);
-      buscarReporteDiagnostico();
+      await buscarReporteDiagnostico(anioReporte);
     } catch (e) {
       setReportErr(e?.message || "Error al obtener reporte");
-      toast?.error?.("No se pudo cargar el reporte");
+      toast.error("No se pudo cargar el reporte");
     } finally {
       setReportLoading(false);
     }
-  };
+  }, [anioReporte]);
 
-  // === NUEVO: función para reporte por diagnóstico (top 10 + OTROS) ===
-  const buscarReporteDiagnostico = async () => {
+  const buscarReporteDiagnostico = useCallback(async (year) => {
     setDiagLoading(true);
     setDiagErr("");
     try {
-      const data = await listarReporteDiagnostico(repoAtenYear);
+      const data = await listarReporteDiagnostico(year);
       const rows = Array.isArray(data?.results) ? data.results : [];
-      // ordenar por total desc
       const sorted = [...rows].sort(
         (a, b) => (Number(b?.total) || 0) - (Number(a?.total) || 0)
       );
       const top10 = sorted.slice(0, 10);
       const rest = sorted.slice(10);
-      if (rest.length > 0) {
+      if (rest.length) {
         const otros = rest.reduce(
           (acc, r) => ({
             diagnostico: "OTROS DIAGNOSTICOS",
@@ -134,43 +174,34 @@ export default function ReporteAtenciones() {
           }
         );
         setDiagRows([...top10, otros]);
-      } else {
-        setDiagRows(top10);
-      }
+      } else setDiagRows(top10);
     } catch (e) {
       const msg = e?.message || "Error al obtener reporte de diagnóstico";
       setDiagErr(msg);
-      toast?.error?.(msg);
+      toast.error(msg);
     } finally {
       setDiagLoading(false);
     }
-  };
+  }, []);
 
+  /* ====== CSV general ====== */
   const descargarCsvAtenciones = async () => {
     try {
-      const rx = /^\d{4}-\d{2}-\d{2}$/;
-      if (
-        !formData.busc_paci_emer_fecha_min ||
-        !formData.busc_paci_emer_fecha_max
-      ) {
+      const { busc_paci_emer_fecha_min: fmin, busc_paci_emer_fecha_max: fmax } =
+        formData;
+      if (!fmin || !fmax) {
         toast.error("Debe seleccionar fecha inicio y fin", {
           position: "bottom-right",
         });
         return;
       }
-      if (
-        !rx.test(formData.busc_paci_emer_fecha_min) ||
-        !rx.test(formData.busc_paci_emer_fecha_max)
-      ) {
+      if (!isValidIsoDate(fmin) || !isValidIsoDate(fmax)) {
         toast.error("Formato de fecha inválido (use YYYY-MM-DD)", {
           position: "bottom-right",
         });
         return;
       }
-      const { blob, filename } = await reporteDescargaAtencionesCsv(
-        formData.busc_paci_emer_fecha_min,
-        formData.busc_paci_emer_fecha_max
-      );
+      const { blob, filename } = await reporteDescargaAtencionesCsv(fmin, fmax);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -178,147 +209,72 @@ export default function ReporteAtenciones() {
       a.click();
       URL.revokeObjectURL(url);
       setSuccessMessage("Descarga de archivo CSV exitosa");
-      setTimeout(() => setSuccessMessage(""), 10000);
+      resetMessagesLater(setSuccessMessage);
       toast.success("Descarga de archivo CSV exitosa", {
         position: "bottom-right",
       });
       limpiarVariables();
-    } catch (error) {
-      const errorMsg = getErrorMessage(error);
-      if (errorMsg instanceof Promise) {
-        errorMsg.then((msg) => {
-          setError(msg);
-          setTimeout(() => setError(""), 10000);
-          toast.error(msg, { position: "bottom-right" });
-        });
-      } else {
-        setError(errorMsg);
-        setTimeout(() => setError(""), 10000);
-        toast.error(errorMsg, { position: "bottom-right" });
-      }
-    } finally {
-      setLoading(false);
+    } catch (e) {
+      resolveAndToastError(e, setError);
+      resetMessagesLater(setError);
     }
   };
 
+  /* ====== Búsqueda detallada de atenciones ====== */
   const buscarAtencionEmergencia = async () => {
     setLoading(true);
     try {
-      const rx = /^\d{4}-\d{2}-\d{2}$/;
-      if (
-        !formData.busc_paci_emer_fecha_min ||
-        !formData.busc_paci_emer_fecha_max
-      ) {
+      const {
+        busc_paci_emer_fecha_min: fmin,
+        busc_paci_emer_fecha_max: fmax,
+        busc_paci_emer_identidad: ident,
+      } = formData;
+      if (!fmin || !fmax) {
         toast.error("Debe seleccionar fecha inicio y fin", {
           position: "bottom-right",
         });
         return;
       }
-      if (
-        !rx.test(formData.busc_paci_emer_fecha_min) ||
-        !rx.test(formData.busc_paci_emer_fecha_max)
-      ) {
+      if (!isValidIsoDate(fmin) || !isValidIsoDate(fmax)) {
         toast.error("Formato de fecha inválido (use YYYY-MM-DD)", {
           position: "bottom-right",
         });
         return;
       }
-      const response = await buscarAtencionForm008Emer(
-        formData.busc_paci_emer_fecha_min,
-        formData.busc_paci_emer_fecha_max,
-        formData.busc_paci_emer_identidad
-      );
-      if (!response)
-        throw new Error("No se pudo obtener una respuesta de la API.");
-      setSuccessMessage(response.message || "Operación exitosa");
-      setTimeout(() => setSuccessMessage(""), 10000);
-      // Se asume respuesta: { message, cantidad, resultados }
-      const rows = Array.isArray(response?.resultados)
-        ? response.resultados
-        : [];
+      const res = await buscarAtencionForm008Emer(fmin, fmax, ident);
+      if (!res) throw new Error("No se pudo obtener respuesta de la API.");
+      setSuccessMessage(res.message || "Operación exitosa");
+      resetMessagesLater(setSuccessMessage);
+      const rows = Array.isArray(res?.resultados) ? res.resultados : [];
       setItems(rows);
-      setTotal(Number(response?.cantidad) || rows.length);
       setPage(1);
-    } catch (error) {
-      const errorMsg = getErrorMessage(error);
-      if (errorMsg instanceof Promise) {
-        errorMsg.then((msg) => {
-          setError(msg);
-          setTimeout(() => setError(""), 10000);
-          toast.error(msg, { position: "bottom-right" });
-        });
-      } else {
-        setError(errorMsg);
-        setTimeout(() => setError(""), 10000);
-        toast.error(errorMsg, { position: "bottom-right" });
-      }
+    } catch (e) {
+      resolveAndToastError(e, setError);
+      resetMessagesLater(setError);
     } finally {
       setLoading(false);
     }
   };
 
-  const limpiarVariables = () => {
-    setFormData(initialState);
-    setPage(1);
-
-    setReportData(null);
-    setItems([]);
-    setDiagRows([]);
-  };
-
-  const EstadoMensajes = ({ error, successMessage }) => (
-    <div className="bg-white rounded-lg shadow-md">
-      {error && (
-        <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-2"
-          role="alert"
-        >
-          <strong className="font-bold">
-            {typeof error === "object" && error.type === "validacion"
-              ? "¡Error de Validación! "
-              : "¡Error! "}
-          </strong>
-          <span className="block sm:inline">
-            {typeof error === "object" ? error.message : error}
-          </span>
-        </div>
-      )}
-      {successMessage && (
-        <div
-          className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-2"
-          role="alert"
-        >
-          <strong className="font-bold">¡Éxito! </strong>
-          <span className="block sm:inline">{successMessage}</span>
-        </div>
-      )}
-    </div>
-  );
-
-  // Paginación (10 filas por página)
+  /* ====== Paginación ====== */
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
   const safePage = Math.min(page, totalPages);
   const start = (safePage - 1) * pageSize;
   const displayedItems = items.slice(start, start + pageSize);
 
-  // Construcción de botones de página (compacto)
   const buildPages = () => {
-    const pages = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      pages.push(1);
-      if (safePage > 4) pages.push("...");
-      const from = Math.max(2, safePage - 1);
-      const to = Math.min(totalPages - 1, safePage + 1);
-      for (let i = from; i <= to; i++) pages.push(i);
-      if (safePage < totalPages - 3) pages.push("...");
-      pages.push(totalPages);
-    }
-    return pages;
+    if (totalPages <= 7)
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const out = [1];
+    if (safePage > 4) out.push("...");
+    const from = Math.max(2, safePage - 1);
+    const to = Math.min(totalPages - 1, safePage + 1);
+    for (let i = from; i <= to; i++) out.push(i);
+    if (safePage < totalPages - 3) out.push("...");
+    out.push(totalPages);
+    return out;
   };
-  const pageButtons = buildPages();
 
   const goToPage = (p) => {
     if (p === "..." || p < 1 || p > totalPages) return;
@@ -336,7 +292,7 @@ export default function ReporteAtenciones() {
         </p>
       </header>
 
-      {/* BLOQUE: Reporte mensual por año */}
+      {/* ====== BLOQUE: Reporte mensual ====== */}
       <section className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 space-y-4">
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col">
@@ -351,14 +307,12 @@ export default function ReporteAtenciones() {
               type="number"
               min="2000"
               max="2100"
-              value={repoAtenYear}
-              onChange={(e) => setRepoAtenYear(e.target.value)}
+              value={anioReporte}
+              onChange={(e) => setAnioReporte(e.target.value)}
               className="w-36 px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             />
           </div>
-
           <button
-            id="btnBuscar"
             type="button"
             onClick={buscarReporteMensual}
             disabled={reportLoading}
@@ -369,7 +323,6 @@ export default function ReporteAtenciones() {
             )}
             {reportLoading ? "Cargando..." : "Buscar"}
           </button>
-
           <button
             type="button"
             onClick={limpiarVariables}
@@ -378,7 +331,6 @@ export default function ReporteAtenciones() {
           >
             Limpiar
           </button>
-
           <button
             type="button"
             onClick={printReport}
@@ -388,11 +340,7 @@ export default function ReporteAtenciones() {
           </button>
         </div>
 
-        {reportErr && (
-          <div className="px-3 py-2 rounded-md bg-red-50 text-red-700 text-sm border border-red-200">
-            {reportErr}
-          </div>
-        )}
+        {reportErr && <Alert type="error" text={reportErr} />}
 
         {reportLoading && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-pulse">
@@ -403,17 +351,16 @@ export default function ReporteAtenciones() {
         )}
 
         {!reportLoading && (!reportData || reportData?.length === 0) && (
-          <div className="flex items-center gap-3 p-4 rounded-md border border-dashed border-gray-300 bg-gray-50 text-gray-600 text-sm">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-300 text-gray-500">
-              !
-            </span>
-            {reportData === null
-              ? "Ingrese un año y presione Buscar para cargar el reporte."
-              : "No se encontraron datos para el año seleccionado."}
-          </div>
+          <EmptyInfo
+            text={
+              reportData === null
+                ? "Ingrese un año y presione Buscar para cargar el reporte."
+                : "No se encontraron datos para el año seleccionado."
+            }
+          />
         )}
 
-        {reportData && Array.isArray(reportData) && reportData.length > 0 && (
+        {reportData?.length > 0 && (
           <div className="flex flex-col xl:flex-row gap-5">
             <div className="flex-1 min-w-0">
               <TablaReporteMensualUnidades rows={reportData} />
@@ -421,119 +368,81 @@ export default function ReporteAtenciones() {
             <div className="w-full xl:w-72 shrink-0 space-y-4">
               <TablaResumenIndicadores rows={reportData} />
               <div className="p-3 rounded border border-blue-100 bg-blue-50 text-xs text-blue-700">
-                Consejo: Puede imprimir o exportar la página utilizando el botón
-                Imprimir del navegador para conservar el formato.
+                Consejo: Puede imprimir la página para conservar el formato.
               </div>
             </div>
           </div>
         )}
-        {diagErr && (
-          <div className="px-3 py-2 rounded-md bg-red-50 text-red-700 text-sm border border-red-200">
-            {diagErr}
-          </div>
-        )}
 
+        {diagErr && <Alert type="error" text={diagErr} />}
         {diagLoading && (
           <div className="h-40 rounded bg-gray-100 animate-pulse" />
         )}
-
         {!diagLoading && diagRows.length === 0 && (
-          <div className="flex items-center gap-3 p-4 rounded-md border border-dashed border-gray-300 bg-gray-50 text-gray-600 text-sm">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-300 text-gray-500">
-              !
-            </span>
-            No hay datos de diagnóstico. Ejecute primero el reporte mensual.
-          </div>
+          <EmptyInfo text="No hay datos de diagnóstico. Ejecute primero el reporte mensual." />
         )}
-
         {diagRows.length > 0 && !diagLoading && (
           <TablaDiagnosticoTop rows={diagRows} />
         )}
       </section>
 
-      {/* BLOQUE DESCARGA CSV (solo roles 1 y 2) */}
+      {/* ====== BLOQUE: Descarga CSV y búsqueda detallada ====== */}
       {(role === 1 || role === 2) && (
         <section className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
             Reporte Detallado de Atenciones con Filtro Avanzado
           </h3>
+          {loading && (
+            <Loader
+              modal
+              isOpen={loading}
+              title="Iniciando sesión"
+              text="Por favor espere..."
+              closeButton={false}
+            />
+          )}
           <form
-            id="reporteDetalladoForm"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setPage(1);
+            }}
             className="grid gap-4 md:grid-cols-6 items-end"
-            onSubmit={handleSubmit}
           >
-            <div className="flex flex-col">
-              <label
-                className="text-xs font-medium text-gray-600 uppercase tracking-wide"
-                htmlFor="fecha_min"
-              >
-                Fecha mínima
-              </label>
-              <input
-                type="date"
-                id="fecha_min"
-                name="fecha_min"
-                value={formData.busc_paci_emer_fecha_min}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    busc_paci_emer_fecha_min: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label
-                className="text-xs font-medium text-gray-600 uppercase tracking-wide"
-                htmlFor="fecha_max"
-              >
-                Fecha máxima
-              </label>
-              <input
-                type="date"
-                id="fecha_max"
-                name="fecha_max"
-                value={formData.busc_paci_emer_fecha_max}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    busc_paci_emer_fecha_max: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
-            </div>
+            <InputDate
+              label="Fecha mínima"
+              value={formData.busc_paci_emer_fecha_min}
+              onChange={(v) =>
+                setFormData((f) => ({ ...f, busc_paci_emer_fecha_min: v }))
+              }
+            />
+            <InputDate
+              label="Fecha máxima"
+              value={formData.busc_paci_emer_fecha_max}
+              onChange={(v) =>
+                setFormData((f) => ({ ...f, busc_paci_emer_fecha_max: v }))
+              }
+            />
             <div className="flex flex-col md:col-span-2">
-              <label
-                className="text-xs font-medium text-gray-600 uppercase tracking-wide"
-                htmlFor="identidad"
-              >
+              <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">
                 Cédula / Apellidos o Nombres
               </label>
               <input
                 type="text"
-                id="identidad"
-                name="identidad"
                 value={formData.busc_paci_emer_identidad}
-                onChange={(e) => {
-                  const val = e.target.value
-                    .toUpperCase()
-                    .replace(/\s{2,}/g, " ");
-                  setFormData({
-                    ...formData,
-                    busc_paci_emer_identidad: val,
-                  });
-                }}
+                onChange={(e) =>
+                  setFormData((f) => ({
+                    ...f,
+                    busc_paci_emer_identidad: e.target.value
+                      .toUpperCase()
+                      .replace(/\s{2,}/g, " "),
+                  }))
+                }
                 placeholder="Cédula o nombres/apellidos"
                 className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               />
             </div>
             <div className="md:col-span-6 flex flex-wrap gap-2">
-              <button
-                type="button"
-                id="btnBuscarAtencionForm008Emer"
-                name="btnBuscarAtencionForm008Emer"
+              <Button
                 onClick={buscarAtencionEmergencia}
                 disabled={
                   !formData.busc_paci_emer_fecha_min ||
@@ -541,29 +450,21 @@ export default function ReporteAtenciones() {
                   !formData.busc_paci_emer_identidad ||
                   formData.busc_paci_emer_identidad.length < 3
                 }
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow disabled:opacity-60 disabled:cursor-not-allowed transition"
-              >
-                {loading && (
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                )}
-                {loading ? "Buscando..." : "Buscar"}
-              </button>
-              <button
-                type="button"
-                id="btnReporteDiagnosticoCsv"
-                name="btnReporteDiagnosticoCsv"
+                loading={loading}
+                text="Buscar"
+              />
+              <Button
+                color="emerald"
                 onClick={descargarCsvAtenciones}
                 disabled={
                   !formData.busc_paci_emer_fecha_min ||
-                  !formData.busc_paci_emer_fecha_max
+                  !formData.busc_paci_emer_fecha_max ||
+                  formData.busc_paci_emer_identidad.length > 0
                 }
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow disabled:opacity-60 disabled:cursor-not-allowed transition"
-              >
-                {loading && (
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                )}
-                {loading ? "Descargando..." : "Descargar CSV"}
-              </button>
+                loading={loading}
+                text="Descargar CSV"
+                loadingText="Descargando..."
+              />
               <button
                 type="button"
                 onClick={limpiarVariables}
@@ -572,105 +473,57 @@ export default function ReporteAtenciones() {
                 Limpiar
               </button>
               <span className="text-xs text-gray-500 flex items-center">
-                Seleccione un rango de fechas para exportar los registros o
-                realice una busqueda avanzada de atenciones de pacientes para
-                que se reflejen en la tabla.
+                Seleccione un rango de fechas para exportar o realice una
+                búsqueda avanzada de pacientes.
               </span>
             </div>
           </form>
+
           <EstadoMensajes error={error} successMessage={successMessage} />
 
           <div className="overflow-auto border border-gray-200 rounded relative">
             <table className="w-full text-xs border-collapse min-w-[1500px]">
               <thead className="bg-gray-50 sticky top-0 z-10 shadow">
                 <tr>
-                  <th className="px-2 py-2 text-left border-b w-10">#</th>
-                  <th className="px-2 py-2 text-left border-b">
-                    UNIDAD DE SALUD
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    FECHA DE ATENCIÓN
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    TIPO DE DOCUMENTO DE IDENTIFICACIÓN
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    NÚMERO DE IDENTIFICACION
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    APELLIDOS / NOMBRES DEL PACIENTE
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">SEXO</th>
-                  <th className="px-2 py-2 text-left border-b">EDAD</th>
-                  <th className="px-2 py-2 text-left border-b">NACIONALIDAD</th>
-                  <th className="px-2 py-2 text-left border-b">ETNIA</th>
-                  <th className="px-2 py-2 text-left border-b">
-                    GRUPO PRIORITARIO
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    TIPO DE SEGURO
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    PROV. RESIDENCIA
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    CANT. RESIDENCIA
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    PARR. RESIDENCIA
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    ESPECIALIDAD DEL PROFESIONAL
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    CIE-10 (PRINCIPAL)
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    DIAGNÓSTICO 1 (PRINCIPAL)
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    CONDICIÓN DEL DIAGNÓSTICO
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    CIE-10 (CAUSA EXTERNA)
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    DIAGNÓSTICO (CAUSA EXTERNA)
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    HOSPITALIZACIÓN
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    HORA ATENCIÓN
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    CONDICIÓN DEL ALTA
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">OBSERVACIÓN</th>
-                  <th className="px-2 py-2 text-left border-b">
-                    FECHA DE REPORTE
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    RESPONSABLE ATENCIÓN MÉDICA
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    APOYO ATENCIÓN MÉDICA
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    EDAD GESTACIONAL
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    RIESGO OBSTÉTRICO
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    UNIDAD RESPONSABLE SEGUIMIENTO
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    DIRECCIÓN DE DOMICILIO
-                  </th>
-                  <th className="px-2 py-2 text-left border-b">
-                    TELÉFONO DEL PACIENTE
-                  </th>
+                  {[
+                    "#",
+                    "UNIDAD DE SALUD",
+                    "FECHA DE ATENCIÓN",
+                    "TIPO DE DOCUMENTO DE IDENTIFICACIÓN",
+                    "NÚMERO DE IDENTIFICACION",
+                    "APELLIDOS / NOMBRES DEL PACIENTE",
+                    "SEXO",
+                    "EDAD",
+                    "NACIONALIDAD",
+                    "ETNIA",
+                    "GRUPO PRIORITARIO",
+                    "TIPO DE SEGURO",
+                    "PROV. RESIDENCIA",
+                    "CANT. RESIDENCIA",
+                    "PARR. RESIDENCIA",
+                    "ESPECIALIDAD DEL PROFESIONAL",
+                    "CIE-10 (PRINCIPAL)",
+                    "DIAGNÓSTICO 1 (PRINCIPAL)",
+                    "CONDICIÓN DEL DIAGNÓSTICO",
+                    "CIE-10 (CAUSA EXTERNA)",
+                    "DIAGNÓSTICO (CAUSA EXTERNA)",
+                    "HOSPITALIZACIÓN",
+                    "HORA ATENCIÓN",
+                    "CONDICIÓN DEL ALTA",
+                    "OBSERVACIÓN",
+                    "FECHA DE REPORTE",
+                    "RESPONSABLE ATENCIÓN MÉDICA",
+                    "APOYO ATENCIÓN MÉDICA",
+                    "EDAD GESTACIONAL",
+                    "RIESGO OBSTÉTRICO",
+                    "UNIDAD RESPONSABLE SEGUIMIENTO",
+                    "DIRECCIÓN DE DOMICILIO",
+                    "TELÉFONO DEL PACIENTE",
+                  ].map((h) => (
+                    <th key={h} className="px-2 py-2 text-left border-b">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -707,116 +560,58 @@ export default function ReporteAtenciones() {
                     const globalIndex = start + idx + 1;
                     return (
                       <tr
-                        key={r.id}
+                        key={r.id || globalIndex}
                         className={`border-t ${
                           idx % 2 === 0 ? "bg-white" : "bg-gray-50/60"
                         } hover:bg-indigo-50 transition-colors`}
                       >
-                        <td className="px-2 py-1 font-medium text-gray-600">
-                          {globalIndex}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_unid || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_fech_aten || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_tipo_docu_iden || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_nume_iden || "-"}
-                        </td>
-                        <td className="px-2 py-1">{paciente || "-"}</td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_sexo || "-"}
-                        </td>
-                        <td className="px-2 py-1">
+                        <Cell>{globalIndex}</Cell>
+                        <Cell>{r.for_008_emer_unid}</Cell>
+                        <Cell>{r.for_008_emer_fech_aten}</Cell>
+                        <Cell>{r.for_008_emer_tipo_docu_iden}</Cell>
+                        <Cell>{r.for_008_emer_nume_iden}</Cell>
+                        <Cell>{paciente}</Cell>
+                        <Cell>{r.for_008_emer_sexo}</Cell>
+                        <Cell>
                           {r.for_008_emer_edad != null
                             ? `${r.for_008_emer_edad} ${
                                 r.for_008_emer_cond_edad || ""
                               }`
                             : "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_naci || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_etni || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_grup_prio || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_tipo_segu || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_prov_resi || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_cant_resi || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_parr_resi || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_espe_prof || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_cie_10_prin || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_diag_prin || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_cond_diag || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_cie_10_caus_exte || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_diag_caus_exte || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_hosp || "-"}
-                        </td>
-                        <td className="px-2 py-1">
+                        </Cell>
+                        <Cell>{r.for_008_emer_naci}</Cell>
+                        <Cell>{r.for_008_emer_etni}</Cell>
+                        <Cell>{r.for_008_emer_grup_prio}</Cell>
+                        <Cell>{r.for_008_emer_tipo_segu}</Cell>
+                        <Cell>{r.for_008_emer_prov_resi}</Cell>
+                        <Cell>{r.for_008_emer_cant_resi}</Cell>
+                        <Cell>{r.for_008_emer_parr_resi}</Cell>
+                        <Cell>{r.for_008_emer_espe_prof}</Cell>
+                        <Cell>{r.for_008_emer_cie_10_prin}</Cell>
+                        <Cell>{r.for_008_emer_diag_prin}</Cell>
+                        <Cell>{r.for_008_emer_cond_diag}</Cell>
+                        <Cell>{r.for_008_emer_cie_10_caus_exte}</Cell>
+                        <Cell>{r.for_008_emer_diag_caus_exte}</Cell>
+                        <Cell>{r.for_008_emer_hosp}</Cell>
+                        <Cell>
                           {r.for_008_emer_hora_aten
                             ? r.for_008_emer_hora_aten.slice(0, 5)
                             : "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_cond_alta || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_obse || "-"}
-                        </td>
-                        <td className="px-2 py-1">
+                        </Cell>
+                        <Cell>{r.for_008_emer_cond_alta}</Cell>
+                        <Cell>{r.for_008_emer_obse}</Cell>
+                        <Cell>
                           {r.for_008_emer_fech_repor
                             ? r.for_008_emer_fech_repor.split("T")[0]
                             : "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_resp_aten_medi || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_apoy_aten_medi || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_edad_gest || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_ries_obst || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_unid_salu_resp_segu_aten || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_dire_domi || "-"}
-                        </td>
-                        <td className="px-2 py-1">
-                          {r.for_008_emer_tele_paci || "-"}
-                        </td>
+                        </Cell>
+                        <Cell>{r.for_008_emer_resp_aten_medi}</Cell>
+                        <Cell>{r.for_008_emer_apoy_aten_medi}</Cell>
+                        <Cell>{r.for_008_emer_edad_gest}</Cell>
+                        <Cell>{r.for_008_emer_ries_obst}</Cell>
+                        <Cell>{r.for_008_emer_unid_salu_resp_segu_aten}</Cell>
+                        <Cell>{r.for_008_emer_dire_domi}</Cell>
+                        <Cell>{r.for_008_emer_tele_paci}</Cell>
                       </tr>
                     );
                   })}
@@ -836,55 +631,47 @@ export default function ReporteAtenciones() {
                 </tfoot>
               )}
             </table>
-            {/* Controles de paginación */}
             {items.length > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 p-3 border-t bg-white">
                 <div className="text-[11px] text-gray-600">
                   Página {safePage} de {totalPages}
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
+                  <PageBtn
                     onClick={() => goToPage(1)}
                     disabled={safePage === 1}
-                    className="px-2 h-8 text-xs rounded border bg-white hover:bg-gray-100 disabled:opacity-40"
                   >
                     «
-                  </button>
-                  <button
+                  </PageBtn>
+                  <PageBtn
                     onClick={() => goToPage(safePage - 1)}
                     disabled={safePage === 1}
-                    className="px-2 h-8 text-xs rounded border bg-white hover:bg-gray-100 disabled:opacity-40"
                   >
                     ‹
-                  </button>
-                  {pageButtons.map((p, i) => (
-                    <button
+                  </PageBtn>
+                  {buildPages().map((p, i) => (
+                    <PageBtn
                       key={i + String(p)}
                       onClick={() => goToPage(p)}
                       disabled={p === "..."}
-                      className={`px-3 h-8 text-xs rounded border ${
-                        p === safePage
-                          ? "bg-indigo-600 text-white border-indigo-600"
-                          : "bg-white hover:bg-indigo-50"
-                      } ${p === "..." ? "cursor-default text-gray-400" : ""}`}
+                      active={p === safePage}
+                      ellipsis={p === "..."}
                     >
                       {p}
-                    </button>
+                    </PageBtn>
                   ))}
-                  <button
+                  <PageBtn
                     onClick={() => goToPage(safePage + 1)}
                     disabled={safePage === totalPages}
-                    className="px-2 h-8 text-xs rounded border bg-white hover:bg-gray-100 disabled:opacity-40"
                   >
                     ›
-                  </button>
-                  <button
+                  </PageBtn>
+                  <PageBtn
                     onClick={() => goToPage(totalPages)}
                     disabled={safePage === totalPages}
-                    className="px-2 h-8 text-xs rounded border bg-white hover:bg-gray-100 disabled:opacity-40"
                   >
                     »
-                  </button>
+                  </PageBtn>
                 </div>
               </div>
             )}
@@ -895,30 +682,150 @@ export default function ReporteAtenciones() {
   );
 }
 
-function countBy(arr, key) {
-  return arr.reduce((acc, it) => {
-    const k = it?.[key] ?? "";
-    acc[k] = (acc[k] || 0) + 1;
-    return acc;
-  }, {});
+/* ===================== SUBCOMPONENTES REUTILIZABLES ===================== */
+function EstadoMensajes({ error, successMessage }) {
+  if (!error && !successMessage) return null;
+  return (
+    <div className="bg-white rounded-lg">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-2">
+          <strong className="font-bold">
+            {typeof error === "object" && error.type === "validacion"
+              ? "¡Error de Validación! "
+              : "¡Error! "}
+          </strong>
+          <span className="block sm:inline">
+            {typeof error === "object" ? error.message : error}
+          </span>
+        </div>
+      )}
+      {successMessage && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-2">
+          <strong className="font-bold">¡Éxito! </strong>
+          <span className="block sm:inline">{successMessage}</span>
+        </div>
+      )}
+    </div>
+  );
 }
 
-// ...existing code...
+EstadoMensajes.propTypes = {
+  error: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+  successMessage: PropTypes.string,
+};
+
+function Alert({ type = "info", text }) {
+  const color =
+    type === "error"
+      ? "bg-red-50 text-red-700 border-red-200"
+      : "bg-blue-50 text-blue-700 border-blue-200";
+  return (
+    <div className={`px-3 py-2 rounded-md border text-sm ${color}`}>{text}</div>
+  );
+}
+Alert.propTypes = {
+  type: PropTypes.string,
+  text: PropTypes.string,
+};
+
+function EmptyInfo({ text }) {
+  return (
+    <div className="flex items-center gap-3 p-4 rounded-md border border-dashed border-gray-300 bg-gray-50 text-gray-600 text-sm">
+      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-300 text-gray-500">
+        !
+      </span>
+      {text}
+    </div>
+  );
+}
+EmptyInfo.propTypes = { text: PropTypes.string };
+
+function InputDate({ label, value, onChange }) {
+  return (
+    <div className="flex flex-col">
+      <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+        {label}
+      </label>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+      />
+    </div>
+  );
+}
+InputDate.propTypes = {
+  label: PropTypes.string,
+  value: PropTypes.string,
+  onChange: PropTypes.func,
+};
+
+function Button({
+  onClick,
+  disabled,
+  loading,
+  text,
+  loadingText = "Procesando...",
+  color = "blue",
+}) {
+  const base =
+    color === "emerald"
+      ? "bg-emerald-600 hover:bg-emerald-700"
+      : "bg-blue-600 hover:bg-blue-700";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-md ${base} text-white text-sm font-medium shadow disabled:opacity-60 disabled:cursor-not-allowed transition`}
+    >
+      {loading && (
+        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+      )}
+      {loading ? loadingText : text}
+    </button>
+  );
+}
+Button.propTypes = {
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+  loading: PropTypes.bool,
+  text: PropTypes.string,
+  loadingText: PropTypes.string,
+  color: PropTypes.string,
+};
+
+function PageBtn({ children, onClick, disabled, active, ellipsis }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`px-3 h-8 text-xs rounded border ${
+        active
+          ? "bg-indigo-600 text-white border-indigo-600"
+          : "bg-white hover:bg-indigo-50"
+      } ${ellipsis ? "cursor-default text-gray-400" : ""} disabled:opacity-40`}
+    >
+      {children}
+    </button>
+  );
+}
+PageBtn.propTypes = {
+  children: PropTypes.node,
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+  active: PropTypes.bool,
+  ellipsis: PropTypes.bool,
+};
+
+function Cell({ children }) {
+  return <td className="px-2 py-1">{children || "-"}</td>;
+}
+Cell.propTypes = { children: PropTypes.node };
+
+/* ===================== TABLAS REPORTES ===================== */
 function TablaReporteMensualUnidades({ rows }) {
-  const meses = [
-    "ENERO",
-    "FEBRERO",
-    "MARZO",
-    "ABRIL",
-    "MAYO",
-    "JUNIO",
-    "JULIO",
-    "AGOSTO",
-    "SEPTIEMBRE",
-    "OCTUBRE",
-    "NOVIEMBRE",
-    "DICIEMBRE",
-  ];
   const parMes = (r, m) => {
     const par = r?.meses?.[m];
     if (!Array.isArray(par) || par.length < 2) return [0, 0];
@@ -932,24 +839,24 @@ function TablaReporteMensualUnidades({ rows }) {
       <table className="w-full border-collapse text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="text-left px-2 py-2 border-b border-gray-200 whitespace-nowrap">
+            <th className="text-left px-2 py-2 border-b whitespace-nowrap">
               UNIDAD DE SALUD
             </th>
-            <th className="text-left px-2 py-2 border-b border-gray-200 whitespace-nowrap">
+            <th className="text-left px-2 py-2 border-b whitespace-nowrap">
               PROFESIONAL MEDICO
             </th>
-            <th className="text-left px-2 py-2 border-b border-gray-200 whitespace-nowrap">
+            <th className="text-left px-2 py-2 border-b whitespace-nowrap">
               INDICADOR
             </th>
-            {meses.map((m) => (
+            {MONTHS.map((m) => (
               <th
                 key={m}
-                className="text-center px-2 py-2 border-b border-gray-200 whitespace-nowrap"
+                className="text-center px-2 py-2 border-b whitespace-nowrap"
               >
                 {m}
               </th>
             ))}
-            <th className="text-center px-2 py-2 border-b border-gray-200 whitespace-nowrap">
+            <th className="text-center px-2 py-2 border-b whitespace-nowrap">
               TOTAL
             </th>
           </tr>
@@ -959,8 +866,8 @@ function TablaReporteMensualUnidades({ rows }) {
             const totalDiag = Number(r?.total?.[0]) || 0;
             const totalPac = Number(r?.total?.[1]) || 0;
             return (
-              <Fragment key={r.unidad_salud}>
-                <tr className="border-b border-gray-100">
+              <Fragment key={`${r.unidad_salud}-${r.medico}`}>
+                <tr className="border-b">
                   <td className="px-2 py-2 align-top font-medium" rowSpan={2}>
                     {r.unidad_salud}
                   </td>
@@ -968,7 +875,7 @@ function TablaReporteMensualUnidades({ rows }) {
                     {r.medico}
                   </td>
                   <td className="px-2 py-2">Atenciones por diagnostico</td>
-                  {meses.map((m) => {
+                  {MONTHS.map((m) => {
                     const [diag] = parMes(r, m);
                     return (
                       <td
@@ -983,9 +890,9 @@ function TablaReporteMensualUnidades({ rows }) {
                     {totalDiag}
                   </td>
                 </tr>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b">
                   <td className="px-2 py-2">Atenciones por paciente</td>
-                  {meses.map((m) => {
+                  {MONTHS.map((m) => {
                     const [, pac] = parMes(r, m);
                     return (
                       <td
@@ -1012,18 +919,13 @@ TablaReporteMensualUnidades.propTypes = {
   rows: PropTypes.arrayOf(
     PropTypes.shape({
       unidad_salud: PropTypes.string,
-      meses: PropTypes.objectOf(
-        PropTypes.arrayOf(
-          PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-        )
-      ),
-      total: PropTypes.arrayOf(
-        PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-      ),
+      medico: PropTypes.string,
+      meses: PropTypes.object,
+      total: PropTypes.array,
     })
   ).isRequired,
 };
-// NUEVO: tabla de resumen “DETALLES DE LA TABLA”
+
 function TablaResumenIndicadores({ rows }) {
   const totals = rows.reduce(
     (acc, r) => {
@@ -1033,25 +935,20 @@ function TablaResumenIndicadores({ rows }) {
     },
     { diag: 0, pac: 0 }
   );
-
   return (
     <div className="overflow-auto border border-gray-200 rounded">
       <div className="px-2 py-2 font-semibold text-sm">
         DETALLES DE LA TABLA
       </div>
-      <table className="w-full border-t border-gray-200 text-sm">
+      <table className="w-full border-t text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="text-left px-2 py-2 border-b border-gray-200">
-              INDICADOR
-            </th>
-            <th className="text-center px-2 py-2 border-b border-gray-200">
-              TOTAL
-            </th>
+            <th className="text-left px-2 py-2 border-b">INDICADOR</th>
+            <th className="text-center px-2 py-2 border-b">TOTAL</th>
           </tr>
         </thead>
         <tbody>
-          <tr className="border-b border-gray-100">
+          <tr className="border-b">
             <td className="px-2 py-2">Atenciones por diagnostico</td>
             <td className="px-2 py-2 text-center">{totals.diag}</td>
           </tr>
@@ -1064,20 +961,15 @@ function TablaResumenIndicadores({ rows }) {
     </div>
   );
 }
-
 TablaResumenIndicadores.propTypes = {
   rows: PropTypes.arrayOf(
     PropTypes.shape({
-      total: PropTypes.arrayOf(
-        PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-      ),
+      total: PropTypes.array,
     })
   ).isRequired,
 };
 
-// === NUEVO: Tabla de diagnóstico (Top 10 + OTROS) ===
 function TablaDiagnosticoTop({ rows }) {
-  // Totales de lo mostrado (incluye "OTROS" si existe)
   const totals = rows.reduce(
     (acc, r) => {
       acc.hombre += Number(r?.hombre) || 0;
@@ -1096,30 +988,28 @@ function TablaDiagnosticoTop({ rows }) {
       <table className="w-full border-collapse text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="text-left px-3 py-2 border-b border-gray-200">#</th>
-            <th className="text-left px-3 py-2 border-b border-gray-200">
-              DIAGNÓSTICO
-            </th>
-            <th className="text-center px-3 py-2 border-b border-gray-200">
-              HOMBRE
-            </th>
-            <th className="text-center px-3 py-2 border-b border-gray-200">
-              MUJER
-            </th>
-            <th className="text-center px-3 py-2 border-b border-gray-200">
-              INTERSEXUAL
-            </th>
-            <th className="text-center px-3 py-2 border-b border-gray-200">
-              TOTAL
-            </th>
+            {[
+              "#",
+              "DIAGNÓSTICO",
+              "HOMBRE",
+              "MUJER",
+              "INTERSEXUAL",
+              "TOTAL",
+            ].map((h) => (
+              <th
+                key={h}
+                className={`px-3 py-2 border-b border-gray-200 ${
+                  h === "DIAGNÓSTICO" || h === "#" ? "text-left" : "text-center"
+                }`}
+              >
+                {h}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((r, idx) => (
-            <tr
-              key={`${r.diagnostico}-${idx}`}
-              className="border-b border-gray-100"
-            >
+            <tr key={r.diagnostico + idx} className="border-b">
               <td className="px-3 py-2">{idx < 10 ? idx + 1 : ""}</td>
               <td className="px-3 py-2">{r.diagnostico}</td>
               <td className="px-3 py-2 text-center">
@@ -1150,7 +1040,6 @@ function TablaDiagnosticoTop({ rows }) {
     </div>
   );
 }
-
 TablaDiagnosticoTop.propTypes = {
   rows: PropTypes.arrayOf(
     PropTypes.shape({
