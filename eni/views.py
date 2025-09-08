@@ -950,13 +950,13 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
 class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = Form008EmergenciaRegistrationSerializer
     queryset = form_008_emergencia.objects.all()
-    permission_classes = [permissions.AllowAny]
-    # permission_classes = [IsAuthenticated, HasRole]
-    # allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
-    # def get_permissions(self):
-    #     # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
-    #     return [perm() for perm in self.permission_classes]
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
