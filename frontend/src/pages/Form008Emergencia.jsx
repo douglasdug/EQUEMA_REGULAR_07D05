@@ -2592,8 +2592,8 @@ const Form008Emergencia = () => {
                   name="for_008_emer_obse"
                   value={formData["for_008_emer_obse"]}
                   onChange={handleChange}
-                  placeholder="Máximo 350 caracteres"
-                  maxLength={350}
+                  placeholder="Máximo 500 caracteres"
+                  maxLength={500}
                   onFocus={() => setIsIndicacionesFocused(true)}
                   onBlur={() => {
                     setIsIndicacionesFocused(false);
@@ -2624,7 +2624,7 @@ const Form008Emergencia = () => {
                   disabled={variableEstado["for_008_emer_obse"]}
                 />
                 <span className="text-xs text-gray-500">
-                  Máximo 350 caracteres
+                  Máximo 500 caracteres
                 </span>
                 {mostrarSugerencias && (
                   <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto w-100">
