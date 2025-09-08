@@ -1580,7 +1580,7 @@ const Form008Emergencia = () => {
   const buttonTextBuscar = "Buscar";
 
   return (
-    <div className="w-auto h-auto flex items-stretch justify-stretch bg-gray-100">
+    <div className="w-full h-auto flex items-stretch justify-stretch bg-gray-100">
       {showAgreementModal && (
         <div className="fixed inset-0 z-[100] bg-black/60">
           <div className="flex h-screen w-screen items-stretch justify-center">
@@ -1750,7 +1750,7 @@ const Form008Emergencia = () => {
           </div>
         </div>
       )}
-      <div className="w-full h-full p-4 m-4 bg-white rounded-lg shadow-md mt-1">
+      <div className="w-full h-full p-2 bg-white rounded-lg shadow-md mt-1">
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Formulario 008 Emergencia
         </h2>
@@ -1894,7 +1894,7 @@ const Form008Emergencia = () => {
               </legend>
               <div className="mb-2">
                 <label className={labelClass} htmlFor="for_008_hist_aten">
-                  Los 6 atenciones previas del paciente.
+                  Los 10 atenciones previas del paciente.
                 </label>
                 <textarea
                   id="for_008_hist_aten"

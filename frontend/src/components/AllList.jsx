@@ -9,6 +9,7 @@ export const listaSelectUser = {
   fun_sex: [
     { value: "HOMBRE", label: "01 HOMBRE" },
     { value: "MUJER", label: "02 MUJER" },
+    { value: "INTERSEXUAL", label: "03 INTERSEXUAL" },
   ],
   fun_titu: [
     { value: "BIOQUÍMICO MÉDICO/A", label: "01 BIOQUÍMICO MÉDICO/A" },

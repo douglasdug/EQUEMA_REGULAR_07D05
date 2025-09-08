@@ -516,6 +516,30 @@ export const reporteDescargaAtencionesCsv = async (
   }
 };
 
+export const buscarAtencionForm008Emer = async (
+  fechamin,
+  fechamax,
+  identidad
+) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/form-008-emergencia/buscar-atendidos-emergencia/`,
+      {
+        params: { fechamin, fechamax, identidad },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching atencion form-008-emergencia data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
 //Funciones para la Admisión de usuario
 export const buscarUsuarioAdmision = async (tipo, identificacion) => {
   try {
@@ -688,6 +712,22 @@ export const updateForm008Emer = async (formData) => {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error updating admision data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
+//Funcion para el contacto con soporte
+export const contactoSoporte = async (formData) => {
+  try {
+    const response = await axios.post(`${API_URL}/contacto/`, formData);
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error contacting support:",
         error.response ? error.response.data : error.message
       );
     }

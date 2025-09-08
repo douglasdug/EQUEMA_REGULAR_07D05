@@ -55,6 +55,10 @@
     {
       "value": "MUJER",
       "label": "02 MUJER"
+    },
+    {
+      "value": "INTERSEXUAL",
+      "label": "03 INTERSEXUAL"
     }
   ],
   "adm_dato_naci_naci": [

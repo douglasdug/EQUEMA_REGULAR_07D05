@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { contactoSoporte } from "../api/conexion.api";
 
 export default function Contacto() {
   const [form, setForm] = useState({
@@ -23,8 +24,8 @@ export default function Contacto() {
     if (!form.nombre.trim()) return "El nombre es obligatorio";
     if (!/\S+@\S+\.\S+/.test(form.email)) return "Email inválido";
     if (!form.asunto.trim()) return "El asunto es obligatorio";
-    if (form.mensaje.trim().length < 10)
-      return "El mensaje debe tener al menos 10 caracteres";
+    if (form.mensaje.trim().length < 5)
+      return "El mensaje debe tener al menos 5 caracteres";
     if (!form.acepta) return "Debes aceptar la política de privacidad";
     return null;
   };
@@ -38,9 +39,7 @@ export default function Contacto() {
     }
     setEstado({ enviando: true, exito: null, error: null });
     try {
-      // Simulación de envío
-      await new Promise((r) => setTimeout(r, 1200));
-      // Aquí puedes hacer un fetch a tu API: await fetch('/api/contacto', { method:'POST', body: JSON.stringify(form) })
+      await contactoSoporte(form);
       setEstado({
         enviando: false,
         exito: "Mensaje enviado correctamente. Te responderemos pronto.",
@@ -54,6 +53,7 @@ export default function Contacto() {
         acepta: false,
       });
     } catch (err) {
+      console.error("Error al enviar el formulario de contacto:", err);
       setEstado({
         enviando: false,
         exito: null,
@@ -88,7 +88,7 @@ export default function Contacto() {
               <ul className="mt-4 text-sm text-gray-700 space-y-2">
                 <li>
                   <span className="font-medium">Email:</span>{" "}
-                  soporte@07d05.mspz7.gob.ec
+                  soporte.tics@07d05.mspz7.gob.ec
                 </li>
                 <li>
                   <span className="font-medium">Teléfono:</span> +593-7-2511-182
@@ -193,7 +193,7 @@ export default function Contacto() {
                 placeholder="Describe tu consulta con detalle..."
               />
               <p className="mt-1 text-xs text-gray-400">
-                Mínimo 10 caracteres. Sé claro y específico para agilizar la
+                Mínimo 5 caracteres. Sé claro y específico para agilizar la
                 respuesta.
               </p>
             </div>
@@ -240,6 +240,18 @@ export default function Contacto() {
               <button
                 type="button"
                 onClick={() => {
+                  if (
+                    form.nombre ||
+                    form.email ||
+                    form.asunto ||
+                    form.mensaje ||
+                    form.acepta
+                  ) {
+                    const c = window.confirm(
+                      "¿Seguro que deseas limpiar el formulario?"
+                    );
+                    if (!c) return;
+                  }
                   setForm({
                     nombre: "",
                     email: "",
@@ -250,9 +262,23 @@ export default function Contacto() {
                   setEstado((s) => ({ ...s, error: null, exito: null }));
                 }}
                 disabled={estado.enviando}
-                className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                aria-label="Limpiar formulario"
+                title="Limpiar formulario"
+                className="group inline-flex items-center gap-2 rounded-md border border-indigo-200 bg-white px-5 py-2.5 text-sm font-medium text-indigo-600 shadow-sm hover:bg-indigo-50 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:ring-offset-1 active:scale-[.97] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Limpiar
+                <svg
+                  className="h-4 w-4 text-indigo-500 group-hover:rotate-90 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M16.023 9.348h4.992v-.001M2.985 14.652h4.992m13.038-5.304a9.187 9.187 0 00-17.97-2.24M2.985 14.652a9.187 9.187 0 0017.97 2.24" />
+                </svg>
+                <span>Limpiar</span>
               </button>
             </div>
           </form>

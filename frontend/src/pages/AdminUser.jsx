@@ -161,7 +161,6 @@ const AdminUser = () => {
 
       actualizarFormDataConRespuesta(response.data);
       ajustarVariableEstadoExitoso();
-      console.log("Respuesta de buscarUsuarioEni:", response.data.fun_esta);
       if (response.data.fun_esta >= 0) {
         setIsEditing(true);
       } else {
@@ -444,6 +443,10 @@ const AdminUser = () => {
           data.uni_unic.length >= 1 &&
           data.uni_unic.length <= 3
         );
+      }
+      if (field === "fun_esta" && isEditing === true) {
+        // Permite 0 o 1 como valores válidos
+        return data.fun_esta === 0 || data.fun_esta === 1;
       }
       if (Array.isArray(data[field])) {
         return data[field].length > 0;

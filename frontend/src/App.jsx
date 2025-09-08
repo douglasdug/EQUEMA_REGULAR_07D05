@@ -20,7 +20,6 @@ import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
 import CreateInfluenza from "./pages/CreateInfluenza.jsx";
 import CreateReporteENI from "./pages/CreateReporteENI.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RequireRole from "./routes/RequireRole.jsx";
 import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";

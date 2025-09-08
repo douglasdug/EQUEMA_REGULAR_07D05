@@ -950,12 +950,13 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
 class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = Form008EmergenciaRegistrationSerializer
     queryset = form_008_emergencia.objects.all()
-    permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    permission_classes = [permissions.AllowAny]
+    # permission_classes = [IsAuthenticated, HasRole]
+    # allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
-    def get_permissions(self):
-        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
-        return [perm() for perm in self.permission_classes]
+    # def get_permissions(self):
+    #     # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+    #     return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
@@ -1020,7 +1021,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 .order_by(
                     '-for_008_emer_fech_aten',
                     '-for_008_emer_hora_aten',
-                )[:6]
+                )[:10]
             )
 
             if not qs.exists():
@@ -1084,7 +1085,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         # 4) Validaciones de rango
         if start_date > end_date:
             return Response(
-                {"detail": "for_008_emer_fech_aten_min no puede ser mayor que for_008_emer_fech_aten_max."},
+                {"detail": "Fecha de inicio no puede ser mayor que fecha de fin."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         if (end_date - start_date).days > 31:
@@ -1134,7 +1135,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             "PROVINCIA DE RECIDENCIA", "CANTON DE RECIDENCIA", "PARROQUIA DE RECIDENCIA",
             "ESPECIALIDAD DEL PROFESIONAL", "CIE-10 (PRINCIPAL)", "DIAGNÓSTICO 1 (PRINCIPAL)",
             "CONDICIÓN DEL DIAGNÓSTICO", "CIE-10 (CAUSA EXTERNA)", "DIAGNOSTICO (CAUSA  EXTERNA)",
-            "HOSPITALIZACIÓN", "HORA ATENCIÓN", "CONDICIÓN DEL ALTA", "OBSERVACIÓN",
+            "HOSPITALIZACIÓN", "HORA ATENCIÓN", "CONDICIÓN DEL ALTA", "OBSERVACIÓN", "ATENCION FINALIZADA",
             "FECHA DE REPORTE", "MEDICO QUE ATENDIO", "MEDICO QUE AYUDO", "EDAD GESTACIONAL", "RIESGO OBSTÉTRICO",
             "UNIDAD SALUD CERCANA", "DIRECCIÓN DOMICILIARIA", "TELÉFONO DE PACIENTE"
         ]
@@ -1149,7 +1150,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             "for_008_emer_prov_resi", "for_008_emer_cant_resi", "for_008_emer_parr_resi",
             "for_008_emer_espe_prof", "for_008_emer_cie_10_prin", "for_008_emer_diag_prin",
             "for_008_emer_cond_diag", "for_008_emer_cie_10_caus_exte", "for_008_emer_diag_caus_exte",
-            "for_008_emer_hosp", "for_008_emer_hora_aten", "for_008_emer_cond_alta", "for_008_emer_obse",
+            "for_008_emer_hosp", "for_008_emer_hora_aten", "for_008_emer_cond_alta", "for_008_emer_obse", "for_008_emer_aten_fina",
             "for_008_emer_fech_repor", "for_008_emer_resp_aten_medi", "for_008_emer_apoy_aten_medi",
             "for_008_emer_edad_gest", "for_008_emer_ries_obst", "for_008_emer_unid_salu_resp_segu_aten",
             "for_008_emer_dire_domi", "for_008_emer_tele_paci"
@@ -1235,7 +1236,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         qs = (
             base_qs
             .annotate(month=ExtractMonth('for_008_emer_fech_aten'))
-            .values('for_008_emer_unic', 'for_008_emer_unid', 'month')
+            .values('for_008_emer_unic', 'for_008_emer_unid', 'for_008_emer_resp_aten_medi', 'month')
             .annotate(
                 total_all=Count('for_008_emer_aten_fina'),
                 total_unique=Count('for_008_emer_aten_fina', distinct=True)
@@ -1253,6 +1254,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         for row in qs:
             unic = row.get('for_008_emer_unic') or ''
             unid = row.get('for_008_emer_unid') or ''
+            medi = row.get('for_008_emer_resp_aten_medi') or ''
             key = (unic, unid)
             if key not in agrupado:
                 agrupado[key] = {
@@ -1274,6 +1276,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             total_unique_anual = sum(v[1] for v in data_u["meses"].values())
             results.append({
                 "unidad_salud": f"{unic} {unid}".strip(),
+                "medico": f"{medi}".strip(),
                 "meses": data_u["meses"],
                 "total": [total_all_anual, total_unique_anual]
             })
@@ -1282,8 +1285,10 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         if not results:
             label_unic = ""
             label_unid = ""
+            label_medi = ""
             results.append({
                 "unidad_salud": f"{label_unic} {label_unid}".strip(),
+                "medico": f"{label_medi}".strip(),
                 "meses": {m: [0, 0] for m in meses_es},
                 "total": [0, 0]
             })
@@ -1354,6 +1359,135 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 "id_eni_user": str(id_eni_user) if id_eni_user is not None else None,
                 "year": form_008_year,
                 "results": results
+            },
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=['get'], url_path='buscar-atendidos-emergencia')
+    def buscar_atendidos_emergencia(self, request):
+        """
+        GET /form-008-emergencia/buscar-atendidos-emergencia/?fechamin=YYYY-MM-DD&fechamax=YYYY-MM-DD&identidad=valor
+        Limita el resultado a un máximo de 100 registros.
+        """
+        fechamin = (request.query_params.get('fechamin') or '').strip()
+        fechamax = (request.query_params.get('fechamax') or '').strip()
+        identidad = (request.query_params.get('identidad') or '').strip()
+
+        if not fechamin or not fechamax:
+            return Response(
+                {"detail": "Los parámetros 'fechamin' y 'fechamax' son obligatorios."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            fecha_min = datetime.strptime(fechamin, "%Y-%m-%d").date()
+            fecha_max = datetime.strptime(fechamax, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                {"detail": "Formato de fecha inválido. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if fecha_min > fecha_max:
+            return Response(
+                {"detail": "'fechamin' no puede ser mayor que 'fechamax'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if (fecha_max - fecha_min).days > 31:
+            return Response(
+                {"detail": "El rango máximo permitido es de 31 días."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not identidad:
+            return Response(
+                {"detail": "El parámetro 'Cedula, Apellido o Nombres' es obligatorio."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        def normalizar(texto):
+            texto = unicodedata.normalize('NFKD', texto)
+            texto = ''.join(c for c in texto if not unicodedata.combining(c))
+            texto = re.sub(r'\s+', ' ', texto)
+            return texto.upper().strip()
+
+        identidad_norm = normalizar(identidad)
+        q = Q()
+
+        if re.fullmatch(r'\d{5,20}', identidad_norm):
+            q &= Q(for_008_emer_nume_iden__iexact=identidad_norm)
+        else:
+            tokens = identidad_norm.split()
+            for token in tokens:
+                if not token:
+                    continue
+                q_token = (
+                    Q(for_008_emer_prim_apel__istartswith=token) |
+                    Q(for_008_emer_segu_apel__istartswith=token) |
+                    Q(for_008_emer_prim_nomb__istartswith=token) |
+                    Q(for_008_emer_segu_nomb__istartswith=token)
+                )
+                q &= q_token
+
+        fecha_field = "for_008_emer_fech_aten"
+        try:
+            model_field = form_008_emergencia._meta.get_field(fecha_field)
+            if model_field.get_internal_type() == "DateTimeField":
+                tz = timezone.get_current_timezone()
+                fecha_min_bound = timezone.make_aware(
+                    datetime.combine(fecha_min, time.min), tz)
+                fecha_max_bound = timezone.make_aware(
+                    datetime.combine(fecha_max, time.max), tz)
+            else:
+                fecha_min_bound = fecha_min
+                fecha_max_bound = fecha_max
+        except Exception:
+            fecha_min_bound = fecha_min
+            fecha_max_bound = fecha_max
+
+        qs = (
+            form_008_emergencia.objects
+            .filter(**{f"{fecha_field}__range": (fecha_min_bound, fecha_max_bound)})
+            .filter(q)
+            .order_by(
+                "for_008_emer_prim_apel",
+                "for_008_emer_segu_apel",
+                "for_008_emer_prim_nomb",
+                "for_008_emer_segu_nomb"
+            )
+        )
+
+        total = qs.count()
+        if total == 0:
+            return Response(
+                {
+                    "message": "No se encontraron atenciones con los criterios proporcionados.",
+                    "cantidad": 0,
+                    "resultados": []
+                },
+                status=status.HTTP_200_OK
+            )
+
+        limite = 100
+        if total > limite:
+            qs_limited = qs[:limite]
+            serializer = self.get_serializer(qs_limited, many=True)
+            return Response(
+                {
+                    "message": f"La búsqueda produjo {total} registros. Se muestran los primeros {limite}. Por favor refine su búsqueda.",
+                    "cantidad": limite,
+                    "resultados": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+
+        serializer = self.get_serializer(qs, many=True)
+        return Response(
+            {
+                "message": f"Se encontraron {total} registro(s).",
+                "cantidad": total,
+                "resultados": serializer.data
             },
             status=status.HTTP_200_OK
         )
@@ -1485,6 +1619,89 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         if errors:
             return Response({"message": "Error al crear la atencion del formulario 008-EMERGENCIA", "error": errors}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message": "Se creo la atencion del formulario 008-EMERGENCIA del usuario exitosamente!", "data": created_objects}, status=status.HTTP_201_CREATED)
+
+
+class ContactoAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    SOPORTE_EMAIL = "soporte.tics@07d05.mspz7.gob.ec"
+
+    def post(self, request):
+        nombre = (request.data.get("nombre") or "").strip()
+        email = (request.data.get("email") or "").strip()
+        asunto = (request.data.get("asunto") or "").strip()
+        mensaje = (request.data.get("mensaje") or "").strip()
+
+        # Validaciones básicas
+        faltantes = [campo for campo, val in [
+            ("nombre", nombre),
+            ("email", email),
+            ("asunto", asunto),
+            ("mensaje", mensaje)
+        ] if not val]
+
+        if faltantes:
+            return Response(
+                {"error": f"Los campos {', '.join(faltantes)} son requeridos."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if len(mensaje) < 10:
+            return Response(
+                {"error": "El mensaje debe contener al menos 10 caracteres."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Asunto final (agrega prefijo identificable)
+        subject = f"[CONTACTO SIRA-07D05] {asunto[:120]}"
+
+        text_content = (
+            f"Mensaje de contacto SIRA-07D05\n\n"
+            f"Nombre: {nombre}\n"
+            f"Correo: {email}\n"
+            f"Asunto: {asunto}\n\n"
+            f"Mensaje:\n{mensaje}\n"
+        )
+
+        html_content = f"""
+        <div style="font-family: Arial, Helvetica, sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;">
+            <div style="background:#0d47a1; color:#fff; padding:16px 20px;">
+                <h2 style="margin:0; font-size:18px;">Contacto SIRA-07D05</h2>
+            </div>
+            <div style="padding:20px; background:#fafafa;">
+                <p style="margin:0 0 10px;"><strong>Nombre:</strong> {nombre}</p>
+                <p style="margin:0 0 10px;"><strong>Correo:</strong> {email}</p>
+                <p style="margin:0 0 10px;"><strong>Asunto:</strong> {asunto}</p>
+                <hr style="border:none; border-top:1px solid #ddd; margin:18px 0;">
+                <p style="white-space:pre-line; line-height:1.4; margin:0; font-size:14px;">{mensaje}</p>
+            </div>
+            <div style="background:#f1f5f9; padding:10px 16px; font-size:12px; color:#555;">
+                <em>Este mensaje fue generado desde el formulario público de contacto.</em>
+            </div>
+        </div>
+        """
+
+        try:
+            msg = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content,
+                from_email=getattr(
+                    settings, "DEFAULT_FROM_EMAIL", self.SOPORTE_EMAIL),
+                to=[self.SOPORTE_EMAIL],
+                reply_to=[email] if email else None
+            )
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+        except Exception as e:
+            return Response(
+                {"error": f"No se pudo enviar el mensaje. Intente más tarde. Detalle: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return Response(
+            {"message": "Mensaje enviado correctamente. Pronto será contactado."},
+            status=status.HTTP_201_CREATED
+        )
 
 
 Error_Fecha_Registrada = "La fecha ya ha sido registrada desea Actualizar la información!."
