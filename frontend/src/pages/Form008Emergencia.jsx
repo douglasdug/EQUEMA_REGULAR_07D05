@@ -152,16 +152,13 @@ const Form008Emergencia = () => {
   const [isBuscar, setIsBuscar] = useState(false);
   const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [edad, setEdad] = useState("");
+  function toISODateString(date) {
+    return date.toISOString().slice(0, 10);
+  }
   const fechaHoraSistema = new Date();
-  const formatoFecha = new Intl.DateTimeFormat("es-EC", {
-    timeZone: "America/Guayaquil",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-  const fechaActual = formatoFecha.format(fechaHoraSistema);
-  const fechaMinima = formatoFecha.format(
-    fechaHoraSistema - 7 * 24 * 60 * 60 * 1000
+  const fechaActual = toISODateString(fechaHoraSistema);
+  const fechaMinima = toISODateString(
+    new Date(fechaHoraSistema.getTime() - 7 * 24 * 60 * 60 * 1000)
   ); // 7 días * 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
   const [refreshTable, setRefreshTable] = useState(0);
   const [isIndicacionesFocused, setIsIndicacionesFocused] = useState(false);
