@@ -1187,52 +1187,61 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='reporte-mensual')
     def reporte_mensual(self, request, *args, **kwargs):
         """
-        GET /form008-emergencia/reporte-mensual/?form_008_year=YYYY          
+        GET /form-008-emergencia/reporte-mensual/?form_008_year=YYYY        
         """
-        id_eni_user = getattr(request.user, 'id', None)
+        # Año
         try:
-            form_008_year = int(request.query_params.get(
+            year = int(request.query_params.get(
                 'form_008_year', timezone.now().year))
         except (TypeError, ValueError):
             return Response({"detail": "Parámetro 'form_008_year' inválido."}, status=status.HTTP_400_BAD_REQUEST)
 
-        form_008_user_rol = getattr(request.user, 'fun_admi_rol', None)
-
-        faltantes = []
-        if not id_eni_user:
-            faltantes.append('id_eni_user')
-        if form_008_user_rol is None:
-            faltantes.append('user_rol')
-        if not form_008_year:
-            faltantes.append('form_008_year')
-        if faltantes:
-            return Response(
-                {"detail": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+        # Rol autenticado
+        auth_eni_user_id = getattr(request.user, 'id', None)
         try:
-            year = int(form_008_year)
-            form_008_user_rol = int(form_008_user_rol)
+            user_rol = getattr(request.user, 'fun_admi_rol', 0)
         except (TypeError, ValueError):
-            return Response({"detail": "Parámetros 'form_008_year' o 'user_rol' inválidos."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Rol de usuario inválido."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Objetivo (solo para rol 1)
+        target_eni_user = request.query_params.get(
+            'id_eni_user') or request.query_params.get('eni_user_id')
+        if target_eni_user is not None:
+            try:
+                target_eni_user = int(target_eni_user)
+            except (TypeError, ValueError):
+                return Response({"detail": "Parámetro 'id_eni_user' inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Base queryset
         base_qs = self.get_queryset().filter(for_008_emer_fech_aten__year=year)
 
-        # Rol 3: solo sus atenciones; Rol 1: total (sin filtro por eniUser)
-        if str(form_008_user_rol) == '3':
-            if not id_eni_user:
-                return Response(
-                    {"detail": "id_eni_user es requerido cuando user_rol = 3."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            base_qs = base_qs.filter(eniUser=id_eni_user)
-
-        if str(form_008_user_rol) == '2':
+        # Filtros por rol
+        if user_rol == 3:
+            if not auth_eni_user_id:
+                return Response({"detail": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
+            base_qs = base_qs.filter(eniUser=auth_eni_user_id)
+            response_id_eni_user = str(auth_eni_user_id)
+        elif user_rol == 2:
+            if not auth_eni_user_id:
+                return Response({"detail": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
             unidades = unidad_salud.objects.filter(
-                eniUser=id_eni_user).values_list('uni_unic', flat=True)
+                eniUser=auth_eni_user_id
+            ).values_list('uni_unic', flat=True)
             base_qs = base_qs.filter(for_008_emer_unic__in=list(unidades))
+            response_id_eni_user = str(auth_eni_user_id)
+        elif user_rol == 1:
+            # Admin: si especifica un médico, filtra por ese médico (comportamiento solicitado)
+            if target_eni_user is not None:
+                base_qs = base_qs.filter(eniUser=target_eni_user)
+                response_id_eni_user = str(target_eni_user)
+            else:
+                # Sin filtro de médico: se reporta agrupado por cada médico
+                response_id_eni_user = str(
+                    auth_eni_user_id) if auth_eni_user_id else ""
+        else:
+            return Response({"detail": "Rol no soportado."}, status=status.HTTP_403_FORBIDDEN)
 
+        # Agregación mensual por unidad y médico
         qs = (
             base_qs
             .annotate(month=ExtractMonth('for_008_emer_fech_aten'))
@@ -1241,7 +1250,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 total_all=Count('for_008_emer_aten_fina'),
                 total_unique=Count('for_008_emer_aten_fina', distinct=True)
             )
-            .order_by('for_008_emer_unic', 'month')
+            .order_by('for_008_emer_unic', 'for_008_emer_resp_aten_medi', 'month')
         )
 
         meses_es = [
@@ -1249,17 +1258,18 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
         ]
 
-        # Agrupar por unidad (unic, unid) y armar conteos por mes
+        # Agrupar por (unidad, médico)
         agrupado = {}
         for row in qs:
-            unic = row.get('for_008_emer_unic') or ''
-            unid = row.get('for_008_emer_unid') or ''
-            medi = row.get('for_008_emer_resp_aten_medi') or ''
-            key = (unic, unid)
+            unic = (row.get('for_008_emer_unic') or '').strip()
+            unid = (row.get('for_008_emer_unid') or '').strip()
+            medi = (row.get('for_008_emer_resp_aten_medi') or '').strip()
+            key = (unic, unid, medi)
             if key not in agrupado:
                 agrupado[key] = {
                     "for_008_emer_unic": unic,
                     "for_008_emer_unid": unid,
+                    "for_008_emer_resp_aten_medi": medi,
                     "meses": {m: [0, 0] for m in meses_es}
                 }
             num_mes = row.get('month')
@@ -1269,33 +1279,30 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                     row.get('total_unique', 0) or 0
                 ]
 
-        # Calcular totales por unidad y preparar salida
+        # Preparar salida
         results = []
-        for (unic, unid), data_u in sorted(agrupado.items(), key=lambda x: (x[0][0], x[0][1])):
+        for (unic, unid, medi), data_u in sorted(agrupado.items(), key=lambda x: (x[0][0], x[0][1], x[0][2])):
             total_all_anual = sum(v[0] for v in data_u["meses"].values())
             total_unique_anual = sum(v[1] for v in data_u["meses"].values())
             results.append({
-                "unidad_salud": f"{unic} {unid}".strip(),
-                "medico": f"{medi}".strip(),
+                "unidad_salud": f"{unic} {unid}".replace("  ", " ").strip(),
+                "medico": medi,
                 "meses": data_u["meses"],
                 "total": [total_all_anual, total_unique_anual]
             })
 
-        # Si no hay registros y se filtró por una unidad específica, devolver unidad con ceros
+        # Si no hay registros, retornar estructura con ceros
         if not results:
-            label_unic = ""
-            label_unid = ""
-            label_medi = ""
             results.append({
-                "unidad_salud": f"{label_unic} {label_unid}".strip(),
-                "medico": f"{label_medi}".strip(),
+                "unidad_salud": "",
+                "medico": "",
                 "meses": {m: [0, 0] for m in meses_es},
                 "total": [0, 0]
             })
 
         return Response(
             {
-                "id_eni_user": str(id_eni_user),
+                "id_eni_user": response_id_eni_user,
                 "year": year,
                 "results": results
             },
