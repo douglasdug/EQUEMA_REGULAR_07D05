@@ -90,6 +90,7 @@ const TablaUsers = ({
         u.email,
         u.fun_titu,
         ROLE_NAMES[u.fun_admi_rol],
+        STATUS_NAMES[u.fun_esta],
       ]
         .filter(Boolean)
         .some((field) => field.toString().toLowerCase().includes(q));
@@ -311,7 +312,6 @@ const TablaUsers = ({
         </span>
       </div>
 
-      {/* Tabla */}
       <div className={`${tableStyles.container} bg-white/90`}>
         <table className={`${tableStyles.table} text-sm`}>
           <thead className={`${tableStyles.thead}`}>
@@ -376,6 +376,22 @@ const TablaUsers = ({
                           </span>
                         );
                         break;
+                      case "fun_esta": {
+                        const status = STATUS_NAMES[registro[key]] || "";
+                        const isInactive = Number(registro[key]) === 0;
+                        cellContent = (
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ring-1 ${
+                              isInactive
+                                ? "bg-red-50 text-red-700 ring-red-200"
+                                : "bg-green-50 text-green-700 ring-green-200"
+                            }`}
+                          >
+                            {status}
+                          </span>
+                        );
+                        break;
+                      }
                       case "unidades_data":
                         cellContent = (
                           <div className="flex flex-wrap gap-1 max-w-[260px]">
