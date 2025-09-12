@@ -560,8 +560,8 @@ const AdminUser = () => {
   const buttonTextBuscar = isBuscar ? "Nuevo Registro" : "Buscar";
 
   return (
-    <div className="w-auto h-auto flex items-stretch justify-stretch bg-gray-100">
-      <div className="w-full h-full p-4 m-4 bg-white rounded-lg shadow-md mt-1">
+    <div className="w-full h-auto flex items-stretch justify-stretch bg-gray-100">
+      <div className="w-full h-full p-2 bg-white rounded-lg shadow-md mt-1">
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Administrador de Usuarios
         </h2>

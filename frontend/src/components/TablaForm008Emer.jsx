@@ -443,17 +443,22 @@ const TablaForm008Emer = ({
                         {prettyLabel(k)}
                       </p>
                       <p className="text-xs text-gray-800 break-words">
-                        {k === "for_008_emer_fech_repor" && registro[k]
-                          ? (() => {
-                              const [f, h] = registro[k].split("T");
-                              const [y, m, d] = f.split("-");
-                              return `${d}/${m}/${y} ${h.substring(0, 5)}`;
-                            })()
-                          : registro[k] === "" || registro[k] === null
-                          ? "—"
-                          : typeof registro[k] === "object"
-                          ? JSON.stringify(registro[k])
-                          : registro[k]}
+                        {(() => {
+                          if (k === "for_008_emer_fech_repor" && registro[k]) {
+                            const [f, h] = registro[k].split("T");
+                            const [y, m, d] = f.split("-");
+                            return `${d}/${m}/${y} ${h.substring(0, 5)}`;
+                          } else if (
+                            registro[k] === "" ||
+                            registro[k] === null
+                          ) {
+                            return "—";
+                          } else if (typeof registro[k] === "object") {
+                            return JSON.stringify(registro[k]);
+                          } else {
+                            return registro[k];
+                          }
+                        })()}
                       </p>
                     </div>
                   ))}
@@ -467,17 +472,27 @@ const TablaForm008Emer = ({
                             {prettyLabel(k)}
                           </p>
                           <p className="text-xs text-gray-800 break-words">
-                            {k === "for_008_emer_fech_repor" && registro[k]
-                              ? (() => {
-                                  const [f, h] = registro[k].split("T");
-                                  const [y, m, d] = f.split("-");
-                                  return `${d}/${m}/${y} ${h.substring(0, 5)}`;
-                                })()
-                              : registro[k] === "" || registro[k] === null
-                              ? "—"
-                              : typeof registro[k] === "object"
-                              ? JSON.stringify(registro[k])
-                              : registro[k]}
+                            {(() => {
+                              let value;
+                              if (
+                                k === "for_008_emer_fech_repor" &&
+                                registro[k]
+                              ) {
+                                const [f, h] = registro[k].split("T");
+                                const [y, m, d] = f.split("-");
+                                value = `${d}/${m}/${y} ${h.substring(0, 5)}`;
+                              } else if (
+                                registro[k] === "" ||
+                                registro[k] === null
+                              ) {
+                                value = "—";
+                              } else if (typeof registro[k] === "object") {
+                                value = JSON.stringify(registro[k]);
+                              } else {
+                                value = registro[k];
+                              }
+                              return value;
+                            })()}
                           </p>
                         </div>
                       ))}

@@ -225,7 +225,7 @@ const TablaUsers = ({
       "overflow-x-auto rounded-lg shadow max-w-full border-2 border-gray-300 sm:border my-4",
     table: "w-full table-auto border-collapse bg-white",
     thead: "bg-gray-50 border-b border-gray-300",
-    th: "px-3 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-x border-gray-200",
+    th: "px-1 py-1.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-x border-gray-200",
     tbody: "divide-y divide-gray-200",
     td: "px-3 py-2 text-sm text-gray-600 border-x border-gray-200",
     actionButton:
@@ -251,7 +251,12 @@ const TablaUsers = ({
   };
 
   return (
-    <div className="mt-4 mx-2 sm:mx-0 space-y-3">
+    <div className="mt-2 space-y-1">
+      <div className="flex flex-col gap-1 px-1 sm:px-1.5 md:px-3 lg:px-4 py-2">
+        <h3 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+          Listado de Usuarios de SIRA-07D05
+        </h3>
+      </div>
       {/* Buscador y resumen */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="relative w-full sm:max-w-md">

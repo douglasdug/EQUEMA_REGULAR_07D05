@@ -1021,7 +1021,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 .order_by(
                     '-for_008_emer_fech_aten',
                     '-for_008_emer_hora_aten',
-                )[:10]
+                )[:12]
             )
 
             if not qs.exists():
@@ -1720,7 +1720,13 @@ Dato_Delete_Correcto = "Registros eliminados correctamente!"
 class TempranoRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = TempranoRegistrationSerializer
     queryset = temprano.objects.all()
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
@@ -3678,7 +3684,13 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
 class TardioRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = TardioRegistrationSerializer
     queryset = tardio.objects.all()
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
@@ -6304,7 +6316,13 @@ class TardioRegistrationAPIView(viewsets.ModelViewSet):
 class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = DesperdicioRegistrationSerializer
     queryset = desperdicio.objects.all()
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
@@ -6628,7 +6646,13 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
 class InfluenzaRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = InfluenzaRegistrationSerializer
     queryset = influenza.objects.all()
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
@@ -8539,7 +8563,13 @@ class InfluenzaRegistrationAPIView(viewsets.ModelViewSet):
 class ReporteENIRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = ReporteENIRegistrationSerializer
     queryset = reporte_eni.objects.all()
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)
@@ -8561,7 +8591,13 @@ class ReporteENIRegistrationAPIView(viewsets.ModelViewSet):
 class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = RegistroVacunadoRegistrationSerializer
     queryset = registro_vacunado.objects.all()
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         user_id = self.request.query_params.get('user_id', None)

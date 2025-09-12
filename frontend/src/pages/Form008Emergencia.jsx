@@ -311,7 +311,7 @@ const Form008Emergencia = () => {
     for_008_emer_nomb_esta_salu: "NOMBRE DEL ESTABLECIMIENTO DE SALUD:",
     for_008_emer_fech_aten: "FECHA DE ATENCIÓN:",
     for_008_emer_hora_aten: "HORA ATENCIÓN:",
-    for_008_emer_edad_cond: "EDAD:",
+    for_008_emer_edad_cond: "EDAD Y FECHA DE NACIMIENTO:",
     for_008_emer_apel_comp: "APELLIDOS:",
     for_008_emer_nomb_comp: "NOMBRES:",
     for_008_emer_sexo: "SEXO:",
@@ -542,7 +542,8 @@ const Form008Emergencia = () => {
     const cie = a?.for_008_emer_cie_10_prin ?? "";
     const diag = a?.for_008_emer_diag_prin ?? "";
     const cond = a?.for_008_emer_cond_diag ?? "";
-    return `${unic} ${unid} | ${fecha} ${hora} | ${cie} ${diag} | ${cond}`;
+    const medi = a?.for_008_emer_resp_aten_medi ?? "";
+    return `${unic} ${unid} | ${fecha} ${hora} | ${cie} ${diag} | ${cond} | ${medi}`;
   };
 
   // Refactor: una sola función con responsabilidades claras y sets agrupados
@@ -746,11 +747,11 @@ const Form008Emergencia = () => {
                 };
 
           // Actualiza habilitación de campos obstétricos
-          setVariableEstado((p) => ({
-            ...p,
-            for_008_emer_edad_gest: value !== "OBSTETRIZ",
-            for_008_emer_ries_obst: value !== "OBSTETRIZ",
-          }));
+          // setVariableEstado((p) => ({
+          //   ...p,
+          //   for_008_emer_edad_gest: value !== "OBSTETRIZ",
+          //   for_008_emer_ries_obst: value !== "OBSTETRIZ",
+          // }));
 
           // Valida con el "next" ya calculado (sin esperar a re-render)
           checkFormValidity(next);
@@ -846,7 +847,16 @@ const Form008Emergencia = () => {
           f !== "for_008_emer_cie_10_prin_diag" &&
           f !== "for_008_emer_cond_diag" &&
           f !== "for_008_emer_cie_10_caus_exte_diag"
-      );
+      )
+      .filter((f) => {
+        if (
+          (f === "for_008_emer_edad_gest" || f === "for_008_emer_ries_obst") &&
+          data.for_008_emer_espe_prof !== "OBSTETRIZ"
+        ) {
+          return false; // No requerido si no es OBSTETRIZ
+        }
+        return true;
+      });
 
     const basicosValidos = camposBasicos.every((field) => {
       const val = data[field];
@@ -1891,7 +1901,7 @@ const Form008Emergencia = () => {
               </legend>
               <div className="mb-2">
                 <label className={labelClass} htmlFor="for_008_hist_aten">
-                  Los 10 atenciones previas del paciente.
+                  Los 12 atenciones previas del paciente por morbilidad.
                 </label>
                 <textarea
                   id="for_008_hist_aten"
@@ -2035,6 +2045,11 @@ const Form008Emergencia = () => {
                     <span className="text-red-500">* </span>
                   )}
                   {labelMap["for_008_emer_edad_cond"]}
+                  {formData.adm_dato_naci_fech_naci && (
+                    <span className="ml-2 text-blue-800 text-sm font-bold">
+                      {formData.adm_dato_naci_fech_naci}
+                    </span>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -2709,112 +2724,106 @@ const Form008Emergencia = () => {
               </div>
             </div>
           </fieldset>
-          {formData["for_008_emer_espe_prof"] === "OBSTETRIZ" && (
-            <fieldset className="border border-blue-200 rounded p-2 mb-1">
-              <legend className="text-lg font-semibold text-blue-600 px-2">
-                Datos de atencion obstetrica
-              </legend>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                <div className={fieldClass}>
-                  <label
-                    className={labelClass}
-                    htmlFor="for_008_emer_edad_gest"
-                  >
-                    {requiredFields.includes("for_008_emer_edad_gest") && (
-                      <span className="text-red-500">* </span>
-                    )}
-                    {labelMap["for_008_emer_edad_gest"]}
-                  </label>
-                  <input
-                    type="text"
-                    id="for_008_emer_edad_gest"
-                    name="for_008_emer_edad_gest"
-                    value={formData["for_008_emer_edad_gest"]}
-                    onChange={(e) => {
-                      const name = e.target.name;
-                      // Normaliza: coma -> punto y elimina todo lo que no sea dígito o punto
-                      let value = e.target.value
-                        .replace(/,/g, ".")
-                        .replace(/[^\d.]/g, "");
 
-                      // Permitir borrar
-                      if (value === "") {
-                        handleChange({ target: { name, value } });
-                        return;
-                      }
+          <fieldset className="border border-blue-200 rounded p-2 mb-1">
+            <legend className="text-lg font-semibold text-blue-600 px-2">
+              Datos de atencion obstetrica
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_edad_gest">
+                  {formData.for_008_emer_espe_prof === "OBSTETRIZ" && (
+                    <span className="text-red-500">*</span>
+                  )}
+                  {labelMap["for_008_emer_edad_gest"]}
+                </label>
+                <input
+                  type="text"
+                  id="for_008_emer_edad_gest"
+                  name="for_008_emer_edad_gest"
+                  value={formData["for_008_emer_edad_gest"]}
+                  onChange={(e) => {
+                    const name = e.target.name;
+                    // Normaliza: coma -> punto y elimina todo lo que no sea dígito o punto
+                    let value = e.target.value
+                      .replace(/,/g, ".")
+                      .replace(/[^\d.]/g, "");
 
-                      // Evitar más de un punto decimal
-                      const firstDot = value.indexOf(".");
-                      if (firstDot !== -1) {
-                        value =
-                          value.slice(0, firstDot + 1) +
-                          value.slice(firstDot + 1).replace(/\./g, "");
-                      }
-
-                      // Solo números y punto (validación rápida de tecleo)
-                      if (!/^\d*\.?\d*$/.test(value)) return;
-
-                      // Validación paso a paso: 1-60 semanas y .0-.6 días
-                      const partialRegex =
-                        /^([1-9]|[1-5][0-9]|60)?(\.([0-6])?)?$/; // se escapa el punto
-                      if (partialRegex.test(value)) {
-                        handleChange({ target: { name, value } });
-                      }
-                    }}
-                    placeholder="Ej: 8.6 (8 semanas. 6 días)"
-                    inputMode="decimal"
-                    pattern="^\d+(\.\d+)?$"
-                    title="Solo números y punto decimal (ej.: 15 o 12.2)"
-                    className={`${inputStyle} ${
-                      isFieldInvalid(
-                        "for_008_emer_edad_gest",
-                        requiredFields,
-                        formData,
-                        isFieldVisible
-                      )
-                        ? "border-2 border-red-500"
-                        : ""
-                    } ${
-                      variableEstado["for_008_emer_edad_gest"]
-                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                        : "bg-white text-gray-700 cursor-pointer"
-                    }`}
-                    disabled={variableEstado["for_008_emer_edad_gest"]}
-                  />
-                </div>
-                <div className={fieldClass}>
-                  <label
-                    className={labelClass}
-                    htmlFor="for_008_emer_ries_obst"
-                  >
-                    {requiredFields.includes("for_008_emer_ries_obst") && (
-                      <span className="text-red-500">* </span>
-                    )}
-                    {labelMap["for_008_emer_ries_obst"]}
-                  </label>
-                  <CustomSelect
-                    id="for_008_emer_ries_obst"
-                    name="for_008_emer_ries_obst"
-                    value={formData["for_008_emer_ries_obst"]}
-                    onChange={handleChange}
-                    options={allListForm008.for_008_emer_ries_obst}
-                    disabled={variableEstado["for_008_emer_ries_obst"]}
-                    variableEstado={variableEstado}
-                    className={
-                      isFieldInvalid(
-                        "for_008_emer_ries_obst",
-                        requiredFields,
-                        formData,
-                        isFieldVisible
-                      )
-                        ? "border-2 border-red-500"
-                        : ""
+                    // Permitir borrar
+                    if (value === "") {
+                      handleChange({ target: { name, value } });
+                      return;
                     }
-                  />
-                </div>
+
+                    // Evitar más de un punto decimal
+                    const firstDot = value.indexOf(".");
+                    if (firstDot !== -1) {
+                      value =
+                        value.slice(0, firstDot + 1) +
+                        value.slice(firstDot + 1).replace(/\./g, "");
+                    }
+
+                    // Solo números y punto (validación rápida de tecleo)
+                    if (!/^\d*\.?\d*$/.test(value)) return;
+
+                    // Validación paso a paso: 1-60 semanas y .0-.6 días
+                    const partialRegex =
+                      /^([1-9]|[1-5][0-9]|60)?(\.([0-6])?)?$/; // se escapa el punto
+                    if (partialRegex.test(value)) {
+                      handleChange({ target: { name, value } });
+                    }
+                  }}
+                  placeholder="Ej: 8.6 (8 semanas. 6 días)"
+                  inputMode="decimal"
+                  pattern="^\d+(\.\d+)?$"
+                  title="Solo números y punto decimal (ej.: 15 o 12.2)"
+                  className={`${inputStyle} ${
+                    isFieldInvalid(
+                      "for_008_emer_edad_gest",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  } ${
+                    variableEstado["for_008_emer_edad_gest"]
+                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                      : "bg-white text-gray-700 cursor-pointer"
+                  }`}
+                  disabled={variableEstado["for_008_emer_edad_gest"]}
+                />
               </div>
-            </fieldset>
-          )}
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_ries_obst">
+                  {formData.for_008_emer_espe_prof === "OBSTETRIZ" && (
+                    <span className="text-red-500">*</span>
+                  )}
+                  {labelMap["for_008_emer_ries_obst"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_ries_obst"
+                  name="for_008_emer_ries_obst"
+                  value={formData["for_008_emer_ries_obst"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_ries_obst}
+                  disabled={variableEstado["for_008_emer_ries_obst"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_ries_obst",
+                      requiredFields,
+                      formData,
+                      isFieldVisible
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                />
+              </div>
+            </div>
+          </fieldset>
+
           <div className="md:col-span-2 flex justify-center mt-1">
             <button
               type="submit"
