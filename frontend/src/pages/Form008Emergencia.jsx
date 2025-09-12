@@ -2663,7 +2663,7 @@ const Form008Emergencia = () => {
                 <div className="bg-blue-50 border-l-4 border-blue-500 text-black p-2 mb-2 text-sm">
                   <strong>Atención:</strong> Solo se registrarán diagnósticos
                   que incluyan el código CIE-10 con cuatro caracteres (por
-                  ejemplo: I100), seguido de su respectiva descripción. Esta
+                  ejemplo: J00X), seguido de su respectiva descripción. Esta
                   estructura es obligatoria para garantizar uniformidad en el
                   registro clínico.
                 </div>
