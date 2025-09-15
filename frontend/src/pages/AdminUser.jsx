@@ -879,86 +879,87 @@ const AdminUser = () => {
               </div>
             </div>
           </fieldset>
-          <fieldset className="border border-blue-200 rounded p-2 mb-1">
-            <legend className="text-lg font-semibold text-blue-600 px-2">
-              Rol y Estado del Usuario
-            </legend>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="fun_admi_rol">
-                  {requiredFields.includes("fun_admi_rol") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["fun_admi_rol"]}
-                </label>
-                <CustomSelect
-                  id="fun_admi_rol"
-                  name="fun_admi_rol"
-                  value={formData["fun_admi_rol"]}
-                  onChange={handleChange}
-                  options={allListRegisterUser.fun_admi_rol}
-                  disabled={variableEstado["fun_admi_rol"]}
-                  variableEstado={variableEstado}
-                  className={
-                    isFieldInvalid(
-                      "fun_admi_rol",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  }
-                />
-              </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="fun_esta">
-                  {requiredFields.includes("fun_esta") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["fun_esta"]}
-                </label>
-                <CustomSelect
-                  id="fun_esta"
-                  name="fun_esta"
-                  value={formData["fun_esta"]}
-                  onChange={handleChange}
-                  options={allListRegisterUser.fun_esta}
-                  disabled={variableEstado["fun_esta"]}
-                  variableEstado={variableEstado}
-                  className={
-                    isFieldInvalid(
-                      "fun_esta",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  }
-                />
-              </div>
-            </div>
-          </fieldset>
-          <fieldset className="border border-blue-200 rounded p-2 mb-1">
-            <legend className="text-lg font-semibold text-blue-600 px-2">
-              Solo para registrar o Actualizar la Clave o Contraseña
-            </legend>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="password1">
-                  {!isEditing && <span className="text-red-500">* </span>}
-                  {labelMap["password1"]}
-                </label>
-                <div className="relative flex items-center">
-                  <input
-                    type={showPassword1 ? "text" : "password"}
-                    id="password1"
-                    name="password1"
-                    value={formData["password1"]}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
+            <fieldset className="border border-blue-200 rounded p-2 mb-1">
+              <legend className="text-lg font-semibold text-blue-600 px-2">
+                Rol y Estado del Usuario
+              </legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
+                <div className={fieldClass}>
+                  <label className={labelClass} htmlFor="fun_admi_rol">
+                    {requiredFields.includes("fun_admi_rol") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["fun_admi_rol"]}
+                  </label>
+                  <CustomSelect
+                    id="fun_admi_rol"
+                    name="fun_admi_rol"
+                    value={formData["fun_admi_rol"]}
                     onChange={handleChange}
-                    placeholder="Requiere la misma clave"
-                    className={`${inputStyle}
+                    options={allListRegisterUser.fun_admi_rol}
+                    disabled={variableEstado["fun_admi_rol"]}
+                    variableEstado={variableEstado}
+                    className={
+                      isFieldInvalid(
+                        "fun_admi_rol",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <label className={labelClass} htmlFor="fun_esta">
+                    {requiredFields.includes("fun_esta") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["fun_esta"]}
+                  </label>
+                  <CustomSelect
+                    id="fun_esta"
+                    name="fun_esta"
+                    value={formData["fun_esta"]}
+                    onChange={handleChange}
+                    options={allListRegisterUser.fun_esta}
+                    disabled={variableEstado["fun_esta"]}
+                    variableEstado={variableEstado}
+                    className={
+                      isFieldInvalid(
+                        "fun_esta",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                  />
+                </div>
+              </div>
+            </fieldset>
+            <fieldset className="border border-blue-200 rounded p-2 mb-1">
+              <legend className="text-lg font-semibold text-blue-600 px-2">
+                Solo para registrar o Actualizar la Clave o Contraseña
+              </legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
+                <div className={fieldClass}>
+                  <label className={labelClass} htmlFor="password1">
+                    {!isEditing && <span className="text-red-500">* </span>}
+                    {labelMap["password1"]}
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type={showPassword1 ? "text" : "password"}
+                      id="password1"
+                      name="password1"
+                      value={formData["password1"]}
+                      onChange={handleChange}
+                      placeholder="Requiere la misma clave"
+                      className={`${inputStyle}
                     ${
                       !isEditing && !formData["password1"] // Solo en modo registro y si está vacío
                         ? "border-2 border-red-500"
@@ -970,74 +971,33 @@ const AdminUser = () => {
                         : "bg-white text-gray-700 cursor-pointer"
                     }
                     pr-10`}
-                    disabled={variableEstado["password1"]}
-                  />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-700 border-l border-gray-800 pl-3 h-7 flex items-center bg-transparent"
-                    onClick={() => setShowPassword1((prev) => !prev)}
-                    style={{ outline: "none" }}
-                  >
-                    {showPassword1 ? "🙈" : "👁️"}
-                  </button>
+                      disabled={variableEstado["password1"]}
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-700 border-l border-gray-800 pl-3 h-7 flex items-center bg-transparent"
+                      onClick={() => setShowPassword1((prev) => !prev)}
+                      style={{ outline: "none" }}
+                    >
+                      {showPassword1 ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-1 ml-1 text-sm">
-                  {(() => {
-                    const passwordValidation = getPasswordValidation();
-                    return (
-                      <ul>
-                        <li className="flex items-center">
-                          {passwordValidation.longitud ? (
-                            <span className="text-green-600 mr-1">✅</span>
-                          ) : (
-                            <span className="text-red-600 mr-1">❌</span>
-                          )}
-                          Tener de 10 hasta 20 caracteres.
-                        </li>
-                        <li className="flex items-center">
-                          {passwordValidation.mayMinNum ? (
-                            <span className="text-green-600 mr-1">✅</span>
-                          ) : (
-                            <span className="text-red-600 mr-1">❌</span>
-                          )}
-                          Estar conformada de Mayúsculas, minúsculas y números.
-                        </li>
-                        <li className="flex items-center">
-                          {passwordValidation.especial ? (
-                            <span className="text-green-600 mr-1">✅</span>
-                          ) : (
-                            <span className="text-red-600 mr-1">❌</span>
-                          )}
-                          Al menos un carácter especial: * + -
-                        </li>
-                        <li className="flex items-center">
-                          {passwordValidation.iguales ? (
-                            <span className="text-green-600 mr-1">✅</span>
-                          ) : (
-                            <span className="text-red-600 mr-1">❌</span>
-                          )}
-                          Las contraseñas coinciden.
-                        </li>
-                      </ul>
-                    );
-                  })()}
-                </div>
-              </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="password2">
-                  {!isEditing && <span className="text-red-500">* </span>}
-                  {labelMap["password2"]}
-                </label>
-                <div className="relative flex items-center">
-                  <input
-                    type={showPassword2 ? "text" : "password"}
-                    id="password2"
-                    name="password2"
-                    value={formData["password2"]}
-                    onChange={handleChange}
-                    placeholder="Requiere la misma clave"
-                    className={`${inputStyle}
+                <div className={fieldClass}>
+                  <label className={labelClass} htmlFor="password2">
+                    {!isEditing && <span className="text-red-500">* </span>}
+                    {labelMap["password2"]}
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type={showPassword2 ? "text" : "password"}
+                      id="password2"
+                      name="password2"
+                      value={formData["password2"]}
+                      onChange={handleChange}
+                      placeholder="Requiere la misma clave"
+                      className={`${inputStyle}
                     ${
                       !isEditing && !formData["password2"] // Solo en modo registro y si está vacío
                         ? "border-2 border-red-500"
@@ -1049,21 +1009,63 @@ const AdminUser = () => {
                         : "bg-white text-gray-700 cursor-pointer"
                     }
                     pr-10`}
-                    disabled={variableEstado["password2"]}
-                  />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-700 border-l border-gray-800 pl-3 h-7 flex items-center bg-transparent"
-                    onClick={() => setShowPassword2((prev) => !prev)}
-                    style={{ outline: "none" }}
-                  >
-                    {showPassword2 ? "🙈" : "👁️"}
-                  </button>
+                      disabled={variableEstado["password2"]}
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-700 border-l border-gray-800 pl-3 h-7 flex items-center bg-transparent"
+                      onClick={() => setShowPassword2((prev) => !prev)}
+                      style={{ outline: "none" }}
+                    >
+                      {showPassword2 ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </fieldset>
+              <div className="mt-1 ml-1 text-sm">
+                {(() => {
+                  const passwordValidation = getPasswordValidation();
+                  return (
+                    <ul>
+                      <li className="flex items-center">
+                        {passwordValidation.longitud ? (
+                          <span className="text-green-600 mr-1">✅</span>
+                        ) : (
+                          <span className="text-red-600 mr-1">❌</span>
+                        )}
+                        Tener de 10 hasta 20 caracteres.
+                      </li>
+                      <li className="flex items-center">
+                        {passwordValidation.mayMinNum ? (
+                          <span className="text-green-600 mr-1">✅</span>
+                        ) : (
+                          <span className="text-red-600 mr-1">❌</span>
+                        )}
+                        Estar conformada de Mayúsculas, minúsculas y números.
+                      </li>
+                      <li className="flex items-center">
+                        {passwordValidation.especial ? (
+                          <span className="text-green-600 mr-1">✅</span>
+                        ) : (
+                          <span className="text-red-600 mr-1">❌</span>
+                        )}
+                        Al menos un carácter especial: * + -
+                      </li>
+                      <li className="flex items-center">
+                        {passwordValidation.iguales ? (
+                          <span className="text-green-600 mr-1">✅</span>
+                        ) : (
+                          <span className="text-red-600 mr-1">❌</span>
+                        )}
+                        Las contraseñas coinciden.
+                      </li>
+                    </ul>
+                  );
+                })()}
+              </div>
+            </fieldset>
+          </div>
           <div className="flex items-center justify-center">
             <button
               type="submit"

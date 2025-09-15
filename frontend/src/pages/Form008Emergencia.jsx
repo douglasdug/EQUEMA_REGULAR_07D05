@@ -24,6 +24,7 @@ import {
 import TablaForm008Emer from "../components/TablaForm008Emer.jsx";
 import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
 import Loader from "../components/Loader.jsx";
+import TablaAtencionesForm008 from "../components/TablaAtencionesForm008.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
@@ -158,8 +159,8 @@ const Form008Emergencia = () => {
   const fechaHoraSistema = new Date();
   const fechaActual = toISODateString(fechaHoraSistema);
   const fechaMinima = toISODateString(
-    new Date(fechaHoraSistema.getTime() - 7 * 24 * 60 * 60 * 1000)
-  ); // 7 días * 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
+    new Date(fechaHoraSistema.getTime() - 12 * 24 * 60 * 60 * 1000)
+  ); // 12 días * 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
   const [refreshTable, setRefreshTable] = useState(0);
   const [isIndicacionesFocused, setIsIndicacionesFocused] = useState(false);
   const [unidadSaludList, setUnidadSaludList] = useState([]);
@@ -179,6 +180,7 @@ const Form008Emergencia = () => {
     numeIdenInicial: "",
   });
   const [showBusquedaAvanzada, setShowBusquedaAvanzada] = useState(false);
+  const [showTablaAtenciones, setShowTablaAtenciones] = useState(false);
   const navigate = useNavigate();
 
   const frasesMedicas = [
@@ -543,7 +545,7 @@ const Form008Emergencia = () => {
     const diag = a?.for_008_emer_diag_prin ?? "";
     const cond = a?.for_008_emer_cond_diag ?? "";
     const medi = a?.for_008_emer_resp_aten_medi ?? "";
-    return `${unic} ${unid} | ${fecha} ${hora} | ${cie} ${diag} | ${cond} | ${medi}`;
+    return `${fecha} ${hora} | ${unic} ${unid} | ${cie} ${diag} | ${cond} | ${medi}`;
   };
 
   // Refactor: una sola función con responsabilidades claras y sets agrupados
@@ -561,11 +563,14 @@ const Form008Emergencia = () => {
       const atencionesData = await listarAtencionesPaciente(
         data.id_admision_datos
       );
-      const listaAtenciones = Array.isArray(atencionesData?.data)
-        ? atencionesData.data
-        : Array.isArray(atencionesData)
-        ? atencionesData
-        : [];
+      let listaAtenciones = [];
+      if (Array.isArray(atencionesData?.data)) {
+        listaAtenciones = atencionesData.data;
+      } else if (Array.isArray(atencionesData)) {
+        listaAtenciones = atencionesData;
+      } else {
+        listaAtenciones = [];
+      }
       setAtencionesPrevias(listaAtenciones);
 
       // Formatear médicos
@@ -1899,33 +1904,40 @@ const Form008Emergencia = () => {
               <legend className="text-lg font-semibold text-blue-600 px-2">
                 Historial de Atenciones de paciente por Emergencia.
               </legend>
-              <div className="mb-2">
+              <div className="flex items-center gap-2">
                 <label className={labelClass} htmlFor="for_008_hist_aten">
                   Los 12 atenciones previas del paciente por morbilidad.
                 </label>
-                <textarea
-                  id="for_008_hist_aten"
-                  name="for_008_hist_aten"
-                  readOnly
-                  className={`${inputStyle} font-mono text-xs resize-none transition-all duration-200
+                {/* <button
+                  type="button"
+                  className="ml-2 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded shadow"
+                  onClick={() => setShowTablaAtenciones(true)}
+                >
+                  Buscar todas las Atenciones
+                </button> */}
+              </div>
+              <textarea
+                id="for_008_hist_aten"
+                name="for_008_hist_aten"
+                readOnly
+                className={`${inputStyle} font-mono text-xs resize-none transition-all duration-200
                       ${
                         isHistorialExpandido
                           ? "h-48 overflow-auto bg-white cursor-default"
                           : "h-10 overflow-hidden bg-gray-50 cursor-pointer"
                       }`}
-                  onFocus={() => setIsHistorialExpandido(true)}
-                  onClick={() => setIsHistorialExpandido(true)}
-                  onBlur={() => setIsHistorialExpandido(false)}
-                  value={
-                    atencionesPrevias && atencionesPrevias.length > 0
-                      ? atencionesPrevias.map(formatearAtencionLinea).join("\n")
-                      : "Sin atenciones previas registradas."
-                  }
-                  placeholder="El historial de atenciones previas se mostrará aquí después de buscar un paciente."
-                  title="Clic para ver todo; clic fuera para comprimir"
-                  disabled={variableEstado["for_008_hist_aten"]}
-                />
-              </div>
+                onFocus={() => setIsHistorialExpandido(true)}
+                onClick={() => setIsHistorialExpandido(true)}
+                onBlur={() => setIsHistorialExpandido(false)}
+                value={
+                  atencionesPrevias && atencionesPrevias.length > 0
+                    ? atencionesPrevias.map(formatearAtencionLinea).join("\n")
+                    : "Sin atenciones previas registradas."
+                }
+                placeholder="El historial de atenciones previas se mostrará aquí después de buscar un paciente."
+                title="Clic para ver todo; clic fuera para comprimir"
+                disabled={variableEstado["for_008_hist_aten"]}
+              />
             </fieldset>
           </div>
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
@@ -2006,6 +2018,9 @@ const Form008Emergencia = () => {
                   }`}
                   disabled={variableEstado["for_008_emer_fech_aten"]}
                 />
+                <span className="ml-1 text-blue-800 text-sm font-semibold">
+                  Solo hasta 12 dias antes de la fecha actual.
+                </span>
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="for_008_emer_hora_aten">
@@ -2683,147 +2698,149 @@ const Form008Emergencia = () => {
               </fieldset>
             </div>
           </fieldset>
-          <fieldset className="border border-blue-200 rounded p-2 mb-1">
-            <legend className="text-lg font-semibold text-blue-600 px-2">
-              Datos de Medico que ayudo en la Atencion
-            </legend>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              <div className={fieldClass}>
-                <label
-                  className={labelClass}
-                  htmlFor="for_008_emer_apoy_aten_medi"
-                >
-                  {requiredFields.includes("for_008_emer_apoy_aten_medi") && (
-                    <span className="text-red-500">* </span>
-                  )}
-                  {labelMap["for_008_emer_apoy_aten_medi"]}
-                </label>
-                <CustomSelect
-                  id="for_008_emer_apoy_aten_medi"
-                  name="for_008_emer_apoy_aten_medi"
-                  value={formData["for_008_emer_apoy_aten_medi"]}
-                  onChange={handleChange}
-                  options={medicosList}
-                  disabled={variableEstado["for_008_emer_apoy_aten_medi"]}
-                  variableEstado={variableEstado}
-                  className={
-                    isFieldInvalid(
-                      "for_008_emer_apoy_aten_medi",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  }
-                  isLargeList={true}
-                  placeholder="Escriba para buscar Medico..."
-                  minSearchLength={2}
-                  maxResults={100}
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset className="border border-blue-200 rounded p-2 mb-1">
-            <legend className="text-lg font-semibold text-blue-600 px-2">
-              Datos de atencion obstetrica
-            </legend>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="for_008_emer_edad_gest">
-                  {formData.for_008_emer_espe_prof === "OBSTETRIZ" && (
-                    <span className="text-red-500">*</span>
-                  )}
-                  {labelMap["for_008_emer_edad_gest"]}
-                </label>
-                <input
-                  type="text"
-                  id="for_008_emer_edad_gest"
-                  name="for_008_emer_edad_gest"
-                  value={formData["for_008_emer_edad_gest"]}
-                  onChange={(e) => {
-                    const name = e.target.name;
-                    // Normaliza: coma -> punto y elimina todo lo que no sea dígito o punto
-                    let value = e.target.value
-                      .replace(/,/g, ".")
-                      .replace(/[^\d.]/g, "");
-
-                    // Permitir borrar
-                    if (value === "") {
-                      handleChange({ target: { name, value } });
-                      return;
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
+            <fieldset className="border border-blue-200 rounded p-2 mb-1">
+              <legend className="text-lg font-semibold text-blue-600 px-2">
+                Datos de Medico que ayudo en la Atencion
+              </legend>
+              <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1">
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="for_008_emer_apoy_aten_medi"
+                  >
+                    {requiredFields.includes("for_008_emer_apoy_aten_medi") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["for_008_emer_apoy_aten_medi"]}
+                  </label>
+                  <CustomSelect
+                    id="for_008_emer_apoy_aten_medi"
+                    name="for_008_emer_apoy_aten_medi"
+                    value={formData["for_008_emer_apoy_aten_medi"]}
+                    onChange={handleChange}
+                    options={medicosList}
+                    disabled={variableEstado["for_008_emer_apoy_aten_medi"]}
+                    variableEstado={variableEstado}
+                    className={
+                      isFieldInvalid(
+                        "for_008_emer_apoy_aten_medi",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
                     }
-
-                    // Evitar más de un punto decimal
-                    const firstDot = value.indexOf(".");
-                    if (firstDot !== -1) {
-                      value =
-                        value.slice(0, firstDot + 1) +
-                        value.slice(firstDot + 1).replace(/\./g, "");
-                    }
-
-                    // Solo números y punto (validación rápida de tecleo)
-                    if (!/^\d*\.?\d*$/.test(value)) return;
-
-                    // Validación paso a paso: 1-60 semanas y .0-.6 días
-                    const partialRegex =
-                      /^([1-9]|[1-5][0-9]|60)?(\.([0-6])?)?$/; // se escapa el punto
-                    if (partialRegex.test(value)) {
-                      handleChange({ target: { name, value } });
-                    }
-                  }}
-                  placeholder="Ej: 8.6 (8 semanas. 6 días)"
-                  inputMode="decimal"
-                  pattern="^\d+(\.\d+)?$"
-                  title="Solo números y punto decimal (ej.: 15 o 12.2)"
-                  className={`${inputStyle} ${
-                    isFieldInvalid(
-                      "for_008_emer_edad_gest",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  } ${
-                    variableEstado["for_008_emer_edad_gest"]
-                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                      : "bg-white text-gray-700 cursor-pointer"
-                  }`}
-                  disabled={variableEstado["for_008_emer_edad_gest"]}
-                />
+                    isLargeList={true}
+                    placeholder="Escriba para buscar Medico..."
+                    minSearchLength={2}
+                    maxResults={100}
+                  />
+                </div>
               </div>
-              <div className={fieldClass}>
-                <label className={labelClass} htmlFor="for_008_emer_ries_obst">
-                  {formData.for_008_emer_espe_prof === "OBSTETRIZ" && (
-                    <span className="text-red-500">*</span>
-                  )}
-                  {labelMap["for_008_emer_ries_obst"]}
-                </label>
-                <CustomSelect
-                  id="for_008_emer_ries_obst"
-                  name="for_008_emer_ries_obst"
-                  value={formData["for_008_emer_ries_obst"]}
-                  onChange={handleChange}
-                  options={allListForm008.for_008_emer_ries_obst}
-                  disabled={variableEstado["for_008_emer_ries_obst"]}
-                  variableEstado={variableEstado}
-                  className={
-                    isFieldInvalid(
-                      "for_008_emer_ries_obst",
-                      requiredFields,
-                      formData,
-                      isFieldVisible
-                    )
-                      ? "border-2 border-red-500"
-                      : ""
-                  }
-                />
+            </fieldset>
+            <fieldset className="border border-blue-200 rounded p-2 mb-1">
+              <legend className="text-lg font-semibold text-blue-600 px-2">
+                Datos de atencion obstetrica
+              </legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="for_008_emer_edad_gest"
+                  >
+                    {formData.for_008_emer_espe_prof === "OBSTETRIZ" && (
+                      <span className="text-red-500">*</span>
+                    )}
+                    {labelMap["for_008_emer_edad_gest"]}
+                  </label>
+                  <input
+                    type="text"
+                    id="for_008_emer_edad_gest"
+                    name="for_008_emer_edad_gest"
+                    value={formData["for_008_emer_edad_gest"]}
+                    onChange={(e) => {
+                      const name = e.target.name;
+                      // Normaliza: coma -> punto y elimina todo lo que no sea dígito o punto
+                      let value = e.target.value
+                        .replace(/,/g, ".")
+                        .replace(/[^\d.]/g, "");
+                      // Permitir borrar
+                      if (value === "") {
+                        handleChange({ target: { name, value } });
+                        return;
+                      }
+                      // Evitar más de un punto decimal
+                      const firstDot = value.indexOf(".");
+                      if (firstDot !== -1) {
+                        value =
+                          value.slice(0, firstDot + 1) +
+                          value.slice(firstDot + 1).replace(/\./g, "");
+                      }
+                      // Solo números y punto (validación rápida de tecleo)
+                      if (!/^\d*\.?\d*$/.test(value)) return;
+                      // Validación paso a paso: 1-60 semanas y .0-.6 días
+                      const partialRegex =
+                        /^([1-9]|[1-5][0-9]|60)?(\.([0-6])?)?$/; // se escapa el punto
+                      if (partialRegex.test(value)) {
+                        handleChange({ target: { name, value } });
+                      }
+                    }}
+                    placeholder="Ej: 8.6 (8 semanas. 6 días)"
+                    inputMode="decimal"
+                    pattern="^\d+(\.\d+)?$"
+                    title="Solo números y punto decimal (ej.: 15 o 12.2)"
+                    className={`${inputStyle} ${
+                      isFieldInvalid(
+                        "for_008_emer_edad_gest",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    } ${
+                      variableEstado["for_008_emer_edad_gest"]
+                        ? "bg-gray-200 text-gray-700 cursor-no-drop"
+                        : "bg-white text-gray-700 cursor-pointer"
+                    }`}
+                    disabled={variableEstado["for_008_emer_edad_gest"]}
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="for_008_emer_ries_obst"
+                  >
+                    {formData.for_008_emer_espe_prof === "OBSTETRIZ" && (
+                      <span className="text-red-500">*</span>
+                    )}
+                    {labelMap["for_008_emer_ries_obst"]}
+                  </label>
+                  <CustomSelect
+                    id="for_008_emer_ries_obst"
+                    name="for_008_emer_ries_obst"
+                    value={formData["for_008_emer_ries_obst"]}
+                    onChange={handleChange}
+                    options={allListForm008.for_008_emer_ries_obst}
+                    disabled={variableEstado["for_008_emer_ries_obst"]}
+                    variableEstado={variableEstado}
+                    className={
+                      isFieldInvalid(
+                        "for_008_emer_ries_obst",
+                        requiredFields,
+                        formData,
+                        isFieldVisible
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                  />
+                </div>
               </div>
-            </div>
-          </fieldset>
-
+            </fieldset>
+          </div>
           <div className="md:col-span-2 flex justify-center mt-1">
             <button
               type="submit"
@@ -2991,6 +3008,23 @@ const Form008Emergencia = () => {
               <BuscarAdmisionados
                 onSelect={handleSeleccionarAdmisionado}
                 onClose={() => setShowBusquedaAvanzada(false)}
+              />
+            </div>
+          </div>
+        )}
+        {showTablaAtenciones && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white w-[95%] max-w-5xl max-h-[90vh] overflow-auto rounded shadow-lg p-4 relative">
+              <button
+                type="button"
+                onClick={() => setShowTablaAtenciones(false)}
+                className="absolute top-2 right-2 text-white bg-red-600 hover:bg-red-700 rounded px-2 py-1 text-sm"
+              >
+                X
+              </button>
+              <TablaAtencionesForm008
+                id_admision={formData.id_admision_datos}
+                // Puedes pasar más props si tu componente lo requiere
               />
             </div>
           </div>

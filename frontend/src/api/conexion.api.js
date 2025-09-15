@@ -409,6 +409,26 @@ export const buscarUsuarioIdUnidadSalud = async () => {
   }
 };
 
+export const buscarAtencionesForm008 = async (month, year) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/form-008-emergencia/listar-atenciones-paciente/`,
+      {
+        params: { month, year },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching buscar form 008 data:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
 export const listarUsuariosApoyoAtencion = async () => {
   try {
     const response = await axios.get(`${API_URL}/eni-user/listar-filtrado/`);

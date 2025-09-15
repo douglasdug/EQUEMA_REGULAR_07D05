@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   registerAdmision,
   updateAdmision,
@@ -265,14 +265,14 @@ const Admision = ({
     "adm_dato_auto_pueb_kich",
     "adm_dato_adic_grup_prio",
     "adm_dato_adic_tipo_segu",
-    "adm_dato_repr_tipo_iden",
-    "adm_dato_repr_nume_iden",
-    "adm_dato_repr_apel",
-    "adm_dato_repr_nomb",
-    "adm_dato_repr_fech_naci",
-    "adm_dato_repr_pare",
-    "adm_dato_repr_naci",
-    "adm_dato_repr_no_ident_prov",
+    // "adm_dato_repr_tipo_iden",
+    // "adm_dato_repr_nume_iden",
+    // "adm_dato_repr_apel",
+    // "adm_dato_repr_nomb",
+    // "adm_dato_repr_fech_naci",
+    // "adm_dato_repr_pare",
+    // "adm_dato_repr_naci",
+    // "adm_dato_repr_no_ident_prov",
   ];
 
   const labelMap = {
@@ -317,7 +317,7 @@ const Admision = ({
     adm_dato_repr_nume_tele: "Número telefónico:",
     adm_dato_repr_naci: "Nacionalidad:",
     adm_dato_repr_no_ident_prov: "Provincia de Nacimiento (NO IDENTIFICADO):",
-    adm_dato_cont_enca_nece_llam: "Contacto de emergencia - Nombre completo:",
+    adm_dato_cont_enca_nece_llam: "Contacto de emergencia - Nombres:",
     adm_dato_cont_pare: "Parentesco:",
     adm_dato_cont_dire: "Dirección:",
     adm_dato_cont_tele: "Teléfono:",
@@ -605,13 +605,13 @@ const Admision = ({
       adm_dato_adic_tien_disc: false,
       adm_dato_repr_tipo_iden: false,
       adm_dato_repr_nume_iden: true,
-      adm_dato_repr_apel: false,
-      adm_dato_repr_nomb: false,
-      adm_dato_repr_fech_naci: false,
-      adm_dato_repr_pare: false,
-      adm_dato_repr_nume_tele: false,
-      adm_dato_repr_naci: false,
-      adm_dato_repr_no_ident_prov: false,
+      adm_dato_repr_apel: true,
+      adm_dato_repr_nomb: true,
+      adm_dato_repr_fech_naci: true,
+      adm_dato_repr_pare: true,
+      adm_dato_repr_nume_tele: true,
+      adm_dato_repr_naci: true,
+      adm_dato_repr_no_ident_prov: true,
       adm_dato_cont_enca_nece_llam: false,
       adm_dato_cont_pare: false,
       adm_dato_cont_dire: false,
@@ -1383,6 +1383,63 @@ const Admision = ({
     },
   });
 
+  const fieldToTab = {
+    // personales
+    adm_dato_pers_tipo_iden: "personales",
+    adm_dato_pers_nume_iden: "personales",
+    adm_dato_pers_apel_prim: "personales",
+    adm_dato_pers_nomb_prim: "personales",
+    adm_dato_naci_fech_naci: "personales",
+    adm_dato_pers_sexo: "personales",
+    adm_dato_naci_naci: "personales",
+    adm_dato_no_ident_prov: "personales",
+
+    // residencia
+    adm_dato_resi_pais_resi: "residencia",
+    adm_dato_resi_prov: "residencia",
+    adm_dato_resi_cant: "residencia",
+    adm_dato_resi_parr: "residencia",
+    adm_dato_resi_esta_adsc_terr: "residencia",
+
+    // adicionales
+    adm_dato_auto_auto_etni: "adicionales",
+    adm_dato_auto_naci_etni: "adicionales",
+    adm_dato_auto_pueb_kich: "adicionales",
+    adm_dato_adic_grup_prio: "adicionales",
+    adm_dato_adic_nive_educ: "adicionales",
+    adm_dato_adic_esta_nive_educ: "adicionales",
+    adm_dato_adic_tipo_empr_trab: "adicionales",
+    adm_dato_adic_ocup_prof_prin: "adicionales",
+    adm_dato_adic_tipo_segu: "adicionales",
+
+    // Si vuelves a requerir campos de representante, agrégalos aquí:
+    // adm_dato_repr_tipo_iden: "representante",
+    // adm_dato_repr_nume_iden: "representante",
+    // ...
+  };
+
+  // Calcula cuántos campos obligatorios faltan por tab (considerando visibilidad dinámica)
+  const pendientesPorTab = useMemo(() => {
+    const acc = {
+      personales: 0,
+      residencia: 0,
+      adicionales: 0,
+      representante: 0,
+      contacto: 0,
+    };
+    requiredFields.forEach((f) => {
+      if (!isFieldVisible(f)) return;
+      const lleno = Array.isArray(formData[f])
+        ? formData[f] && formData[f].length > 0
+        : !!formData[f];
+      if (!lleno) {
+        const k = fieldToTab[f] || "personales";
+        acc[k] = (acc[k] || 0) + 1;
+      }
+    });
+    return acc;
+  }, [formData, edad]); // edad afecta isFieldVisible
+
   // Nacionalidad automática para cédula ecuatoriana
   useEffect(() => {
     if (
@@ -1629,7 +1686,8 @@ const Admision = ({
   );
 
   const fieldClass = "mb-1 flex flex-col";
-  const labelClass = "block text-gray-700 text-sm font-bold mb-1";
+  const labelClass =
+    "text-gray-700 text-sm font-bold mr-2 max-w-full min-w-[120px] break-words";
   const buttonTextRegistro = isEditing ? "Actualizar Registro" : "Registrar";
   const buttonTextBuscar = isBuscar ? "Nuevo Registro" : "Buscar";
   const buttonTextBuscarRepresentante = isBuscarRepresentante
@@ -1649,7 +1707,7 @@ const Admision = ({
         </p>
 
         {/* NAV TABS */}
-        <nav className="w-full flex overflow-x-auto no-scrollbar space-x-2 border-b border-blue-200 mb-1 bg-white items-center justify-center px-2 py-1 relative">
+        <nav className="w-full flex overflow-x-auto no-scrollbar space-x-2 border-b border-blue-200 mb-1 bg-white items-center justify-center px-1 py-1 relative">
           {tabs.map((tab) =>
             tab.key === "representante" &&
             !(edad !== null && parseInt(edad) < 18) ? null : (
@@ -1657,14 +1715,34 @@ const Admision = ({
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-2 py-1 sm:px-4 sm:py-2 rounded-e-full font-bold transition-colors duration-200 whitespace-nowrap
+                className={`px-1 py-1 sm:px-2 sm:py-1 rounded-e-full font-bold transition-colors duration-200 whitespace-nowrap
           ${
             activeTab === tab.key
               ? "bg-blue-600 text-white shadow"
               : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-          }`}
+          }
+          ${pendientesPorTab[tab.key] > 0 ? "ring-2 ring-red-400" : ""}`}
+                title={
+                  pendientesPorTab[tab.key] > 0
+                    ? `Faltan ${pendientesPorTab[tab.key]} campos obligatorios`
+                    : ""
+                }
               >
                 {tab.label}
+                {pendientesPorTab[tab.key] > 0 && (
+                  <span className="ml-2 inline-flex items-center">
+                    <span className="relative flex h-4 w-4">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-red-600 border-2 border-white shadow-lg"></span>
+                    </span>
+                    <span className="ml-1 text-xs font-bold text-red-700 drop-shadow">
+                      {pendientesPorTab[tab.key]}
+                    </span>
+                    <span className="ml-1 animate-bounce text-red-600 text-lg font-extrabold drop-shadow">
+                      ⬇
+                    </span>
+                  </span>
+                )}
               </button>
             )
           )}
@@ -1817,7 +1895,7 @@ const Admision = ({
                       name="adm_dato_pers_apel_prim"
                       value={formData["adm_dato_pers_apel_prim"]}
                       onChange={handleChange}
-                      placeholder="Información es requerida"
+                      placeholder="Apellidos es requerida"
                       required
                       className={`${inputStyle}
                       ${
@@ -1854,7 +1932,7 @@ const Admision = ({
                       name="adm_dato_pers_nomb_prim"
                       value={formData["adm_dato_pers_nomb_prim"]}
                       onChange={handleChange}
-                      placeholder="Información es requerida"
+                      placeholder="Nombres es requerida"
                       required
                       className={`${inputStyle}
                       ${
@@ -1891,7 +1969,7 @@ const Admision = ({
                       name="adm_dato_naci_fech_naci"
                       value={fechaNacimiento}
                       onChange={handleChange}
-                      placeholder="Información es requerida"
+                      placeholder="Fecha es requerida"
                       required
                       className={`${inputStyle}
                       ${
@@ -2618,244 +2696,254 @@ const Admision = ({
                   )}
                 </div>
               </fieldset>
-              <fieldset className="border border-blue-200 rounded p-2 mb-1">
-                <legend className="text-lg font-semibold text-blue-600 px-2">
-                  Condición Prioritaria
-                </legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  <div className={fieldClass}>
-                    <label
-                      className={labelClass}
-                      htmlFor="adm_dato_adic_grup_prio"
-                    >
-                      {requiredFields.includes("adm_dato_adic_grup_prio") && (
-                        <span className="text-red-500">* </span>
-                      )}
-                      {labelMap["adm_dato_adic_grup_prio"]}
-                    </label>
-                    <CustomSelect
-                      id="adm_dato_adic_grup_prio"
-                      name="adm_dato_adic_grup_prio"
-                      value={formData["adm_dato_adic_grup_prio"]}
-                      onChange={handleChange}
-                      options={getOpcionesGrupoPrioritario()}
-                      disabled={variableEstado["adm_dato_adic_grup_prio"]}
-                      variableEstado={variableEstado}
-                      className={
-                        isFieldInvalid(
-                          "adm_dato_adic_grup_prio",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                    />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                <fieldset className="border border-blue-200 rounded p-2 mb-1 col-span-2">
+                  <legend className="text-lg font-semibold text-blue-600 px-2">
+                    Condición Prioritaria
+                  </legend>
+                  <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-2">
+                    <div className={fieldClass}>
+                      <label
+                        className={labelClass}
+                        htmlFor="adm_dato_adic_grup_prio"
+                      >
+                        {requiredFields.includes("adm_dato_adic_grup_prio") && (
+                          <span className="text-red-500">* </span>
+                        )}
+                        {labelMap["adm_dato_adic_grup_prio"]}
+                      </label>
+                      <CustomSelect
+                        id="adm_dato_adic_grup_prio"
+                        name="adm_dato_adic_grup_prio"
+                        value={formData["adm_dato_adic_grup_prio"]}
+                        onChange={handleChange}
+                        options={getOpcionesGrupoPrioritario()}
+                        disabled={variableEstado["adm_dato_adic_grup_prio"]}
+                        variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "adm_dato_adic_grup_prio",
+                            requiredFields,
+                            formData,
+                            isFieldVisible
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-              </fieldset>
-              <fieldset className="border border-blue-200 rounded p-2 mb-1">
-                <legend className="text-lg font-semibold text-blue-600 px-2">
-                  Formación Académica
-                </legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  <div className={fieldClass}>
-                    <label
-                      className={labelClass}
-                      htmlFor="adm_dato_adic_nive_educ"
-                    >
-                      {requiredFields.includes("adm_dato_adic_nive_educ") && (
-                        <span className="text-red-500">* </span>
-                      )}
-                      {labelMap["adm_dato_adic_nive_educ"]}
-                    </label>
-                    <CustomSelect
-                      id="adm_dato_adic_nive_educ"
-                      name="adm_dato_adic_nive_educ"
-                      value={formData["adm_dato_adic_nive_educ"]}
-                      onChange={handleChange}
-                      options={allListAdmision.adm_dato_adic_nive_educ}
-                      disabled={variableEstado["adm_dato_adic_nive_educ"]}
-                      variableEstado={variableEstado}
-                      className={
-                        isFieldInvalid(
-                          "adm_dato_adic_nive_educ",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                    />
+                </fieldset>
+                <fieldset className="border border-blue-200 rounded p-2 mb-1 col-span-2">
+                  <legend className="text-lg font-semibold text-blue-600 px-2">
+                    Formación Académica
+                  </legend>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
+                    <div className={fieldClass}>
+                      <label
+                        className={labelClass}
+                        htmlFor="adm_dato_adic_nive_educ"
+                      >
+                        {requiredFields.includes("adm_dato_adic_nive_educ") && (
+                          <span className="text-red-500">* </span>
+                        )}
+                        {labelMap["adm_dato_adic_nive_educ"]}
+                      </label>
+                      <CustomSelect
+                        id="adm_dato_adic_nive_educ"
+                        name="adm_dato_adic_nive_educ"
+                        value={formData["adm_dato_adic_nive_educ"]}
+                        onChange={handleChange}
+                        options={allListAdmision.adm_dato_adic_nive_educ}
+                        disabled={variableEstado["adm_dato_adic_nive_educ"]}
+                        variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "adm_dato_adic_nive_educ",
+                            requiredFields,
+                            formData,
+                            isFieldVisible
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
+                      />
+                    </div>
+                    <div className={fieldClass}>
+                      <label
+                        className={labelClass}
+                        htmlFor="adm_dato_adic_esta_nive_educ"
+                      >
+                        {requiredFields.includes(
+                          "adm_dato_adic_esta_nive_educ"
+                        ) && <span className="text-red-500">* </span>}
+                        {labelMap["adm_dato_adic_esta_nive_educ"]}
+                      </label>
+                      <CustomSelect
+                        id="adm_dato_adic_esta_nive_educ"
+                        name="adm_dato_adic_esta_nive_educ"
+                        value={formData["adm_dato_adic_esta_nive_educ"]}
+                        onChange={handleChange}
+                        options={allListAdmision.adm_dato_adic_esta_nive_educ}
+                        disabled={
+                          variableEstado["adm_dato_adic_esta_nive_educ"]
+                        }
+                        variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "adm_dato_adic_esta_nive_educ",
+                            requiredFields,
+                            formData,
+                            isFieldVisible
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
+                      />
+                    </div>
                   </div>
-                  <div className={fieldClass}>
-                    <label
-                      className={labelClass}
-                      htmlFor="adm_dato_adic_esta_nive_educ"
-                    >
-                      {requiredFields.includes(
-                        "adm_dato_adic_esta_nive_educ"
-                      ) && <span className="text-red-500">* </span>}
-                      {labelMap["adm_dato_adic_esta_nive_educ"]}
-                    </label>
-                    <CustomSelect
-                      id="adm_dato_adic_esta_nive_educ"
-                      name="adm_dato_adic_esta_nive_educ"
-                      value={formData["adm_dato_adic_esta_nive_educ"]}
-                      onChange={handleChange}
-                      options={allListAdmision.adm_dato_adic_esta_nive_educ}
-                      disabled={variableEstado["adm_dato_adic_esta_nive_educ"]}
-                      variableEstado={variableEstado}
-                      className={
-                        isFieldInvalid(
-                          "adm_dato_adic_esta_nive_educ",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                    />
+                </fieldset>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                <fieldset className="border border-blue-200 rounded p-2 mb-1 col-span-3">
+                  <legend className="text-lg font-semibold text-blue-600 px-2">
+                    Información Laboral
+                  </legend>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-2">
+                    <div className={fieldClass}>
+                      <label
+                        className={labelClass}
+                        htmlFor="adm_dato_adic_tipo_empr_trab"
+                      >
+                        {requiredFields.includes(
+                          "adm_dato_adic_tipo_empr_trab"
+                        ) && <span className="text-red-500">* </span>}
+                        {labelMap["adm_dato_adic_tipo_empr_trab"]}
+                      </label>
+                      <CustomSelect
+                        id="adm_dato_adic_tipo_empr_trab"
+                        name="adm_dato_adic_tipo_empr_trab"
+                        value={formData["adm_dato_adic_tipo_empr_trab"]}
+                        onChange={handleChange}
+                        options={allListAdmision.adm_dato_adic_tipo_empr_trab}
+                        disabled={
+                          variableEstado["adm_dato_adic_tipo_empr_trab"]
+                        }
+                        variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "adm_dato_adic_tipo_empr_trab",
+                            requiredFields,
+                            formData,
+                            isFieldVisible
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
+                      />
+                    </div>
+                    <div className={fieldClass}>
+                      <label
+                        className={labelClass}
+                        htmlFor="adm_dato_adic_ocup_prof_prin"
+                      >
+                        {requiredFields.includes(
+                          "adm_dato_adic_ocup_prof_prin"
+                        ) && <span className="text-red-500">* </span>}
+                        {labelMap["adm_dato_adic_ocup_prof_prin"]}
+                      </label>
+                      <CustomSelect
+                        id="adm_dato_adic_ocup_prof_prin"
+                        name="adm_dato_adic_ocup_prof_prin"
+                        value={formData["adm_dato_adic_ocup_prof_prin"]}
+                        onChange={handleChange}
+                        options={allListAdmision.adm_dato_adic_ocup_prof_prin}
+                        disabled={
+                          variableEstado["adm_dato_adic_ocup_prof_prin"]
+                        }
+                        variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "adm_dato_adic_ocup_prof_prin",
+                            requiredFields,
+                            formData,
+                            isFieldVisible
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
+                      />
+                    </div>
+                    <div className={fieldClass}>
+                      <label
+                        className={labelClass}
+                        htmlFor="adm_dato_adic_tipo_segu"
+                      >
+                        {requiredFields.includes("adm_dato_adic_tipo_segu") && (
+                          <span className="text-red-500">* </span>
+                        )}
+                        {labelMap["adm_dato_adic_tipo_segu"]}
+                      </label>
+                      <CustomSelect
+                        id="adm_dato_adic_tipo_segu"
+                        name="adm_dato_adic_tipo_segu"
+                        value={formData["adm_dato_adic_tipo_segu"]}
+                        onChange={handleChange}
+                        options={allListAdmision.adm_dato_adic_tipo_segu}
+                        disabled={variableEstado["adm_dato_adic_tipo_segu"]}
+                        variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "adm_dato_adic_tipo_segu",
+                            requiredFields,
+                            formData,
+                            isFieldVisible
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-              </fieldset>
-              <fieldset className="border border-blue-200 rounded p-2 mb-1">
-                <legend className="text-lg font-semibold text-blue-600 px-2">
-                  Información Laboral
-                </legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  <div className={fieldClass}>
-                    <label
-                      className={labelClass}
-                      htmlFor="adm_dato_adic_tipo_empr_trab"
-                    >
-                      {requiredFields.includes(
-                        "adm_dato_adic_tipo_empr_trab"
-                      ) && <span className="text-red-500">* </span>}
-                      {labelMap["adm_dato_adic_tipo_empr_trab"]}
-                    </label>
-                    <CustomSelect
-                      id="adm_dato_adic_tipo_empr_trab"
-                      name="adm_dato_adic_tipo_empr_trab"
-                      value={formData["adm_dato_adic_tipo_empr_trab"]}
-                      onChange={handleChange}
-                      options={allListAdmision.adm_dato_adic_tipo_empr_trab}
-                      disabled={variableEstado["adm_dato_adic_tipo_empr_trab"]}
-                      variableEstado={variableEstado}
-                      className={
-                        isFieldInvalid(
-                          "adm_dato_adic_tipo_empr_trab",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                    />
+                </fieldset>
+                <fieldset className="border border-blue-200 rounded p-2 mb-1 col-span-1">
+                  <legend className="text-lg font-semibold text-blue-600 px-2">
+                    Discapacidad
+                  </legend>
+                  <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-2">
+                    <div className={fieldClass}>
+                      <label
+                        className={labelClass}
+                        htmlFor="adm_dato_adic_tien_disc"
+                      >
+                        {requiredFields.includes("adm_dato_adic_tien_disc") && (
+                          <span className="text-red-500">* </span>
+                        )}
+                        {labelMap["adm_dato_adic_tien_disc"]}
+                      </label>
+                      <CustomSelect
+                        id="adm_dato_adic_tien_disc"
+                        name="adm_dato_adic_tien_disc"
+                        value={formData["adm_dato_adic_tien_disc"]}
+                        onChange={handleChange}
+                        options={allListAdmision.adm_dato_adic_tien_disc}
+                        disabled={variableEstado["adm_dato_adic_tien_disc"]}
+                        variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "adm_dato_adic_tien_disc",
+                            requiredFields,
+                            formData,
+                            isFieldVisible
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
+                      />
+                    </div>
                   </div>
-                  <div className={fieldClass}>
-                    <label
-                      className={labelClass}
-                      htmlFor="adm_dato_adic_ocup_prof_prin"
-                    >
-                      {requiredFields.includes(
-                        "adm_dato_adic_ocup_prof_prin"
-                      ) && <span className="text-red-500">* </span>}
-                      {labelMap["adm_dato_adic_ocup_prof_prin"]}
-                    </label>
-                    <CustomSelect
-                      id="adm_dato_adic_ocup_prof_prin"
-                      name="adm_dato_adic_ocup_prof_prin"
-                      value={formData["adm_dato_adic_ocup_prof_prin"]}
-                      onChange={handleChange}
-                      options={allListAdmision.adm_dato_adic_ocup_prof_prin}
-                      disabled={variableEstado["adm_dato_adic_ocup_prof_prin"]}
-                      variableEstado={variableEstado}
-                      className={
-                        isFieldInvalid(
-                          "adm_dato_adic_ocup_prof_prin",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                    />
-                  </div>
-                  <div className={fieldClass}>
-                    <label
-                      className={labelClass}
-                      htmlFor="adm_dato_adic_tipo_segu"
-                    >
-                      {requiredFields.includes("adm_dato_adic_tipo_segu") && (
-                        <span className="text-red-500">* </span>
-                      )}
-                      {labelMap["adm_dato_adic_tipo_segu"]}
-                    </label>
-                    <CustomSelect
-                      id="adm_dato_adic_tipo_segu"
-                      name="adm_dato_adic_tipo_segu"
-                      value={formData["adm_dato_adic_tipo_segu"]}
-                      onChange={handleChange}
-                      options={allListAdmision.adm_dato_adic_tipo_segu}
-                      disabled={variableEstado["adm_dato_adic_tipo_segu"]}
-                      variableEstado={variableEstado}
-                      className={
-                        isFieldInvalid(
-                          "adm_dato_adic_tipo_segu",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                    />
-                  </div>
-                </div>
-              </fieldset>
-              <fieldset className="border border-blue-200 rounded p-2 mb-1">
-                <legend className="text-lg font-semibold text-blue-600 px-2">
-                  Discapacidad
-                </legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  <div className={fieldClass}>
-                    <label
-                      className={labelClass}
-                      htmlFor="adm_dato_adic_tien_disc"
-                    >
-                      {requiredFields.includes("adm_dato_adic_tien_disc") && (
-                        <span className="text-red-500">* </span>
-                      )}
-                      {labelMap["adm_dato_adic_tien_disc"]}
-                    </label>
-                    <CustomSelect
-                      id="adm_dato_adic_tien_disc"
-                      name="adm_dato_adic_tien_disc"
-                      value={formData["adm_dato_adic_tien_disc"]}
-                      onChange={handleChange}
-                      options={allListAdmision.adm_dato_adic_tien_disc}
-                      disabled={variableEstado["adm_dato_adic_tien_disc"]}
-                      variableEstado={variableEstado}
-                      className={
-                        isFieldInvalid(
-                          "adm_dato_adic_tien_disc",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                    />
-                  </div>
-                </div>
-              </fieldset>
+                </fieldset>
+              </div>
             </>
           )}
           {/* DATOS DEL REPRESENTANTE */}
@@ -2907,14 +2995,15 @@ const Admision = ({
                       )}
                       {labelMap["adm_dato_repr_nume_iden"]}
                     </label>
-                    <input
-                      type="text"
-                      id="adm_dato_repr_nume_iden"
-                      name="adm_dato_repr_nume_iden"
-                      value={formData["adm_dato_repr_nume_iden"]}
-                      onChange={handleChange}
-                      placeholder="Información es requerida"
-                      className={`${inputStyle}
+                    <div className="flex items-center justify-start -mb-4">
+                      <input
+                        type="text"
+                        id="adm_dato_repr_nume_iden"
+                        name="adm_dato_repr_nume_iden"
+                        value={formData["adm_dato_repr_nume_iden"]}
+                        onChange={handleChange}
+                        placeholder="Información es requerida"
+                        className={`${inputStyle}
                       ${
                         isFieldInvalid(
                           "adm_dato_repr_nume_iden",
@@ -2930,38 +3019,37 @@ const Admision = ({
                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
                           : "bg-white text-gray-700 cursor-pointer"
                       }`}
-                      disabled={variableEstado["adm_dato_repr_nume_iden"]}
-                    />
-                  </div>
-                  <div className="flex items-center justify-start -mb-4">
-                    <button
-                      type="button"
-                      id="btnBuscarRepresentante"
-                      name="btnBuscarRepresentante"
-                      className={btnBuscarRepresentanteClass}
-                      onClick={
-                        isBuscarRepresentante
-                          ? ajustarVariableEstadoFalsoRepr
-                          : () => handleSearch("representante")
-                      }
-                      disabled={botonEstado.btnBuscarRepresentante}
-                    >
-                      {buttonTextBuscarRepresentante}
-                    </button>
-                    <button
-                      type="button"
-                      id="btnLimpiarRepresentante"
-                      name="btnLimpiarRepresentante"
-                      className={`${buttonStylePrimario} ${
-                        botonEstado.btnLimpiarRepresentante
-                          ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                          : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-                      }`}
-                      onClick={() => limpiarEstadoRepr()}
-                      disabled={botonEstado.btnLimpiarRepresentante}
-                    >
-                      Limpiar
-                    </button>
+                        disabled={variableEstado["adm_dato_repr_nume_iden"]}
+                      />
+                      <button
+                        type="button"
+                        id="btnBuscarRepresentante"
+                        name="btnBuscarRepresentante"
+                        className={btnBuscarRepresentanteClass}
+                        onClick={
+                          isBuscarRepresentante
+                            ? ajustarVariableEstadoFalsoRepr
+                            : () => handleSearch("representante")
+                        }
+                        disabled={botonEstado.btnBuscarRepresentante}
+                      >
+                        {buttonTextBuscarRepresentante}
+                      </button>
+                      <button
+                        type="button"
+                        id="btnLimpiarRepresentante"
+                        name="btnLimpiarRepresentante"
+                        className={`${buttonStylePrimario} ${
+                          botonEstado.btnLimpiarRepresentante
+                            ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                            : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
+                        }`}
+                        onClick={() => limpiarEstadoRepr()}
+                        disabled={botonEstado.btnLimpiarRepresentante}
+                      >
+                        Limpiar
+                      </button>
+                    </div>
                   </div>
                   <div className={fieldClass}>
                     <label className={labelClass} htmlFor="adm_dato_repr_apel">
@@ -2976,7 +3064,7 @@ const Admision = ({
                       name="adm_dato_repr_apel"
                       value={formData["adm_dato_repr_apel"]}
                       onChange={handleChange}
-                      placeholder="Información es requerida"
+                      placeholder="Apellidos es requerida"
                       className={`${inputStyle}
                       ${
                         isFieldInvalid(
@@ -3009,7 +3097,7 @@ const Admision = ({
                       name="adm_dato_repr_nomb"
                       value={formData["adm_dato_repr_nomb"]}
                       onChange={handleChange}
-                      placeholder="Información es requerida"
+                      placeholder="Nombres es requerida"
                       className={`${inputStyle}
                       ${
                         isFieldInvalid(
@@ -3228,7 +3316,7 @@ const Admision = ({
                     name="adm_dato_cont_enca_nece_llam"
                     value={formData["adm_dato_cont_enca_nece_llam"]}
                     onChange={handleChange}
-                    placeholder="Información es requerida"
+                    placeholder="Apellido y Nombres"
                     className={`${inputStyle}
                     ${
                       isFieldInvalid(

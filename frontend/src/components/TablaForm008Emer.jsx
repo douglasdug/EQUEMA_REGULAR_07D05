@@ -195,7 +195,55 @@ const TablaForm008Emer = ({
     "eniUser",
   ]);
 
+  const encabezados = {
+    for_008_emer_unic: "UNICODIGO",
+    for_008_emer_unid: "NOMBRE DEL ESTABLECIMIENTO DE SALUD",
+    for_008_emer_zona: "ZONA",
+    for_008_emer_prov: "PROVINCIA",
+    for_008_emer_cant: "CANTON",
+    for_008_emer_dist: "DISTRITO",
+    for_008_emer_nive: "NIVEL",
+    for_008_emer_fech_aten: "FECHA DE ATENCIÓN",
+    for_008_emer_tipo_docu_iden: "TIPO DE DOCUMENTO DE IDENTIFICACIÓN",
+    for_008_emer_nume_iden: "NÚMERO DE IDENTIFICACION",
+    for_008_emer_prim_apel: "PRIMER APELLIDO",
+    for_008_emer_segu_apel: "SEGUNDO APELLIDO",
+    for_008_emer_prim_nomb: "PRIMER NOMBRE",
+    for_008_emer_segu_nomb: "SEGUNDO NOMBRE",
+    for_008_emer_sexo: "SEXO",
+    for_008_emer_edad: "EDAD",
+    for_008_emer_cond_edad: "CONDICIÓN DE LA EDAD",
+    for_008_emer_naci: "NACIONALIDAD",
+    for_008_emer_etni: "ETNIA",
+    for_008_emer_grup_prio: "GRUPO PRIORITARIO",
+    for_008_emer_tipo_segu: "TIPO DE SEGURO",
+    for_008_emer_prov_resi: "PROVINCIA DE RECIDENCIA",
+    for_008_emer_cant_resi: "CANTON DE RECIDENCIA",
+    for_008_emer_parr_resi: "PARROQUIA DE RECIDENCIA",
+    for_008_emer_espe_prof: "ESPECIALIDAD DEL PROFESIONAL",
+    for_008_emer_cie_10_prin: "CIE-10 (PRINCIPAL)",
+    for_008_emer_diag_prin: "DIAGNÓSTICO 1 (PRINCIPAL)",
+    for_008_emer_cond_diag: "CONDICIÓN DEL DIAGNÓSTICO",
+    for_008_emer_cie_10_caus_exte: "CIE-10 (CAUSA EXTERNA)",
+    for_008_emer_diag_caus_exte: "DIAGNOSTICO (CAUSA  EXTERNA)",
+    for_008_emer_hosp: "HOSPITALIZACIÓN",
+    for_008_emer_hora_aten: "HORA ATENCIÓN",
+    for_008_emer_cond_alta: "CONDICIÓN DEL ALTA",
+    for_008_emer_obse: "OBSERVACIÓN",
+    for_008_emer_fech_repor: "FECHA DE REPORTE",
+    for_008_emer_resp_aten_medi: "RESPONSABLE DE LA ATENCION MEDICA",
+    for_008_emer_apoy_aten_medi: "APOYO EN LA ATENCION MEDICA",
+    for_008_emer_edad_gest: "EDAD GESTACIONAL",
+    for_008_emer_ries_obst: "RIESGO OBSTETRICO",
+    for_008_emer_indi_paci_fami: "INDICACIONES PARA EL PACIENTE O LA FAMILIA",
+    for_008_emer_unid_salu_resp_segu_aten:
+      "UNIDAD DE SALUD RESPONSABLE DE SEGUIMIENTO DE ATENCIÓN",
+    for_008_emer_dire_domi: "DIRECCIÓN DE DOMICILIO",
+    for_008_emer_tele_paci: "TELEFONO DE PACIENTE",
+  };
+
   const prettyLabel = (k) =>
+    encabezados[k] ||
     k
       .replace(/^for_008_emer_/i, "")
       .replace(/_/g, " ")

@@ -701,47 +701,6 @@ const RegisterUser = () => {
                     {showPassword1 ? "🙈" : "👁️"}
                   </button>
                 </div>
-                <div className="mt-1 ml-1 text-sm">
-                  {(() => {
-                    const passwordValidation = getPasswordValidation();
-                    return (
-                      <ul>
-                        <li className="flex items-center">
-                          {passwordValidation.longitud ? (
-                            <span className="text-green-600 mr-1">✅</span>
-                          ) : (
-                            <span className="text-red-600 mr-1">❌</span>
-                          )}
-                          Tener de 10 hasta 20 caracteres.
-                        </li>
-                        <li className="flex items-center">
-                          {passwordValidation.mayMinNum ? (
-                            <span className="text-green-600 mr-1">✅</span>
-                          ) : (
-                            <span className="text-red-600 mr-1">❌</span>
-                          )}
-                          Estar conformada de Mayúsculas, minúsculas y números.
-                        </li>
-                        <li className="flex items-center">
-                          {passwordValidation.especial ? (
-                            <span className="text-green-600 mr-1">✅</span>
-                          ) : (
-                            <span className="text-red-600 mr-1">❌</span>
-                          )}
-                          Al menos un carácter especial: * + -
-                        </li>
-                        <li className="flex items-center">
-                          {passwordValidation.iguales ? (
-                            <span className="text-green-600 mr-1">✅</span>
-                          ) : (
-                            <span className="text-red-600 mr-1">❌</span>
-                          )}
-                          Las contraseñas coinciden.
-                        </li>
-                      </ul>
-                    );
-                  })()}
-                </div>
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="password2">
@@ -788,6 +747,48 @@ const RegisterUser = () => {
                   </button>
                 </div>
               </div>
+            </div>
+            <div className="mt-1 ml-1 text-lg">
+              {(() => {
+                const passwordValidation = getPasswordValidation();
+                return (
+                  <ul>
+                    <li className="flex items-center">
+                      {passwordValidation.longitud ? (
+                        <span className="text-green-600 mr-1">✅</span>
+                      ) : (
+                        <span className="text-red-600 mr-1">❌</span>
+                      )}
+                      Tener de 10 hasta 20 caracteres.
+                    </li>
+                    <li className="flex items-center">
+                      {passwordValidation.mayMinNum ? (
+                        <span className="text-green-600 mr-1">✅</span>
+                      ) : (
+                        <span className="text-red-600 mr-1">❌</span>
+                      )}
+                      Estar conformada de Mayúsculas, minúsculas y números.
+                    </li>
+                    <li className="flex items-center">
+                      {passwordValidation.especial ? (
+                        <span className="text-green-600 mr-1">✅</span>
+                      ) : (
+                        <span className="text-red-600 mr-1">❌</span>
+                      )}
+                      Al menos un carácter especial como los siguientes:&nbsp;
+                      <strong className="text-2xl text-green-500">* + -</strong>
+                    </li>
+                    <li className="flex items-center">
+                      {passwordValidation.iguales ? (
+                        <span className="text-green-600 mr-1">✅</span>
+                      ) : (
+                        <span className="text-red-600 mr-1">❌</span>
+                      )}
+                      Las contraseñas coinciden.
+                    </li>
+                  </ul>
+                );
+              })()}
             </div>
           </fieldset>
           <div className="md:col-span-2 flex justify-center mt-1">

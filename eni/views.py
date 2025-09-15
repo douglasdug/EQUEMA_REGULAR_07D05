@@ -107,7 +107,8 @@ class HasRole(BasePermission):
 class NewPasswordResetAPIView(APIView):
     # Constante para la URL del frontend
     # FRONTEND_URL = "http://localhost:5173/new-password"
-    FRONTEND_URL = "http://181.211.163.253/new-password"
+    # FRONTEND_URL = "http://172.16.91.7/new-password"
+    frontend_url = settings.FRONTEND_URL
 
     @staticmethod
     def censurar_email(email):
@@ -144,7 +145,7 @@ class NewPasswordResetAPIView(APIView):
             uid = urlsafe_base64_encode(force_bytes(user.pk))
 
             # Construir URL del frontend
-            reset_url = f"{self.FRONTEND_URL}/{uid}/{token}"
+            reset_url = f"{self.frontend_url}/{uid}/{token}"
 
             subject = 'Recuperación de contraseña SIRA-07D05'
             text_content = (
@@ -1007,22 +1008,38 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='listar-atenciones-paciente')
     def listar_atenciones_paciente(self, request):
+        """
+        GET /form-008-emergencia/listar-atenciones-paciente/?month=<month>&year=<year>        
+        """
+        mes_form_008 = request.query_params.get("month")
+        year_form_008 = request.query_params.get("year")
+        print(f"Mes: {mes_form_008}, Año: {year_form_008}")
         try:
-            id_admision_datos = request.query_params.get('admision_datos')
+            id_admision_datos = request.query_params.get(
+                'admision_datos')
             if not id_admision_datos:
                 return Response(
                     {"detail": "El parámetro id_admision_datos es requerido."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            qs = (
-                self.get_queryset()
-                .filter(admision_datos=id_admision_datos)
-                .order_by(
-                    '-for_008_emer_fech_aten',
-                    '-for_008_emer_hora_aten',
-                )[:12]
-            )
+            # Si se proporcionan month y year, filtrar por fecha de atención
+            if mes_form_008 and year_form_008:
+                qs = (
+                    self.get_queryset()
+                    .filter(admision_datos=id_admision_datos,
+                            for_008_emer_fech_aten__year=year_form_008,
+                            for_008_emer_fech_aten__month=mes_form_008
+                            ))
+            else:
+                qs = (
+                    self.get_queryset()
+                    .filter(admision_datos=id_admision_datos)
+                    .order_by(
+                        '-for_008_emer_fech_aten',
+                        '-for_008_emer_hora_aten',
+                    )[:12]
+                )
 
             if not qs.exists():
                 return Response({"message": "El paciente no registra atenciones previas de Form-008 Emergencia en el sistema!"}, status=status.HTTP_200_OK)
