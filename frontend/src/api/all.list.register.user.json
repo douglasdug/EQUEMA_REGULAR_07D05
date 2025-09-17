@@ -65,7 +65,7 @@
     { "value": 1, "label": "01 ADMINISTRADOR" },
     { "value": 2, "label": "02 REPORTE" },
     { "value": 3, "label": "03 MEDICO" },
-    { "value": 4, "label": "04 VACUNADOR" }
+    { "value": 4, "label": "04 REPORTE Y ADMISION" }
   ],
   "fun_esta": [
     { "value": 1, "label": "01 ACTIVO" },

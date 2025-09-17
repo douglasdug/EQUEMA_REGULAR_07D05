@@ -409,12 +409,12 @@ export const buscarUsuarioIdUnidadSalud = async () => {
   }
 };
 
-export const buscarAtencionesForm008 = async (month, year) => {
+export const buscarAtencionesForm008 = async (admision_datos, month, year) => {
   try {
     const response = await axios.get(
       `${API_URL}/form-008-emergencia/listar-atenciones-paciente/`,
       {
-        params: { month, year },
+        params: { admision_datos, month, year },
       }
     );
     return response.data;

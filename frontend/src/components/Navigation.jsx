@@ -27,12 +27,12 @@ export function Navigation() {
   const navLinks = [
     { to: "/", label: "Home", roles: ["public"] },
     { to: "/register-user/", label: "Registro", roles: ["public"] },
-    { to: "/admision/", label: "Admision", roles: [3] },
+    { to: "/admision/", label: "Admision", roles: [3, 4] },
     { to: "/form-008-emergencia/", label: "Formulario-008", roles: [3] },
     {
       to: "/reporte-atenciones/",
       label: "Reporte de Atenciones",
-      roles: [1, 2, 3],
+      roles: [1, 2, 3, 4],
     },
     { to: "/admin-user/", label: "Administrador", roles: [1] },
     { to: "/contacto/", label: "Contact", roles: ["public"] },

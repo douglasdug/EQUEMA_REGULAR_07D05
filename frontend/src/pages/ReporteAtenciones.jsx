@@ -387,7 +387,7 @@ export default function ReporteAtenciones() {
       </section>
 
       {/* ====== BLOQUE: Descarga CSV y búsqueda detallada ====== */}
-      {(role === 1 || role === 2) && (
+      {(role === 1 || role === 2 || role === 4) && (
         <section className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
             Reporte Detallado de Atenciones con Filtro Avanzado

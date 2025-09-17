@@ -89,7 +89,12 @@ function App() {
                 <Route
                   element={
                     <RequireRole
-                      allowed={[ROLES.ADMIN, ROLES.REPORTE, ROLES.MEDICO]}
+                      allowed={[
+                        ROLES.ADMIN,
+                        ROLES.REPORTE,
+                        ROLES.MEDICO,
+                        ROLES.REPORTE_Y_ADMISION,
+                      ]}
                     />
                   }
                 >
@@ -101,7 +106,13 @@ function App() {
                 <Route element={<RequireRole allowed={[ROLES.ADMIN]} />}>
                   <Route path="/admin-user/" element={<AdminUser />} />
                 </Route>
-                <Route element={<RequireRole allowed={[ROLES.MEDICO]} />}>
+                <Route
+                  element={
+                    <RequireRole
+                      allowed={[ROLES.MEDICO, ROLES.REPORTE_Y_ADMISION]}
+                    />
+                  }
+                >
                   <Route path="/admision/" element={<Admision />} />
                   <Route
                     path="/form-008-emergencia/"

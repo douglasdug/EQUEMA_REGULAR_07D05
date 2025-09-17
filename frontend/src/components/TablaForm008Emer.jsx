@@ -4,8 +4,8 @@ import {
   listarForm008EmerAtenciones,
   deleteUser,
 } from "../api/conexion.api.js";
-import { toast } from "react-hot-toast";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import { toast } from "react-hot-toast";
 
 const TablaForm008Emer = ({
   setFormData,

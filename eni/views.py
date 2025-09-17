@@ -239,7 +239,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     queryset = eniUser.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]
+    allowed_roles = [1, 2, 3, 4]
 
     def get_permissions(self):
         # Público para registro (create) y búsqueda
@@ -642,7 +642,7 @@ class UnidadSaludRegistrationAPIView(viewsets.ModelViewSet):
     queryset = unidad_salud.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]
+    allowed_roles = [1, 2, 3, 4]
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
@@ -685,7 +685,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
     queryset = admision_datos.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]
+    allowed_roles = [1, 2, 3, 4]
 
     def get_permissions(self):
         # Público para registro (create) y búsqueda
@@ -953,7 +953,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     queryset = form_008_emergencia.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    allowed_roles = [1, 2, 3, 4]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
@@ -1009,7 +1009,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='listar-atenciones-paciente')
     def listar_atenciones_paciente(self, request):
         """
-        GET /form-008-emergencia/listar-atenciones-paciente/?month=<month>&year=<year>        
+        GET /form-008-emergencia/listar-atenciones-paciente/?admision_datos=<id_admision_datos>&month=<month>&year=<year>        
         """
         mes_form_008 = request.query_params.get("month")
         year_form_008 = request.query_params.get("year")
@@ -1031,6 +1031,8 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                             for_008_emer_fech_aten__year=year_form_008,
                             for_008_emer_fech_aten__month=mes_form_008
                             ))
+                if not qs.exists():
+                    return Response({"message": f"El paciente no registra atenciones en el mes {mes_form_008} y año {year_form_008} seleccionados de Form-008 Emergencia en el sistema!"}, status=status.HTTP_200_OK)
             else:
                 qs = (
                     self.get_queryset()
@@ -1040,9 +1042,8 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                         '-for_008_emer_hora_aten',
                     )[:12]
                 )
-
-            if not qs.exists():
-                return Response({"message": "El paciente no registra atenciones previas de Form-008 Emergencia en el sistema!"}, status=status.HTTP_200_OK)
+                if not qs.exists():
+                    return Response({"message": "El paciente no registra atenciones previas de Form-008 Emergencia en el sistema!"}, status=status.HTTP_200_OK)
 
             serializer = self.get_serializer(qs, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1078,7 +1079,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             )
 
         # 2) Validar user_rol y requerir id_eni_user solo si user_rol == 3
-        if str(form_008_user_rol) not in ('1', '2'):
+        if str(form_008_user_rol) not in ('1', '2', '4'):
             return Response(
                 {"detail": "user_rol inválido. Valores permitidos: 1 o 2."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -1135,7 +1136,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         )
         if str(form_008_user_rol) == '3':
             base_qs = base_qs.filter(eniUser=id_eni_user)
-        elif str(form_008_user_rol) == '2':
+        elif str(form_008_user_rol) == '2' or str(form_008_user_rol) == '4':
             # Obtener los uni_unic asociados al usuario
             unidades = unidad_salud.objects.filter(
                 eniUser=id_eni_user).values_list('uni_unic', flat=True)
@@ -1238,7 +1239,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 return Response({"detail": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
             base_qs = base_qs.filter(eniUser=auth_eni_user_id)
             response_id_eni_user = str(auth_eni_user_id)
-        elif user_rol == 2:
+        elif user_rol == 2 or user_rol == 4:
             if not auth_eni_user_id:
                 return Response({"detail": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
             unidades = unidad_salud.objects.filter(
@@ -1339,14 +1340,14 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
 
         id_eni_user = getattr(request.user, 'id', None)
         form_008_user_rol = int(getattr(request.user, 'fun_admi_rol', 0) or 0)
-        if not id_eni_user or form_008_user_rol not in (1, 2, 3):
+        if not id_eni_user or form_008_user_rol not in (1, 2, 3, 4):
             return Response({"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
 
         qs = self.get_queryset().filter(for_008_emer_fech_aten__year=form_008_year)
         if form_008_user_rol == 3:
             qs = qs.filter(eniUser=id_eni_user)
 
-        if form_008_user_rol == 2:
+        if form_008_user_rol == 2 or form_008_user_rol == 4:
             unidades = unidad_salud.objects.filter(
                 eniUser=id_eni_user).values_list('uni_unic', flat=True)
             qs = qs.filter(for_008_emer_unic__in=list(unidades))
@@ -1739,7 +1740,7 @@ class TempranoRegistrationAPIView(viewsets.ModelViewSet):
     queryset = temprano.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    allowed_roles = [1]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
@@ -3703,7 +3704,7 @@ class TardioRegistrationAPIView(viewsets.ModelViewSet):
     queryset = tardio.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    allowed_roles = [1]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
@@ -6335,7 +6336,7 @@ class DesperdicioRegistrationAPIView(viewsets.ModelViewSet):
     queryset = desperdicio.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    allowed_roles = [1]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
@@ -6665,7 +6666,7 @@ class InfluenzaRegistrationAPIView(viewsets.ModelViewSet):
     queryset = influenza.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    allowed_roles = [1]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
@@ -8582,7 +8583,7 @@ class ReporteENIRegistrationAPIView(viewsets.ModelViewSet):
     queryset = reporte_eni.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    allowed_roles = [1]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
@@ -8610,7 +8611,7 @@ class RegistroVacunadoRegistrationAPIView(viewsets.ModelViewSet):
     queryset = registro_vacunado.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
+    allowed_roles = [1]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)

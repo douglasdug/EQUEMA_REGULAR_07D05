@@ -168,10 +168,6 @@ const Form008Emergencia = () => {
   const [admisionData, setAdmisionData] = useState(null);
   const [showUnidadModal, setShowUnidadModal] = useState(false);
   const [unidadSeleccionada, setUnidadSeleccionada] = useState(null);
-  const [sugerencias, setSugerencias] = useState([]);
-  const [palabraActual, setPalabraActual] = useState("");
-  const [posicionCursor, setPosicionCursor] = useState(0);
-  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const [atencionesPrevias, setAtencionesPrevias] = useState([]);
   const [isHistorialExpandido, setIsHistorialExpandido] = useState(false);
   const [showAgreementModal, setShowAgreementModal] = useState(true);
@@ -182,64 +178,6 @@ const Form008Emergencia = () => {
   const [showBusquedaAvanzada, setShowBusquedaAvanzada] = useState(false);
   const [showTablaAtenciones, setShowTablaAtenciones] = useState(false);
   const navigate = useNavigate();
-
-  const frasesMedicas = [
-    "Paciente presenta",
-    "Se observa",
-    "Dolor abdominal agudo",
-    "Traumatismo en",
-    "Administración de medicamento",
-    "Control de signos vitales",
-    "Herida superficial en",
-    "Requiere seguimiento en",
-    "Fractura en",
-    "Derivado a especialista",
-    "En observación por",
-    "Alta médica con indicaciones",
-    "Curación y limpieza de herida",
-    "Dolor abdominal de inicio súbito",
-    "Fiebre de  días de evolución",
-    "Dificultad respiratoria",
-    "Pérdida de conocimiento",
-    "Paciente politraumatizado por accidente de tránsito",
-    "Convulsión tónico-clónica generalizada",
-    "Dolor torácico irradiado al brazo izquierdo",
-    "Herida cortante en miembro superior derecho",
-    "Hipertensión arterial controlada con medicación",
-    "Diabetes mellitus tipo  diagnosticada hace  años",
-    "Sin antecedentes personales de importancia",
-    "Alergia conocida a penicilina",
-    "Paciente consciente, orientado en tiempo, espacio y persona",
-    "TA: /80 mmHg, FC:  lpm, FR:  rpm, Temp:  °C",
-    "Palidez cutánea, diaforesis",
-    "Movilidad limitada por dolor",
-    "Herida de  cm en región frontal con sangrado activo",
-    "Traumatismo craneoencefálico leve",
-    "Infección respiratoria aguda",
-    "Gastroenteritis aguda",
-    "Síndrome febril en estudio",
-    "Probable apendicitis aguda",
-    "Colocación de suero fisiológico al  % a  ml/hora",
-    "Administración de Paracetamol  mg vía oral",
-    "Sutura de herida bajo anestesia local",
-    "Toma de muestra para laboratorio",
-    "Canalización de vena periférica",
-    "Paciente permanece estable hemodinámicamente",
-    "Se solicita interconsulta con cirugía",
-    "En observación por  horas sin complicaciones",
-    "Paciente refiere mejoría del dolor",
-    "Paciente atendido en área de emergencia",
-    "Se registra ingreso a las : del día  //",
-    "Acompañado por familiar de primer grado",
-    "Documentación completa al momento del ingreso",
-    "Paciente no porta identificación al momento de la atención",
-    "Se activa protocolo de triage: prioridad ",
-    "Paciente dado de alta en condiciones estables",
-    "Referido a  de  nivel por complejidad del caso",
-    "Paciente se retira por voluntad propia, se deja constancia",
-    "Alta voluntaria con firma de consentimiento informado",
-    "Traslado interno al área de hospitalización",
-  ];
 
   const initialVariableEstado = {
     for_008_busc_pers_tipo_iden: false,
@@ -276,6 +214,7 @@ const Form008Emergencia = () => {
   const initialBotonEstado = {
     btnBuscar: true,
     btnRegistrar: true,
+    btnReporteAtenciones: true,
   };
 
   const [variableEstado, setVariableEstado] = useState(initialVariableEstado);
@@ -303,8 +242,8 @@ const Form008Emergencia = () => {
     "for_008_emer_cie_10_caus_exte_diag",
     "for_008_emer_hosp",
     "for_008_emer_cond_alta",
-    "for_008_emer_edad_gest",
-    "for_008_emer_ries_obst",
+    // "for_008_emer_edad_gest",
+    // "for_008_emer_ries_obst",
   ];
 
   const labelMap = {
@@ -606,6 +545,11 @@ const Form008Emergencia = () => {
           ? principal.id?.toString()
           : prev.for_008_emer_nomb_esta_salu,
       }));
+
+      setBotonEstado((prevState) => ({
+        ...prevState,
+        btnReporteAtenciones: !(listaAtenciones && listaAtenciones.length > 0),
+      }));
     } catch (error) {
       const errorMessage = getErrorMessage(error);
       setError(errorMessage);
@@ -778,42 +722,6 @@ const Form008Emergencia = () => {
     }
   };
 
-  // const handleObservacionesChange = (e) => {
-  //   const { value, selectionStart } = e.target;
-  //   const { name } = e.target;
-
-  //   // Actualiza el formData como lo haces normalmente
-  //   setFormData((prev) => ({ ...prev, [name]: value }));
-
-  //   validarDato(
-  //     e,
-  //     { ...formData, [name]: value },
-  //     setFormData,
-  //     error,
-  //     setError,
-  //     setBotonEstado
-  //   );
-
-  //   // Obtiene la palabra actual donde está el cursor
-  //   const textoPrevio = value.substring(0, selectionStart);
-  //   const palabras = textoPrevio.split(/\s+/);
-  //   const palabraActual = palabras[palabras.length - 1];
-
-  //   // Si la palabra tiene al menos 3 caracteres, buscar sugerencias
-  //   if (palabraActual && palabraActual.length >= 3) {
-  //     const coincidencias = frasesMedicas.filter((frase) =>
-  //       frase.toLowerCase().startsWith(palabraActual.toLowerCase())
-  //     );
-
-  //     setSugerencias(coincidencias);
-  //     setPalabraActual(palabraActual);
-  //     setPosicionCursor(selectionStart);
-  //     setMostrarSugerencias(coincidencias.length > 0);
-  //   } else {
-  //     setMostrarSugerencias(false);
-  //   }
-  // };
-
   // Helper para obtener el código CIE-10 (p.ej. "S060") desde el value seleccionado
   const getCodigoCIE10Prin = (value) => {
     if (!value) return "";
@@ -929,34 +837,6 @@ const Form008Emergencia = () => {
         +isValidationError,
     }));
   };
-
-  // // Modificar la función insertarSugerencia para resaltar el texto insertado
-  // const insertarSugerencia = (sugerencia) => {
-  //   const textoActual = formData["for_008_emer_obse"];
-  //   // Encuentra el inicio de la palabra actual antes del cursor
-  //   const inicioPalabra = textoActual
-  //     .substring(0, posicionCursor)
-  //     .lastIndexOf(palabraActual);
-  //   const textoAntes = textoActual.substring(0, inicioPalabra);
-  //   const textoDespues = textoActual.substring(posicionCursor);
-
-  //   // Reemplaza la palabra actual con la sugerencia
-  //   const nuevoTexto = textoAntes + sugerencia + " " + textoDespues;
-
-  //   setFormData((prev) => ({ ...prev, for_008_emer_obse: nuevoTexto }));
-  //   setMostrarSugerencias(false);
-
-  //   // Selecciona la frase insertada para edición inmediata
-  //   setTimeout(() => {
-  //     const textarea = document.getElementById("for_008_emer_obse");
-  //     if (textarea) {
-  //       textarea.focus();
-  //       const inicioSeleccion = textoAntes.length;
-  //       const finSeleccion = textoAntes.length + sugerencia.length;
-  //       textarea.setSelectionRange(inicioSeleccion, finSeleccion);
-  //     }
-  //   }, 10);
-  // };
 
   const isFieldVisible = (field) => {
     //const edadNum = parseInt(edad);
@@ -1310,7 +1190,7 @@ const Form008Emergencia = () => {
                 className="absolute top-2 right-2 text-red-500 font-bold"
                 title="Eliminar diagnóstico"
               >
-                X
+                Borrar fila X
               </button>
             )}
 
@@ -1908,13 +1788,21 @@ const Form008Emergencia = () => {
                 <label className={labelClass} htmlFor="for_008_hist_aten">
                   Los 12 atenciones previas del paciente por morbilidad.
                 </label>
-                {/* <button
+                <button
+                  id="btnReporteAtenciones"
+                  name="btnReporteAtenciones"
                   type="button"
-                  className="ml-2 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded shadow"
+                  className={`"ml-2 px-2 py-1 text-xs rounded shadow"
+                    ${
+                      !botonEstado.btnReporteAtenciones
+                        ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                        : "bg-gray-300 hover:bg-gray-400 text-black cursor-not-allowed"
+                    }`}
                   onClick={() => setShowTablaAtenciones(true)}
+                  disabled={botonEstado.btnReporteAtenciones}
                 >
-                  Buscar todas las Atenciones
-                </button> */}
+                  Reporte de las Atenciones
+                </button>
               </div>
               <textarea
                 id="for_008_hist_aten"
@@ -2624,8 +2512,6 @@ const Form008Emergencia = () => {
                   onFocus={() => setIsIndicacionesFocused(true)}
                   onBlur={() => {
                     setIsIndicacionesFocused(false);
-                    // Pequeño delay para permitir clics en las sugerencias
-                    setTimeout(() => setMostrarSugerencias(false), 200);
                   }}
                   className={`
                     ${inputStyle}
@@ -2653,21 +2539,6 @@ const Form008Emergencia = () => {
                 <span className="text-xs text-gray-500">
                   Máximo 500 caracteres
                 </span>
-                {mostrarSugerencias && (
-                  <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto w-100">
-                    {sugerencias.map((sugerencia, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        className="w-full text-left px-4 py-2 hover:bg-blue-100 cursor-pointer text-sm"
-                        onClick={() => insertarSugerencia(sugerencia)}
-                        aria-label={`Insertar sugerencia: ${sugerencia}`}
-                      >
-                        {sugerencia}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-2">
@@ -2750,8 +2621,8 @@ const Form008Emergencia = () => {
                     className={labelClass}
                     htmlFor="for_008_emer_edad_gest"
                   >
-                    {formData.for_008_emer_espe_prof === "OBSTETRIZ" && (
-                      <span className="text-red-500">*</span>
+                    {requiredFields.includes("for_008_emer_edad_gest") && (
+                      <span className="text-red-500">* </span>
                     )}
                     {labelMap["for_008_emer_edad_gest"]}
                   </label>
@@ -2813,8 +2684,8 @@ const Form008Emergencia = () => {
                     className={labelClass}
                     htmlFor="for_008_emer_ries_obst"
                   >
-                    {formData.for_008_emer_espe_prof === "OBSTETRIZ" && (
-                      <span className="text-red-500">*</span>
+                    {requiredFields.includes("for_008_emer_ries_obst") && (
+                      <span className="text-red-500">* </span>
                     )}
                     {labelMap["for_008_emer_ries_obst"]}
                   </label>
@@ -2925,7 +2796,7 @@ const Form008Emergencia = () => {
                   setAdmisionData(null);
                 }}
               >
-                X
+                Cerrar X
               </button>
               <Admision
                 id_admision={admisionData.id_admision_datos}
@@ -3001,9 +2872,9 @@ const Form008Emergencia = () => {
               <button
                 type="button"
                 onClick={() => setShowBusquedaAvanzada(false)}
-                className="absolute top-2 right-2 text-white bg-red-600 hover:bg-red-700 rounded px-2 py-1 text-sm"
+                className="absolute top-2 right-2 text-red-500 font-bold text-2xl z-10"
               >
-                X
+                Cerrar X
               </button>
               <BuscarAdmisionados
                 onSelect={handleSeleccionarAdmisionado}
@@ -3014,19 +2885,18 @@ const Form008Emergencia = () => {
         )}
         {showTablaAtenciones && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white w-[95%] max-w-5xl max-h-[90vh] overflow-auto rounded shadow-lg p-4 relative">
-              <button
-                type="button"
-                onClick={() => setShowTablaAtenciones(false)}
-                className="absolute top-2 right-2 text-white bg-red-600 hover:bg-red-700 rounded px-2 py-1 text-sm"
-              >
-                X
-              </button>
-              <TablaAtencionesForm008
-                id_admision={formData.id_admision_datos}
-                // Puedes pasar más props si tu componente lo requiere
-              />
-            </div>
+            <TablaAtencionesForm008
+              setIdAdmision={formData.id_admision_datos}
+              setApellidosNombres={
+                (formData.for_008_busc_pers_nume_iden || "") +
+                " " +
+                (formData.for_008_emer_apel_comp || "") +
+                " " +
+                (formData.for_008_emer_nomb_comp || "")
+              }
+              isOpen={showTablaAtenciones}
+              onClose={() => setShowTablaAtenciones(false)}
+            />
           </div>
         )}
         <TablaForm008Emer

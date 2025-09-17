@@ -19,7 +19,13 @@ const TablaUsers = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const ROLE_NAMES = ["", "ADMINISTRADOR", "REPORTE", "MEDICO", "VACUNADOR"];
+  const ROLE_NAMES = [
+    "",
+    "ADMINISTRADOR",
+    "REPORTE",
+    "MEDICO",
+    "REPORTE Y ADMISION",
+  ];
   const STATUS_NAMES = ["INACTIVO", "ACTIVO"];
   const TABLE_HEADERS = [
     "Tipo de Identificacion",
