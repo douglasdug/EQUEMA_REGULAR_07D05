@@ -739,6 +739,43 @@ export const updateForm008Emer = async (formData) => {
   }
 };
 
+//Funciones para los registros de usuarios de apoyo en atención
+export async function firmarPdf(pdfFile, claveP12) {
+  const formData = new FormData();
+  formData.append("pdf_file", pdfFile);
+  formData.append("clave_p12", claveP12);
+
+  const res = await fetch(`${API_URL}/firmar-pdf/`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    let message = "Error al firmar PDF";
+    const contentType = res.headers.get("content-type") || "";
+    try {
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data?.error) message = data.error;
+      } else {
+        const text = await res.text();
+        if (text) message = text;
+      }
+    } catch (err) {
+      // Ignorar errores al parsear el cuerpo; mantener mensaje genérico
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "No se pudo parsear el cuerpo de error al firmar PDF:",
+          err
+        );
+      }
+    }
+    throw new Error(message);
+  }
+
+  return await res.blob();
+}
+
 //Funcion para el contacto con soporte
 export const contactoSoporte = async (formData) => {
   try {

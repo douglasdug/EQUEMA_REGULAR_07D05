@@ -20,6 +20,7 @@ import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
 import CreateInfluenza from "./pages/CreateInfluenza.jsx";
 import CreateReporteENI from "./pages/CreateReporteENI.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
+import CertificadoMedico from "./pages/CertificadoMedico.jsx";
 import RequireRole from "./routes/RequireRole.jsx";
 import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";
@@ -84,6 +85,7 @@ function App() {
                   path="/agenda-diagnostico-imagen/"
                   element={<AgendaDiagnosticoImagen />}
                 />
+                <Route path="/medico/" element={<CertificadoMedico />} />
 
                 {/* Rutas protegidas por rol */}
                 <Route

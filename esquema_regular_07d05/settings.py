@@ -20,6 +20,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost/new-password')
+SIGN_P12_PATH = os.environ.get('SIGN_P12_PATH', os.path.join(
+    BASE_DIR, 'certificados', 'firma.p12'))
 
 
 # Quick-start development settings - unsuitable for production
@@ -29,7 +31,7 @@ FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost/new-password')
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())

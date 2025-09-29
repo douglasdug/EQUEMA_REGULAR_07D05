@@ -5,6 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser
 from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, registro_vacunado
 from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, Form008EmergenciaRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 from django.db.models import F, Sum, Count, Max, Q, Count
@@ -26,6 +27,20 @@ import csv
 import unicodedata
 import re
 
+import os
+from io import BytesIO
+from django.conf import settings
+from django.utils import timezone
+from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+from pyhanko.sign import signers
+from pyhanko.sign.validation import ValidationContext
+from pyhanko.pdf_utils.reader import PdfFileReader
+from pyhanko.sign.signers import PdfSigner
+from pyhanko.sign.fields import SigFieldSpec
+from pyhanko_certvalidator.context import SignatureValidator
+from pyhanko_certvalidator.registry import CertificateStore
+from pyhanko_certvalidator.path import ValidationPath
+from asn1crypto import x509, cms
 
 # Create your views here.
 
@@ -232,6 +247,103 @@ class ChangePasswordTokenAPIView(APIView):
         user.save()
 
         return Response({'success': 'Contraseña cambiada exitosamente.'}, status=status.HTTP_200_OK)
+
+
+class FirmarPDFAPIView(APIView):
+    parser_classes = (MultiPartParser,)
+
+    def post(self, request, *args, **kwargs):
+        pdf_file = request.FILES.get('pdf_file')
+        clave_p12 = request.data.get('clave_p12')
+
+        if not pdf_file or not clave_p12:
+            return Response({'error': 'Faltan pdf_file o clave_p12'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ruta del P12 configurada en settings (o variable de entorno)
+        p12_path = getattr(settings, 'SIGN_P12_PATH', None)
+        if not p12_path:
+            return Response({'error': 'No está configurada SIGN_P12_PATH en settings'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        if not os.path.exists(p12_path):
+            return Response({'error': f'No se encontró el archivo P12 en: {p12_path}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        try:
+            # 1. Cargar los certificados de la CA (raíz e intermedios).
+            #    Debe descargar estos archivos (.cer o .pem) del sitio web de Security Data
+            #    y guardarlos en su proyecto.
+            # Rutas a los certificados. Identifique cuál es el RAÍZ y cuáles son INTERMEDIOS.
+            # El archivo .p7b suele contener la cadena completa.
+            # --- CORRECCIÓN: Lógica robusta para cargar cualquier tipo de archivo de certificado ---
+            trust_certs = []
+            cert_paths = [
+                'C:/Users/LENOVO/Documents/MSP 07D05/APLICACIONES CRUD/EQUEMA_REGULAR_07D05/Certificados/AC_RAIZ.p7b',
+                'C:/Users/LENOVO/Documents/MSP 07D05/APLICACIONES CRUD/EQUEMA_REGULAR_07D05/Certificados/1_casubp_actual_27072019.cer'
+            ]
+
+            for cert_path in cert_paths:
+                with open(cert_path, 'rb') as f:
+                    cert_bytes = f.read()
+                    try:
+                        # Intenta cargar como un certificado único primero
+                        trust_certs.append(x509.Certificate.load(cert_bytes))
+                    except ValueError:
+                        # Si falla, es probable que sea un contenedor (p7b o un cer-contenedor)
+                        signed_data = cms.ContentInfo.load(cert_bytes)[
+                            'content']
+                        for cert in signed_data['certificates']:
+                            trust_certs.append(cert.chosen)
+
+            # Leer PDF subido
+            original_pdf_bytes = pdf_file.read()
+
+            # Cargar certificado (.p12) del servidor
+            with open(p12_path, 'rb') as f:
+                p12_bytes = f.read()
+
+            if not isinstance(clave_p12, str):
+                # Medida de seguridad por si el dato no llega como se espera
+                raise TypeError("La clave_p12 debe ser un string.")
+            passphrase_bytes = clave_p12.encode('utf-8')
+
+            signer_data = signers.SimpleSigner.load_pkcs12(
+                p12_path,
+                passphrase=passphrase_bytes
+            )
+
+            # Preparar lector y salida
+            pdf_in = PdfFileReader(BytesIO(original_pdf_bytes))
+            pdf_out = BytesIO()
+            # (Opcional) contexto de validación
+            vc = ValidationContext(
+                trust_roots=trust_certs,
+                allow_fetching=True  # Permite descargar CRL/OCSP si es necesario
+            )
+
+            signature_meta_data = signers.PdfSignatureMetadata(
+                field_name='Firma1',
+                reason='Firma digital',
+                location='Ecuador',
+                validation_context=vc
+            )
+
+            pdf_signer = PdfSigner(
+                signature_meta=signature_meta_data,
+                signer=signer_data,
+            )
+
+            pdf_writer = IncrementalPdfFileWriter(BytesIO(original_pdf_bytes))
+            pdf_out_bytes_io = pdf_signer.sign_pdf(pdf_writer)
+            pdf_out_bytes_io.seek(0)
+
+            response = HttpResponse(
+                pdf_out_bytes_io.read(), content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment; filename="pdf_firmado.pdf"'
+            return response
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({'error': f'Error al firmar PDF: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EniUserRegistrationAPIView(viewsets.ModelViewSet):
