@@ -29,7 +29,6 @@ import re
 
 import os
 from io import BytesIO
-from django.conf import settings
 from django.utils import timezone
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
 from pyhanko.sign import signers
@@ -41,6 +40,11 @@ from pyhanko_certvalidator.context import SignatureValidator
 from pyhanko_certvalidator.registry import CertificateStore
 from pyhanko_certvalidator.path import ValidationPath
 from asn1crypto import x509, cms
+from pyhanko.stamp import QRStampStyle
+from pyhanko.sign.fields import SigFieldSpec, VisibleSigSettings
+from pyhanko.pdf_utils.text import TextBoxStyle
+from pyhanko.pdf_utils import content
+from pyhanko.pdf_utils.font import opentype
 
 # Create your views here.
 
@@ -277,28 +281,25 @@ class FirmarPDFAPIView(APIView):
             trust_certs = []
             cert_paths = [
                 'C:/Users/LENOVO/Documents/MSP 07D05/APLICACIONES CRUD/EQUEMA_REGULAR_07D05/Certificados/AC_RAIZ.p7b',
-                'C:/Users/LENOVO/Documents/MSP 07D05/APLICACIONES CRUD/EQUEMA_REGULAR_07D05/Certificados/1_casubp_actual_27072019.cer'
+                'C:/Users/LENOVO/Documents/MSP 07D05/APLICACIONES CRUD/EQUEMA_REGULAR_07D05/Certificados/1_casubp_actual_27072019.cer',
+                'C:/Users/LENOVO/Documents/MSP 07D05/APLICACIONES CRUD/EQUEMA_REGULAR_07D05/Certificados/2_casub-antes-27072019.cer',
             ]
 
-            for cert_path in cert_paths:
-                with open(cert_path, 'rb') as f:
-                    cert_bytes = f.read()
-                    try:
-                        # Intenta cargar como un certificado único primero
-                        trust_certs.append(x509.Certificate.load(cert_bytes))
-                    except ValueError:
-                        # Si falla, es probable que sea un contenedor (p7b o un cer-contenedor)
-                        signed_data = cms.ContentInfo.load(cert_bytes)[
-                            'content']
-                        for cert in signed_data['certificates']:
-                            trust_certs.append(cert.chosen)
+            # for cert_path in cert_paths:
+            #     with open(cert_path, 'rb') as f:
+            #         cert_bytes = f.read()
+            #         try:
+            #             # Intenta cargar como un certificado único primero
+            #             trust_certs.append(x509.Certificate.load(cert_bytes))
+            #         except ValueError:
+            #             # Si falla, es probable que sea un contenedor (p7b o un cer-contenedor)
+            #             signed_data = cms.ContentInfo.load(cert_bytes)[
+            #                 'content']
+            #             for cert in signed_data['certificates']:
+            #                 trust_certs.append(cert.chosen)
 
             # Leer PDF subido
             original_pdf_bytes = pdf_file.read()
-
-            # Cargar certificado (.p12) del servidor
-            with open(p12_path, 'rb') as f:
-                p12_bytes = f.read()
 
             if not isinstance(clave_p12, str):
                 # Medida de seguridad por si el dato no llega como se espera
@@ -310,29 +311,68 @@ class FirmarPDFAPIView(APIView):
                 passphrase=passphrase_bytes
             )
 
-            # Preparar lector y salida
-            pdf_in = PdfFileReader(BytesIO(original_pdf_bytes))
-            pdf_out = BytesIO()
+            # 3. Generar el texto para el QR y el texto de la estampa
+            nombre_firmante = signer_data.signing_cert.subject.human_friendly
+            fecha_firma = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            match_cn = re.search(r'Common Name:\s*([^,]+)', nombre_firmante)
+            common_name = match_cn.group(1).strip() if match_cn else ''
+            parts = common_name.split()
+            nombres = " ".join(parts[:2])
+            apellidos = " ".join(parts[2:])
+            match_ou = re.search(
+                r'Organizational Unit:\s*([^,]+)', nombre_firmante)
+            organizational_unit = match_ou.group(1).strip() if match_ou else ''
+            match_org = re.search(r'Organization:\s*([^,]+)', nombre_firmante)
+            organization = match_org.group(1).strip() if match_org else ''
+            organization_data = f'Validado por:\n{organization}' if organization else ''
+            match_c = re.search(r'Country:\s*([^,]+)', nombre_firmante)
+            country = match_c.group(1).strip() if match_c else ''
+            estilo_texto = TextBoxStyle(font_size=8)
+
+            texto_estampa = (
+                f'Firmado electrónicamente por:\n{nombres}\n{apellidos}\n{organization_data}'
+            )
+
+            qr_contenido = f'FIRMADO POR: {common_name}\nRAZON:\nLOCALIZACION:\nFECHA: {fecha_firma}\nUNIDAD ORGANIZATIVA: {organizational_unit}\nORGANIZACIÓN: {organization}\nPAIS: {country}'
+
+            # 4. Crear la apariencia de la firma con QR
+            stamp_style_qr = QRStampStyle(
+                stamp_text=texto_estampa,
+                text_box_style=estilo_texto
+            )
+
+            # 5. Crear el campo de firma
+            sig_field_spec = SigFieldSpec(
+                'Firma1',
+                box=(50, 110, 200, 150),
+                # NO se incluye visible_sig_settings aquí
+            )
+
             # (Opcional) contexto de validación
             vc = ValidationContext(
                 trust_roots=trust_certs,
                 allow_fetching=True  # Permite descargar CRL/OCSP si es necesario
-            )
+            ) if trust_certs else None
 
             signature_meta_data = signers.PdfSignatureMetadata(
                 field_name='Firma1',
                 reason='Firma digital',
                 location='Ecuador',
-                validation_context=vc
+                # validation_context=vc
             )
 
             pdf_signer = PdfSigner(
                 signature_meta=signature_meta_data,
                 signer=signer_data,
+                stamp_style=stamp_style_qr,
+                new_field_spec=sig_field_spec,
             )
 
             pdf_writer = IncrementalPdfFileWriter(BytesIO(original_pdf_bytes))
-            pdf_out_bytes_io = pdf_signer.sign_pdf(pdf_writer)
+            pdf_out_bytes_io = pdf_signer.sign_pdf(
+                pdf_writer,
+                appearance_text_params={'url': qr_contenido}
+            )
             pdf_out_bytes_io.seek(0)
 
             response = HttpResponse(

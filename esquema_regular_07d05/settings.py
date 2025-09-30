@@ -13,13 +13,18 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 from decouple import config, Csv
+import environ
+from pathlib import Path
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost/new-password')
+# FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost/new-password')
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost/new-password')
 SIGN_P12_PATH = os.environ.get('SIGN_P12_PATH', os.path.join(
     BASE_DIR, 'certificados', 'firma.p12'))
 
