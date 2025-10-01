@@ -34,10 +34,19 @@ services:
   frontend:
     build:
       context: ./frontend
-    ports:
-      - "8080:80"
     depends_on:
       - backend
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:80" # Cambia a "80:80" si quieres exponer en el puerto 80 del host
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
     restart: always
 
 volumes:
