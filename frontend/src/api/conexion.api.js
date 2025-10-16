@@ -740,14 +740,19 @@ export const updateForm008Emer = async (formData) => {
 };
 
 //Funciones para los registros de usuarios de apoyo en atención
-export async function firmarPdf(pdfFile, claveP12) {
-  const formData = new FormData();
-  formData.append("pdf_file", pdfFile);
-  formData.append("clave_p12", claveP12);
+export async function firmarPdf(certificadoTexto, claveP12) {
+  // Ahora no se usa FormData para enviar archivos, sino JSON
+  const body = JSON.stringify({
+    certificado_texto: certificadoTexto,
+    clave_p12: claveP12,
+  });
 
   const res = await fetch(`${API_URL}/firmar-pdf/`, {
     method: "POST",
-    body: formData,
+    headers: {
+      "Content-Type": "application/json", // Cambiar el tipo de contenido
+    },
+    body: body,
   });
 
   if (!res.ok) {
@@ -762,7 +767,6 @@ export async function firmarPdf(pdfFile, claveP12) {
         if (text) message = text;
       }
     } catch (err) {
-      // Ignorar errores al parsear el cuerpo; mantener mensaje genérico
       if (process.env.NODE_ENV === "development") {
         console.warn(
           "No se pudo parsear el cuerpo de error al firmar PDF:",

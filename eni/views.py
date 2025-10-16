@@ -5,7 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, JSONParser
 from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, registro_vacunado
 from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, Form008EmergenciaRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 from django.db.models import F, Sum, Count, Max, Q, Count
@@ -21,30 +21,35 @@ from django.utils.dateparse import parse_date
 from django.core.cache import cache
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.http import HttpResponse, StreamingHttpResponse
+from django.shortcuts import render
 from datetime import datetime, timedelta, time, date
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import csv
 import unicodedata
 import re
-
 import os
+import io
 from io import BytesIO
-from django.utils import timezone
+import logging
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
-from pyhanko.sign import signers
-from pyhanko.sign.validation import ValidationContext
-from pyhanko.pdf_utils.reader import PdfFileReader
-from pyhanko.sign.signers import PdfSigner
-from pyhanko.sign.fields import SigFieldSpec
-from pyhanko_certvalidator.context import SignatureValidator
-from pyhanko_certvalidator.registry import CertificateStore
-from pyhanko_certvalidator.path import ValidationPath
-from asn1crypto import x509, cms
-from pyhanko.stamp import QRStampStyle
-from pyhanko.sign.fields import SigFieldSpec, VisibleSigSettings
-from pyhanko.pdf_utils.text import TextBoxStyle
-from pyhanko.pdf_utils import content
+from pyhanko.sign import signers, PdfSigner
 from pyhanko.pdf_utils.font import opentype
+from pyhanko_certvalidator.registry import SimpleCertificateStore
+from pyhanko.sign.fields import SigFieldSpec
+from pyhanko.sign.timestamps import HTTPTimeStamper
+from pyhanko.sign.validation import RevocationInfoValidationType
+from pyhanko.pdf_utils.reader import PdfFileReader
+from pyhanko.pdf_utils.text import TextBoxStyle
+from pyhanko.stamp import QRStampStyle
+from pyhanko.keys import load_certs_from_pemder
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm, mm
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from pypdf import PdfReader, PdfWriter
 
 # Create your views here.
 
@@ -251,137 +256,213 @@ class ChangePasswordTokenAPIView(APIView):
         return Response({'success': 'Contraseña cambiada exitosamente.'}, status=status.HTTP_200_OK)
 
 
+logger = logging.getLogger(__name__)
+
+
 class FirmarPDFAPIView(APIView):
-    parser_classes = (MultiPartParser,)
+    """
+    API para firmar electrónicamente un PDF usando un certificado P12.
+    """
+    parser_classes = [JSONParser]
+
+    def _create_text_pdf(self, text):
+        buffer = io.BytesIO()
+        # Reemplazar los saltos de línea por etiquetas HTML <br/>
+        processed_text = text.replace('\n', '<br/>')
+        # Crear un documento simple con márgenes en mm
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            leftMargin=8.5 * mm,
+            rightMargin=8.5 * mm,
+            topMargin=36 * mm,
+            bottomMargin=36 * mm
+        )
+        styles = getSampleStyleSheet()
+        style = ParagraphStyle(
+            name='Helvetica',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=12,
+            leading=14
+        )
+        # Crear un flowable (párrafo) con el texto procesado
+        flowables = [Paragraph(processed_text, style)]
+
+        doc.build(flowables)
+        buffer.seek(0)
+        return buffer
+
+    def _merge_pdfs(self, text_pdf_buffer, template_path):
+        """Combina el PDF de texto con el PDF de la plantilla."""
+        if not os.path.exists(template_path):
+            raise FileNotFoundError(
+                f"Plantilla no encontrada: {template_path}")
+
+        template_reader = PdfReader(template_path)
+        text_reader = PdfReader(text_pdf_buffer)
+
+        writer = PdfWriter()
+
+        for i in range(len(template_reader.pages)):
+            page_template = template_reader.pages[i]
+            if i < len(text_reader.pages):
+                page_text = text_reader.pages[i]
+                page_template.merge_page(page_text)
+            writer.add_page(page_template)
+
+        merged_buffer = io.BytesIO()
+        writer.write(merged_buffer)
+        merged_buffer.seek(0)
+        return merged_buffer
 
     def post(self, request, *args, **kwargs):
-        pdf_file = request.FILES.get('pdf_file')
+        certificado_texto = request.data.get('certificado_texto')
         clave_p12 = request.data.get('clave_p12')
 
-        if not pdf_file or not clave_p12:
-            return Response({'error': 'Faltan pdf_file o clave_p12'}, status=status.HTTP_400_BAD_REQUEST)
+        # Validación de entrada
+        if not certificado_texto or not clave_p12:
+            return Response({'error': 'Faltan certificado_texto o clave_p12'}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(clave_p12, str):
+            return Response({'error': 'La clave_p12 debe ser un string.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Ruta del P12 configurada en settings (o variable de entorno)
+        # 1. Crear el PDF a partir del texto
+        try:
+            # Obtener la ruta de la plantilla desde el mismo directorio que views.py
+            template_path = os.path.join(os.path.dirname(
+                __file__), 'static', 'Plantilla_MSP.pdf')
+            pdf_texto_buffer = self._create_text_pdf(certificado_texto)
+            pdf_merged_buffer = self._merge_pdfs(
+                pdf_texto_buffer, template_path)
+        except Exception as e:
+            logger.exception("Error al crear el PDF a partir del texto.")
+            return Response({'error': f'Error al generar el PDF: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Obtener ruta del certificado P12
         p12_path = getattr(settings, 'SIGN_P12_PATH', None)
         if not p12_path:
+            logger.error("SIGN_P12_PATH no está configurado en settings.")
             return Response({'error': 'No está configurada SIGN_P12_PATH en settings'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
         if not os.path.exists(p12_path):
+            logger.error(f"No se encontró el archivo P12 en: {p12_path}")
             return Response({'error': f'No se encontró el archivo P12 en: {p12_path}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        signer_data = None
+        # Aislamiento de la carga del P12 para capturar errores de contraseña
         try:
-            # 1. Cargar los certificados de la CA (raíz e intermedios).
-            #    Debe descargar estos archivos (.cer o .pem) del sitio web de Security Data
-            #    y guardarlos en su proyecto.
-            # Rutas a los certificados. Identifique cuál es el RAÍZ y cuáles son INTERMEDIOS.
-            # El archivo .p7b suele contener la cadena completa.
-            # --- CORRECCIÓN: Lógica robusta para cargar cualquier tipo de archivo de certificado ---
-            trust_certs = []
-            cert_paths = [
-                'C:/Users/LENOVO/Documents/MSP 07D05/APLICACIONES CRUD/EQUEMA_REGULAR_07D05/Certificados/AC_RAIZ.p7b',
-                'C:/Users/LENOVO/Documents/MSP 07D05/APLICACIONES CRUD/EQUEMA_REGULAR_07D05/Certificados/1_casubp_actual_27072019.cer',
-                'C:/Users/LENOVO/Documents/MSP 07D05/APLICACIONES CRUD/EQUEMA_REGULAR_07D05/Certificados/2_casub-antes-27072019.cer',
-            ]
-
-            # for cert_path in cert_paths:
-            #     with open(cert_path, 'rb') as f:
-            #         cert_bytes = f.read()
-            #         try:
-            #             # Intenta cargar como un certificado único primero
-            #             trust_certs.append(x509.Certificate.load(cert_bytes))
-            #         except ValueError:
-            #             # Si falla, es probable que sea un contenedor (p7b o un cer-contenedor)
-            #             signed_data = cms.ContentInfo.load(cert_bytes)[
-            #                 'content']
-            #             for cert in signed_data['certificates']:
-            #                 trust_certs.append(cert.chosen)
-
-            # Leer PDF subido
-            original_pdf_bytes = pdf_file.read()
-
-            if not isinstance(clave_p12, str):
-                # Medida de seguridad por si el dato no llega como se espera
-                raise TypeError("La clave_p12 debe ser un string.")
             passphrase_bytes = clave_p12.encode('utf-8')
-
-            signer_data = signers.SimpleSigner.load_pkcs12(
-                p12_path,
-                passphrase=passphrase_bytes
-            )
-
-            # 3. Generar el texto para el QR y el texto de la estampa
-            nombre_firmante = signer_data.signing_cert.subject.human_friendly
-            fecha_firma = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            match_cn = re.search(r'Common Name:\s*([^,]+)', nombre_firmante)
-            common_name = match_cn.group(1).strip() if match_cn else ''
-            parts = common_name.split()
-            nombres = " ".join(parts[:2])
-            apellidos = " ".join(parts[2:])
-            match_ou = re.search(
-                r'Organizational Unit:\s*([^,]+)', nombre_firmante)
-            organizational_unit = match_ou.group(1).strip() if match_ou else ''
-            match_org = re.search(r'Organization:\s*([^,]+)', nombre_firmante)
-            organization = match_org.group(1).strip() if match_org else ''
-            organization_data = f'Validado por:\n{organization}' if organization else ''
-            match_c = re.search(r'Country:\s*([^,]+)', nombre_firmante)
-            country = match_c.group(1).strip() if match_c else ''
-            estilo_texto = TextBoxStyle(font_size=8)
-
-            texto_estampa = (
-                f'Firmado electrónicamente por:\n{nombres}\n{apellidos}\n{organization_data}'
-            )
-
-            qr_contenido = f'FIRMADO POR: {common_name}\nRAZON:\nLOCALIZACION:\nFECHA: {fecha_firma}\nUNIDAD ORGANIZATIVA: {organizational_unit}\nORGANIZACIÓN: {organization}\nPAIS: {country}'
-
-            # 4. Crear la apariencia de la firma con QR
-            stamp_style_qr = QRStampStyle(
-                stamp_text=texto_estampa,
-                text_box_style=estilo_texto
-            )
-
-            # 5. Crear el campo de firma
-            sig_field_spec = SigFieldSpec(
-                'Firma1',
-                box=(50, 110, 200, 150),
-                # NO se incluye visible_sig_settings aquí
-            )
-
-            # (Opcional) contexto de validación
-            vc = ValidationContext(
-                trust_roots=trust_certs,
-                allow_fetching=True  # Permite descargar CRL/OCSP si es necesario
-            ) if trust_certs else None
-
-            signature_meta_data = signers.PdfSignatureMetadata(
-                field_name='Firma1',
-                reason='Firma digital',
-                location='Ecuador',
-                # validation_context=vc
-            )
-
-            pdf_signer = PdfSigner(
-                signature_meta=signature_meta_data,
-                signer=signer_data,
-                stamp_style=stamp_style_qr,
-                new_field_spec=sig_field_spec,
-            )
-
-            pdf_writer = IncrementalPdfFileWriter(BytesIO(original_pdf_bytes))
-            pdf_out_bytes_io = pdf_signer.sign_pdf(
-                pdf_writer,
-                appearance_text_params={'url': qr_contenido}
-            )
-            pdf_out_bytes_io.seek(0)
-
-            response = HttpResponse(
-                pdf_out_bytes_io.read(), content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment; filename="pdf_firmado.pdf"'
-            return response
-
+            signer_data = self._load_signer(p12_path, passphrase_bytes)
+        except ValueError:
+            logger.error("Error al cargar certificado: clave P12 incorrecta.")
+            return Response({'error': 'Error al cargar certificado: clave incorrecta o archivo corrupto.'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return Response({'error': f'Error al firmar PDF: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            logger.exception("Error inesperado al cargar P12")
+            return Response({'error': f'Error inesperado al cargar P12: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if signer_data is None:
+            logger.error(
+                "El objeto signer_data es None. Posible error de carga del P12.")
+            return Response({'error': 'No se pudo cargar el certificado P12. Verifique la clave y el archivo.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 3. Firmar el PDF generado
+        try:
+            pdf_out_bytes_io = self._sign_pdf_with_hanko(
+                pdf_merged_buffer, signer_data)
+            return HttpResponse(pdf_out_bytes_io, content_type='application/pdf')
+        except Exception as e:
+            logger.exception("Error al firmar el PDF")
+            return Response({'error': f'Error al firmar el PDF: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _sign_pdf_with_hanko(self, pdf_buffer, signer_data):
+        original_pdf_bytes = pdf_buffer.read()
+        nombre_firmante = signer_data.signing_cert.subject.human_friendly
+        datos_firmante = self._extraer_datos_firmante(nombre_firmante)
+        fecha_firma = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        texto_estampa = (
+            f'Firmado electrónicamente por:\n{datos_firmante["nombres"]}\n{datos_firmante["apellidos"]}\n'
+            f'Validado por:\n{datos_firmante["organization"]}'
+        )
+
+        qr_contenido = (
+            f'FIRMADO POR: {datos_firmante["common_name"]}\n'
+            f'RAZON:\nLOCALIZACION:\nFECHA: {fecha_firma}\n'
+            f'UNIDAD ORGANIZATIVA: {datos_firmante["organizational_unit"]}\n'
+            f'ORGANIZACIÓN: {datos_firmante["organization"]}\n'
+            f'PAIS: {datos_firmante["country"]}'
+        )
+
+        # Crear apariencia de la firma
+        stamp_style_qr = QRStampStyle(
+            stamp_text=texto_estampa,
+            text_box_style=TextBoxStyle(font_size=8)
+        )
+
+        # --- NUEVO: obtener el número de páginas ---
+        pdf_reader = PdfReader(BytesIO(original_pdf_bytes))
+        num_pages = len(pdf_reader.pages)
+        last_page_index = num_pages - 1  # Índice de la última página
+
+        sig_field_spec = SigFieldSpec(
+            'Firma1',
+            box=(250, 50, 400, 90),
+            on_page=last_page_index,  # <-- AQUÍ VA LA FIRMA EN LA ÚLTIMA PÁGINA
+        )
+
+        signature_meta_data = signers.PdfSignatureMetadata(
+            field_name='Firma1',
+            reason='Firma digital',
+            location='Ecuador',
+        )
+
+        pdf_signer = signers.PdfSigner(
+            signature_meta=signature_meta_data,
+            signer=signer_data,
+            stamp_style=stamp_style_qr,
+            new_field_spec=sig_field_spec,
+        )
+
+        pdf_writer = IncrementalPdfFileWriter(BytesIO(original_pdf_bytes))
+        pdf_out_bytes_io = pdf_signer.sign_pdf(
+            pdf_writer,
+            appearance_text_params={'url': qr_contenido}
+        )
+        pdf_out_bytes_io.seek(0)
+        return pdf_out_bytes_io
+
+    def _load_signer(self, p12_path, passphrase_bytes):
+        signer = signers.SimpleSigner.load_pkcs12(
+            p12_path,
+            passphrase=passphrase_bytes
+        )
+        if signer is None:
+            raise ValueError(
+                "No se pudo cargar el certificado P12. Retornó None.")
+        return signer
+
+    def _extraer_datos_firmante(self, nombre_firmante):
+        match_cn = re.search(r'Common Name:\s*([^,]+)', nombre_firmante)
+        common_name = match_cn.group(1).strip() if match_cn else ''
+        parts = common_name.split()
+        nombres = " ".join(parts[:2])
+        apellidos = " ".join(parts[2:])
+
+        match_ou = re.search(
+            r'Organizational Unit:\s*([^,]+)', nombre_firmante)
+        organizational_unit = match_ou.group(1).strip() if match_ou else ''
+        match_org = re.search(r'Organization:\s*([^,]+)', nombre_firmante)
+        organization = match_org.group(1).strip() if match_org else ''
+        match_c = re.search(r'Country:\s*([^,]+)', nombre_firmante)
+        country = match_c.group(1).strip() if match_c else ''
+
+        return {
+            'common_name': common_name,
+            'nombres': nombres,
+            'apellidos': apellidos,
+            'organizational_unit': organizational_unit,
+            'organization': organization,
+            'country': country,
+        }
 
 
 class EniUserRegistrationAPIView(viewsets.ModelViewSet):
