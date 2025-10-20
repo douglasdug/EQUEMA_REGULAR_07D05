@@ -47,7 +47,7 @@ function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer
-      className="mt-8 w-full text-center py-4 text-xs md:text-sm text-gray-600 border-t border-gray-200 bg-white/70 backdrop-blur"
+      className="mt-4 w-full text-center py-2 text-xs md:text-sm text-gray-600 border-t border-gray-200 bg-white/70 backdrop-blur"
       role="contentinfo"
     >
       <p className="tracking-wide">
@@ -61,15 +61,13 @@ function Footer() {
 function App() {
   return (
     <AuthProvider>
-      <div className="container">
-        <Navigation />
-      </div>
+      <Navigation />
       <Routes>
         <Route path="/login/" element={<Login />} />
         <Route
           path="*"
           element={
-            <div className="mx-auto mt-20">
+            <main className="mx-auto mt-20">
               <Routes>
                 <Route path="/" element={<Navigate to="/home/" />} />
                 <Route path="/home/" element={<Home />} />
@@ -147,7 +145,7 @@ function App() {
                 {/* fallback de no autorizado */}
                 <Route path="/unauthorized" element={<Unauthorized />} />
               </Routes>
-            </div>
+            </main>
           }
         />
       </Routes>
