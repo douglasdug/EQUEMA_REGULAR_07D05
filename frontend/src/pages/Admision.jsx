@@ -846,11 +846,43 @@ const Admision = ({
     const { name, value } = e.target;
 
     const actualizarFechaNacimiento = (val, name) => {
+      // Validación de año de la fecha
       if (name === "adm_dato_naci_fech_naci") {
+        const [yyyy, mm, dd] = val.split("-");
+        if (
+          !yyyy ||
+          yyyy.length !== 4 ||
+          parseInt(yyyy) < 1895 ||
+          parseInt(yyyy) > new Date().getFullYear()
+        ) {
+          setError(
+            "El año de la fecha de nacimiento debe tener 4 dígitos válidos."
+          );
+          setFormData((prev) => ({ ...prev, adm_dato_naci_fech_naci: "" }));
+          setFechaNacimiento("");
+          setEdad("");
+          return;
+        }
         setFormData((prev) => ({ ...prev, adm_dato_naci_fech_naci: val }));
         setFechaNacimiento(val);
         setEdad(calcularEdad(val));
       } else if (name === "adm_dato_repr_fech_naci") {
+        // Validación para representante (opcional, igual lógica)
+        const [yyyy, mm, dd] = val.split("-");
+        if (
+          !yyyy ||
+          yyyy.length !== 4 ||
+          parseInt(yyyy) < 1900 ||
+          parseInt(yyyy) > new Date().getFullYear()
+        ) {
+          setError(
+            "El año de la fecha de nacimiento debe tener 4 dígitos válidos."
+          );
+          setFormData((prev) => ({ ...prev, adm_dato_repr_fech_naci: "" }));
+          setFechaNacimientoRepresentante("");
+          setEdadRepresentante("");
+          return;
+        }
         setFormData((prev) => ({ ...prev, adm_dato_repr_fech_naci: val }));
         setFechaNacimientoRepresentante(val);
         setEdadRepresentante(calcularEdad(val));

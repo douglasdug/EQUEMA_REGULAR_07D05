@@ -1244,7 +1244,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         """
         mes_form_008 = request.query_params.get("month")
         year_form_008 = request.query_params.get("year")
-        print(f"Mes: {mes_form_008}, Año: {year_form_008}")
+
         try:
             id_admision_datos = request.query_params.get(
                 'admision_datos')
