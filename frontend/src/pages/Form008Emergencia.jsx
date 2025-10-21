@@ -87,13 +87,13 @@ function calcularEdad(fechaNacimientoStr) {
     meses += 12;
   }
 
-  let textoEdad = "";
-  if (años > 0) textoEdad += años + (años === 1 ? " AÑO " : " AÑO/S ");
-  if (meses > 0) textoEdad += meses + (meses === 1 ? " MES " : " MES/ES ");
-  if (dias > 0) textoEdad += dias + (dias === 1 ? " DÍA" : " DÍA/S");
-  if (!textoEdad) textoEdad = "0 DÍA/S";
+  const partes = [];
+  if (años > 0) partes.push(`${años} AÑO`);
+  if (meses > 0) partes.push(`${meses} MES`);
+  if (dias > 0) partes.push(`${dias} DIA`);
+  if (partes.length === 0) partes.push("0 DIA");
 
-  return textoEdad.trim();
+  return partes.join(" ");
 }
 
 function calcularEdadConFechaReferencia(
@@ -131,13 +131,13 @@ function calcularEdadConFechaReferencia(
     meses += 12;
   }
 
-  let textoEdad = "";
-  if (años > 0) textoEdad += años + (años === 1 ? " AÑO " : " AÑO/S ");
-  if (meses > 0) textoEdad += meses + (meses === 1 ? " MES " : " MES/ES ");
-  if (dias > 0) textoEdad += dias + (dias === 1 ? " DÍA" : " DÍA/S");
-  if (!textoEdad) textoEdad = "0 DÍA/S";
+  const partes = [];
+  if (años > 0) partes.push(`${años} AÑO`);
+  if (meses > 0) partes.push(`${meses} MES`);
+  if (dias > 0) partes.push(`${dias} DIA`);
+  if (partes.length === 0) partes.push("0 DIA");
 
-  return textoEdad.trim();
+  return partes.join(" ");
 }
 
 const Form008Emergencia = () => {

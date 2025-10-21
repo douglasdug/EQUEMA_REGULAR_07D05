@@ -1814,7 +1814,16 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         edad_cond_str = data.get('for_008_emer_edad_cond', '').strip()
         parts = edad_cond_str.split(' ')
         data['for_008_emer_edad'] = parts[0] if parts and parts[0] else ''
-        data['for_008_emer_cond_edad'] = parts[1] if len(parts) > 1 else ''
+        edad_cond = parts[1] if len(parts) > 1 else ''
+
+        if edad_cond == 'AÑO':
+            edad_cond = 'AÑO/S'
+        elif edad_cond == 'MES':
+            edad_cond = 'MES/ES'
+        elif edad_cond == 'DIA':
+            edad_cond = 'DIA/S'
+
+        data['for_008_emer_cond_edad'] = edad_cond
 
         # Nombres y apellidos
         apellidos = self.split_nombre_apellido(
