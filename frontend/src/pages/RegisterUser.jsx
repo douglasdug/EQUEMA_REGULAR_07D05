@@ -413,7 +413,7 @@ const RegisterUser = () => {
           <Loader
             modal
             isOpen={isLoading}
-            title="Registrando usuario"
+            title="Procesando información"
             text="Por favor espere..."
             closeButton={false}
           />

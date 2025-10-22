@@ -719,9 +719,9 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
             {"uni_inst_sist": "MSP", "uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "HUAQUILLAS", "uni_parr": "HUALTACO",
                 "uni_unic": "000556", "uni_unid": "HUALTACO", "uni_tipo": "CENTRO DE SALUD TIPO A", "uni_nive": "NIVEL 1"},
             {"uni_inst_sist": "MSP", "uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "ARENILLAS",
-                "uni_unic": "000591", "uni_unid": "HOSPITAL BASICO ARENILLAS", "uni_tipo": "HOSPITAL BASICO", "uni_nive": "NIVEL 2"},
+                "uni_unic": "000591", "uni_unid": "HOSPITAL BASICO DE ARENILLAS", "uni_tipo": "HOSPITAL BASICO", "uni_nive": "NIVEL 2"},
             {"uni_inst_sist": "MSP", "uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "HUAQUILLAS", "uni_parr": "UNION LOJANA",
-                "uni_unic": "000592", "uni_unid": "HOSPITAL BASICO HUAQUILLAS", "uni_tipo": "HOSPITAL BASICO", "uni_nive": "NIVEL 2"},
+                "uni_unic": "000592", "uni_unid": "HOSPITAL BASICO DE HUAQUILLAS", "uni_tipo": "HOSPITAL BASICO", "uni_nive": "NIVEL 2"},
             {"uni_inst_sist": "MSP", "uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "ARENILLAS", "uni_parr": "ARENILLAS",
                 "uni_unic": "002763", "uni_unid": "EL JOBO SAN VICENTE", "uni_tipo": "PUESTO DE SALUD", "uni_nive": "NIVEL 1"},
             {"uni_inst_sist": "MSP", "uni_zona": "ZONA 7", "uni_dist": "07D05",	"uni_prov": "EL ORO", "uni_cant": "HUAQUILLAS", "uni_parr": "UNION LOJANA",
@@ -1813,16 +1813,14 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         # Edad y condición
         edad_cond_str = data.get('for_008_emer_edad_cond', '').strip()
         parts = edad_cond_str.split(' ')
-        data['for_008_emer_edad'] = parts[0] if parts and parts[0] else ''
-        edad_cond = parts[1] if len(parts) > 1 else ''
-
-        if edad_cond == 'AÑO':
-            edad_cond = 'AÑO/S'
-        elif edad_cond == 'MES':
-            edad_cond = 'MES/ES'
-        elif edad_cond == 'DIA':
-            edad_cond = 'DIA/S'
-
+        edad_numero = parts[0] if parts and parts[0] else ''
+        edad_cond = (parts[1].strip().upper() if len(parts) > 1 else '')
+        edad_cond = {'AÑO': 'AÑO/S', 'MES': 'MES/ES',
+                     'DIA': 'DIA/S'}.get(edad_cond, edad_cond)
+        if edad_numero == '0':
+            edad_numero = '1'
+            edad_cond = 'HORA/S'
+        data['for_008_emer_edad'] = edad_numero
         data['for_008_emer_cond_edad'] = edad_cond
 
         # Nombres y apellidos

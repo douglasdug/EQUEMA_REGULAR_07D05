@@ -396,7 +396,7 @@ export default function ReporteAtenciones() {
             <Loader
               modal
               isOpen={loading}
-              title="Iniciando sesión"
+              title="Procesando información"
               text="Por favor espere..."
               closeButton={false}
             />

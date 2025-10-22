@@ -569,7 +569,7 @@ const AdminUser = () => {
           <Loader
             modal
             isOpen={isLoading}
-            title="Iniciando sesión"
+            title="Procesando información"
             text="Por favor espere..."
             closeButton={false}
           />

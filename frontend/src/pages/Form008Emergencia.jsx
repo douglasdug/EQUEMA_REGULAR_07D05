@@ -1474,7 +1474,7 @@ const Form008Emergencia = () => {
   return (
     <div className="w-full h-auto flex items-stretch justify-stretch bg-gray-100">
       {showAgreementModal && (
-        <div className="fixed inset-0 z-[100] bg-black/60">
+        <div className="fixed inset-0 z-100 bg-black/60 backdrop-blur-md">
           <div className="flex h-screen w-screen items-stretch justify-center">
             <div className="bg-white w-screen h-screen md:w-[1000px] md:h-[90vh] md:rounded-lg md:my-6 shadow-xl flex flex-col">
               {/* Cabecera fija */}
@@ -1650,7 +1650,7 @@ const Form008Emergencia = () => {
           <Loader
             modal
             isOpen={isLoading}
-            title="Iniciando sesión"
+            title="Procesando información"
             text="Por favor espere..."
             closeButton={false}
           />
