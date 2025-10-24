@@ -21,6 +21,7 @@ import CreateInfluenza from "./pages/CreateInfluenza.jsx";
 import CreateReporteENI from "./pages/CreateReporteENI.jsx";
 import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
 import CertificadoMedico from "./pages/CertificadoMedico.jsx";
+import AdminAgenda from "./pages/AdminAgenda.jsx";
 import RequireRole from "./routes/RequireRole.jsx";
 import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";
@@ -79,11 +80,9 @@ function App() {
                 <Route path="/register-user/" element={<RegisterUser />} />
                 <Route path="/aviso-user/" element={<AvisoUser />} />
                 <Route path="/contacto/" element={<Contacto />} />
-                <Route
-                  path="/agenda-diagnostico-imagen/"
-                  element={<AgendaDiagnosticoImagen />}
-                />
+                <Route path="/agenda/" element={<AgendaDiagnosticoImagen />} />
                 <Route path="/medico/" element={<CertificadoMedico />} />
+                <Route path="/admin-agenda/" element={<AdminAgenda />} />
 
                 {/* Rutas protegidas por rol */}
                 <Route

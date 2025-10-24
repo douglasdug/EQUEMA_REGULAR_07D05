@@ -1718,8 +1718,7 @@ const Admision = ({
   );
 
   const fieldClass = "mb-1 flex flex-col";
-  const labelClass =
-    "text-gray-700 text-sm font-bold mr-2 max-w-full min-w-[120px] break-words";
+  const labelClass = "block text-gray-700 text-sm font-bold mb-1";
   const buttonTextRegistro = isEditing ? "Actualizar Registro" : "Registrar";
   const buttonTextBuscar = isBuscar ? "Nuevo Registro" : "Buscar";
   const buttonTextBuscarRepresentante = isBuscarRepresentante

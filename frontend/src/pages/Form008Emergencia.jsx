@@ -159,8 +159,8 @@ const Form008Emergencia = () => {
   const fechaHoraSistema = new Date();
   const fechaActual = toISODateString(fechaHoraSistema);
   const fechaMinima = toISODateString(
-    new Date(fechaHoraSistema.getTime() - 12 * 24 * 60 * 60 * 1000)
-  ); // 12 días * 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
+    new Date(fechaHoraSistema.getTime() - 7 * 24 * 60 * 60 * 1000)
+  ); // 7 días * 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
   const [refreshTable, setRefreshTable] = useState(0);
   const [isIndicacionesFocused, setIsIndicacionesFocused] = useState(false);
   const [unidadSaludList, setUnidadSaludList] = useState([]);
@@ -1907,7 +1907,7 @@ const Form008Emergencia = () => {
                   disabled={variableEstado["for_008_emer_fech_aten"]}
                 />
                 <span className="ml-1 text-blue-800 text-sm font-semibold">
-                  Solo hasta 12 dias antes de la fecha actual.
+                  Solo hasta 7 dias antes de la fecha actual.
                 </span>
               </div>
               <div className={fieldClass}>
