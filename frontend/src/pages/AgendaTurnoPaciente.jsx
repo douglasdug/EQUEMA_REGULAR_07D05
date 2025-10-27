@@ -34,7 +34,7 @@ const requiredFields = [
   "age_diag_imag_prof_agen_cita",
 ];
 
-export default function AgendaDiagnosticoImagen() {
+export default function AgendaTurnoPaciente() {
   const [form, setForm] = useState(initialState);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);

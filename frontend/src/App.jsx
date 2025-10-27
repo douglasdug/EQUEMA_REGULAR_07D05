@@ -11,17 +11,11 @@ import AvisoUser from "./pages/AvisoUser.jsx";
 import AdminUser from "./pages/AdminUser.jsx";
 import Admision from "./pages/Admision.jsx";
 import Form008Emergencia from "./pages/Form008Emergencia.jsx";
-import AgendaDiagnosticoImagen from "./pages/AgendaDiagnosticoImagen.jsx";
+import AgendaTurnoPaciente from "./pages/AgendaTurnoPaciente.jsx";
 import ReporteAtenciones from "./pages/ReporteAtenciones.jsx";
 import Contacto from "./pages/Contacto.jsx";
-import CreateTemprano from "./pages/CreateTemprano.jsx";
-import CreateTardio from "./pages/CreateTardio.jsx";
-import CreateDesperdicio from "./pages/CreateDesperdicio.jsx";
-import CreateInfluenza from "./pages/CreateInfluenza.jsx";
-import CreateReporteENI from "./pages/CreateReporteENI.jsx";
-import CreateRegistroVacunado from "./pages/CreateRegistroVacunado.jsx";
 import CertificadoMedico from "./pages/CertificadoMedico.jsx";
-import AdminAgenda from "./pages/AdminAgenda.jsx";
+import AdminAgendaTurno from "./pages/AdminAgendaTurno.jsx";
 import RequireRole from "./routes/RequireRole.jsx";
 import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";
@@ -80,9 +74,15 @@ function App() {
                 <Route path="/register-user/" element={<RegisterUser />} />
                 <Route path="/aviso-user/" element={<AvisoUser />} />
                 <Route path="/contacto/" element={<Contacto />} />
-                <Route path="/agenda/" element={<AgendaDiagnosticoImagen />} />
+                <Route
+                  path="/agenda-turno-paciente/"
+                  element={<AgendaTurnoPaciente />}
+                />
+                <Route
+                  path="/admin-agenda-turno/"
+                  element={<AdminAgendaTurno />}
+                />
                 <Route path="/medico/" element={<CertificadoMedico />} />
-                <Route path="/admin-agenda/" element={<AdminAgenda />} />
 
                 {/* Rutas protegidas por rol */}
                 <Route
@@ -116,29 +116,6 @@ function App() {
                   <Route
                     path="/form-008-emergencia/"
                     element={<Form008Emergencia />}
-                  />
-                </Route>
-                <Route element={<RequireRole allowed={[ROLES.VACUNADOR]} />}>
-                  <Route
-                    path="/create-temprano/"
-                    element={<CreateTemprano />}
-                  />
-                  <Route path="/create-tardio/" element={<CreateTardio />} />
-                  <Route
-                    path="/create-desperdicio/"
-                    element={<CreateDesperdicio />}
-                  />
-                  <Route
-                    path="/create-influenza/"
-                    element={<CreateInfluenza />}
-                  />
-                  <Route
-                    path="/create-reporte-eni/"
-                    element={<CreateReporteENI />}
-                  />
-                  <Route
-                    path="/create-registro-vacunado/"
-                    element={<CreateRegistroVacunado />}
                   />
                 </Route>
                 {/* fallback de no autorizado */}

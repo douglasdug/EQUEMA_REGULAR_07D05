@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, NewPasswordResetAPIView, ChangePasswordTokenAPIView, FirmarPDFAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, Form008EmergenciaRegistrationAPIView, ContactoAPIView, RegistroVacunadoRegistrationAPIView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, NewPasswordResetAPIView, ChangePasswordTokenAPIView, FirmarPDFAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, Form008EmergenciaRegistrationAPIView, AgendaTurnoPacienteRegistrationAPIView, AdminAgendaTurnosRegistrationAPIView, ContactoAPIView, RegistroVacunadoRegistrationAPIView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -13,17 +13,21 @@ router = routers.DefaultRouter()
 router.register(r'eni-user', EniUserRegistrationAPIView, 'eni-user')
 router.register(r'unidad-salud',
                 UnidadSaludRegistrationAPIView, 'unidad-salud')
-router.register(r'temprano', TempranoRegistrationAPIView, 'temprano')
-router.register(r'tardio', TardioRegistrationAPIView, 'tardio')
-router.register(r'desperdicio', DesperdicioRegistrationAPIView, 'desperdicio')
-router.register(r'influenza', InfluenzaRegistrationAPIView, 'influenza')
-router.register(r'reporte-eni', ReporteENIRegistrationAPIView, 'reporte-eni')
 router.register(r'admision-datos',
                 AdmisionDatosRegistrationAPIView, 'admision-datos')
 router.register(r'form-008-emergencia',
                 Form008EmergenciaRegistrationAPIView, 'form-008-emergencia')
-router.register(r'registro-vacunado',
-                RegistroVacunadoRegistrationAPIView, 'registro-vacunado')
+router.register(r'agenda-turno-paciente',
+                AgendaTurnoPacienteRegistrationAPIView, 'agenda-turno-paciente')
+router.register(r'admin-agenda-turnos',
+                AdminAgendaTurnosRegistrationAPIView, 'admin-agenda-turnos')
+# router.register(r'temprano', TempranoRegistrationAPIView, 'temprano')
+# router.register(r'tardio', TardioRegistrationAPIView, 'tardio')
+# router.register(r'desperdicio', DesperdicioRegistrationAPIView, 'desperdicio')
+# router.register(r'influenza', InfluenzaRegistrationAPIView, 'influenza')
+# router.register(r'reporte-eni', ReporteENIRegistrationAPIView, 'reporte-eni')
+# router.register(r'registro-vacunado',
+#                RegistroVacunadoRegistrationAPIView, 'registro-vacunado')
 
 urlpatterns = [
     path('v1/', include(router.urls)),
@@ -39,5 +43,5 @@ urlpatterns = [
          ChangePasswordTokenAPIView.as_view(), name='new_password_reset'),
     path('v1/firmar-pdf/', FirmarPDFAPIView.as_view(), name='firmar-pdf'),
     path('v1/contacto/', ContactoAPIView.as_view(), name='contacto'),
-    path('v1/reporte/pdf/', reporteTempranoPDF, name='reporte-temprano-pdf'),
+    # path('v1/reporte/pdf/', reporteTempranoPDF, name='reporte-temprano-pdf'),
 ]

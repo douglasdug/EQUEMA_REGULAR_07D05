@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, registro_vacunado
+from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, agenda_turno_paciente, admin_agenda_turnos, registro_vacunado
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
@@ -244,6 +244,22 @@ class Form008EmergenciaRegistrationSerializer(serializers.ModelSerializer):
         # logger.info(f"Formulario 008 actualizado: {instance.id}")
 
         return updated_instance
+
+
+class AgendaTurnoPacienteRegistrationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = agenda_turno_paciente
+        fields = '__all__'
+
+
+class AdminAgendaTurnosRegistrationSerializer(serializers.ModelSerializer):
+    adm_agen_turn_fech = serializers.DateField(
+        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+
+    class Meta:
+        model = admin_agenda_turnos
+        fields = '__all__'
 
 
 class RegistroVacunadoRegistrationSerializer(serializers.ModelSerializer):

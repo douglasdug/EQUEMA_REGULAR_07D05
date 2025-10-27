@@ -780,6 +780,44 @@ export async function firmarPdf(certificadoTexto, claveP12) {
   return await res.blob();
 }
 
+//Funciones para la Agenda de Turnos de Pacientes
+export const registerAgendaTurnoPaciente = async (formData) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/agenda-turno-paciente/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error registering agenda turno paciente:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
+//Funciones para la Admision de Turnos de Agenda
+export const registerAdminAgendaTurno = async (formData) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/admin-agenda-turnos/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error registering admin agenda turno:",
+        error.response ? error.response.data : error.message
+      );
+    }
+    throw error;
+  }
+};
+
 //Funcion para el contacto con soporte
 export const contactoSoporte = async (formData) => {
   try {

@@ -35,7 +35,17 @@ export function Navigation() {
       roles: [1, 2, 3, 4],
     },
     { to: "/admin-user/", label: "Administrador", roles: [1] },
-    { to: "/contacto/", label: "Contact", roles: ["public"] },
+    { to: "/contacto/", label: "Contacto", roles: ["public"] },
+    {
+      to: "/agenda-turno-paciente/",
+      label: "Agenda Turno Paciente",
+      roles: ["public"],
+    },
+    {
+      to: "/admin-agenda-turno/",
+      label: "Admin Agenda Turno",
+      roles: ["public"],
+    },
   ];
 
   const canSee = (rolesArr) =>

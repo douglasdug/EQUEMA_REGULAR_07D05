@@ -193,10 +193,10 @@ class form_008_emergencia(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name='formularios_008_emergencia',
-        help_text='ID de usuario que registra la atencion'
+        help_text='ID de usuario que registra la atencion formulario 008 emergencia'
     )
     admision_datos = models.IntegerField(
-        blank=True, null=True, help_text='ID de admision de datos del paciente')
+        blank=True, null=True, help_text='ID de admision de datos del paciente del formulario 008 emergencia')
 
     class Meta:
         verbose_name = 'Formulario 008 Emergencia'
@@ -224,36 +224,52 @@ class form_008_emergencia(models.Model):
         if self.for_008_emer_edad is not None and self.for_008_emer_edad < 0:
             raise ValidationError('La edad no puede ser negativa')
 
-# Crea la tabla de Agenda de Diagnóstico por Imagen
+# Crea la tabla de Agenda de Turno de Paciente
 
 
-class agenda_diagnostico_imagen(models.Model):
-    age_diag_imag_unid_salu = models.CharField(max_length=120, blank=True)
-    age_diag_imag_tipo_docu_iden = models.CharField(max_length=25, blank=True)
-    age_diag_imag_nume_iden = models.CharField(max_length=25, blank=True)
-    age_diag_imag_apel = models.CharField(max_length=80, blank=True)
-    age_diag_imag_nomb = models.CharField(max_length=80, blank=True)
-    age_diag_imag_sexo = models.CharField(max_length=15, blank=True)
-    age_diag_imag_fech_naci = models.DateField(blank=True, null=True)
-    age_diag_imag_tele = models.CharField(max_length=15, blank=True)
-    age_diag_imag_corr = models.CharField(max_length=40, blank=True)
-    age_diag_imag_dire = models.CharField(max_length=460, blank=True)
-    age_diag_imag_fech_cita = models.DateField(blank=True, null=True)
-    age_diag_imag_hora_cita = models.TimeField(blank=True, null=True)
-    age_diag_imag_esta_cita = models.IntegerField(blank=True, null=True)
-    age_diag_imag_tipo_serv = models.CharField(max_length=20, blank=True)
-    age_diag_imag_prof_agen_cita = models.CharField(max_length=105, blank=True)
-    age_diag_imag_obse = models.CharField(max_length=350, blank=True)
+class agenda_turno_paciente(models.Model):
+    age_turn_paci_unid_salu = models.CharField(max_length=120, blank=True)
+    age_turn_paci_tipo_docu_iden = models.CharField(max_length=25, blank=True)
+    age_turn_paci_nume_iden = models.CharField(max_length=25, blank=True)
+    age_turn_paci_apel = models.CharField(max_length=80, blank=True)
+    age_turn_paci_nomb = models.CharField(max_length=80, blank=True)
+    age_turn_paci_sexo = models.CharField(max_length=15, blank=True)
+    age_turn_paci_fech_naci = models.DateField(blank=True, null=True)
+    age_turn_paci_tele = models.CharField(max_length=15, blank=True)
+    age_turn_paci_corr = models.CharField(max_length=40, blank=True)
+    age_turn_paci_dire = models.CharField(max_length=460, blank=True)
+    age_turn_paci_unid_salu_resp_segu_aten = models.CharField(
+        max_length=100, blank=True)
+    age_turn_paci_obse = models.CharField(max_length=350, blank=True)
     eniUser = models.ForeignKey(
         'eniUser', null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name='agent_diagnostico_imagen',
-        help_text='ID de usuario que registra la atencion'
+        help_text='ID de usuario que registra la atencion de agenda de turno paciente'
     )
     admision_datos = models.IntegerField(
-        blank=True, null=True, help_text='ID de admision de datos del paciente')
+        blank=True, null=True, help_text='ID de admision de datos del paciente de agenda de turno paciente')
 
+# Crea la tabla de Administra la Agenda de Turnos
+
+
+class admin_agenda_turnos(models.Model):
+    adm_agen_turn_fech = models.DateField(blank=True, null=True)
+    adm_agen_turn_tipo_espe = models.CharField(max_length=100, blank=True)
+    adm_agen_turn_prof_cita = models.CharField(max_length=100, blank=True)
+    adm_agen_turn_hora_inic = models.TimeField(blank=True, null=True)
+    adm_agen_turn_hora_fin = models.TimeField(blank=True, null=True)
+    adm_agen_turn_esta_cita = models.IntegerField(blank=True, null=True)
+    agenda_turno_paciente = models.ForeignKey(
+        'agenda_turno_paciente', null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='agent_diagnostico_imagen',
+        help_text='ID de agenda de turno de paciente'
+    )
+    eniUser = models.IntegerField(
+        blank=True, null=True, help_text='ID de usuario que registra la agenda de turno de paciente')
 
 # Crea la tabla de Reporte de ENI
 

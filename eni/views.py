@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, JSONParser
-from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, registro_vacunado
-from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, Form008EmergenciaRegistrationSerializer, RegistroVacunadoRegistrationSerializer
+from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, agenda_turno_paciente, admin_agenda_turnos, registro_vacunado
+from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, Form008EmergenciaRegistrationSerializer, AgendaTurnoPacienteRegistrationSerializer, AdminAgendaTurnosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 from django.db.models import F, Sum, Count, Max, Q, Count
 from django.db.models.functions import ExtractMonth
 from django.db import transaction
@@ -1882,6 +1882,30 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         if errors:
             return Response({"message": "Error al crear la atencion del formulario 008-EMERGENCIA", "error": errors}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"message": "Se creo la atencion del formulario 008-EMERGENCIA del usuario exitosamente!", "data": created_objects}, status=status.HTTP_201_CREATED)
+
+
+class AgendaTurnoPacienteRegistrationAPIView(viewsets.ModelViewSet):
+    serializer_class = AgendaTurnoPacienteRegistrationSerializer
+    queryset = agenda_turno_paciente.objects.all()
+    permission_classes = [permissions.AllowAny]
+    # permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3, 4]
+
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
+
+
+class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
+    serializer_class = AdminAgendaTurnosRegistrationSerializer
+    queryset = admin_agenda_turnos.objects.all()
+    permission_classes = [permissions.AllowAny]
+    # permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [1, 2, 3, 4]
+
+    def get_permissions(self):
+        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+        return [perm() for perm in self.permission_classes]
 
 
 class ContactoAPIView(APIView):
