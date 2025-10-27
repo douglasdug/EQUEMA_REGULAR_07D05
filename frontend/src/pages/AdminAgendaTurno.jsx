@@ -9,6 +9,20 @@ import {
 } from "../components/EstilosCustom.jsx";
 import Loader from "../components/Loader.jsx";
 import { toast } from "react-hot-toast";
+//npm install react-big-calendar date-fns
+import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import esES from "date-fns/locale/es";
+
+const locales = { es: esES };
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+  getDay,
+  locales,
+});
 
 const initialState = {
   adm_agen_turn_fech: "",
@@ -23,6 +37,7 @@ const AdminAgendaTurno = () => {
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const initialVariableEstado = {};
@@ -78,6 +93,31 @@ const AdminAgendaTurno = () => {
     setFormData((f) => ({ ...f, [name]: value }));
   };
 
+  const combineDateTime = (date, time) => {
+    if (!date || !time) return null;
+    return new Date(`${date}T${time}`);
+  };
+
+  const handleSelectSlot = ({ start, end }) => {
+    setFormData((f) => ({
+      ...f,
+      adm_agen_turn_fech: format(start, "yyyy-MM-dd"),
+      adm_agen_turn_hora_inic: format(start, "HH:mm"),
+      adm_agen_turn_hora_fin: format(end, "HH:mm"),
+    }));
+  };
+
+  const handleSelectEvent = (event) => {
+    setFormData({
+      adm_agen_turn_fech: format(event.start, "yyyy-MM-dd"),
+      adm_agen_turn_hora_inic: format(event.start, "HH:mm"),
+      adm_agen_turn_hora_fin: format(event.end, "HH:mm"),
+      adm_agen_turn_tipo_espe: event.tipo_especialidad || "",
+      adm_agen_turn_prof_cita: event.profesional || "",
+      adm_agen_turn_esta_cita: event.estado || "",
+    });
+  };
+
   const isFieldVisible = (field) => {};
 
   const handleSubmit = async (e) => {
@@ -93,6 +133,24 @@ const AdminAgendaTurno = () => {
       setSuccessMessage(message);
       setTimeout(() => setSuccessMessage(""), 10000);
       toast.success(message, { position: "bottom-right" });
+      const start = combineDateTime(
+        formData.adm_agen_turn_fech,
+        formData.adm_agen_turn_hora_inic
+      );
+      const end = combineDateTime(
+        formData.adm_agen_turn_fech,
+        formData.adm_agen_turn_hora_fin
+      );
+      const newEvent = {
+        id: response?.id || `${Date.now()}`,
+        title: `${formData.adm_agen_turn_tipo_espe} - ${formData.adm_agen_turn_prof_cita}`,
+        start,
+        end,
+        tipo_especialidad: formData.adm_agen_turn_tipo_espe,
+        profesional: formData.adm_agen_turn_prof_cita,
+        estado: formData.adm_agen_turn_esta_cita,
+      };
+      setEvents((prev) => [...prev, newEvent]);
       limpiarVariables();
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -150,6 +208,31 @@ const AdminAgendaTurno = () => {
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Registro de Agenda de Turno
         </h2>
+        <div className="mb-4">
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 500 }}
+            selectable
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent}
+            views={["month", "week", "day"]}
+            messages={{
+              month: "Mes",
+              week: "Semana",
+              day: "Día",
+              today: "Hoy",
+              previous: "Anterior",
+              next: "Siguiente",
+            }}
+            culture="es"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Sugerencia: selecciona en el calendario para rellenar fecha y horas.
+          </p>
+        </div>
         <form onSubmit={handleSubmit} className="w-full">
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
