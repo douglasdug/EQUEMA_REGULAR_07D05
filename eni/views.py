@@ -468,16 +468,16 @@ class FirmarPDFAPIView(APIView):
 class EniUserRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = EniUserRegistrationSerializer
     queryset = eniUser.objects.all()
-    # permission_classes = [permissions.AllowAny]
-    permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3, 4]
+    permission_classes = [permissions.AllowAny]
+    # permission_classes = [IsAuthenticated, HasRole]
+    # allowed_roles = [1, 2, 3, 4]
 
-    def get_permissions(self):
-        # Público para registro (create) y búsqueda
-        if getattr(self, 'action', None) in ('buscar_usuario', 'create'):
-            return [AllowAny()]
-        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
-        return [perm() for perm in self.permission_classes]
+    # def get_permissions(self):
+    #     # Público para registro (create) y búsqueda
+    #     if getattr(self, 'action', None) in ('buscar_usuario', 'create'):
+    #         return [AllowAny()]
+    #     # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
+    #     return [perm() for perm in self.permission_classes]
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset().order_by('last_name')
