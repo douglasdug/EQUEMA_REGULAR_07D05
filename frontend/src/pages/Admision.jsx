@@ -421,7 +421,7 @@ const Admision = ({
     if (!nombre) return "";
     const nombreLimpio = nombre.trim().toUpperCase();
     const encontrado = options.find((opt) =>
-      opt.label.trim().toUpperCase().endsWith(nombreLimpio)
+      opt.label.trim().toUpperCase().endsWith(nombreLimpio),
     );
     return encontrado ? encontrado.value : "";
   };
@@ -437,12 +437,12 @@ const Admision = ({
     const noIdentProv = getNoIdentProv(
       formData.adm_dato_pers_tipo_iden,
       formData.adm_dato_pers_nume_iden,
-      data.adm_dato_no_ident_prov
+      data.adm_dato_no_ident_prov,
     );
     const noIdentProvRepr = getNoIdentProv(
       data.adm_dato_repr_tipo_iden,
       data.adm_dato_repr_nume_iden,
-      data.adm_dato_repr_no_ident_prov
+      data.adm_dato_repr_no_ident_prov,
     );
 
     const fechaNac = data.adm_dato_naci_fech_naci
@@ -489,7 +489,7 @@ const Admision = ({
       adm_dato_resi_cant: data.adm_dato_resi_cant || "",
       adm_dato_resi_parr: buscarValuePorNombreParroquia(
         data.adm_dato_resi_parr,
-        parroquiaOptions
+        parroquiaOptions,
       ),
       adm_dato_resi_esta_adsc_terr: data.adm_dato_resi_esta_adsc_terr || "",
       adm_dato_resi_barr_sect: data.adm_dato_resi_barr_sect || "",
@@ -535,15 +535,15 @@ const Admision = ({
     const fechaNac = esNoIdentificado
       ? ""
       : data.adm_dato_naci_fech_naci
-      ? new Date(data.adm_dato_naci_fech_naci).toISOString().slice(0, 10)
-      : "";
+        ? new Date(data.adm_dato_naci_fech_naci).toISOString().slice(0, 10)
+        : "";
     const naci = esNoIdentificado ? "" : data.adm_dato_naci_naci || "";
     const noIdentProv = esNoIdentificado
       ? ""
       : getNoIdentProv(
           formData.adm_dato_repr_tipo_iden,
           formData.adm_dato_repr_nume_iden,
-          data.adm_dato_repr_no_ident_prov
+          data.adm_dato_repr_no_ident_prov,
         );
 
     setFechaNacimientoRepresentante(fechaNac);
@@ -796,7 +796,7 @@ const Admision = ({
       setFormData,
       error,
       setError,
-      setBotonEstado
+      setBotonEstado,
     );
   };
 
@@ -838,7 +838,7 @@ const Admision = ({
       setFormData,
       error,
       setError,
-      setBotonEstado
+      setBotonEstado,
     );
   };
 
@@ -856,7 +856,7 @@ const Admision = ({
           parseInt(yyyy) > new Date().getFullYear()
         ) {
           setError(
-            "El año de la fecha de nacimiento debe tener 4 dígitos válidos."
+            "El año de la fecha de nacimiento debe tener 4 dígitos válidos.",
           );
           setFormData((prev) => ({ ...prev, adm_dato_naci_fech_naci: "" }));
           setFechaNacimiento("");
@@ -876,7 +876,7 @@ const Admision = ({
           parseInt(yyyy) > new Date().getFullYear()
         ) {
           setError(
-            "El año de la fecha de nacimiento debe tener 4 dígitos válidos."
+            "El año de la fecha de nacimiento debe tener 4 dígitos válidos.",
           );
           setFormData((prev) => ({ ...prev, adm_dato_repr_fech_naci: "" }));
           setFechaNacimientoRepresentante("");
@@ -893,7 +893,7 @@ const Admision = ({
         setFormData,
         error,
         setError,
-        setBotonEstado
+        setBotonEstado,
       );
     };
 
@@ -1000,7 +1000,7 @@ const Admision = ({
           setFormData,
           error,
           setError,
-          setBotonEstado
+          setBotonEstado,
         );
         break;
     }
@@ -1185,7 +1185,7 @@ const Admision = ({
       ...formDataLimpio,
       adm_dato_resi_parr: extraerNombreParroquia(
         formDataLimpio.adm_dato_resi_parr,
-        parroquiaOptions
+        parroquiaOptions,
       ),
       adm_dato_repr_fech_naci: formDataLimpio.adm_dato_repr_fech_naci
         ? formDataLimpio.adm_dato_repr_fech_naci
@@ -1206,7 +1206,7 @@ const Admision = ({
         try {
           const searchResponse = await buscarUsuarioAdmision(
             formData.adm_dato_pers_tipo_iden,
-            formData.adm_dato_pers_nume_iden
+            formData.adm_dato_pers_nume_iden,
           );
           const msg = `Ya existe un registro en Admisión con ${formData.adm_dato_pers_tipo_iden}: ${formData.adm_dato_pers_nume_iden} ${searchResponse.adm_dato_pers_apel_prim}`;
           setError(msg);
@@ -1277,32 +1277,32 @@ const Admision = ({
   useSelectOptions(
     formData.adm_dato_resi_pais_resi,
     allListAdmision.adm_dato_resi_prov,
-    setProvinciasOptions
+    setProvinciasOptions,
   );
   useSelectOptions(
     formData.adm_dato_resi_prov,
     allListAdmision.adm_dato_resi_cant,
-    setCantonesOptions
+    setCantonesOptions,
   );
   useSelectOptions(
     formData.adm_dato_resi_cant,
     allListAdmision.adm_dato_resi_parr,
-    setParroquiasOptions
+    setParroquiasOptions,
   );
   useSelectOptions(
     formData.adm_dato_resi_parr,
     allListAbscripcionTerritorial.adm_dato_resi_esta_adsc_terr,
-    setAbscripcionUnidadOptions
+    setAbscripcionUnidadOptions,
   );
   useSelectOptions(
     formData.adm_dato_auto_auto_etni,
     allListAdmision.adm_dato_auto_naci_etni,
-    setNaciEtnicaPuebloOptions
+    setNaciEtnicaPuebloOptions,
   );
   useSelectOptions(
     formData.adm_dato_auto_naci_etni,
     allListAdmision.adm_dato_auto_pueb_kich,
-    setPuebKichwaOptions
+    setPuebKichwaOptions,
   );
 
   // Generación automática de número de identificación para paciente y representante
@@ -1332,7 +1332,7 @@ const Admision = ({
           formData[campos.apel],
           formData[campos.naci],
           formData[campos.fechNaci],
-          formData[campos.noIdentProv]
+          formData[campos.noIdentProv],
         );
         setFormData((prev) => ({
           ...prev,
@@ -1775,7 +1775,7 @@ const Admision = ({
                   </span>
                 )}
               </button>
-            )
+            ),
           )}
         </nav>
         {isLoading && (
@@ -1787,7 +1787,7 @@ const Admision = ({
             closeButton={false}
           />
         )}
-        <form onSubmit={handleSubmit} className="w-full">
+        <form onSubmit={handleSubmit} autoComplete="on" className="w-full">
           {/* DATOS PERSONALES */}
           {activeTab === "personales" && (
             <>
@@ -1819,7 +1819,7 @@ const Admision = ({
                           "adm_dato_pers_tipo_iden",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -1884,7 +1884,7 @@ const Admision = ({
                           "adm_dato_pers_nume_iden",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -1934,7 +1934,7 @@ const Admision = ({
                           "adm_dato_pers_apel_prim",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -1971,7 +1971,7 @@ const Admision = ({
                           "adm_dato_pers_nomb_prim",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2008,7 +2008,7 @@ const Admision = ({
                           "adm_dato_naci_fech_naci",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2044,7 +2044,7 @@ const Admision = ({
                           "adm_dato_pers_sexo",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2074,7 +2074,7 @@ const Admision = ({
                           "adm_dato_pers_esta_civi",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2108,7 +2108,7 @@ const Admision = ({
                           "adm_dato_pers_tele",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2141,7 +2141,7 @@ const Admision = ({
                           "adm_dato_pers_celu",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2177,7 +2177,7 @@ const Admision = ({
                           "adm_dato_pers_corr_elec",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2220,7 +2220,7 @@ const Admision = ({
                           "adm_dato_naci_luga_naci",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2249,7 +2249,7 @@ const Admision = ({
                           "adm_dato_naci_naci",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2264,7 +2264,7 @@ const Admision = ({
                           htmlFor="adm_dato_no_ident_prov"
                         >
                           {requiredFields.includes(
-                            "adm_dato_no_ident_prov"
+                            "adm_dato_no_ident_prov",
                           ) && <span className="text-red-500">* </span>}
                           {labelMap["adm_dato_no_ident_prov"]}
                         </label>
@@ -2281,7 +2281,7 @@ const Admision = ({
                               "adm_dato_no_ident_prov",
                               requiredFields,
                               formData,
-                              isFieldVisible
+                              isFieldVisible,
                             )
                               ? "border-2 border-red-500"
                               : ""
@@ -2324,7 +2324,7 @@ const Admision = ({
                           "adm_dato_resi_pais_resi",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2360,7 +2360,7 @@ const Admision = ({
                               "adm_dato_resi_prov",
                               requiredFields,
                               formData,
-                              isFieldVisible
+                              isFieldVisible,
                             )
                               ? "border-2 border-red-500"
                               : ""
@@ -2393,7 +2393,7 @@ const Admision = ({
                               "adm_dato_resi_cant",
                               requiredFields,
                               formData,
-                              isFieldVisible
+                              isFieldVisible,
                             )
                               ? "border-2 border-red-500"
                               : ""
@@ -2426,7 +2426,7 @@ const Admision = ({
                               "adm_dato_resi_parr",
                               requiredFields,
                               formData,
-                              isFieldVisible
+                              isFieldVisible,
                             )
                               ? "border-2 border-red-500"
                               : ""
@@ -2439,7 +2439,7 @@ const Admision = ({
                           htmlFor="adm_dato_resi_esta_adsc_terr"
                         >
                           {requiredFields.includes(
-                            "adm_dato_resi_esta_adsc_terr"
+                            "adm_dato_resi_esta_adsc_terr",
                           ) && <span className="text-red-500">* </span>}
                           {labelMap["adm_dato_resi_esta_adsc_terr"]}
                         </label>
@@ -2459,7 +2459,7 @@ const Admision = ({
                               "adm_dato_resi_esta_adsc_terr",
                               requiredFields,
                               formData,
-                              isFieldVisible
+                              isFieldVisible,
                             )
                               ? "border-2 border-red-500"
                               : ""
@@ -2498,7 +2498,7 @@ const Admision = ({
                           "adm_dato_resi_barr_sect",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2534,7 +2534,7 @@ const Admision = ({
                           "adm_dato_resi_call_prin",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2570,7 +2570,7 @@ const Admision = ({
                           "adm_dato_resi_call_secu",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2606,7 +2606,7 @@ const Admision = ({
                           "adm_dato_resi_refe_resi",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2654,7 +2654,7 @@ const Admision = ({
                           "adm_dato_auto_auto_etni",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -2685,7 +2685,7 @@ const Admision = ({
                             "adm_dato_auto_naci_etni",
                             requiredFields,
                             formData,
-                            isFieldVisible
+                            isFieldVisible,
                           )
                             ? "border-2 border-red-500"
                             : ""
@@ -2717,7 +2717,7 @@ const Admision = ({
                             "adm_dato_auto_pueb_kich",
                             requiredFields,
                             formData,
-                            isFieldVisible
+                            isFieldVisible,
                           )
                             ? "border-2 border-red-500"
                             : ""
@@ -2756,7 +2756,7 @@ const Admision = ({
                             "adm_dato_adic_grup_prio",
                             requiredFields,
                             formData,
-                            isFieldVisible
+                            isFieldVisible,
                           )
                             ? "border-2 border-red-500"
                             : ""
@@ -2793,7 +2793,7 @@ const Admision = ({
                             "adm_dato_adic_nive_educ",
                             requiredFields,
                             formData,
-                            isFieldVisible
+                            isFieldVisible,
                           )
                             ? "border-2 border-red-500"
                             : ""
@@ -2806,7 +2806,7 @@ const Admision = ({
                         htmlFor="adm_dato_adic_esta_nive_educ"
                       >
                         {requiredFields.includes(
-                          "adm_dato_adic_esta_nive_educ"
+                          "adm_dato_adic_esta_nive_educ",
                         ) && <span className="text-red-500">* </span>}
                         {labelMap["adm_dato_adic_esta_nive_educ"]}
                       </label>
@@ -2825,7 +2825,7 @@ const Admision = ({
                             "adm_dato_adic_esta_nive_educ",
                             requiredFields,
                             formData,
-                            isFieldVisible
+                            isFieldVisible,
                           )
                             ? "border-2 border-red-500"
                             : ""
@@ -2847,7 +2847,7 @@ const Admision = ({
                         htmlFor="adm_dato_adic_tipo_empr_trab"
                       >
                         {requiredFields.includes(
-                          "adm_dato_adic_tipo_empr_trab"
+                          "adm_dato_adic_tipo_empr_trab",
                         ) && <span className="text-red-500">* </span>}
                         {labelMap["adm_dato_adic_tipo_empr_trab"]}
                       </label>
@@ -2866,7 +2866,7 @@ const Admision = ({
                             "adm_dato_adic_tipo_empr_trab",
                             requiredFields,
                             formData,
-                            isFieldVisible
+                            isFieldVisible,
                           )
                             ? "border-2 border-red-500"
                             : ""
@@ -2879,7 +2879,7 @@ const Admision = ({
                         htmlFor="adm_dato_adic_ocup_prof_prin"
                       >
                         {requiredFields.includes(
-                          "adm_dato_adic_ocup_prof_prin"
+                          "adm_dato_adic_ocup_prof_prin",
                         ) && <span className="text-red-500">* </span>}
                         {labelMap["adm_dato_adic_ocup_prof_prin"]}
                       </label>
@@ -2898,7 +2898,7 @@ const Admision = ({
                             "adm_dato_adic_ocup_prof_prin",
                             requiredFields,
                             formData,
-                            isFieldVisible
+                            isFieldVisible,
                           )
                             ? "border-2 border-red-500"
                             : ""
@@ -2928,7 +2928,7 @@ const Admision = ({
                             "adm_dato_adic_tipo_segu",
                             requiredFields,
                             formData,
-                            isFieldVisible
+                            isFieldVisible,
                           )
                             ? "border-2 border-red-500"
                             : ""
@@ -2965,7 +2965,7 @@ const Admision = ({
                             "adm_dato_adic_tien_disc",
                             requiredFields,
                             formData,
-                            isFieldVisible
+                            isFieldVisible,
                           )
                             ? "border-2 border-red-500"
                             : ""
@@ -3009,7 +3009,7 @@ const Admision = ({
                           "adm_dato_repr_tipo_iden",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -3040,7 +3040,7 @@ const Admision = ({
                           "adm_dato_repr_nume_iden",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -3067,9 +3067,9 @@ const Admision = ({
                         {buttonTextBuscarRepresentante}
                       </button>
                       <button
-                        type="button"
                         id="btnLimpiarRepresentante"
                         name="btnLimpiarRepresentante"
+                        type="button"
                         className={`${buttonStylePrimario} ${
                           botonEstado.btnLimpiarRepresentante
                             ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
@@ -3102,7 +3102,7 @@ const Admision = ({
                           "adm_dato_repr_apel",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -3135,7 +3135,7 @@ const Admision = ({
                           "adm_dato_repr_nomb",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -3168,7 +3168,7 @@ const Admision = ({
                           "adm_dato_repr_pare",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -3198,7 +3198,7 @@ const Admision = ({
                           "adm_dato_repr_nume_tele",
                           requiredFields,
                           formData,
-                          isFieldVisible
+                          isFieldVisible,
                         )
                           ? "border-2 border-red-500"
                           : ""
@@ -3219,7 +3219,7 @@ const Admision = ({
                           htmlFor="adm_dato_repr_fech_naci"
                         >
                           {requiredFields.includes(
-                            "adm_dato_repr_fech_naci"
+                            "adm_dato_repr_fech_naci",
                           ) && <span className="text-red-500">* </span>}
                           {labelMap["adm_dato_repr_fech_naci"]}
                         </label>
@@ -3237,7 +3237,7 @@ const Admision = ({
                               "adm_dato_repr_fech_naci",
                               requiredFields,
                               formData,
-                              isFieldVisible
+                              isFieldVisible,
                             )
                               ? "border-2 border-red-500"
                               : ""
@@ -3279,7 +3279,7 @@ const Admision = ({
                               "adm_dato_repr_naci",
                               requiredFields,
                               formData,
-                              isFieldVisible
+                              isFieldVisible,
                             )
                               ? "border-2 border-red-500"
                               : ""
@@ -3296,7 +3296,7 @@ const Admision = ({
                           htmlFor="adm_dato_repr_no_ident_prov"
                         >
                           {requiredFields.includes(
-                            "adm_dato_repr_no_ident_prov"
+                            "adm_dato_repr_no_ident_prov",
                           ) && <span className="text-red-500">* </span>}
                           {labelMap["adm_dato_repr_no_ident_prov"]}
                         </label>
@@ -3313,7 +3313,7 @@ const Admision = ({
                               "adm_dato_repr_no_ident_prov",
                               requiredFields,
                               formData,
-                              isFieldVisible
+                              isFieldVisible,
                             )
                               ? "border-2 border-red-500"
                               : ""
@@ -3337,7 +3337,7 @@ const Admision = ({
                     htmlFor="adm_dato_cont_enca_nece_llam"
                   >
                     {requiredFields.includes(
-                      "adm_dato_cont_enca_nece_llam"
+                      "adm_dato_cont_enca_nece_llam",
                     ) && <span className="text-red-500">* </span>}
                     {labelMap["adm_dato_cont_enca_nece_llam"]}
                   </label>
@@ -3354,7 +3354,7 @@ const Admision = ({
                         "adm_dato_cont_enca_nece_llam",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -3387,7 +3387,7 @@ const Admision = ({
                         "adm_dato_cont_pare",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -3414,7 +3414,7 @@ const Admision = ({
                         "adm_dato_cont_dire",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -3447,7 +3447,7 @@ const Admision = ({
                         "adm_dato_cont_tele",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -3465,9 +3465,9 @@ const Admision = ({
           )}
           <div className="md:col-span-2 flex justify-center mt-1">
             <button
-              type="submit"
               id="btnRegistrar"
               name="btnRegistrar"
+              type="submit"
               className={`${buttonStylePrimario} ${
                 botonEstado.btnRegistrar
                   ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
@@ -3494,6 +3494,8 @@ const Admision = ({
               Limpiar Todo
             </button>
             <button
+              id="btnCancelar"
+              name="btnCancelar"
               type="button"
               className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
               onClick={() => navigate("/")}

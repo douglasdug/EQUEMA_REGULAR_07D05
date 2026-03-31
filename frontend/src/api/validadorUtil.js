@@ -4,7 +4,7 @@ export const validarDato = (
   setFormData,
   error,
   setError,
-  setBotonEstado
+  setBotonEstado,
 ) => {
   const { name, value, type } = e.target;
   let formattedValue = value;
@@ -78,7 +78,7 @@ export const validarDato = (
     } else if (!emailRegex.test(formattedValue)) {
       setError({ type: "validacion", message: "Correo electrónico no válido" });
       setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
-      return;
+      //return;
     } else {
       setError("");
       setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
@@ -1222,7 +1222,7 @@ export const calculateDifference = (
   prevData,
   row,
   minuendField,
-  subtrahendField
+  subtrahendField,
 ) => {
   return (
     (updatedRow[minuendField] ?? prevData[row][minuendField] ?? 0) -
@@ -1576,7 +1576,7 @@ export const updateField = (
   row,
   input,
   fields,
-  totalField
+  totalField,
 ) => {
   if (fields.includes(input)) {
     updatedRow[totalField] = calculateTotal(updatedRow, prevData, row, fields);
@@ -2043,14 +2043,14 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       prevData,
       row,
       "rep_inf_tot_dis_bcg",
-      "rep_inf_egr_tot_dos_bcg"
+      "rep_inf_egr_tot_dos_bcg",
     );
     updatedRow.rep_sol_sol_mes_bcg = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_bcg",
-      "rep_sol_nec_mes_bcg"
+      "rep_sol_nec_mes_bcg",
     );
   }
   if (dependentFields_pent.includes(input)) {
@@ -2058,21 +2058,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_pent", "rep_inf_ing_tot_ing_pent"]
+      ["rep_inf_sal_ant_pent", "rep_inf_ing_tot_ing_pent"],
     );
     updatedRow.rep_inf_sal_mes_pent = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_pent",
-      "rep_inf_egr_tot_dos_pent"
+      "rep_inf_egr_tot_dos_pent",
     );
     updatedRow.rep_sol_sol_mes_pent = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_pent",
-      "rep_sol_nec_mes_pent"
+      "rep_sol_nec_mes_pent",
     );
   }
   if (dependentFields_neum.includes(input)) {
@@ -2080,21 +2080,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_neum", "rep_inf_ing_tot_ing_neum"]
+      ["rep_inf_sal_ant_neum", "rep_inf_ing_tot_ing_neum"],
     );
     updatedRow.rep_inf_sal_mes_neum = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_neum",
-      "rep_inf_egr_tot_dos_neum"
+      "rep_inf_egr_tot_dos_neum",
     );
     updatedRow.rep_sol_sol_mes_neum = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_neum",
-      "rep_sol_nec_mes_neum"
+      "rep_sol_nec_mes_neum",
     );
   }
   if (dependentFields_anti.includes(input)) {
@@ -2102,21 +2102,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_anti", "rep_inf_ing_tot_ing_anti"]
+      ["rep_inf_sal_ant_anti", "rep_inf_ing_tot_ing_anti"],
     );
     updatedRow.rep_inf_sal_mes_anti = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_anti",
-      "rep_inf_egr_tot_dos_anti"
+      "rep_inf_egr_tot_dos_anti",
     );
     updatedRow.rep_sol_sol_mes_anti = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_anti",
-      "rep_sol_nec_mes_anti"
+      "rep_sol_nec_mes_anti",
     );
   }
   if (dependentFields_fipv.includes(input)) {
@@ -2124,21 +2124,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_fipv", "rep_inf_ing_tot_ing_fipv"]
+      ["rep_inf_sal_ant_fipv", "rep_inf_ing_tot_ing_fipv"],
     );
     updatedRow.rep_inf_sal_mes_fipv = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_fipv",
-      "rep_inf_egr_tot_dos_fipv"
+      "rep_inf_egr_tot_dos_fipv",
     );
     updatedRow.rep_sol_sol_mes_fipv = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_fipv",
-      "rep_sol_nec_mes_fipv"
+      "rep_sol_nec_mes_fipv",
     );
   }
   if (dependentFields_rota.includes(input)) {
@@ -2146,21 +2146,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_rota", "rep_inf_ing_tot_ing_rota"]
+      ["rep_inf_sal_ant_rota", "rep_inf_ing_tot_ing_rota"],
     );
     updatedRow.rep_inf_sal_mes_rota = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_rota",
-      "rep_inf_egr_tot_dos_rota"
+      "rep_inf_egr_tot_dos_rota",
     );
     updatedRow.rep_sol_sol_mes_rota = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_rota",
-      "rep_sol_nec_mes_rota"
+      "rep_sol_nec_mes_rota",
     );
   }
   if (dependentFields_srp.includes(input)) {
@@ -2173,14 +2173,14 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       prevData,
       row,
       "rep_inf_tot_dis_srp",
-      "rep_inf_egr_tot_dos_srp"
+      "rep_inf_egr_tot_dos_srp",
     );
     updatedRow.rep_sol_sol_mes_srp = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_srp",
-      "rep_sol_nec_mes_srp"
+      "rep_sol_nec_mes_srp",
     );
   }
   if (dependentFields_fieb.includes(input)) {
@@ -2188,21 +2188,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_fieb", "rep_inf_ing_tot_ing_fieb"]
+      ["rep_inf_sal_ant_fieb", "rep_inf_ing_tot_ing_fieb"],
     );
     updatedRow.rep_inf_sal_mes_fieb = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_fieb",
-      "rep_inf_egr_tot_dos_fieb"
+      "rep_inf_egr_tot_dos_fieb",
     );
     updatedRow.rep_sol_sol_mes_fieb = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_fieb",
-      "rep_sol_nec_mes_fieb"
+      "rep_sol_nec_mes_fieb",
     );
   }
   if (dependentFields_vari.includes(input)) {
@@ -2210,21 +2210,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_vari", "rep_inf_ing_tot_ing_vari"]
+      ["rep_inf_sal_ant_vari", "rep_inf_ing_tot_ing_vari"],
     );
     updatedRow.rep_inf_sal_mes_vari = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_vari",
-      "rep_inf_egr_tot_dos_vari"
+      "rep_inf_egr_tot_dos_vari",
     );
     updatedRow.rep_sol_sol_mes_vari = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_vari",
-      "rep_sol_nec_mes_vari"
+      "rep_sol_nec_mes_vari",
     );
   }
   if (dependentFields_sr.includes(input)) {
@@ -2237,14 +2237,14 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       prevData,
       row,
       "rep_inf_tot_dis_sr",
-      "rep_inf_egr_tot_dos_sr"
+      "rep_inf_egr_tot_dos_sr",
     );
     updatedRow.rep_sol_sol_mes_sr = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_sr",
-      "rep_sol_nec_mes_sr"
+      "rep_sol_nec_mes_sr",
     );
   }
   if (dependentFields_dift.includes(input)) {
@@ -2252,21 +2252,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_dift", "rep_inf_ing_tot_ing_dift"]
+      ["rep_inf_sal_ant_dift", "rep_inf_ing_tot_ing_dift"],
     );
     updatedRow.rep_inf_sal_mes_dift = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_dift",
-      "rep_inf_egr_tot_dos_dift"
+      "rep_inf_egr_tot_dos_dift",
     );
     updatedRow.rep_sol_sol_mes_dift = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_dift",
-      "rep_sol_nec_mes_dift"
+      "rep_sol_nec_mes_dift",
     );
   }
   if (dependentFields_dtad.includes(input)) {
@@ -2274,21 +2274,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_dtad", "rep_inf_ing_tot_ing_dtad"]
+      ["rep_inf_sal_ant_dtad", "rep_inf_ing_tot_ing_dtad"],
     );
     updatedRow.rep_inf_sal_mes_dtad = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_dtad",
-      "rep_inf_egr_tot_dos_dtad"
+      "rep_inf_egr_tot_dos_dtad",
     );
     updatedRow.rep_sol_sol_mes_dtad = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_dtad",
-      "rep_sol_nec_mes_dtad"
+      "rep_sol_nec_mes_dtad",
     );
   }
   if (dependentFields_hpv.includes(input)) {
@@ -2301,14 +2301,14 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       prevData,
       row,
       "rep_inf_tot_dis_hpv",
-      "rep_inf_egr_tot_dos_hpv"
+      "rep_inf_egr_tot_dos_hpv",
     );
     updatedRow.rep_sol_sol_mes_hpv = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_hpv",
-      "rep_sol_nec_mes_hpv"
+      "rep_sol_nec_mes_hpv",
     );
   }
   if (dependentFields_hepa.includes(input)) {
@@ -2316,21 +2316,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_hepa", "rep_inf_ing_tot_ing_hepa"]
+      ["rep_inf_sal_ant_hepa", "rep_inf_ing_tot_ing_hepa"],
     );
     updatedRow.rep_inf_sal_mes_hepa = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_hepa",
-      "rep_inf_egr_tot_dos_hepa"
+      "rep_inf_egr_tot_dos_hepa",
     );
     updatedRow.rep_sol_sol_mes_hepa = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_hepa",
-      "rep_sol_nec_mes_hepa"
+      "rep_sol_nec_mes_hepa",
     );
   }
   if (dependentFields_hbpe.includes(input)) {
@@ -2338,21 +2338,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_hbpe", "rep_inf_ing_tot_ing_hbpe"]
+      ["rep_inf_sal_ant_hbpe", "rep_inf_ing_tot_ing_hbpe"],
     );
     updatedRow.rep_inf_sal_mes_hbpe = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_hbpe",
-      "rep_inf_egr_tot_dos_hbpe"
+      "rep_inf_egr_tot_dos_hbpe",
     );
     updatedRow.rep_sol_sol_mes_hbpe = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_hbpe",
-      "rep_sol_nec_mes_hbpe"
+      "rep_sol_nec_mes_hbpe",
     );
   }
   if (dependentFields_infped.includes(input)) {
@@ -2360,21 +2360,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_infped", "rep_inf_ing_tot_ing_infped"]
+      ["rep_inf_sal_ant_infped", "rep_inf_ing_tot_ing_infped"],
     );
     updatedRow.rep_inf_sal_mes_infped = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_infped",
-      "rep_inf_egr_tot_dos_infped"
+      "rep_inf_egr_tot_dos_infped",
     );
     updatedRow.rep_sol_sol_mes_infped = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_infped",
-      "rep_sol_nec_mes_infped"
+      "rep_sol_nec_mes_infped",
     );
   }
   if (dependentFields_infadu.includes(input)) {
@@ -2382,21 +2382,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_infadu", "rep_inf_ing_tot_ing_infadu"]
+      ["rep_inf_sal_ant_infadu", "rep_inf_ing_tot_ing_infadu"],
     );
     updatedRow.rep_inf_sal_mes_infadu = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_infadu",
-      "rep_inf_egr_tot_dos_infadu"
+      "rep_inf_egr_tot_dos_infadu",
     );
     updatedRow.rep_sol_sol_mes_infadu = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_infadu",
-      "rep_sol_nec_mes_infadu"
+      "rep_sol_nec_mes_infadu",
     );
   }
   if (dependentFields_pfiz.includes(input)) {
@@ -2404,21 +2404,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_pfiz", "rep_inf_ing_tot_ing_pfiz"]
+      ["rep_inf_sal_ant_pfiz", "rep_inf_ing_tot_ing_pfiz"],
     );
     updatedRow.rep_inf_sal_mes_pfiz = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_pfiz",
-      "rep_inf_egr_tot_dos_pfiz"
+      "rep_inf_egr_tot_dos_pfiz",
     );
     updatedRow.rep_sol_sol_mes_pfiz = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_pfiz",
-      "rep_sol_nec_mes_pfiz"
+      "rep_sol_nec_mes_pfiz",
     );
   }
   if (dependentFields_sino.includes(input)) {
@@ -2426,21 +2426,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_sino", "rep_inf_ing_tot_ing_sino"]
+      ["rep_inf_sal_ant_sino", "rep_inf_ing_tot_ing_sino"],
     );
     updatedRow.rep_inf_sal_mes_sino = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_sino",
-      "rep_inf_egr_tot_dos_sino"
+      "rep_inf_egr_tot_dos_sino",
     );
     updatedRow.rep_sol_sol_mes_sino = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_sino",
-      "rep_sol_nec_mes_sino"
+      "rep_sol_nec_mes_sino",
     );
   }
   if (dependentFields_cans.includes(input)) {
@@ -2448,21 +2448,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_cans", "rep_inf_ing_tot_ing_cans"]
+      ["rep_inf_sal_ant_cans", "rep_inf_ing_tot_ing_cans"],
     );
     updatedRow.rep_inf_sal_mes_cans = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_cans",
-      "rep_inf_egr_tot_dos_cans"
+      "rep_inf_egr_tot_dos_cans",
     );
     updatedRow.rep_sol_sol_mes_cans = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_cans",
-      "rep_sol_nec_mes_cans"
+      "rep_sol_nec_mes_cans",
     );
   }
   if (dependentFields_astr.includes(input)) {
@@ -2470,21 +2470,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_astr", "rep_inf_ing_tot_ing_astr"]
+      ["rep_inf_sal_ant_astr", "rep_inf_ing_tot_ing_astr"],
     );
     updatedRow.rep_inf_sal_mes_astr = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_astr",
-      "rep_inf_egr_tot_dos_astr"
+      "rep_inf_egr_tot_dos_astr",
     );
     updatedRow.rep_sol_sol_mes_astr = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_astr",
-      "rep_sol_nec_mes_astr"
+      "rep_sol_nec_mes_astr",
     );
   }
   if (dependentFields_modr.includes(input)) {
@@ -2492,21 +2492,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_modr", "rep_inf_ing_tot_ing_modr"]
+      ["rep_inf_sal_ant_modr", "rep_inf_ing_tot_ing_modr"],
     );
     updatedRow.rep_inf_sal_mes_modr = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_modr",
-      "rep_inf_egr_tot_dos_modr"
+      "rep_inf_egr_tot_dos_modr",
     );
     updatedRow.rep_sol_sol_mes_modr = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_modr",
-      "rep_sol_nec_mes_modr"
+      "rep_sol_nec_mes_modr",
     );
   }
   if (dependentFields_virsim.includes(input)) {
@@ -2514,21 +2514,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_virsim", "rep_inf_ing_tot_ing_virsim"]
+      ["rep_inf_sal_ant_virsim", "rep_inf_ing_tot_ing_virsim"],
     );
     updatedRow.rep_inf_sal_mes_virsim = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_virsim",
-      "rep_inf_egr_tot_dos_virsim"
+      "rep_inf_egr_tot_dos_virsim",
     );
     updatedRow.rep_sol_sol_mes_virsim = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_virsim",
-      "rep_sol_nec_mes_virsim"
+      "rep_sol_nec_mes_virsim",
     );
   }
   if (dependentFields_vacvphcam.includes(input)) {
@@ -2536,21 +2536,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_vacvphcam", "rep_inf_ing_tot_ing_vacvphcam"]
+      ["rep_inf_sal_ant_vacvphcam", "rep_inf_ing_tot_ing_vacvphcam"],
     );
     updatedRow.rep_inf_sal_mes_vacvphcam = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_vacvphcam",
-      "rep_inf_egr_tot_dos_vacvphcam"
+      "rep_inf_egr_tot_dos_vacvphcam",
     );
     updatedRow.rep_sol_sol_mes_vacvphcam = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_vacvphcam",
-      "rep_sol_nec_mes_vacvphcam"
+      "rep_sol_nec_mes_vacvphcam",
     );
   }
   if (dependentFields_inm_anti.includes(input)) {
@@ -2558,21 +2558,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_inm_anti", "rep_inf_ing_tot_ing_inm_anti"]
+      ["rep_inf_sal_ant_inm_anti", "rep_inf_ing_tot_ing_inm_anti"],
     );
     updatedRow.rep_inf_sal_mes_inm_anti = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_inm_anti",
-      "rep_inf_egr_tot_dos_inm_anti"
+      "rep_inf_egr_tot_dos_inm_anti",
     );
     updatedRow.rep_sol_sol_mes_inm_anti = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_inm_anti",
-      "rep_sol_nec_mes_inm_anti"
+      "rep_sol_nec_mes_inm_anti",
     );
   }
   if (dependentFields_inm_ant_hep_b.includes(input)) {
@@ -2580,21 +2580,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_inm_ant_hep_b", "rep_inf_ing_tot_ing_inm_ant_hep_b"]
+      ["rep_inf_sal_ant_inm_ant_hep_b", "rep_inf_ing_tot_ing_inm_ant_hep_b"],
     );
     updatedRow.rep_inf_sal_mes_inm_ant_hep_b = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_inm_ant_hep_b",
-      "rep_inf_egr_tot_dos_inm_ant_hep_b"
+      "rep_inf_egr_tot_dos_inm_ant_hep_b",
     );
     updatedRow.rep_sol_sol_mes_inm_ant_hep_b = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_inm_ant_hep_b",
-      "rep_sol_nec_mes_inm_ant_hep_b"
+      "rep_sol_nec_mes_inm_ant_hep_b",
     );
   }
   if (dependentFields_inm_ant_rrab.includes(input)) {
@@ -2602,21 +2602,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_inm_ant_rrab", "rep_inf_ing_tot_ing_inm_ant_rrab"]
+      ["rep_inf_sal_ant_inm_ant_rrab", "rep_inf_ing_tot_ing_inm_ant_rrab"],
     );
     updatedRow.rep_inf_sal_mes_inm_ant_rrab = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_inm_ant_rrab",
-      "rep_inf_egr_tot_dos_inm_ant_rrab"
+      "rep_inf_egr_tot_dos_inm_ant_rrab",
     );
     updatedRow.rep_sol_sol_mes_inm_ant_rrab = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_inm_ant_rrab",
-      "rep_sol_nec_mes_inm_ant_rrab"
+      "rep_sol_nec_mes_inm_ant_rrab",
     );
   }
   if (dependentFields_caj_bios.includes(input)) {
@@ -2624,21 +2624,21 @@ export const updateDependentFields = (updatedRow, prevData, row, input) => {
       updatedRow,
       prevData,
       row,
-      ["rep_inf_sal_ant_caj_bios", "rep_inf_ing_tot_ing_caj_bios"]
+      ["rep_inf_sal_ant_caj_bios", "rep_inf_ing_tot_ing_caj_bios"],
     );
     updatedRow.rep_inf_sal_mes_caj_bios = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_tot_dis_caj_bios",
-      "rep_inf_egr_tot_dos_caj_bios"
+      "rep_inf_egr_tot_dos_caj_bios",
     );
     updatedRow.rep_sol_sol_mes_caj_bios = calculateDifference(
       updatedRow,
       prevData,
       row,
       "rep_inf_sal_mes_caj_bios",
-      "rep_sol_nec_mes_caj_bios"
+      "rep_sol_nec_mes_caj_bios",
     );
   }
 };

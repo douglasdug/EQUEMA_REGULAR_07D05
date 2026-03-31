@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, NewPasswordResetAPIView, ChangePasswordTokenAPIView, FirmarPDFAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, Form008EmergenciaRegistrationAPIView, AgendaTurnoPacienteRegistrationAPIView, AdminAgendaTurnosRegistrationAPIView, ContactoAPIView, RegistroVacunadoRegistrationAPIView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, NewPasswordResetAPIView, ChangePasswordTokenAPIView, FirmarPDFAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, Form008EmergenciaRegistrationAPIView, AdminAgendaTurnosRegistrationAPIView, ContactoAPIView, RegistroVacunadoRegistrationAPIView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -17,8 +17,6 @@ router.register(r'admision-datos',
                 AdmisionDatosRegistrationAPIView, 'admision-datos')
 router.register(r'form-008-emergencia',
                 Form008EmergenciaRegistrationAPIView, 'form-008-emergencia')
-router.register(r'agenda-turno-paciente',
-                AgendaTurnoPacienteRegistrationAPIView, 'agenda-turno-paciente')
 router.register(r'admin-agenda-turnos',
                 AdminAgendaTurnosRegistrationAPIView, 'admin-agenda-turnos')
 # router.register(r'temprano', TempranoRegistrationAPIView, 'temprano')

@@ -105,7 +105,7 @@ const TablaUsers = ({
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(filteredUsers.length / rowsPerPage)),
-    [filteredUsers.length, rowsPerPage]
+    [filteredUsers.length, rowsPerPage],
   );
 
   // Asegura que la página actual siempre esté dentro de los límites
@@ -118,7 +118,7 @@ const TablaUsers = ({
 
   const currentRows = useMemo(
     () => filteredUsers.slice(indexOfFirstRow, indexOfLastRow),
-    [filteredUsers, indexOfFirstRow, indexOfLastRow]
+    [filteredUsers, indexOfFirstRow, indexOfLastRow],
   );
 
   const handleEdit = (id) => {
@@ -153,7 +153,7 @@ const TablaUsers = ({
 
   const confirmDelete = (user) => {
     return window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${user.username}\nNombres: ${user.last_name} ${user.first_name}`
+      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${user.username}\nNombres: ${user.last_name} ${user.first_name}`,
     );
   };
 
@@ -380,7 +380,7 @@ const TablaUsers = ({
                         cellContent = (
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ring-1 ${getRoleClass(
-                              registro[key]
+                              registro[key],
                             )}`}
                           >
                             {ROLE_NAMES[registro[key]] || ""}
@@ -528,7 +528,6 @@ const TablaUsers = ({
               ))}
             </select>
           </div>
-
           <button
             onClick={() => setCurrentPage(1)}
             disabled={currentPage === 1}

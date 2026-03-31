@@ -224,52 +224,40 @@ class form_008_emergencia(models.Model):
         if self.for_008_emer_edad is not None and self.for_008_emer_edad < 0:
             raise ValidationError('La edad no puede ser negativa')
 
-# Crea la tabla de Agenda de Turno de Paciente
-
-
-class agenda_turno_paciente(models.Model):
-    age_turn_paci_unid_salu = models.CharField(max_length=120, blank=True)
-    age_turn_paci_tipo_docu_iden = models.CharField(max_length=25, blank=True)
-    age_turn_paci_nume_iden = models.CharField(max_length=25, blank=True)
-    age_turn_paci_apel = models.CharField(max_length=80, blank=True)
-    age_turn_paci_nomb = models.CharField(max_length=80, blank=True)
-    age_turn_paci_sexo = models.CharField(max_length=15, blank=True)
-    age_turn_paci_fech_naci = models.DateField(blank=True, null=True)
-    age_turn_paci_tele = models.CharField(max_length=15, blank=True)
-    age_turn_paci_corr = models.CharField(max_length=40, blank=True)
-    age_turn_paci_dire = models.CharField(max_length=460, blank=True)
-    age_turn_paci_unid_salu_resp_segu_aten = models.CharField(
-        max_length=100, blank=True)
-    age_turn_paci_obse = models.CharField(max_length=350, blank=True)
-    eniUser = models.ForeignKey(
-        'eniUser', null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name='agent_diagnostico_imagen',
-        help_text='ID de usuario que registra la atencion de agenda de turno paciente'
-    )
-    admision_datos = models.IntegerField(
-        blank=True, null=True, help_text='ID de admision de datos del paciente de agenda de turno paciente')
 
 # Crea la tabla de Administra la Agenda de Turnos
 
 
 class admin_agenda_turnos(models.Model):
     adm_agen_turn_fech = models.DateField(blank=True, null=True)
+    adm_agen_turn_unid_salu = models.CharField(max_length=100, blank=True)
     adm_agen_turn_tipo_espe = models.CharField(max_length=100, blank=True)
     adm_agen_turn_prof_cita = models.CharField(max_length=100, blank=True)
+    adm_agen_turn_dura_cita = models.IntegerField(blank=True, null=True)
     adm_agen_turn_hora_inic = models.TimeField(blank=True, null=True)
     adm_agen_turn_hora_fin = models.TimeField(blank=True, null=True)
+    adm_agen_turn_tipo_iden_paci = models.CharField(max_length=25, blank=True)
+    adm_agen_turn_nume_iden_paci = models.CharField(max_length=25, blank=True)
+    adm_agen_turn_apel_nomb_paci = models.CharField(max_length=160, blank=True)
+    adm_agen_turn_tele_paci = models.CharField(max_length=15, blank=True)
+    adm_agen_turn_corr_paci = models.CharField(max_length=40, blank=True)
+    adm_agen_turn_dire_paci = models.CharField(max_length=460, blank=True)
+    adm_agen_turn_unid_salu_resp_segu_aten_paci = models.CharField(
+        max_length=100, blank=True)
+    adm_agen_turn_obse_paci = models.CharField(max_length=400, blank=True)
     adm_agen_turn_esta_cita = models.IntegerField(blank=True, null=True)
-    agenda_turno_paciente = models.ForeignKey(
-        'agenda_turno_paciente', null=True,
+    adm_agen_turn_rese_unic_salu = models.CharField(max_length=8, blank=True)
+    id_admi_paci = models.IntegerField(
+        blank=True, null=True, help_text='ID de paciente registrado en admision de datos')
+    id_prof_cita = models.IntegerField(
+        blank=True, null=True, help_text='ID de profesional que hara la atencion')
+    eniUser = models.ForeignKey(
+        'eniUser', null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name='agent_diagnostico_imagen',
-        help_text='ID de agenda de turno de paciente'
+        help_text='ID de usuario que registra el turno para el paciente'
     )
-    eniUser = models.IntegerField(
-        blank=True, null=True, help_text='ID de usuario que registra la agenda de turno de paciente')
 
 # Crea la tabla de Reporte de ENI
 

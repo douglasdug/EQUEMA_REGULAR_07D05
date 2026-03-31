@@ -98,7 +98,7 @@ function calcularEdad(fechaNacimientoStr) {
 
 function calcularEdadConFechaReferencia(
   fechaNacimientoStr,
-  fechaReferenciaStr
+  fechaReferenciaStr,
 ) {
   if (!fechaNacimientoStr || !fechaReferenciaStr) return "";
 
@@ -121,7 +121,7 @@ function calcularEdadConFechaReferencia(
     const ultimoDiaMes = new Date(
       fechaReferencia.getFullYear(),
       fechaReferencia.getMonth(),
-      0
+      0,
     ).getDate();
     dias += ultimoDiaMes;
   }
@@ -159,7 +159,7 @@ const Form008Emergencia = () => {
   const fechaHoraSistema = new Date();
   const fechaActual = toISODateString(fechaHoraSistema);
   const fechaMinima = toISODateString(
-    new Date(fechaHoraSistema.getTime() - 7 * 24 * 60 * 60 * 1000)
+    new Date(fechaHoraSistema.getTime() - 7 * 24 * 60 * 60 * 1000),
   ); // 7 días * 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
   const [refreshTable, setRefreshTable] = useState(0);
   const [isIndicacionesFocused, setIsIndicacionesFocused] = useState(false);
@@ -350,7 +350,7 @@ const Form008Emergencia = () => {
           response.message.toLowerCase().includes("no se pudo obtener")
         ) {
           setConfirmModalText(
-            "¿El paciente le falta actualizar la información en el sistema?"
+            "¿El paciente le falta actualizar la información en el sistema?",
           );
           setAdmisionData(response.data);
           setShowConfirmModal(true);
@@ -377,7 +377,7 @@ const Form008Emergencia = () => {
         errorMessage.toLowerCase().includes("no se pudo obtener")
       ) {
         setConfirmModalText(
-          "¿El paciente tiene que ser admisionado al sistema?"
+          "¿El paciente tiene que ser admisionado al sistema?",
         );
         setAdmisionData({
           id_admision_datos: null,
@@ -500,7 +500,7 @@ const Form008Emergencia = () => {
 
       // Obtener atenciones previas del paciente (CORREGIDO)
       const atencionesData = await listarAtencionesPaciente(
-        data.id_admision_datos
+        data.id_admision_datos,
       );
       let listaAtenciones = [];
       if (Array.isArray(atencionesData?.data)) {
@@ -609,7 +609,7 @@ const Form008Emergencia = () => {
         if (formData.adm_dato_naci_fech_naci) {
           formData.for_008_emer_edad_cond = calcularEdadConFechaReferencia(
             formData.adm_dato_naci_fech_naci,
-            value
+            value,
           );
         }
         // Actualizar el estado una sola vez
@@ -621,7 +621,7 @@ const Form008Emergencia = () => {
         setFormData,
         error,
         setError,
-        setBotonEstado
+        setBotonEstado,
       );
     };
 
@@ -659,7 +659,7 @@ const Form008Emergencia = () => {
       case "for_008_emer_cie_10_prin_diag": {
         // Verificar si el nuevo diagnóstico comienza con S o T
         const diagSeleccionado = opcionesCIE10Permitidas.find(
-          (op) => op.value === value
+          (op) => op.value === value,
         );
         const codigo = diagSeleccionado
           ? diagSeleccionado.label.split(" ")[0]
@@ -716,7 +716,7 @@ const Form008Emergencia = () => {
           setFormData,
           error,
           setError,
-          setBotonEstado
+          setBotonEstado,
         );
         break;
     }
@@ -733,7 +733,7 @@ const Form008Emergencia = () => {
   const getCodigoCIE10CausExte = (value) => {
     if (!value) return "";
     const found = opcionesCIE10PermitidasExterno?.find(
-      (op) => op.value === value
+      (op) => op.value === value,
     );
     if (!found?.label) return "";
     const [codigo] = found.label.split(" ");
@@ -759,7 +759,7 @@ const Form008Emergencia = () => {
         (f) =>
           f !== "for_008_emer_cie_10_prin_diag" &&
           f !== "for_008_emer_cond_diag" &&
-          f !== "for_008_emer_cie_10_caus_exte_diag"
+          f !== "for_008_emer_cie_10_caus_exte_diag",
       )
       .filter((f) => {
         if (
@@ -823,7 +823,7 @@ const Form008Emergencia = () => {
         .replace(/[\u0300-\u036f]/g, "")
         .toUpperCase()
         .trim()
-        .startsWith("PRESUNTIVO")
+        .startsWith("PRESUNTIVO"),
     ).length;
     const presuntivoLimiteOk = presCount <= 3;
 
@@ -958,20 +958,20 @@ const Form008Emergencia = () => {
     // NUEVO: Función para filtrar opciones ya seleccionadas en la lista principal
     const getOpcionesCIE10Filtradas = (index) => {
       const seleccionados = formData.for_008_emer_cie_10_prin_diag.filter(
-        (_, i) => i !== index
+        (_, i) => i !== index,
       );
       return opcionesCIE10Permitidas.filter(
-        (op) => !seleccionados.includes(op.value)
+        (op) => !seleccionados.includes(op.value),
       );
     };
 
     // NUEVO: Función para filtrar opciones ya seleccionadas en la lista de causa externa
     const getOpcionesCIE10CausaExternaFiltradas = (index) => {
       const seleccionados = formData.for_008_emer_cie_10_caus_exte_diag.filter(
-        (_, i) => i !== index
+        (_, i) => i !== index,
       );
       return opcionesCIE10PermitidasExterno.filter(
-        (op) => !seleccionados.includes(op.value)
+        (op) => !seleccionados.includes(op.value),
       );
     };
 
@@ -1001,11 +1001,11 @@ const Form008Emergencia = () => {
           for_008_emer_cie_10_prin_diag:
             prev.for_008_emer_cie_10_prin_diag.filter((_, i) => i !== index),
           for_008_emer_cond_diag: prev.for_008_emer_cond_diag.filter(
-            (_, i) => i !== index
+            (_, i) => i !== index,
           ),
           for_008_emer_cie_10_caus_exte_diag:
             prev.for_008_emer_cie_10_caus_exte_diag.filter(
-              (_, i) => i !== index
+              (_, i) => i !== index,
             ),
         }));
       }
@@ -1014,7 +1014,7 @@ const Form008Emergencia = () => {
     // Verificar diagnósticos que comienzan con S o T
     const esDiagnosticoSoT = (diagValue) => {
       const selected = opcionesCIE10Permitidas.find(
-        (op) => op.value === diagValue
+        (op) => op.value === diagValue,
       );
       const codigo = selected ? selected.label.split(" ")[0] : "";
       return codigo.startsWith("S") || codigo.startsWith("T");
@@ -1057,7 +1057,7 @@ const Form008Emergencia = () => {
     // NUEVO: verificar si el diagnóstico principal inicia con Z
     const esDiagnosticoZ = (diagValue) => {
       const selected = opcionesCIE10Permitidas.find(
-        (op) => op.value === diagValue
+        (op) => op.value === diagValue,
       );
       const codigo = selected ? selected.label.split(" ")[0] : "";
       return codigo.startsWith("Z");
@@ -1078,7 +1078,7 @@ const Form008Emergencia = () => {
         (op) =>
           esOpcionPresuntivo(op) ||
           esOpcionDefInicial(op) ||
-          esOpcionDefInicialConfLab(op)
+          esOpcionDefInicialConfLab(op),
       );
       // Fallback: si no matchea nada, devolver lista base
       return filtradas.length ? filtradas : listaBase;
@@ -1090,7 +1090,7 @@ const Form008Emergencia = () => {
     const causaInvalida = (index) =>
       esDiagnosticoSoT(formData.for_008_emer_cie_10_prin_diag[index]) &&
       String(
-        formData.for_008_emer_cie_10_caus_exte_diag[index] ?? ""
+        formData.for_008_emer_cie_10_caus_exte_diag[index] ?? "",
       ).trim() === "";
 
     // Manejar cambio en campos de diagnóstico con validación inmediata
@@ -1113,7 +1113,7 @@ const Form008Emergencia = () => {
           next.for_008_emer_cie_10_prin_diag[index] = value;
           // Si no es S/T, limpiar su causa externa
           const selected = opcionesCIE10Permitidas.find(
-            (op) => op.value === value
+            (op) => op.value === value,
           );
           const code = selected ? selected.label.split(" ")[0] : "";
           if (!(code.startsWith("S") || code.startsWith("T"))) {
@@ -1124,7 +1124,7 @@ const Form008Emergencia = () => {
           const condActual = next.for_008_emer_cond_diag[index];
 
           const existeActual = opcionesCond.some(
-            (op) => op.value === condActual
+            (op) => op.value === condActual,
           );
           if (!existeActual) {
             // Autoseleccionar NO APLICA si la única opción disponible es esa
@@ -1143,14 +1143,14 @@ const Form008Emergencia = () => {
             const currentCount = next.for_008_emer_cond_diag.reduce(
               (acc, v, i) =>
                 acc + (i === index ? 0 : isPresuntivoValue(v) ? 1 : 0),
-              0
+              0,
             );
             if (currentCount >= 3) {
               toast.error(
                 "Solo puede seleccionar PRESUNTIVO hasta 3 diagnósticos.",
                 {
                   position: "bottom-right",
-                }
+                },
               );
               return prev; // cancelar el cambio
             }
@@ -1169,7 +1169,7 @@ const Form008Emergencia = () => {
     // Funciones de validación específicas para el componente
     const verificarCodigoCIE10 = (diagValue) => {
       const selected = opcionesCIE10Permitidas.find(
-        (op) => op.value === diagValue
+        (op) => op.value === diagValue,
       );
       return selected ? selected.label.split(" ")[0] : "";
     };
@@ -1216,7 +1216,7 @@ const Form008Emergencia = () => {
                   className={
                     diagInvalido(index) ||
                     getCodigoCIE10Prin(
-                      formData.for_008_emer_cie_10_prin_diag[index]
+                      formData.for_008_emer_cie_10_prin_diag[index],
                     ).length !== 4
                       ? "border-2 border-red-500"
                       : ""
@@ -1258,7 +1258,7 @@ const Form008Emergencia = () => {
                 />
                 {formData.for_008_emer_cie_10_prin_diag[index] &&
                   getCodigoCIE10Prin(
-                    formData.for_008_emer_cie_10_prin_diag[index]
+                    formData.for_008_emer_cie_10_prin_diag[index],
                   ).length !== 4 && (
                     <span className="text-red-600 text-sm mt-1">
                       El diagnóstico seleccionado no es válido. Seleccione un
@@ -1307,7 +1307,7 @@ const Form008Emergencia = () => {
                   htmlFor={`for_008_emer_cie_10_caus_exte_diag_${index}`}
                 >
                   {esDiagnosticoSoT(
-                    formData.for_008_emer_cie_10_prin_diag[index]
+                    formData.for_008_emer_cie_10_prin_diag[index],
                   ) && <span className="text-red-500">*</span>}
                   {index === 0
                     ? "CIE-10 (CAUSA EXTERNA):"
@@ -1324,14 +1324,14 @@ const Form008Emergencia = () => {
                   disabled={
                     variableEstado["for_008_emer_cie_10_caus_exte_diag"] ||
                     !esDiagnosticoSoT(
-                      formData.for_008_emer_cie_10_prin_diag[index]
+                      formData.for_008_emer_cie_10_prin_diag[index],
                     )
                   }
                   variableEstado={variableEstado}
                   className={
                     causaInvalida(index) ||
                     getCodigoCIE10CausExte(
-                      formData.for_008_emer_cie_10_caus_exte_diag[index]
+                      formData.for_008_emer_cie_10_caus_exte_diag[index],
                     ).length === 3
                       ? "border-2 border-red-500"
                       : ""
@@ -1339,7 +1339,7 @@ const Form008Emergencia = () => {
                   isLargeList={true}
                   placeholder={
                     esDiagnosticoSoT(
-                      formData.for_008_emer_cie_10_prin_diag[index]
+                      formData.for_008_emer_cie_10_prin_diag[index],
                     )
                       ? "Escriba para buscar diagnóstico CIE-10..."
                       : "Solo disponible para diagnósticos V, W, X, Y"
@@ -1374,7 +1374,7 @@ const Form008Emergencia = () => {
                 />
                 {formData.for_008_emer_cie_10_caus_exte_diag[index] &&
                   getCodigoCIE10CausExte(
-                    formData.for_008_emer_cie_10_caus_exte_diag[index]
+                    formData.for_008_emer_cie_10_caus_exte_diag[index],
                   ).length !== 4 && (
                     <span className="text-red-600 text-sm mt-1">
                       El diagnóstico seleccionado no es válido. Seleccione un
@@ -1685,7 +1685,7 @@ const Form008Emergencia = () => {
                         "for_008_busc_pers_tipo_iden",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -1699,7 +1699,7 @@ const Form008Emergencia = () => {
                       htmlFor="for_008_busc_pers_nume_iden"
                     >
                       {requiredFields.includes(
-                        "for_008_busc_pers_nume_iden"
+                        "for_008_busc_pers_nume_iden",
                       ) && <span className="text-red-500">* </span>}
                       {labelMap["for_008_busc_pers_nume_iden"]}
                     </label>
@@ -1743,23 +1743,11 @@ const Form008Emergencia = () => {
                       value={formData["for_008_busc_pers_nume_iden"]}
                       onChange={handleChange}
                       placeholder="Información es requerida"
+                      autoComplete="on"
                       required
                       className={`${inputStyle}
-                      ${
-                        isFieldInvalid(
-                          "for_008_busc_pers_nume_iden",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                       ${
-                         variableEstado["for_008_busc_pers_nume_iden"]
-                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                           : "bg-white text-gray-700 cursor-pointer"
-                       }`}
+                      ${isFieldInvalid("for_008_busc_pers_nume_iden", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""}
+                      ${variableEstado["for_008_busc_pers_nume_iden"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                       disabled={variableEstado["for_008_busc_pers_nume_iden"]}
                     />
                     <button
@@ -1864,7 +1852,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_nomb_esta_salu",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -1895,7 +1883,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_fech_aten",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -1930,7 +1918,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_hora_aten",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -1967,7 +1955,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_edad_cond",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2006,7 +1994,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_apel_comp",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : "for_008_emer_apel_comp"
@@ -2038,7 +2026,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_nomb_comp",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2070,7 +2058,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_sexo",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2102,7 +2090,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_naci",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2134,7 +2122,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_etni",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2166,7 +2154,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_grup_prio",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2198,7 +2186,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_tipo_segu",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2230,7 +2218,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_prov_resi",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2262,7 +2250,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_cant_resi",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2294,7 +2282,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_parr_resi",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2312,7 +2300,7 @@ const Form008Emergencia = () => {
                   htmlFor="for_008_emer_unid_salu_resp_segu_aten"
                 >
                   {requiredFields.includes(
-                    "for_008_emer_unid_salu_resp_segu_aten"
+                    "for_008_emer_unid_salu_resp_segu_aten",
                   ) && <span className="text-red-500">* </span>}
                   {labelMap["for_008_emer_unid_salu_resp_segu_aten"]}
                 </label>
@@ -2329,7 +2317,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_unid_salu_resp_segu_aten",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2363,7 +2351,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_dire_domi",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2395,7 +2383,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_tele_paci",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2434,7 +2422,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_espe_prof",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2461,7 +2449,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_hosp",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2488,7 +2476,7 @@ const Form008Emergencia = () => {
                       "for_008_emer_cond_alta",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -2522,7 +2510,7 @@ const Form008Emergencia = () => {
                         "for_008_emer_obse",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -2598,7 +2586,7 @@ const Form008Emergencia = () => {
                         "for_008_emer_apoy_aten_medi",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -2667,7 +2655,7 @@ const Form008Emergencia = () => {
                         "for_008_emer_edad_gest",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -2702,7 +2690,7 @@ const Form008Emergencia = () => {
                         "for_008_emer_ries_obst",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -2764,10 +2752,10 @@ const Form008Emergencia = () => {
                   onClick={() => {
                     setAdmisionInit({
                       tipoIdenInicial: String(
-                        formData.for_008_busc_pers_tipo_iden || ""
+                        formData.for_008_busc_pers_tipo_iden || "",
                       ).trim(),
                       numeIdenInicial: String(
-                        formData.for_008_busc_pers_nume_iden || ""
+                        formData.for_008_busc_pers_nume_iden || "",
                       ).trim(),
                     });
                     setShowConfirmModal(false);
@@ -2846,7 +2834,7 @@ const Form008Emergencia = () => {
                         for_008_emer_nomb_esta_salu: unidadSeleccionada,
                       }));
                       setSuccessMessage(
-                        "Unidad principal actualizada correctamente."
+                        "Unidad principal actualizada correctamente.",
                       );
                     } catch (error) {
                       setError("No se pudo actualizar la unidad principal.");

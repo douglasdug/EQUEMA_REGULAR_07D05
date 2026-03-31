@@ -50,7 +50,7 @@ const parseJwt = (token) => {
       atob(base64)
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch {
@@ -145,7 +145,7 @@ axios.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 const getEniUserId = () => getUserIdFromToken();
@@ -199,7 +199,7 @@ const refreshAccessToken = async () => {
     .catch((error) => {
       console.error(
         "Error al refrescar el token de acceso:",
-        error?.response ? error.response.data : error.message
+        error?.response ? error.response.data : error.message,
       );
       clearAuthData();
       throw error;
@@ -238,7 +238,7 @@ export const loginUser = async (formData) => {
   } catch (error) {
     console.error(
       "Error al iniciar sesión:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -269,7 +269,7 @@ export const logoutUser = async () => {
   } catch (error) {
     console.error(
       "Error al cerrar sesión:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     clearAuthData();
     try {
@@ -295,7 +295,7 @@ export const getAllEniUsers = async () => {
   } catch (error) {
     console.error(
       "Error fetching all eni users:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -308,7 +308,7 @@ export const registerUser = async (formData) => {
   } catch (error) {
     console.error(
       "Error registering user:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -318,13 +318,13 @@ export const updateUser = async (formData) => {
   try {
     const response = await axios.patch(
       `${API_URL}/eni-user/${formData.id_eniUser}/`,
-      formData
+      formData,
     );
     return response.data;
   } catch (error) {
     console.error(
       "Error updating user:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -334,13 +334,13 @@ export const deleteUser = async (username) => {
   try {
     const response = await axios.delete(
       `${API_URL}/eni-user/eliminar-usuario/`,
-      { data: { username } }
+      { data: { username } },
     );
     return response.data;
   } catch (error) {
     console.error(
       "Error deleting user:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -355,7 +355,7 @@ export const buscarUsuarioEni = async (tipo, identificacion) => {
   } catch (error) {
     console.error(
       "Error fetching user admission data:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -370,7 +370,7 @@ export const olvidoClave = async ({ username }) => {
   } catch (error) {
     console.error(
       "Error fetching user admission data:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -380,13 +380,13 @@ export const resetPasswordWithToken = async ({ uid, token, password }) => {
   try {
     const response = await axios.post(
       `${API_URL}/new-password/${uid}/${token}/`, // El backend debe tener esta ruta
-      { new_password: password }
+      { new_password: password },
     );
     return response.data;
   } catch (error) {
     console.error(
       "Error resetting password with token:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -395,14 +395,14 @@ export const resetPasswordWithToken = async ({ uid, token, password }) => {
 export const buscarUsuarioIdUnidadSalud = async () => {
   try {
     const response = await axios.get(
-      `${API_URL}/eni-user/buscar-usuario-id-unidad-salud/`
+      `${API_URL}/eni-user/buscar-usuario-id-unidad-salud/`,
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching user unidad de salud data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -415,14 +415,14 @@ export const buscarAtencionesForm008 = async (admision_datos, month, year) => {
       `${API_URL}/form-008-emergencia/listar-atenciones-paciente/`,
       {
         params: { admision_datos, month, year },
-      }
+      },
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching buscar form 008 data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -437,7 +437,7 @@ export const listarUsuariosApoyoAtencion = async () => {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching user unidad de salud data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -449,14 +449,14 @@ export const updateUnidadSaludPrincipal = async (formData) => {
   try {
     const response = await axios.patch(
       `${API_URL}/unidad-salud/unidad-salud-principal/`,
-      formData
+      formData,
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error updating unidad de salud data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -470,14 +470,14 @@ export const listarReportesAtenciones = async (form_008_year) => {
       `${API_URL}/form-008-emergencia/reporte-mensual/`,
       {
         params: { form_008_year },
-      }
+      },
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching reportes atenciones data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -490,14 +490,14 @@ export const listarReporteDiagnostico = async (form_008_year) => {
       `${API_URL}/form-008-emergencia/reporte-diagnostico/`,
       {
         params: { form_008_year },
-      }
+      },
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching reportes diagnostico data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -506,7 +506,7 @@ export const listarReporteDiagnostico = async (form_008_year) => {
 
 export const reporteDescargaAtencionesCsv = async (
   for_008_emer_fech_aten_min,
-  for_008_emer_fech_aten_max
+  for_008_emer_fech_aten_max,
 ) => {
   try {
     const response = await axios.get(
@@ -517,7 +517,7 @@ export const reporteDescargaAtencionesCsv = async (
           for_008_emer_fech_aten_max,
         },
         responseType: "blob",
-      }
+      },
     );
     const cd = response.headers["content-disposition"] || "";
     const match = cd.match(/filename="?([^"]+)"?/i);
@@ -529,7 +529,7 @@ export const reporteDescargaAtencionesCsv = async (
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching reportes atenciones en CSV data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -539,21 +539,21 @@ export const reporteDescargaAtencionesCsv = async (
 export const buscarAtencionForm008Emer = async (
   fechamin,
   fechamax,
-  identidad
+  identidad,
 ) => {
   try {
     const response = await axios.get(
       `${API_URL}/form-008-emergencia/buscar-atendidos-emergencia/`,
       {
         params: { fechamin, fechamax, identidad },
-      }
+      },
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching atencion form-008-emergencia data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -567,14 +567,14 @@ export const buscarUsuarioAdmision = async (tipo, identificacion) => {
       `${API_URL}/admision-datos/buscar-admision/`,
       {
         params: { tipo, identificacion },
-      }
+      },
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching user admission data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -587,14 +587,14 @@ export const busquedaAvanzadaAdmisionados = async (apellidos, nombres) => {
       `${API_URL}/admision-datos/buscar-admisionados/`,
       {
         params: { apellidos, nombres },
-      }
+      },
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching user admission data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -609,7 +609,7 @@ export const registerAdmision = async (formData) => {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error registering admision data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -620,14 +620,14 @@ export const updateAdmision = async (formData) => {
   try {
     const response = await axios.patch(
       `${API_URL}/admision-datos/${formData.id_admision_datos}/`,
-      formData
+      formData,
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error updating admision data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -642,7 +642,7 @@ export const getAllForm008Emer = async () => {
   } catch (error) {
     console.error(
       "Error fetching all form 008 emergency data:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -651,13 +651,13 @@ export const getAllForm008Emer = async () => {
 export const listarForm008EmerAtenciones = async () => {
   try {
     const response = await axios.get(
-      `${API_URL}/form-008-emergencia/listar-atenciones-form-008/`
+      `${API_URL}/form-008-emergencia/listar-atenciones-form-008/`,
     );
     return response.data;
   } catch (error) {
     console.error(
       "Error fetching all form 008 emergency data:",
-      error.response ? error.response.data : error.message
+      error.response ? error.response.data : error.message,
     );
     throw error;
   }
@@ -669,14 +669,14 @@ export const listarAtencionesPaciente = async (admision_datos) => {
       `${API_URL}/form-008-emergencia/listar-atenciones-paciente/`,
       {
         params: { admision_datos },
-      }
+      },
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching atencion form-008-emergencia data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -689,14 +689,14 @@ export const buscarUsuarioForm008Emer = async (tipo, identificacion) => {
       `${API_URL}/form-008-emergencia/buscar-admision/`,
       {
         params: { tipo, identificacion },
-      }
+      },
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching user admission data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -707,14 +707,14 @@ export const registerForm008Emer = async (formData) => {
   try {
     const response = await axios.post(
       `${API_URL}/form-008-emergencia/`,
-      formData
+      formData,
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error registering admision data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -725,14 +725,14 @@ export const updateForm008Emer = async (formData) => {
   try {
     const response = await axios.patch(
       `${API_URL}/form-008-emergencia/${formData.id_admision_datos}/`,
-      formData
+      formData,
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error updating admision data:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -770,7 +770,7 @@ export async function firmarPdf(certificadoTexto, claveP12) {
       if (process.env.NODE_ENV === "development") {
         console.warn(
           "No se pudo parsear el cuerpo de error al firmar PDF:",
-          err
+          err,
         );
       }
     }
@@ -780,38 +780,139 @@ export async function firmarPdf(certificadoTexto, claveP12) {
   return await res.blob();
 }
 
-//Funciones para la Agenda de Turnos de Pacientes
-export const registerAgendaTurnoPaciente = async (formData) => {
-  try {
-    const response = await axios.post(
-      `${API_URL}/agenda-turno-paciente/`,
-      formData
-    );
-    return response.data;
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error(
-        "Error registering agenda turno paciente:",
-        error.response ? error.response.data : error.message
-      );
-    }
-    throw error;
-  }
-};
-
 //Funciones para la Admision de Turnos de Agenda
 export const registerAdminAgendaTurno = async (formData) => {
   try {
     const response = await axios.post(
       `${API_URL}/admin-agenda-turnos/`,
-      formData
+      formData,
     );
     return response.data;
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error registering admin agenda turno:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
+      );
+    }
+    throw error;
+  }
+};
+
+export const listarTurnosPaciente = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/admin-agenda-turnos/`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching all turnos de paciente data:",
+      error.response ? error.response.data : error.message,
+    );
+    throw error;
+  }
+};
+
+export const eliminarTurnoAgendado = async (id) => {
+  try {
+    const response = await axios.delete(
+      `${API_URL}/admin-agenda-turnos/${id}/`,
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error eliminando turno:",
+      error.response ? error.response.data : error.message,
+    );
+    throw error;
+  }
+};
+
+export const actualizarTurnoAgendado = async (id, datos) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/admin-agenda-turnos/${id}/`,
+      datos,
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error actualizando turno:",
+      error.response ? error.response.data : error.message,
+    );
+    throw error;
+  }
+};
+
+export const actualizarAgenda = async (id, datos) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/admin-agenda-turnos/${id}/update-turno/`,
+      datos,
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error actualizando agenda:",
+      error.response ? error.response.data : error.message,
+    );
+    throw error;
+  }
+};
+
+export const pdfTurnoAgendaPaciente = async (id) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/admin-agenda-turnos/${id}/reporte-turno-pdf/`,
+      { responseType: "blob" },
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching turno PDF:",
+      error.response ? error.response.data : error.message,
+    );
+    throw error;
+  }
+};
+
+export const buscarTurnosAgendados = async (
+  tipo_especialidad,
+  fecha_inicio,
+  fecha_fin,
+) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/admin-agenda-turnos/buscar-agenda/`,
+      {
+        params: { tipo_especialidad, fecha_inicio, fecha_fin },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching turnos agendados:",
+        error.response ? error.response.data : error.message,
+      );
+    }
+    throw error;
+  }
+};
+
+export const listarAgendaPaciente = async (tipo_iden, nume_iden) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/admin-agenda-turnos/agenda-paciente/`,
+      {
+        params: { tipo_iden, nume_iden },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching turnos agendados paciente:",
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;
@@ -827,7 +928,7 @@ export const contactoSoporte = async (formData) => {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error contacting support:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
     throw error;

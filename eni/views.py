@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, JSONParser
-from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, agenda_turno_paciente, admin_agenda_turnos, registro_vacunado
-from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, Form008EmergenciaRegistrationSerializer, AgendaTurnoPacienteRegistrationSerializer, AdminAgendaTurnosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
+from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, admin_agenda_turnos, registro_vacunado
+from .serializer import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer, EniUserRegistrationSerializer, UnidadSaludRegistrationSerializer, TempranoRegistrationSerializer, TardioRegistrationSerializer, DesperdicioRegistrationSerializer, InfluenzaRegistrationSerializer, ReporteENIRegistrationSerializer, AdmisionDatosRegistrationSerializer, Form008EmergenciaRegistrationSerializer, AdminAgendaTurnosRegistrationSerializer, RegistroVacunadoRegistrationSerializer
 from django.db.models import F, Sum, Count, Max, Q, Count
 from django.db.models.functions import ExtractMonth
 from django.db import transaction
@@ -23,6 +23,7 @@ from django.core.mail import send_mail, EmailMultiAlternatives
 from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import render
 from datetime import datetime, timedelta, time, date
+from dateutil.relativedelta import relativedelta
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import csv
 import unicodedata
@@ -43,13 +44,14 @@ from pyhanko.pdf_utils.text import TextBoxStyle
 from pyhanko.stamp import QRStampStyle
 from pyhanko.keys import load_certs_from_pemder
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, A6
 from reportlab.lib.units import cm, mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader, PdfWriter
+from twilio.rest import Client
 
 # Create your views here.
 
@@ -1171,8 +1173,7 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
             data['adm_dato_resi_parr'] = pais_residencia
         data['adm_dato_paci_falt_dato'] = 1
 
-        serializer = self.get_serializer(
-            admision, data=data, partial=True)
+        serializer = self.get_serializer(admision, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
@@ -1884,18 +1885,6 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         return Response({"message": "Se creo la atencion del formulario 008-EMERGENCIA del usuario exitosamente!", "data": created_objects}, status=status.HTTP_201_CREATED)
 
 
-class AgendaTurnoPacienteRegistrationAPIView(viewsets.ModelViewSet):
-    serializer_class = AgendaTurnoPacienteRegistrationSerializer
-    queryset = agenda_turno_paciente.objects.all()
-    permission_classes = [permissions.AllowAny]
-    # permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3, 4]
-
-    def get_permissions(self):
-        # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
-        return [perm() for perm in self.permission_classes]
-
-
 class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = AdminAgendaTurnosRegistrationSerializer
     queryset = admin_agenda_turnos.objects.all()
@@ -1906,6 +1895,478 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
         return [perm() for perm in self.permission_classes]
+
+    def get_queryset(self):
+        user_id = self.request.query_params.get('user_id', None)
+        month = self.request.query_params.get('month', None)
+        year = self.request.query_params.get('year', None)
+
+        queryset = self.queryset
+
+        if user_id is not None:
+            queryset = queryset.filter(eniUser=user_id)
+
+        if month is not None and year is not None:
+            queryset = queryset.filter(
+                adm_agen_turn_fech__year=year, adm_agen_turn_fech__month=month)
+
+        hoy = datetime.now().date()
+        cuatro_meses_despues = hoy + \
+            timedelta(days=4*30)  # Aproximadamente 4 meses
+        queryset = queryset.filter(
+            adm_agen_turn_fech__gte=hoy,
+            adm_agen_turn_fech__lte=cuatro_meses_despues
+        )
+
+        return queryset.order_by('adm_agen_turn_fech', 'adm_agen_turn_hora_inic')
+
+    @action(detail=False, methods=['get'], url_path='buscar-agenda')
+    def get_buscar_agenda(self, request):
+        """
+        GET /admin-agenda-turnos/buscar-agenda/?tipo_especialidad=<ESPECIALIDAD>&fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
+        """
+        tipo_espe = request.query_params.get('tipo_especialidad', None)
+        fecha_inic = request.query_params.get('fecha_inicio', None)
+        fecha_fin = request.query_params.get('fecha_fin', None)
+        now = datetime.now()
+        today = now.date()
+        current_time = now.time()
+        four_months_later = today + timedelta(days=120)
+        # Filtro base: fechas entre hoy y 4 meses adelante
+        queryset = admin_agenda_turnos.objects.filter(
+            adm_agen_turn_esta_cita=1,
+            adm_agen_turn_fech__gte=today,
+            adm_agen_turn_fech__lte=four_months_later
+        )
+        # Filtro por especialidad
+        if tipo_espe:
+            queryset = queryset.filter(adm_agen_turn_tipo_espe=tipo_espe)
+        # Filtro por fecha de inicio
+        if fecha_inic:
+            queryset = queryset.filter(adm_agen_turn_fech__gte=fecha_inic)
+        # Filtro por fecha de fin
+        if fecha_fin:
+            queryset = queryset.filter(adm_agen_turn_fech__lte=fecha_fin)
+        # Filtro adicional: si es hoy, solo horas futuras
+        queryset = queryset.exclude(
+            adm_agen_turn_fech=today,
+            adm_agen_turn_hora_inic__lt=current_time
+        )
+        # Solo los campos requeridos
+        data = queryset.values(
+            'id',
+            'adm_agen_turn_fech',
+            'adm_agen_turn_hora_inic',
+            'adm_agen_turn_hora_fin',
+            'adm_agen_turn_unid_salu',
+            'adm_agen_turn_tipo_espe',
+            'adm_agen_turn_prof_cita',
+            'adm_agen_turn_dura_cita',
+            'adm_agen_turn_esta_cita',
+        ).order_by('adm_agen_turn_fech', 'adm_agen_turn_hora_inic')
+
+        data_list = list(data)
+        if not data_list:
+            return Response({"message": "No se encontraron turnos disponibles para los filtros seleccionados."})
+
+        return Response(data_list)
+
+    @action(detail=False, methods=['get'], url_path='agenda-paciente')
+    def get_agenda_paciente(self, request):
+        """
+        GET /admin-agenda-turnos/agenda-paciente/?tipo_iden=<TIPO_IDENTIFICACION>&nume_iden=<NUMERO_IDENTIFICACION>
+        """
+        tipo_iden = request.query_params.get('tipo_iden', None)
+        nume_iden = request.query_params.get('nume_iden', None)
+
+        queryset = admin_agenda_turnos.objects.filter(
+            adm_agen_turn_tipo_iden_paci=tipo_iden,
+            adm_agen_turn_nume_iden_paci=nume_iden,
+        )
+        # Solo los campos requeridos
+        data = queryset.values(
+            'id',
+            'adm_agen_turn_fech',
+            'adm_agen_turn_hora_inic',
+            'adm_agen_turn_hora_fin',
+            'adm_agen_turn_unid_salu',
+            'adm_agen_turn_tipo_espe',
+            'adm_agen_turn_prof_cita',
+            'adm_agen_turn_esta_cita',
+        ).order_by('-adm_agen_turn_fech', 'adm_agen_turn_hora_inic')[:10]
+
+        data_list = list(data)
+        if not data_list:
+            return Response({"message": "No se encontraron turnos agendados para el paciente especificado."})
+
+        return Response(data_list)
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        id_eni_user = getattr(request.user, 'id', None)
+        if isinstance(data, list):
+            created_objects = []
+            errors = []
+            for item in data:
+                mapped_data = {
+                    "adm_agen_turn_fech": item.get("adm_agen_turn_fech"),
+                    "adm_agen_turn_tipo_espe": item.get("adm_agen_turn_tipo_espe"),
+                    "adm_agen_turn_prof_cita": item.get("adm_agen_turn_eniUser"),
+                    "adm_agen_turn_dura_cita": int(item.get("adm_agen_turn_dura_min")),
+                    "adm_agen_turn_hora_inic": item.get("adm_agen_turn_hora_inic"),
+                    "adm_agen_turn_hora_fin": item.get("adm_agen_turn_hora_fin"),
+                    "adm_agen_turn_esta_cita": int(item.get("adm_agen_turn_esta_cita")),
+                    "adm_agen_turn_rese_unic_salu": item.get("adm_agen_turn_rese_unid_salu"),
+                    "id_prof_cita": int(item.get("adm_agen_turn_prof_cita")),
+                    "eniUser": id_eni_user
+                }
+                existe = admin_agenda_turnos.objects.filter(
+                    adm_agen_turn_fech=mapped_data["adm_agen_turn_fech"],
+                    adm_agen_turn_tipo_espe=mapped_data["adm_agen_turn_tipo_espe"],
+                    adm_agen_turn_hora_inic=mapped_data["adm_agen_turn_hora_inic"],
+                    adm_agen_turn_hora_fin=mapped_data["adm_agen_turn_hora_fin"],
+                    id_prof_cita=mapped_data["id_prof_cita"]
+                ).exists()
+
+                if existe:
+                    errors.append({
+                        "turno": mapped_data,
+                        "error": "Ya existe un turno con estos datos (fecha, tipo, profesional, hora)."
+                    })
+                    continue
+                if int(mapped_data["adm_agen_turn_dura_cita"]) <= 10:
+                    errors.append({
+                        "turno": mapped_data,
+                        "error": "La duración del turno debe ser al menos 10 minutos."
+                    })
+                    continue
+                serializer = self.get_serializer(data=mapped_data)
+                if serializer.is_valid():
+                    serializer.save()
+                    created_objects.append(serializer.data)
+                else:
+                    errors.append(serializer.errors)
+            if errors:
+                return Response({"message": "Algunos turnos no se pudieron crear", "errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Se crearon los turnos exitosamente!", "data": created_objects}, status=status.HTTP_201_CREATED)
+        else:
+            # Si recibes un solo objeto, comportamiento original
+            mapped_data = {
+                "adm_agen_turn_fech": data.get("adm_agen_turn_fech"),
+                "adm_agen_turn_tipo_espe": data.get("adm_agen_turn_tipo_espe"),
+                "adm_agen_turn_prof_cita": data.get("adm_agen_turn_eniUser"),
+                "adm_agen_turn_dura_cita": int(data.get("adm_agen_turn_dura_min")),
+                "adm_agen_turn_hora_inic": data.get("adm_agen_turn_hora_inic"),
+                "adm_agen_turn_hora_fin": data.get("adm_agen_turn_hora_fin"),
+                "adm_agen_turn_esta_cita": int(data.get("adm_agen_turn_esta_cita")),
+                "adm_agen_turn_rese_unic_salu": data.get("adm_agen_turn_rese_unid_salu"),
+                "id_prof_cita": int(data.get("adm_agen_turn_prof_cita")),
+                "eniUser": id_eni_user
+            }
+            existe = admin_agenda_turnos.objects.filter(
+                adm_agen_turn_fech=mapped_data["adm_agen_turn_fech"],
+                adm_agen_turn_tipo_espe=mapped_data["adm_agen_turn_tipo_espe"],
+                adm_agen_turn_hora_inic=mapped_data["adm_agen_turn_hora_inic"],
+                adm_agen_turn_hora_fin=mapped_data["adm_agen_turn_hora_fin"],
+                id_prof_cita=mapped_data["id_prof_cita"]
+            ).exists()
+            if existe:
+                return Response({"message": "Ya existe un turno con estos datos (fecha, tipo, profesional, hora)."}, status=status.HTTP_400_BAD_REQUEST)
+            if int(mapped_data["adm_agen_turn_dura_cita"]) <= 10:
+                return Response({"message": "La duración del turno debe ser al menos 10 minutos."}, status=status.HTTP_400_BAD_REQUEST)
+            serializer = self.get_serializer(data=mapped_data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response({"message": "Se creó el turno exitosamente!", "data": serializer.data}, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({"message": "Turno eliminado correctamente."}, status=status.HTTP_204_NO_CONTENT)
+
+    def mensaje_paciente(self, telefono, message):
+        account_sid = settings.TWILIO_ACCOUNT_SID
+        auth_token = settings.TWILIO_AUTH_TOKEN
+        from_whatsapp = settings.TWILIO_WHATSAPP_FROM
+        client = Client(account_sid, auth_token)
+        # Formatear el número: quitar 0 inicial y anteponer +593
+        telefono = telefono.strip()
+        if telefono.startswith('0'):
+            telefono = telefono[1:]
+        telefono_formateado = f'+593{telefono}'
+
+        message = client.messages.create(
+            from_=from_whatsapp,
+            body=message,
+            to=f'whatsapp:{telefono_formateado}'
+        )
+        return message.sid
+
+    @transaction.atomic
+    def update(self, request, pk=None, *args, **kwargs):
+        data = request.data.copy()
+        id_turno_age = pk
+        if not id_turno_age:
+            return Response({"error": "El parámetro 'id_turno' es requerido para actualizar el registro!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            id_turno = admin_agenda_turnos.objects.get(id=id_turno_age)
+        except admin_agenda_turnos.DoesNotExist:
+            return Response({"error": "Registro de turno no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            turno = admin_agenda_turnos.objects.get(id=id_turno_age)
+            adm_agen_turn_unid_salu = turno.adm_agen_turn_unid_salu
+            adm_agen_turn_tipo_espe = turno.adm_agen_turn_tipo_espe
+            adm_agen_turn_dura_cita = turno.adm_agen_turn_dura_cita
+            adm_agen_turn_fech = turno.adm_agen_turn_fech
+            adm_agen_turn_hora_inic = turno.adm_agen_turn_hora_inic
+        except admin_agenda_turnos.DoesNotExist:
+            # Manejo de error si no existe el turno
+            return Response({"error": "Turno no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+        adm_agen_turn_tipo_iden_paci = data.get('age_turn_paci_tipo_iden')
+        adm_agen_turn_nume_iden_paci = data.get('age_turn_paci_nume_iden')
+        adm_agen_turn_apel_nomb_paci = data.get('age_turn_paci_apel_nomb')
+        adm_agen_turn_tele_paci = data.get('age_turn_paci_tele')
+        adm_agen_turn_corr_paci = data.get('age_turn_paci_corr_paci')
+        adm_agen_turn_dire_paci = data.get('age_turn_paci_dire_paci')
+        adm_agen_turn_unid_salu_resp_segu_aten_paci = data.get(
+            'age_turn_paci_unid_salu_resp_segu_aten_paci')
+        adm_agen_turn_obse_paci = data.get('age_turn_paci_obse_paci')
+        id_admi_paci = data.get('id_admision_paci')
+
+        data['adm_agen_turn_tipo_iden_paci'] = adm_agen_turn_tipo_iden_paci
+        data['adm_agen_turn_nume_iden_paci'] = adm_agen_turn_nume_iden_paci
+        data['adm_agen_turn_apel_nomb_paci'] = adm_agen_turn_apel_nomb_paci
+        data['adm_agen_turn_tele_paci'] = adm_agen_turn_tele_paci
+        data['adm_agen_turn_corr_paci'] = adm_agen_turn_corr_paci
+        data['adm_agen_turn_dire_paci'] = adm_agen_turn_dire_paci
+        data['adm_agen_turn_unid_salu_resp_segu_aten_paci'] = adm_agen_turn_unid_salu_resp_segu_aten_paci
+        data['adm_agen_turn_obse_paci'] = adm_agen_turn_obse_paci
+        data['adm_agen_turn_esta_cita'] = 3
+        data['id_admision_paci'] = id_admi_paci
+
+        serializer = self.get_serializer(id_turno, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # if adm_agen_turn_tele_paci != "":
+        #     mensaje = (
+        #         f'Estimado/a *{adm_agen_turn_apel_nomb_paci}*, su cita médica ha sido agendada exitosamente.\n'
+        #         f'Fecha: {adm_agen_turn_fech}\n'
+        #         f'Hora: {adm_agen_turn_hora_inic}\n'
+        #         f'Especialidad: {adm_agen_turn_tipo_espe}\n'
+        #         f'Unidad de Salud: {adm_agen_turn_unid_salu}\n'
+        #         'Por favor, preséntese 30 minutos antes. Si no puede asistir, avísenos con anticipación.'
+        #     )
+        #     try:
+        #         self.mensaje_paciente(adm_agen_turn_tele_paci, mensaje)
+        #     except Exception as e:
+        #         logger.error(f"Error enviando WhatsApp: {e}")
+
+        # if adm_agen_turn_corr_paci != "":
+        #     send_mail(
+        #         subject='¡CITA MEDICA AGENDADA!',
+        #         message=(
+        #             f'Estimado Sr/Sra. {adm_agen_turn_apel_nomb_paci}:\n\n'
+        #             'Reciba un cordial saludo.\n'
+        #             'Le informamos que su cita médica ha sido agendada exitosamente en nuestro sistema.\n'
+        #             'A continuación, se detallan los datos correspondientes a su turno:\n'
+        #             f'- Identificación: {adm_agen_turn_nume_iden_paci}\n'
+        #             f'- Tipo de atención: {adm_agen_turn_tipo_espe}\n'
+        #             f'- Lugar donde se realizará: {adm_agen_turn_unid_salu}\n'
+        #             f'- Fecha de la cita: {adm_agen_turn_fech}\n'
+        #             f'- Hora de la cita: {adm_agen_turn_hora_inic}\n'
+        #             f'- Duración de la cita: {adm_agen_turn_dura_cita} minutos\n'
+        #             'Recomendaciones importantes:\n'
+        #             '- Presentarse con al menos 30 minutos de anticipación.\n'
+        #             '- Portar su documento de identidad original.\n'
+        #             '- Acudir con mascarilla o cumplir con las medidas de bioseguridad vigentes, si aplica.\n'
+        #             'En caso de no poder asistir a su cita, le solicitamos informarlo con anticipación a la unidad de salud correspondiente, \n'
+        #             'a fin de reasignar el turno y optimizar la atención a otros usuarios.\n'
+        #             'Agradecemos su puntualidad y colaboración para brindar un servicio de calidad.\n\n'
+        #             'Saludos cordiales,\nEl equipo de soporte.\n'
+        #             'Nota: Este correo es informativo, favor no responder a esta direccion de correo.'
+        #         ),
+        #         from_email=settings.DEFAULT_FROM_EMAIL,
+        #         recipient_list=[adm_agen_turn_corr_paci],
+        #         fail_silently=False,
+        #     )
+
+        return Response({"message": "El usuario se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['put'], url_path='update-turno')
+    def update_turno(self, request, pk=None, *args, **kwargs):
+        data = request.data.copy()
+        id_turno_age = pk
+        if not id_turno_age:
+            return Response({"error": "El parámetro 'id_turno' es requerido para actualizar el registro!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            id_turno = admin_agenda_turnos.objects.get(id=id_turno_age)
+        except admin_agenda_turnos.DoesNotExist:
+            return Response({"error": "Registro de turno no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+
+        data['adm_agen_turn_tipo_iden_paci'] = ""
+        data['adm_agen_turn_nume_iden_paci'] = ""
+        data['adm_agen_turn_apel_nomb_paci'] = ""
+        data['adm_agen_turn_tele_paci'] = ""
+        data['adm_agen_turn_corr_paci'] = ""
+        data['adm_agen_turn_dire_paci'] = ""
+        data['adm_agen_turn_unid_salu_resp_segu_aten_paci'] = ""
+        data['adm_agen_turn_obse_paci'] = ""
+        data['adm_agen_turn_esta_cita'] = 1
+
+        serializer = self.get_serializer(id_turno, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({"message": "El turno se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='reporte-turno-pdf')
+    def reporte_turno_pdf(self, request, pk=None):
+        """
+        GET /admin-agenda-turnos/buscar-agenda/<id_turno>/reporte-turno-pdf/
+        """
+        try:
+            turno = admin_agenda_turnos.objects.get(pk=pk)
+        except admin_agenda_turnos.DoesNotExist:
+            return Response({"error": "Turno no encontrado"}, status=404)
+
+        # Datos del turno
+        nombre = getattr(turno, "adm_agen_turn_apel_nomb_paci", "")
+        identificacion = getattr(turno, "adm_agen_turn_nume_iden_paci", "")
+        tipo_espe = getattr(turno, "adm_agen_turn_tipo_espe", "")
+        unidad = getattr(turno, "adm_agen_turn_unid_salu", "")
+        fecha = getattr(turno, "adm_agen_turn_fech", "")
+        hora = getattr(turno, "adm_agen_turn_hora_inic", "")
+        duracion = getattr(turno, "adm_agen_turn_dura_cita", "")
+        observaciones = getattr(turno, "adm_agen_turn_obse_paci", "")
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="turno_{pk}.pdf"'
+        c = canvas.Canvas(response, pagesize=A6)
+        width, height = A6
+        margen = 5 * mm
+        c.setLineWidth(1)
+        c.rect(margen, margen, width - 2 * margen, height - 2 * margen)
+
+        y = height - margen - 18
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(
+            margen + 5, y, "OFICINA TECNICA 07D05 ARENILLAS-HUAQUILLAS-LAS LAJAS-SALUD")
+        y -= 14
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(margen + 5, y, "¡CITA MEDICA AGENDADA!")
+        y -= 20
+        c.setFont("Helvetica", 8)
+        c.drawString(margen + 5, y, f"Estimado/a Sr./Sra. {nombre}:")
+        y -= 10
+        c.drawString(margen + 5, y, "Reciba un cordial saludo.")
+        y -= 10
+        c.drawString(
+            margen + 5, y, "Le informamos que su cita médica ha sido agendada exitosamente.")
+        y -= 10
+        c.drawString(
+            margen + 5, y, "A continuación, se detallan los datos de su turno.")
+        y -= 14
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(margen + 7, y, "Información del paciente y turno:")
+        y -= 14
+
+        # ancho_total = width - 2 * margen
+        # ancho_cuadro = (ancho_total) / 2
+        # alto_cuadro = 90
+        # y_cuadro = y - alto_cuadro
+
+        # # Primer cuadro (izquierda)
+        # c.rect(margen + 2, y_cuadro, ancho_cuadro, alto_cuadro)
+        # c.drawString(margen + 8, y_cuadro +
+        #              alto_cuadro - 12, "- Identificación:")
+        # c.drawString(margen + 8, y_cuadro + alto_cuadro -
+        #              24, "- Tipo de atención:")
+        # c.drawString(margen + 8, y_cuadro + alto_cuadro - 36, "- Lugar:")
+        # c.drawString(margen + 8, y_cuadro + alto_cuadro - 48, "- Fecha:")
+        # c.drawString(margen + 8, y_cuadro + alto_cuadro - 60, "- Hora:")
+        # c.drawString(margen + 8, y_cuadro + alto_cuadro - 72, "- Duración:")
+
+        # # Segundo cuadro (derecha)
+        # c.rect(margen + 2 + ancho_cuadro, y_cuadro, ancho_cuadro, alto_cuadro)
+        # c.drawString(margen + 8 + ancho_cuadro, y_cuadro +
+        #              alto_cuadro - 12, f"{identificacion}")
+        # c.drawString(margen + 8 + ancho_cuadro, y_cuadro +
+        #              alto_cuadro - 24, f"{tipo_espe}")
+        # c.drawString(margen + 8 + ancho_cuadro, y_cuadro +
+        #              alto_cuadro - 36, f"{unidad}")
+        # c.drawString(margen + 8 + ancho_cuadro, y_cuadro +
+        #              alto_cuadro - 48, f"{fecha}")
+        # c.drawString(margen + 8 + ancho_cuadro, y_cuadro +
+        #              alto_cuadro - 60, f"{hora}")
+        # c.drawString(margen + 8 + ancho_cuadro, y_cuadro +
+        #              alto_cuadro - 72, f"{duracion} minutos")
+        # y -= 108
+
+        c.drawString(margen + 12, y,
+                     f"- Número de identificación: {identificacion}")
+        y -= 10
+        c.drawString(margen + 12, y, f"- Tipo de Servicio: {tipo_espe}")
+        y -= 4
+
+        styles = getSampleStyleSheet()
+        mi_estilo = ParagraphStyle(
+            'MiEstilo',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=8,
+            leading=10
+        )
+        texto_largo = f"- Establecimiento de salud: {unidad}"
+        p = Paragraph(texto_largo, mi_estilo)
+        ancho_texto = width - 3 * margen - 10
+        alto_texto = 12
+        w, h = p.wrap(ancho_texto, alto_texto)
+        p.drawOn(c, margen + 12, y - h)
+
+        y -= h + 10
+        c.drawString(margen + 12, y, f"- Fecha de atención: {fecha}")
+        y -= 10
+        c.drawString(margen + 12, y, f"- Hora de atención: {hora}")
+        y -= 10
+        c.drawString(margen + 12, y,
+                     f"- Duración estimada: {duracion} minutos")
+        y -= 4
+        text_observaciones = f"- Observaciones: {observaciones}"
+        p_observaciones = Paragraph(text_observaciones, mi_estilo)
+        w_obs, h_obs = p_observaciones.wrap(ancho_texto, alto_texto)
+        p_observaciones.drawOn(c, margen + 12, y - h_obs)
+        y -= h_obs + 14
+
+        c.drawString(margen + 7, y, "Indicaciones importantes:")
+        y -= 10
+        c.setFont("Helvetica", 8)
+        c.drawString(
+            margen + 12, y, "- Presentarse en la unidad de salud con al menos 30 minutos")
+        y -= 10
+        c.drawString(margen + 12, y, "de anticipación.")
+        y -= 10
+        c.drawString(margen + 12, y,
+                     "- Portar su documento de identidad original.")
+        y -= 10
+        c.drawString(margen + 12, y,
+                     "- Cumplir con las medidas de bioseguridad vigentes.")
+        y -= 14
+        c.drawString(
+            margen + 5, y, "En caso de no poder asistir, le solicitamos informar oportunamente")
+        y -= 10
+        c.drawString(margen + 5, y, "para la reasignación de su turno.")
+        y -= 14
+        c.drawString(
+            margen + 5, y, "Agradecemos su puntualidad y colaboración.")
+        c.showPage()
+        c.save()
+        return response
 
 
 class ContactoAPIView(APIView):

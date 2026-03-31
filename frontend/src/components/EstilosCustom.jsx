@@ -182,7 +182,7 @@ export const CustomSelect = ({
                     .filter(
                       (opt) =>
                         opt.value.toLowerCase().includes(text.toLowerCase()) ||
-                        opt.label.toLowerCase().includes(text.toLowerCase())
+                        opt.label.toLowerCase().includes(text.toLowerCase()),
                     )
                     .slice(0, maxResults)
                     // Cambia esta parte para evitar la duplicación:
@@ -213,6 +213,10 @@ export const CustomSelect = ({
             : undefined
         }
         filterOption={isLargeList ? null : undefined} // Desactivar filtro interno para listas grandes
+        menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+        menuPosition="fixed"
+        menuPlacement="auto"
+        maxMenuHeight={300}
       />
       {tooltipContent && showTooltip && (
         <div
@@ -302,22 +306,52 @@ export const selectStyles = {
     ...provided,
     cursor: state.isDisabled ? "not-allowed" : "pointer",
   }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+  menu: (base) => ({
+    ...base,
+    maxWidth: 600,
+    width: "100%",
+  }),
 };
 
 export const buttonStylePrimario =
-  "ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline text-black";
+  "text-black ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline";
 
 export const buttonStyleSecundario =
   "bg-blue-500 hover:bg-blue-700 text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline";
 
+export const buttonStyleGuardar =
+  "bg-green-500 hover:bg-green-700 whitespace-nowrap text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
+
+export const buttonStyleActualizar =
+  "bg-blue-500 hover:bg-blue-700 whitespace-nowrap text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
+
 export const buttonStyleEliminar =
-  "bg-red-500 hover:bg-red-700 text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
+  "bg-red-500 hover:bg-red-700 whitespace-nowrap text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
+
+export const buttonStyleCancelar =
+  "bg-gray-500 hover:bg-gray-700 whitespace-nowrap text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
+
+export const buttonStyleOtro =
+  "bg-cyan-500 hover:bg-cyan-700 whitespace-nowrap text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
+
+export const buttonStyleBuscarAvanzado =
+  "ml-2 inline-flex items-center gap-1 px-2 py-[2px] text-[11px] rounded-full border bg-indigo-100 whitespace-nowrap text-black border-indigo-500 hover:bg-indigo-300 transition-colors focus:outline-none focus:shadow-outline cursor-pointer";
+
+export const buttonStyleDesactivado =
+  "bg-gray-300 hover:bg-gray-400 whitespace-nowrap text-black ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-not-allowed";
+
+export const buttonStyleDesactivadoPeq =
+  "bg-gray-300 hover:bg-gray-400 whitespace-nowrap text-black ml-1 font-bold inline-flex items-center gap-1 px-2 py-[2px] text-[11px] rounded-full border rounded-md focus:outline-none focus:shadow-outline cursor-not-allowed";
 
 export function isFieldInvalid(
   field,
   requiredFields,
   formData,
-  isFieldVisible
+  isFieldVisible,
 ) {
   if (!requiredFields.includes(field)) return false;
   if (!isFieldVisible(field)) return false;

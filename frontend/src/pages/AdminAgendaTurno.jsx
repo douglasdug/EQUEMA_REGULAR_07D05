@@ -1,15 +1,23 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   listarUsuariosApoyoAtencion,
   registerAdminAgendaTurno,
+  listarTurnosPaciente,
+  eliminarTurnoAgendado,
+  actualizarTurnoAgendado,
 } from "../api/conexion.api.js";
 import allListAgenda from "../api/all.list.agenda.json";
+import allListRegisterUser from "../api/all.list.register.user.json";
 import {
   CustomSelect,
   inputStyle,
   isFieldInvalid,
-  buttonStylePrimario,
-  buttonStyleSecundario,
+  buttonStyleGuardar,
+  buttonStyleActualizar,
+  buttonStyleEliminar,
+  buttonStyleCancelar,
+  buttonStyleOtro,
+  buttonStyleDesactivado,
 } from "../components/EstilosCustom.jsx";
 import Loader from "../components/Loader.jsx";
 import { toast } from "react-hot-toast";
@@ -24,13 +32,14 @@ import {
   isBefore,
   addDays,
   isAfter,
+  set,
 } from "date-fns";
 import esES from "date-fns/locale/es";
 import { DateRange } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { eachDayOfInterval } from "date-fns";
-import { da } from "date-fns/locale";
+import { da, tr } from "date-fns/locale";
 
 const locales = { es: esES };
 const localizer = dateFnsLocalizer({
@@ -43,16 +52,22 @@ const localizer = dateFnsLocalizer({
 
 const initialState = {
   adm_agen_turn_fech: "",
-  adm_agen_turn_fech_inicio: "",
-  adm_agen_turn_fech_fin: "",
   adm_agen_turn_tipo_espe: "",
   adm_agen_turn_prof_cita: "",
   adm_agen_turn_hora_inic: "",
   adm_agen_turn_hora_fin: "",
   adm_agen_turn_almuerzo_inicio: "",
   adm_agen_turn_almuerzo_fin: "",
-  adm_agen_turn_esta_cita: "DISPONIBLE",
+  adm_agen_turn_esta_cita: 1,
   adm_agen_turn_dura_min: 30,
+  adm_agen_turn_fech_modal: "",
+  adm_agen_turn_tipo_espe_modal: "",
+  adm_agen_turn_prof_cita_modal: "",
+  adm_agen_turn_hora_inic_modal: "",
+  adm_agen_turn_hora_fin_modal: "",
+  adm_agen_turn_esta_cita_modal: "",
+  adm_agen_turn_rese_unid_salu: "",
+  adm_agen_turn_eniUser: "",
 };
 
 const diasSemana = [
@@ -67,103 +82,159 @@ const diasSemana = [
 
 const AdminAgendaTurno = () => {
   const [formData, setFormData] = useState(initialState);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [medicosList, setMedicosList] = useState([]);
 
-  const initialVariableEstado = {};
-  const initialBotonEstado = {};
-  const [variableEstado, setVariableEstado] = useState(initialVariableEstado);
+  const [rangeInicio, setRangeInicio] = useState(new Date());
+  const [rangeFin, setRangeFin] = useState(new Date());
+  const [almuerzoInicio, setAlmuerzoInicio] = useState("");
+  const [almuerzoFin, setAlmuerzoFin] = useState("");
+  const [diasSeleccionados, setDiasSeleccionados] = useState([1, 2, 3, 4, 5]);
   const [showCalendar, setShowCalendar] = useState(false);
-  const calendarRef = useRef(null);
-  const [botonEstado, setBotonEstado] = useState(initialBotonEstado);
+  const [calendarView, setCalendarView] = useState(Views.WEEK);
+  const [calendarDate, setCalendarDate] = useState(new Date());
   const [range, setRange] = useState([
     {
-      startDate: formData.adm_agen_turn_fech_inicio
-        ? parse(formData.adm_agen_turn_fech_inicio, "yyyy-MM-dd", new Date())
-        : new Date(),
-      endDate: formData.adm_agen_turn_fech_fin
-        ? parse(formData.adm_agen_turn_fech_fin, "yyyy-MM-dd", new Date())
-        : new Date(),
+      startDate: new Date(),
+      endDate: new Date(),
       key: "selection",
     },
   ]);
-  const [diasSeleccionados, setDiasSeleccionados] = useState([1, 2, 3, 4, 5]);
-  const [calendarView, setCalendarView] = useState(Views.WEEK);
-  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [showUnidadSalud, setShowUnidadSalud] = useState(false);
+
+  const initialVariableEstado = {
+    adm_agen_turn_tipo_espe: false,
+    adm_agen_turn_prof_cita: true,
+    adm_agen_turn_esta_cita: true,
+    adm_agen_turn_rese_unid_salu: true,
+    adm_agen_turn_fech_inic_fin: true,
+    adm_agen_turn_hora_inic: true,
+    adm_agen_turn_hora_fin: true,
+    adm_agen_turn_almuerzo_inicio: true,
+    adm_agen_turn_almuerzo_fin: true,
+    adm_agen_turn_dura_min: true,
+  };
+  const initialBotonEstado = {
+    btn_generar_turnos: true,
+    btnRegistrar: true,
+    btn_limpiar_variables: true,
+  };
+  const [variableEstado, setVariableEstado] = useState(initialVariableEstado);
+  const [botonEstado, setBotonEstado] = useState(initialBotonEstado);
+  const calendarRef = useRef(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [turnoEditando, setTurnoEditando] = useState(null);
 
   const onRangeChange = ({ selection }) => {
     setRange([selection]);
-    setFormData((f) => ({
-      ...f,
-      adm_agen_turn_fech_inicio: format(selection.startDate, "yyyy-MM-dd"),
-      adm_agen_turn_fech_fin: format(selection.endDate, "yyyy-MM-dd"),
-    }));
+    setRangeInicio(selection.startDate);
+    setRangeFin(selection.endDate);
   };
 
   // Maneja el cambio de los checkboxes
   const handleDiaChange = (dia) => {
     setDiasSeleccionados((prev) =>
-      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia]
+      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia],
     );
   };
 
+  const isFieldVisible = () => true;
+
   const requiredFields = [
-    "adm_agen_turn_fech",
     "adm_agen_turn_tipo_espe",
     "adm_agen_turn_prof_cita",
+    "adm_agen_turn_esta_cita",
+    "adm_agen_turn_rese_unid_salu",
+    "adm_agen_turn_fech_inic_fin",
     "adm_agen_turn_hora_inic",
     "adm_agen_turn_hora_fin",
-    "adm_agen_turn_esta_cita",
     "adm_agen_turn_dura_min",
+    "adm_agen_turn_dias_semana",
   ];
 
   const labelMap = {
-    adm_agen_turn_fech: "Fecha de cita",
-    adm_agen_turn_fech_inicio: "Fecha inicio agenda",
-    adm_agen_turn_fech_fin: "Fecha fin agenda",
-    adm_agen_turn_tipo_espe: "Tipo de especialidad",
-    adm_agen_turn_prof_cita: "Profesional de la cita",
-    adm_agen_turn_hora_inic: "Hora de inicio",
-    adm_agen_turn_hora_fin: "Hora de fin",
-    adm_agen_turn_almuerzo_inicio: "Inicio almuerzo",
-    adm_agen_turn_almuerzo_fin: "Fin almuerzo",
-    adm_agen_turn_esta_cita: "Estado de la cita",
-    adm_agen_turn_dura_min: "Duración por turno (min)",
-  };
-
-  const getErrorMessage = (error) => {
-    if (error.response?.data) {
-      const data = error.response.data;
-      if (typeof data === "object" && data !== null) {
-        if (data.message) return data.message;
-        if (data.error) return data.error;
-        const firstKey = Object.keys(data)[0];
-        const firstError = data[firstKey];
-        if (Array.isArray(firstError) && firstError.length > 0) {
-          return firstError[0];
-        } else if (typeof firstError === "string") {
-          return firstError;
-        }
-        return JSON.stringify(data);
-      } else if (typeof data === "string") {
-        return data;
-      }
-    } else if (error.request) {
-      return "No se recibió respuesta del servidor";
-    } else if (error.message) {
-      return error.message;
-    }
-    return "Error desconocido";
+    adm_agen_turn_fech: "Fecha de cita:",
+    adm_agen_turn_fech_inic_fin: "Rango de fechas para agendar:",
+    adm_agen_turn_fech_inicio: "Fecha inicio agenda:",
+    adm_agen_turn_fech_fin: "Fecha fin agenda:",
+    adm_agen_turn_tipo_espe: "Tipo de especialidad:",
+    adm_agen_turn_rese_unid_salu: "Unidad de salud:",
+    adm_agen_turn_prof_cita: "Profesional de la cita:",
+    adm_agen_turn_hora_inic: "Hora de inicio:",
+    adm_agen_turn_hora_fin: "Hora de fin:",
+    adm_agen_turn_almuerzo_inicio: "Inicio almuerzo:",
+    adm_agen_turn_almuerzo_fin: "Fin almuerzo:",
+    adm_agen_turn_esta_cita: "Estado de la cita:",
+    adm_agen_turn_dura_min: "Duración por turno (min):",
+    adm_agen_turn_dias_semana: "Días de la semana para agendar:",
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((f) => ({
-      ...f,
-      [name]: name === "adm_agen_turn_dura_min" ? Number(value) : value,
+    setFormData((prev) => {
+      const newFormData = {
+        ...prev,
+        [name]:
+          name === "adm_agen_turn_dura_min" ||
+          name === "adm_agen_turn_esta_cita"
+            ? Number(value)
+            : value,
+      };
+      if (name === "adm_agen_turn_tipo_espe") {
+        if (newFormData.adm_agen_turn_tipo_espe) {
+          ajustarVariableEstadoFalso();
+        } else {
+          limpiarVariables();
+        }
+      }
+      if (name === "adm_agen_turn_esta_cita") {
+        if (newFormData.adm_agen_turn_esta_cita === 2) {
+          setShowUnidadSalud(true);
+          setVariableEstado((prev) => ({
+            ...prev,
+            adm_agen_turn_rese_unid_salu: false,
+          }));
+        } else {
+          setShowUnidadSalud(false);
+          newFormData.adm_agen_turn_rese_unid_salu = "";
+        }
+      }
+      const camposLlenos =
+        newFormData.adm_agen_turn_tipo_espe &&
+        newFormData.adm_agen_turn_prof_cita &&
+        newFormData.adm_agen_turn_esta_cita &&
+        newFormData.adm_agen_turn_hora_inic &&
+        newFormData.adm_agen_turn_hora_fin &&
+        newFormData.adm_agen_turn_dura_min &&
+        diasSeleccionados.length > 0 &&
+        rangeInicio &&
+        rangeFin;
+      setBotonEstado((prevBtns) => ({
+        ...prevBtns,
+        btn_generar_turnos: !camposLlenos,
+      }));
+      return newFormData;
+    });
+  };
+
+  const ajustarVariableEstadoFalso = () => {
+    setVariableEstado((prev) => ({
+      ...prev,
+      adm_agen_turn_prof_cita: false,
+      adm_agen_turn_esta_cita: false,
+      adm_agen_turn_fech_inic_fin: false,
+      adm_agen_turn_hora_inic: false,
+      adm_agen_turn_hora_fin: false,
+      adm_agen_turn_almuerzo_inicio: false,
+      adm_agen_turn_almuerzo_fin: false,
+      adm_agen_turn_dura_min: false,
+    }));
+    setBotonEstado((prev) => ({
+      ...prev,
+      btn_limpiar_variables: false,
     }));
   };
 
@@ -172,82 +243,30 @@ const AdminAgendaTurno = () => {
     return new Date(`${date}T${time}`);
   };
 
-  const handleSelectSlot = ({ start, end }) => {
-    setFormData((f) => ({
-      ...f,
-      adm_agen_turn_fech: format(start, "yyyy-MM-dd"),
-      adm_agen_turn_fech_inicio: format(start, "yyyy-MM-dd"),
-      adm_agen_turn_fech_fin: format(start, "yyyy-MM-dd"),
-      adm_agen_turn_hora_inic: format(start, "HH:mm"),
-      adm_agen_turn_hora_fin: format(end, "HH:mm"),
-    }));
-  };
-
-  const handleSelectEvent = (event) => {
-    setFormData({
-      adm_agen_turn_fech: format(event.start, "yyyy-MM-dd"),
-      adm_agen_turn_hora_inic: format(event.start, "HH:mm"),
-      adm_agen_turn_hora_fin: format(event.end, "HH:mm"),
-      adm_agen_turn_tipo_espe: event.tipo_especialidad || "",
-      adm_agen_turn_prof_cita: event.profesional || "",
-      adm_agen_turn_esta_cita: event.estado || "",
-      adm_agen_turn_dura_min: formData.adm_agen_turn_dura_min || 30,
-    });
-  };
-
-  const handleViewChange = (view) => setCalendarView(view);
-  const handleNavigate = (action) => {
-    let newDate = calendarDate;
-    switch (action) {
-      case "TODAY":
-        newDate = new Date();
-        break;
-      case "PREV":
-        if (calendarView === Views.MONTH) newDate = addDays(calendarDate, -30);
-        else if (calendarView === Views.WEEK)
-          newDate = addDays(calendarDate, -7);
-        else newDate = addDays(calendarDate, -1);
-        break;
-      case "NEXT":
-        if (calendarView === Views.MONTH) newDate = addDays(calendarDate, 30);
-        else if (calendarView === Views.WEEK)
-          newDate = addDays(calendarDate, 7);
-        else newDate = addDays(calendarDate, 1);
-        break;
-      default:
-        break;
-    }
-    setCalendarDate(newDate);
-  };
-
-  const isFieldVisible = () => true;
-
   // Genera turnos entre la hora inicio y fin con la duración indicada
   const generarTurnos = () => {
+    //setIsLoading(true);
     setError("");
     setSuccessMessage("");
 
     const {
       adm_agen_turn_fech,
-      adm_agen_turn_fech_inicio: fechaInicioRango,
-      adm_agen_turn_fech_fin: fechaFinRango,
       adm_agen_turn_hora_inic: horaInicio,
       adm_agen_turn_hora_fin: horaFin,
       adm_agen_turn_dura_min: duracion,
       adm_agen_turn_tipo_espe,
       adm_agen_turn_prof_cita,
-      adm_agen_turn_almuerzo_inicio: almuerzoInicio,
-      adm_agen_turn_almuerzo_fin: almuerzoFin,
     } = formData;
 
-    const fechaReferencia = fechaInicioRango || adm_agen_turn_fech;
+    const fechaReferencia = format(rangeInicio, "yyyy-MM-dd");
     const fechaInicio = fechaReferencia;
-    const fechaFin = fechaFinRango || fechaReferencia;
+    const fechaFin = format(rangeFin, "yyyy-MM-dd");
 
     if (!fechaInicio || !horaInicio || !horaFin || !duracion) {
       const msg = "Completa fechas, hora inicio, hora fin y duración.";
       setError(msg);
       toast.error(msg, { position: "bottom-right" });
+      setTimeout(() => setError(""), 10000);
       return;
     }
 
@@ -257,12 +276,14 @@ const AdminAgendaTurno = () => {
       const msg = "La fecha fin debe ser mayor o igual a la fecha inicio.";
       setError(msg);
       toast.error(msg, { position: "bottom-right" });
+      setTimeout(() => setError(""), 10000);
       return;
     }
     if (duracion <= 0) {
       const msg = "La duración debe ser mayor a 0.";
       setError(msg);
       toast.error(msg, { position: "bottom-right" });
+      setTimeout(() => setError(""), 10000);
       return;
     }
 
@@ -276,6 +297,7 @@ const AdminAgendaTurno = () => {
         const msg = `Rango horario inválido para ${fechaStr}.`;
         setError(msg);
         toast.error(msg, { position: "bottom-right" });
+        setTimeout(() => setError(""), 10000);
         throw new Error(msg);
       }
       let cursor = new Date(diaInicioTrabajo);
@@ -328,6 +350,7 @@ const AdminAgendaTurno = () => {
               "La hora de almuerzo debe estar dentro del rango laboral y ser válida.";
             setError(msg);
             toast.error(msg, { position: "bottom-right" });
+            setTimeout(() => setError(""), 10000);
             return;
           }
         }
@@ -360,6 +383,7 @@ const AdminAgendaTurno = () => {
       const msg = "El rango y la duración no generan turnos.";
       setError(msg);
       toast.error(msg, { position: "bottom-right" });
+      setTimeout(() => setError(""), 10000);
       return;
     }
 
@@ -368,96 +392,101 @@ const AdminAgendaTurno = () => {
         format(d1, "yyyy-MM-dd") === format(d2, "yyyy-MM-dd");
       const filtrados = prev.filter(
         (e) =>
-          !nuevos.some((nuevo) => sameDay(e.start, nuevo.start)) || !e.generated
+          !nuevos.some((nuevo) => sameDay(e.start, nuevo.start)) ||
+          !e.generated,
       );
       return [...filtrados, ...nuevos];
     });
 
+    setBotonEstado((prev) => ({
+      ...prev,
+      btnRegistrar: false,
+      btn_generar_turnos: true,
+    }));
+
     const ok = `Se generaron ${nuevos.length} turnos. No olvides guardarlos.`;
     setSuccessMessage(ok);
+    setTimeout(() => setSuccessMessage(""), 10000);
     toast.success(ok, { position: "bottom-right" });
   };
 
-  // Guarda todos los turnos generados en el backend
-  const guardarTurnosGenerados = async () => {
-    const porGuardar = events.filter(
-      (e) => e.generated && e.estado !== "ALMUERZO"
-    );
-    if (porGuardar.length === 0) {
-      toast("No hay turnos nuevos para guardar.", { position: "bottom-right" });
-      return;
-    }
-    if (loading) return;
-
-    setLoading(true);
-    setError("");
-    setSuccessMessage("");
-
-    let okCount = 0;
-    for (const ev of porGuardar) {
-      try {
-        const payload = {
-          adm_agen_turn_fech: format(ev.start, "yyyy-MM-dd"),
-          adm_agen_turn_tipo_espe:
-            ev.tipo_especialidad || formData.adm_agen_turn_tipo_espe || "",
-          adm_agen_turn_prof_cita:
-            ev.profesional || formData.adm_agen_turn_prof_cita || "",
-          adm_agen_turn_hora_inic: format(ev.start, "HH:mm"),
-          adm_agen_turn_hora_fin: format(ev.end, "HH:mm"),
-          adm_agen_turn_esta_cita: ev.estado || "DISPONIBLE",
-        };
-        const response = await registerAdminAgendaTurno(payload);
-        const id = response?.id || `srv-${Date.now()}-${Math.random()}`;
-
-        setEvents((prev) =>
-          prev.map((e) => (e.id === ev.id ? { ...e, id, generated: false } : e))
-        );
-        okCount++;
-      } catch (err) {
-        const m = getErrorMessage(err);
-        toast.error(`Error guardando ${format(ev.start, "HH:mm")}: ${m}`, {
-          position: "bottom-right",
-        });
-      }
-    }
-
-    const msg = `Turnos guardados: ${okCount}/${porGuardar.length}`;
-    setSuccessMessage(msg);
-    toast.success(msg, { position: "bottom-right" });
-    setLoading(false);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (loading) return;
-    setLoading(true);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (isLoading) return;
+    setIsLoading(true);
     setError("");
     setSuccessMessage("");
     try {
-      const response = await registerAdminAgendaTurno(formData);
+      const turnosAGuardar = events.filter(
+        (ev) => ev.generated && ev.estado === "DISPONIBLE",
+      );
+
+      if (turnosAGuardar.length === 0) {
+        setError("No hay turnos generados para guardar.");
+        setTimeout(() => setError(""), 10000);
+        setIsLoading(false);
+        return;
+      }
+
+      const seleccionado = medicosList.find(
+        (opt) => opt.value === formData.adm_agen_turn_prof_cita,
+      );
+      const labelProfesional = seleccionado ? seleccionado.label : "";
+      // const estadoMap = {
+      //   DISPONIBLE: 1,
+      //   "RESERVADO/A": 2,
+      //   "AGENDADO/A": 3,
+      //   CANCELADO: 4,
+      // };
+      const payload = turnosAGuardar.map((ev) => ({
+        adm_agen_turn_fech: format(ev.start, "yyyy-MM-dd"),
+        adm_agen_turn_hora_inic: format(ev.start, "HH:mm"),
+        adm_agen_turn_hora_fin: format(ev.end, "HH:mm"),
+        adm_agen_turn_tipo_espe: ev.tipo_especialidad,
+        adm_agen_turn_prof_cita: ev.profesional,
+        adm_agen_turn_esta_cita: formData.adm_agen_turn_esta_cita,
+        adm_agen_turn_dura_min: formData.adm_agen_turn_dura_min,
+        adm_agen_turn_eniUser: labelProfesional,
+        adm_agen_turn_rese_unid_salu:
+          formData.adm_agen_turn_rese_unid_salu || "",
+      }));
+
+      const response = await registerAdminAgendaTurno(payload);
       const message = response?.message || "Se registró con éxito!";
       setSuccessMessage(message);
       setTimeout(() => setSuccessMessage(""), 10000);
       toast.success(message, { position: "bottom-right" });
-      const start = combineDateTime(
-        formData.adm_agen_turn_fech,
-        formData.adm_agen_turn_hora_inic
+
+      const turnos = await listarTurnosPaciente();
+      setEvents(
+        turnos
+          .filter(
+            (turno) =>
+              turno.adm_agen_turn_fech &&
+              turno.adm_agen_turn_hora_inic &&
+              turno.adm_agen_turn_hora_fin,
+          )
+          .map((turno) => {
+            // Conversión de fecha
+            const [day, month, year] = turno.adm_agen_turn_fech.split("/");
+            const fechaISO = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+            const start = new Date(
+              `${fechaISO}T${turno.adm_agen_turn_hora_inic}`,
+            );
+            const end = new Date(`${fechaISO}T${turno.adm_agen_turn_hora_fin}`);
+            if (isNaN(start) || isNaN(end)) return null;
+            return {
+              title:
+                turno.titulo ||
+                `${turno.adm_agen_turn_tipo_espe || ""} - ${turno.adm_agen_turn_prof_cita || ""}`,
+              start,
+              end,
+              ...turno,
+              fromDB: true,
+            };
+          })
+          .filter(Boolean),
       );
-      const end = combineDateTime(
-        formData.adm_agen_turn_fech,
-        formData.adm_agen_turn_hora_fin
-      );
-      const newEvent = {
-        id: response?.id || `${Date.now()}`,
-        title: `${formData.adm_agen_turn_tipo_espe} - ${formData.adm_agen_turn_prof_cita}`,
-        start,
-        end,
-        tipo_especialidad: formData.adm_agen_turn_tipo_espe,
-        profesional: formData.adm_agen_turn_prof_cita,
-        estado: formData.adm_agen_turn_esta_cita,
-        generated: false,
-      };
-      setEvents((prev) => [...prev, newEvent]);
       limpiarVariables();
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -465,7 +494,51 @@ const AdminAgendaTurno = () => {
       setTimeout(() => setError(""), 10000);
       toast.error(errorMessage, { position: "bottom-right" });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleEliminarTurno = async (id) => {
+    if (!window.confirm("¿Seguro que deseas eliminar este turno?")) return;
+    setIsLoading(true);
+    try {
+      await eliminarTurnoAgendado(id);
+      setEvents((prev) => prev.filter((e) => e.id !== id));
+      toast.success("Turno eliminado correctamente");
+      limpiarVariables();
+      limpiarVariablesModal();
+      setShowEditModal(false);
+    } catch (error) {
+      const errorMessage =
+        getErrorMessage(error) || "Error al eliminar el turno";
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      setSuccessMessage("");
+      toast.error(errorMessage, { position: "bottom-right" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleActualizarTurno = async (turnoEditado) => {
+    setIsLoading(true);
+    try {
+      await actualizarTurnoAgendado(turnoEditado.id, turnoEditado);
+      setEvents((prev) =>
+        prev.map((e) =>
+          e.id === turnoEditado.id ? { ...e, ...turnoEditado } : e,
+        ),
+      );
+      toast.success("Turno actualizado correctamente");
+    } catch (error) {
+      const errorMessage =
+        getErrorMessage(error) || "Error al actualizar el turno";
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      setSuccessMessage("");
+      toast.error(errorMessage, { position: "bottom-right" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -473,20 +546,24 @@ const AdminAgendaTurno = () => {
     setFormData(initialState);
     setSuccessMessage("");
     setError("");
+    setAlmuerzoInicio("");
+    setAlmuerzoFin("");
+    setRangeInicio(new Date());
+    setRangeFin(new Date());
     setVariableEstado(initialVariableEstado);
     setBotonEstado(initialBotonEstado);
+    setShowUnidadSalud(false);
   };
 
-  const reservarTurnoLocal = (id) => {
-    // Demo de selección de paciente (solo front, integra tu API de reserva/actualización aquí)
-    setEvents((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? { ...e, estado: "RESERVADO", title: `${e.title} - RESERVADO` }
-          : e
-      )
-    );
-    toast.success("Turno reservado (demo).", { position: "bottom-right" });
+  const limpiarVariablesModal = () => {
+    setTurnoEditando({
+      adm_agen_turn_fech_modal: "",
+      adm_agen_turn_tipo_espe_modal: "",
+      adm_agen_turn_prof_cita_modal: "",
+      adm_agen_turn_hora_inic_modal: "",
+      adm_agen_turn_hora_fin_modal: "",
+      adm_agen_turn_esta_cita_modal: "",
+    });
   };
 
   React.useEffect(() => {
@@ -528,11 +605,16 @@ const AdminAgendaTurno = () => {
             }))
           : [];
         setMedicosList(medicosListFormatted);
-      } catch (err) {
-        toast.error("No se pudo cargar la lista de profesionales.", {
-          position: "bottom-right",
-        });
-        console.error(err);
+      } catch (error) {
+        const errorMessage =
+          getErrorMessage(error) ||
+          "No se pudo cargar la lista de profesionales.";
+        setError(errorMessage);
+        setTimeout(() => setError(""), 10000);
+        setSuccessMessage("");
+        toast.error(errorMessage, { position: "bottom-right" });
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -541,6 +623,98 @@ const AdminAgendaTurno = () => {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const fetchTurnos = async () => {
+      setIsLoading(true);
+      try {
+        const turnos = await listarTurnosPaciente();
+        setEvents(
+          turnos
+            .filter(
+              (turno) =>
+                turno.adm_agen_turn_fech &&
+                turno.adm_agen_turn_hora_inic &&
+                turno.adm_agen_turn_hora_fin,
+            )
+            .map((turno) => {
+              // Convertir "03/03/2026" a "2026-03-03"
+              const [day, month, year] = turno.adm_agen_turn_fech.split("/");
+              const fechaISO = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+              const start = new Date(
+                `${fechaISO}T${turno.adm_agen_turn_hora_inic}`,
+              );
+              const end = new Date(
+                `${fechaISO}T${turno.adm_agen_turn_hora_fin}`,
+              );
+              if (isNaN(start) || isNaN(end)) return null;
+              return {
+                title:
+                  turno.titulo ||
+                  `${turno.adm_agen_turn_tipo_espe || ""} - ${turno.adm_agen_turn_prof_cita || ""}`,
+                start,
+                end,
+                ...turno,
+                fromDB: true,
+              };
+            })
+            .filter(Boolean),
+        );
+      } catch (error) {
+        const errorMessage =
+          getErrorMessage(error) || "Error al cargar los turnos agendados";
+        setError(errorMessage);
+        setTimeout(() => setError(""), 10000);
+        setSuccessMessage("");
+        toast.error(errorMessage, { position: "bottom-right" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTurnos();
+  }, []);
+
+  const MyEvent = ({ event }) => (
+    <span>
+      {event.title}
+      {/* Puedes mostrar un icono, pero no un botón funcional aquí */}
+    </span>
+  );
+
+  const getErrorMessage = (error) => {
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (typeof data === "object" && data !== null) {
+        // Si hay un array de errores detallados
+        if (Array.isArray(data.errors)) {
+          // Unir todos los mensajes de error en un solo string
+          return data.errors
+            .map(
+              (err, idx) =>
+                `Turno ${idx + 1}: ${err.error || JSON.stringify(err)}`,
+            )
+            .join("\n");
+        }
+        if (data.message) return data.message;
+        if (data.error) return data.error;
+        const firstKey = Object.keys(data)[0];
+        const firstError = data[firstKey];
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          return firstError[0];
+        } else if (typeof firstError === "string") {
+          return firstError;
+        }
+        return JSON.stringify(data);
+      } else if (typeof data === "string") {
+        return data;
+      }
+    } else if (error.request) {
+      return "No se recibió respuesta del servidor";
+    } else if (error.message) {
+      return error.message;
+    }
+    return "Error desconocido";
+  };
 
   const EstadoMensajes = ({ error, successMessage }) => (
     <div className="bg-white rounded-lg shadow-md">
@@ -580,7 +754,16 @@ const AdminAgendaTurno = () => {
         <h2 className="text-2xl font-bold mb-1 text-center text-blue-700">
           Registro de Agenda de Turno
         </h2>
-        <form onSubmit={handleSubmit} className="w-full">
+        {isLoading && (
+          <Loader
+            modal
+            isOpen={isLoading}
+            title="Procesando información"
+            text="Por favor espere..."
+            closeButton={false}
+          />
+        )}
+        <form onSubmit={handleSubmit} autoComplete="on" className="w-full">
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
               Tipo de Especialidad y Profesional
@@ -605,7 +788,7 @@ const AdminAgendaTurno = () => {
                       "adm_agen_turn_tipo_espe",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -624,20 +807,7 @@ const AdminAgendaTurno = () => {
                   id="adm_agen_turn_prof_cita"
                   name="adm_agen_turn_prof_cita"
                   value={formData.adm_agen_turn_prof_cita}
-                  onChange={(eOrValue) => {
-                    // Soporta tanto evento sintético como valor directo del CustomSelect
-                    if (eOrValue && eOrValue.target) {
-                      handleChange(eOrValue);
-                    } else {
-                      setFormData((f) => ({
-                        ...f,
-                        adm_agen_turn_prof_cita:
-                          typeof eOrValue === "object"
-                            ? eOrValue.value
-                            : eOrValue,
-                      }));
-                    }
-                  }}
+                  onChange={handleChange}
                   options={medicosList}
                   disabled={variableEstado["adm_agen_turn_prof_cita"]}
                   className={
@@ -645,7 +815,7 @@ const AdminAgendaTurno = () => {
                       "adm_agen_turn_prof_cita",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -663,35 +833,62 @@ const AdminAgendaTurno = () => {
                   )}
                   {labelMap["adm_agen_turn_esta_cita"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="adm_agen_turn_esta_cita"
                   name="adm_agen_turn_esta_cita"
                   value={formData.adm_agen_turn_esta_cita}
                   onChange={handleChange}
-                  placeholder="Ej: DISPONIBLE, PROGRAMADA, ATENDIDA, CANCELADA"
-                  className={`${inputStyle}
-                      ${
-                        isFieldInvalid(
-                          "adm_agen_turn_esta_cita",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                       ${
-                         variableEstado["adm_agen_turn_esta_cita"]
-                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                           : "bg-white text-gray-700 cursor-pointer"
-                       }`}
+                  options={(allListAgenda.adm_agen_turn_esta_cita || []).filter(
+                    (opt) => opt.value === 1 || opt.value === 2,
+                  )}
                   disabled={variableEstado["adm_agen_turn_esta_cita"]}
+                  className={
+                    isFieldInvalid(
+                      "adm_agen_turn_esta_cita",
+                      requiredFields,
+                      formData,
+                      isFieldVisible,
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                  placeholder="Ej: DISPONIBLE, RESERVADO/A"
                 />
               </div>
+              {showUnidadSalud && (
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="adm_agen_turn_rese_unid_salu"
+                  >
+                    {requiredFields.includes(
+                      "adm_agen_turn_rese_unid_salu",
+                    ) && <span className="text-red-500">* </span>}
+                    {labelMap["adm_agen_turn_rese_unid_salu"]}
+                  </label>
+                  <CustomSelect
+                    id="adm_agen_turn_rese_unid_salu"
+                    name="adm_agen_turn_rese_unid_salu"
+                    value={formData.adm_agen_turn_rese_unid_salu}
+                    onChange={handleChange}
+                    options={allListRegisterUser.uni_unic}
+                    disabled={variableEstado["adm_agen_turn_rese_unid_salu"]}
+                    className={
+                      isFieldInvalid(
+                        "adm_agen_turn_rese_unid_salu",
+                        requiredFields,
+                        formData,
+                        isFieldVisible,
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                    placeholder="Lista de unidades de salud"
+                  />
+                </div>
+              )}
             </div>
           </fieldset>
-
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
               Fecha de la Agenda y turnos
@@ -700,7 +897,7 @@ const AdminAgendaTurno = () => {
               <div className={fieldClass}>
                 <label
                   className={labelClass}
-                  htmlFor="adm_agen_turn_fech_inicio"
+                  htmlFor="adm_agen_turn_fech_inic_fin"
                 >
                   <span className="inline-flex items-center gap-1">
                     <svg
@@ -716,21 +913,28 @@ const AdminAgendaTurno = () => {
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    Rango de fechas de la agenda
+                    {requiredFields.includes("adm_agen_turn_fech_inic_fin") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["adm_agen_turn_fech_inic_fin"]}
                   </span>
                 </label>
                 <div className="relative">
                   <input
+                    id="adm_agen_turn_fech_inic_fin"
+                    name="adm_agen_turn_fech_inic_fin"
                     type="text"
                     readOnly
                     value={
-                      formData.adm_agen_turn_fech_inicio &&
-                      formData.adm_agen_turn_fech_fin
-                        ? `${formData.adm_agen_turn_fech_inicio} - ${formData.adm_agen_turn_fech_fin}`
+                      rangeInicio && rangeFin
+                        ? `${format(rangeInicio, "yyyy-MM-dd")} - ${format(rangeFin, "yyyy-MM-dd")}`
                         : "Selecciona el rango de fechas"
                     }
                     onClick={() => setShowCalendar(true)}
-                    className="cursor-pointer bg-blue-50 border border-blue-200 rounded-lg shadow-md p-2 w-full"
+                    className={`${inputStyle}
+                      ${isFieldInvalid("adm_agen_turn_fech_inic_fin", requiredFields, formData, isFieldVisible) && !(rangeInicio && rangeFin) ? "border-2 border-red-500" : ""}
+                      ${variableEstado["adm_agen_turn_fech_inic_fin"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                    disabled={variableEstado["adm_agen_turn_fech_inic_fin"]}
                   />
                   {showCalendar && (
                     <div
@@ -741,7 +945,7 @@ const AdminAgendaTurno = () => {
                         ranges={range}
                         onChange={(ranges) => {
                           onRangeChange(ranges);
-                          setShowCalendar(false); // Oculta al seleccionar
+                          setShowCalendar(false);
                         }}
                         moveRangeOnFirstSelection={false}
                         direction="horizontal"
@@ -753,53 +957,73 @@ const AdminAgendaTurno = () => {
                 </div>
               </div>
               <div className={fieldClass}>
-                <label className={labelClass} htmlFor="hora_rango">
-                  Hora de inicio y fin <span className="text-red-500">*</span>
+                <label className={labelClass} htmlFor="adm_agen_turn_hora_inic">
+                  {requiredFields.includes("adm_agen_turn_hora_inic") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_agen_turn_hora_inic"]}
                 </label>
                 <div className="flex gap-2">
                   <input
-                    type="time"
                     id="adm_agen_turn_hora_inic"
                     name="adm_agen_turn_hora_inic"
+                    type="time"
                     value={formData.adm_agen_turn_hora_inic}
                     onChange={handleChange}
-                    className={`${inputStyle} w-1/2`}
+                    disabled={variableEstado["adm_agen_turn_hora_inic"]}
+                    className={`${inputStyle}
+                      ${isFieldInvalid("adm_agen_turn_hora_inic", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""}
+                      ${variableEstado["adm_agen_turn_hora_inic"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                     required
                   />
                   <span className="self-center text-gray-500">a</span>
                   <input
-                    type="time"
                     id="adm_agen_turn_hora_fin"
                     name="adm_agen_turn_hora_fin"
+                    type="time"
                     value={formData.adm_agen_turn_hora_fin}
                     onChange={handleChange}
-                    className={`${inputStyle} w-1/2`}
+                    className={`${inputStyle}
+                      ${isFieldInvalid("adm_agen_turn_hora_fin", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""}
+                      ${variableEstado["adm_agen_turn_hora_fin"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                    disabled={variableEstado["adm_agen_turn_hora_fin"]}
                     required
                   />
                 </div>
               </div>
               <div className={fieldClass}>
-                <label className={labelClass} htmlFor="hora_rango">
-                  Hora de Almuerzo inicio y fin{" "}
-                  <span className="text-red-500">*</span>
+                <label
+                  className={labelClass}
+                  htmlFor="adm_agen_turn_almuerzo_inicio"
+                >
+                  {requiredFields.includes("adm_agen_turn_almuerzo_inicio") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_agen_turn_almuerzo_inicio"]}
                 </label>
                 <div className="flex gap-2">
                   <input
-                    type="time"
                     id="adm_agen_turn_almuerzo_inicio"
                     name="adm_agen_turn_almuerzo_inicio"
-                    value={formData.adm_agen_turn_almuerzo_inicio}
-                    onChange={handleChange}
-                    className={`${inputStyle} w-1/2`}
+                    type="time"
+                    value={almuerzoInicio}
+                    onChange={(e) => setAlmuerzoInicio(e.target.value)}
+                    className={`${inputStyle}
+                      ${isFieldInvalid("adm_agen_turn_almuerzo_inicio", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""}
+                      ${variableEstado["adm_agen_turn_almuerzo_inicio"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                    disabled={variableEstado["adm_agen_turn_almuerzo_inicio"]}
                   />
                   <span className="self-center text-gray-500">a</span>
                   <input
-                    type="time"
                     id="adm_agen_turn_almuerzo_fin"
                     name="adm_agen_turn_almuerzo_fin"
-                    value={formData.adm_agen_turn_almuerzo_fin}
-                    onChange={handleChange}
-                    className={`${inputStyle} w-1/2`}
+                    type="time"
+                    value={almuerzoFin}
+                    onChange={(e) => setAlmuerzoFin(e.target.value)}
+                    className={`${inputStyle}
+                      ${isFieldInvalid("adm_agen_turn_almuerzo_fin", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""}
+                      ${variableEstado["adm_agen_turn_almuerzo_fin"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                    disabled={variableEstado["adm_agen_turn_almuerzo_fin"]}
                   />
                 </div>
               </div>
@@ -811,41 +1035,42 @@ const AdminAgendaTurno = () => {
                   {labelMap["adm_agen_turn_dura_min"]}
                 </label>
                 <input
+                  id="adm_agen_turn_dura_min"
+                  name="adm_agen_turn_dura_min"
                   type="number"
                   min={5}
                   step={5}
-                  id="adm_agen_turn_dura_min"
-                  name="adm_agen_turn_dura_min"
                   value={formData.adm_agen_turn_dura_min}
                   onChange={handleChange}
                   placeholder="Ej: 15, 20, 30"
                   className={`${inputStyle}
-                      ${
-                        isFieldInvalid(
-                          "adm_agen_turn_dura_min",
-                          requiredFields,
-                          formData,
-                          isFieldVisible
-                        )
-                          ? "border-2 border-red-500"
-                          : ""
-                      }
-                       ${
-                         variableEstado["adm_agen_turn_dura_min"]
-                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                           : "bg-white text-gray-700 cursor-pointer"
-                       }`}
+                    ${isFieldInvalid("adm_agen_turn_dura_min", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""}
+                    ${variableEstado["adm_agen_turn_dura_min"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                   disabled={variableEstado["adm_agen_turn_dura_min"]}
                 />
               </div>
               <div className="col-span-full mb-2">
-                <label className="block text-gray-700 text-sm font-bold mb-1">
-                  Días de la semana para generar turnos:
+                <label
+                  className={labelClass}
+                  htmlFor="adm_agen_turn_dias_semana"
+                >
+                  {requiredFields.includes("adm_agen_turn_dias_semana") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["adm_agen_turn_dias_semana"]}
                 </label>
-                <div className="flex flex-wrap gap-3">
+                <div
+                  className="flex flex-wrap gap-3"
+                  htmlFor="adm_agen_turn_dias_semana"
+                >
                   {diasSemana.map((dia) => (
-                    <label key={dia.value} className="flex items-center gap-1">
+                    <label
+                      key={dia.value}
+                      className={`${labelClass} flex items-center gap-1`}
+                    >
                       <input
+                        id="adm_agen_turn_dias_semana"
+                        name="adm_agen_turn_dias_semana"
                         type="checkbox"
                         checked={diasSeleccionados.includes(dia.value)}
                         onChange={() => handleDiaChange(dia.value)}
@@ -860,60 +1085,81 @@ const AdminAgendaTurno = () => {
                 </span>
               </div>
             </div>
-
-            <div className="flex flex-wrap items-center gap-3 mt-2">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={generarTurnos}
-                className="inline-flex items-center justify-center rounded bg-blue-600 px-4 py-2 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                Generar turnos
-              </button>
-              <button
-                type="button"
-                disabled={
-                  loading || events.filter((e) => e.generated).length === 0
-                }
-                onClick={guardarTurnosGenerados}
-                className="inline-flex items-center justify-center rounded bg-emerald-600 px-4 py-2 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
-              >
-                Guardar turnos generados
-              </button>
-            </div>
           </fieldset>
-
           <div className="flex items-center gap-3">
             <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center justify-center rounded bg-indigo-600 px-4 py-2 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+              id="btn_generar_turnos"
+              name="btn_generar_turnos"
+              type="button"
+              onClick={generarTurnos}
+              className={`${botonEstado.btn_generar_turnos ? buttonStyleDesactivado : buttonStyleOtro}`}
+              disabled={botonEstado.btn_generar_turnos}
             >
-              {loading ? "Guardando..." : "Registrar único"}
+              Generar turnos
             </button>
             <button
+              id="btnRegistrar"
+              name="btnRegistrar"
+              type="submit"
+              disabled={botonEstado.btnRegistrar}
+              className={`${botonEstado.btnRegistrar ? buttonStyleDesactivado : buttonStyleGuardar}`}
+            >
+              {isLoading ? "Guardando..." : "Guardar Turnos"}
+            </button>
+            <button
+              id="btn_limpiar_variables"
+              name="btn_limpiar_variables"
               type="button"
-              disabled={loading}
               onClick={limpiarVariables}
-              className="inline-flex items-center justify-center rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className={`${botonEstado.btn_limpiar_variables ? buttonStyleDesactivado : buttonStyleCancelar}`}
+              disabled={botonEstado.btn_limpiar_variables}
             >
               Limpiar
             </button>
           </div>
         </form>
+        <span className="text-xs text-gray-700 mt-1 block">
+          Nota: Solo los turnos generados aparecerán en el calendario de color
+          amarillo. No olvides guardarlos para que se registren en la base de
+          datos.
+        </span>
 
         <EstadoMensajes error={error} successMessage={successMessage} />
 
-        <div className="mb-4">
+        <div className="mb-4 pt-2 border-t" ref={calendarRef}>
           <Calendar
             localizer={localizer}
             events={events}
+            components={{
+              event: MyEvent,
+            }}
             startAccessor="start"
             endAccessor="end"
             style={{ height: 500 }}
             selectable
-            onSelectSlot={handleSelectSlot}
-            onSelectEvent={handleSelectEvent}
+            onSelectEvent={(event) => {
+              if (event.fromDB) {
+                // Formatea la fecha para el input type="date"
+                let fechaISO = "";
+                if (event.adm_agen_turn_fech?.includes("/")) {
+                  const [day, month, year] =
+                    event.adm_agen_turn_fech.split("/");
+                  fechaISO = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+                } else {
+                  fechaISO = event.adm_agen_turn_fech || "";
+                }
+                setTurnoEditando({
+                  adm_agen_turn_fech_moda: fechaISO,
+                  adm_agen_turn_tipo_espe_moda: event.adm_agen_turn_tipo_espe,
+                  adm_agen_turn_prof_cita_moda: String(event.id_prof_cita),
+                  adm_agen_turn_hora_inic_moda: event.adm_agen_turn_hora_inic,
+                  adm_agen_turn_hora_fin_moda: event.adm_agen_turn_hora_fin,
+                  adm_agen_turn_esta_cita_moda: event.adm_agen_turn_esta_cita,
+                  id: event.id,
+                });
+                setShowEditModal(true);
+              }
+            }}
             views={["month", "week", "day", "agenda"]}
             defaultView="week"
             min={new Date(1970, 0, 1, 0, 0)}
@@ -933,68 +1179,293 @@ const AdminAgendaTurno = () => {
             }}
             culture="es"
             eventPropGetter={(event) => {
-              const bg =
-                event.estado === "ALMUERZO"
-                  ? "#9ca3af"
-                  : event.estado === "RESERVADO"
-                  ? "#fbbf24"
-                  : event.estado === "DISPONIBLE"
-                  ? "#34d399"
-                  : "#60a5fa";
-              return { style: { backgroundColor: bg } };
+              const getEventColor = (estado) => {
+                if (estado === "ALMUERZO") return "#9ca3af"; // gris
+                if (estado === "DISPONIBLE") return "#22c55e"; // verde
+                if (estado === "RESERVADO/A") return "#fbbf24"; // naranja
+                if (estado === "AGENDADO/A") return "#3b82f6"; // azul
+                if (estado === "CANCELADO") return "#f22432"; // rojo
+                return "#1beaf5";
+              };
+              // Mapea el código numérico de la BD al texto de estado
+              const mapCodigoToEstado = (codigo) => {
+                switch (codigo) {
+                  case 1:
+                    return "DISPONIBLE";
+                  case 2:
+                    return "RESERVADO/A";
+                  case 3:
+                    return "AGENDADO/A";
+                  case 4:
+                    return "CANCELADO";
+                  default:
+                    return undefined;
+                }
+              };
+              const codigo =
+                typeof event.adm_agen_turn_esta_cita === "string"
+                  ? Number(event.adm_agen_turn_esta_cita)
+                  : event.adm_agen_turn_esta_cita;
+              const estado = event.estado || mapCodigoToEstado(codigo);
+              let bg = getEventColor(estado);
+              if (event.generated && estado !== "ALMUERZO") {
+                bg = "#f8fc05";
+              }
+              return {
+                style: {
+                  backgroundColor: bg,
+                  color: "black",
+                },
+              };
             }}
             view={calendarView}
             onView={setCalendarView}
             date={calendarDate}
             onNavigate={setCalendarDate}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Sugerencia: selecciona en el calendario para rellenar fecha y horas.
-          </p>
-        </div>
-
-        <div className="border-t pt-3">
-          <h3 className="text-lg font-semibold text-blue-700 mb-2">
-            Turnos disponibles (vista paciente - demo)
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {events.filter((e) => e.estado === "DISPONIBLE").length === 0 && (
-              <p className="text-gray-500 text-sm col-span-full">
-                No hay turnos disponibles.
-              </p>
-            )}
-            {events
-              .filter((e) => e.estado === "DISPONIBLE")
-              .sort((a, b) => +a.start - +b.start)
-              .map((e) => (
-                <div
-                  key={e.id}
-                  className="border rounded p-3 shadow-sm flex flex-col gap-1"
+          {showEditModal && turnoEditando && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="absolute top-2 right-2 text-white bg-red-600 hover:bg-red-700 rounded px-2 py-1 text-sm"
                 >
-                  <div className="text-sm font-semibold">
-                    {e.tipo_especialidad || "Especialidad"}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {e.profesional || "Profesional"}
-                  </div>
-                  <div className="text-sm">
-                    {format(e.start, "EEEE d 'de' MMMM", { locale: esES })}
-                  </div>
-                  <div className="text-sm">
-                    {format(e.start, "HH:mm")} - {format(e.end, "HH:mm")}
-                  </div>
-                  <button
-                    className="mt-2 inline-flex items-center justify-center rounded bg-emerald-600 px-3 py-1.5 text-white text-xs font-medium hover:bg-emerald-700 disabled:opacity-50"
-                    onClick={() => reservarTurnoLocal(e.id)}
+                  X
+                </button>
+                <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+                  <h3 className="text-lg font-bold mb-2">Editar Turno</h3>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      await handleActualizarTurno(turnoEditando);
+                      setShowEditModal(false);
+                    }}
+                    className="w-full"
                   >
-                    Reservar
-                  </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-2">
+                      <div className={fieldClass}>
+                        <label
+                          className={labelClass}
+                          htmlFor="adm_agen_turn_fech_moda"
+                        >
+                          {requiredFields.includes("adm_agen_turn_fech") && (
+                            <span className="text-red-500">* </span>
+                          )}
+                          {labelMap["adm_agen_turn_fech"]}
+                        </label>
+                        <input
+                          id="adm_agen_turn_fech_moda"
+                          name="adm_agen_turn_fech_moda"
+                          type="date"
+                          value={turnoEditando.adm_agen_turn_fech_moda || ""}
+                          onChange={(e) =>
+                            setTurnoEditando({
+                              ...turnoEditando,
+                              adm_agen_turn_fech_moda: e.target.value,
+                            })
+                          }
+                          className={`${inputStyle}
+                            ${isFieldInvalid("adm_agen_turn_fech_moda", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""}
+                            ${variableEstado["adm_agen_turn_fech_moda"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                        />
+                        <label
+                          className={labelClass}
+                          htmlFor="adm_agen_turn_tipo_espe_moda"
+                        >
+                          {requiredFields.includes(
+                            "adm_agen_turn_tipo_espe",
+                          ) && <span className="text-red-500">* </span>}
+                          {labelMap["adm_agen_turn_tipo_espe"]}
+                        </label>
+                        <CustomSelect
+                          id="adm_agen_turn_tipo_espe_moda"
+                          name="adm_agen_turn_tipo_espe_moda"
+                          value={
+                            turnoEditando.adm_agen_turn_tipo_espe_moda || ""
+                          }
+                          onChange={(e) =>
+                            setTurnoEditando({
+                              ...turnoEditando,
+                              adm_agen_turn_tipo_espe_moda: e.target.value,
+                            })
+                          }
+                          options={allListAgenda.adm_agen_turn_tipo_espe}
+                          className={
+                            isFieldInvalid(
+                              "adm_agen_turn_tipo_espe_moda",
+                              requiredFields,
+                              formData,
+                              isFieldVisible,
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
+                        />
+                        <label
+                          className={labelClass}
+                          htmlFor="adm_agen_turn_prof_cita_moda"
+                        >
+                          {requiredFields.includes(
+                            "adm_agen_turn_prof_cita",
+                          ) && <span className="text-red-500">* </span>}
+                          {labelMap["adm_agen_turn_prof_cita"]}
+                        </label>
+                        <CustomSelect
+                          id="adm_agen_turn_prof_cita_moda"
+                          name="adm_agen_turn_prof_cita_moda"
+                          value={
+                            turnoEditando.adm_agen_turn_prof_cita_moda || ""
+                          }
+                          onChange={(e) =>
+                            setTurnoEditando({
+                              ...turnoEditando,
+                              adm_agen_turn_prof_cita_moda: e.target.value,
+                            })
+                          }
+                          options={medicosList}
+                          className={
+                            isFieldInvalid(
+                              "adm_agen_turn_prof_cita_moda",
+                              requiredFields,
+                              formData,
+                              isFieldVisible,
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
+                          isLargeList={true}
+                          placeholder="Nombre del profesional"
+                          minSearchLength={2}
+                          maxResults={100}
+                        />
+                        <label
+                          className={labelClass}
+                          htmlFor="adm_agen_turn_hora_inic_moda"
+                        >
+                          {requiredFields.includes(
+                            "adm_agen_turn_hora_inic",
+                          ) && <span className="text-red-500">* </span>}
+                          {labelMap["adm_agen_turn_hora_inic"]}
+                        </label>
+                        <input
+                          id="adm_agen_turn_hora_inic_moda"
+                          name="adm_agen_turn_hora_inic_moda"
+                          type="time"
+                          value={
+                            turnoEditando.adm_agen_turn_hora_inic_moda || ""
+                          }
+                          onChange={(e) =>
+                            setTurnoEditando({
+                              ...turnoEditando,
+                              adm_agen_turn_hora_inic_moda: e.target.value,
+                            })
+                          }
+                          className={`${inputStyle}
+                            ${isFieldInvalid("adm_agen_turn_hora_inic_moda", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""}
+                            ${variableEstado["adm_agen_turn_hora_inic_moda"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                        />
+                        <label
+                          className={labelClass}
+                          htmlFor="adm_agen_turn_hora_fin_moda"
+                        >
+                          {requiredFields.includes(
+                            "adm_agen_turn_hora_fin",
+                          ) && <span className="text-red-500">* </span>}
+                          {labelMap["adm_agen_turn_hora_fin"]}
+                        </label>
+                        <input
+                          id="adm_agen_turn_hora_fin_moda"
+                          name="adm_agen_turn_hora_fin_moda"
+                          type="time"
+                          value={
+                            turnoEditando.adm_agen_turn_hora_fin_moda || ""
+                          }
+                          onChange={(e) =>
+                            setTurnoEditando({
+                              ...turnoEditando,
+                              adm_agen_turn_hora_fin_moda: e.target.value,
+                            })
+                          }
+                          className={`${inputStyle}
+                            ${isFieldInvalid("adm_agen_turn_hora_fin_moda", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""}
+                            ${variableEstado["adm_agen_turn_hora_fin_moda"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                        />
+                        <label
+                          className={labelClass}
+                          htmlFor="adm_agen_turn_esta_cita_moda"
+                        >
+                          {requiredFields.includes(
+                            "adm_agen_turn_esta_cita",
+                          ) && <span className="text-red-500">* </span>}
+                          {labelMap["adm_agen_turn_esta_cita"]}
+                        </label>
+                        <CustomSelect
+                          id="adm_agen_turn_esta_cita_moda"
+                          name="adm_agen_turn_esta_cita_moda"
+                          value={
+                            turnoEditando.adm_agen_turn_esta_cita_moda || ""
+                          }
+                          onChange={(e) =>
+                            setTurnoEditando({
+                              ...turnoEditando,
+                              adm_agen_turn_esta_cita_moda: e.target.value,
+                            })
+                          }
+                          options={allListAgenda.adm_agen_turn_esta_cita}
+                          className={
+                            isFieldInvalid(
+                              "adm_agen_turn_esta_cita_moda",
+                              requiredFields,
+                              formData,
+                              isFieldVisible,
+                            )
+                              ? "border-2 border-red-500"
+                              : ""
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="md:col-span-2 flex justify-center mt-1">
+                      <button
+                        id="btn_actualizar_turno_moda"
+                        name="btn_actualizar_turno_moda"
+                        type="submit"
+                        className={`${botonEstado.btn_actualizar_turno_moda ? buttonStyleDesactivado : buttonStyleActualizar}`}
+                        disabled={botonEstado.btn_actualizar_turno_moda}
+                      >
+                        Actualizar
+                      </button>
+                      <button
+                        id="btn_eliminar_turno_moda"
+                        name="btn_eliminar_turno_moda"
+                        type="button"
+                        onClick={() => handleEliminarTurno(turnoEditando.id)}
+                        className={`${botonEstado.btn_eliminar_turno_moda ? buttonStyleDesactivado : buttonStyleEliminar}`}
+                        disabled={botonEstado.btn_eliminar_turno_moda}
+                      >
+                        Eliminar
+                      </button>
+                      <button
+                        id="btn_cancelar_turno_moda"
+                        name="btn_cancelar_turno_moda"
+                        type="button"
+                        onClick={() => setShowEditModal(false)}
+                        className={`${botonEstado.btn_cancelar_turno_moda ? buttonStyleDesactivado : buttonStyleCancelar}`}
+                        disabled={botonEstado.btn_cancelar_turno_moda}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              ))}
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Integra aquí tu API para confirmar la reserva y actualizar el estado
-            del turno.
+              </div>
+            </div>
+          )}
+          <p className="text-sm text-gray-700 mt-1">
+            NOTA: Los turnos en estado "ALMUERZO" se muestran en gris,
+            "DISPONIBLE" en verde, "RESERVADO/A" en naranja, "AGENDADO/A" en
+            azul y "CANCELADO" en rojo.
           </p>
         </div>
       </div>

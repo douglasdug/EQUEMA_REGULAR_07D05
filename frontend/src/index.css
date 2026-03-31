@@ -31,3 +31,11 @@
 .animate-fade-in {
     animation: fadeIn .18s ease-out;
 }
+
+.react-select__placeholder {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: block;
+}
