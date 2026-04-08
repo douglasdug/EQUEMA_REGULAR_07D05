@@ -532,8 +532,6 @@ const Form008Emergencia = () => {
       }));
 
       const principal = unidades.find((u) => u.uni_unid_prin === 1);
-
-      // Actualizar listas
       setMedicosList(medicosListFormatted);
       setUnidadSaludList(unidadSaludListFormatted);
 

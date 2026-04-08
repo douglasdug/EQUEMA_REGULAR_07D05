@@ -544,6 +544,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         GET /eni-user/buscar-usuario-id-unidad-salud/
         """
         id_eni_user = getattr(request.user, 'id', None)
+        id_eni_user = 2
         # Primera búsqueda en eniUser
         try:
             user_data = eniUser.objects.get(
@@ -1910,12 +1911,18 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 adm_agen_turn_fech__year=year, adm_agen_turn_fech__month=month)
 
-        hoy = datetime.now().date()
-        cuatro_meses_despues = hoy + \
-            timedelta(days=4*30)  # Aproximadamente 4 meses
+        now = timezone.localtime()
+        today = now.date()
+        current_time = now.time()
+        # Aproximadamente 4 meses
+        four_months_later = today + timedelta(days=4*30)
         queryset = queryset.filter(
-            adm_agen_turn_fech__gte=hoy,
-            adm_agen_turn_fech__lte=cuatro_meses_despues
+            adm_agen_turn_fech__gte=today,
+            adm_agen_turn_fech__lte=four_months_later
+        )
+        queryset = queryset.exclude(
+            adm_agen_turn_fech=today,
+            adm_agen_turn_hora_inic__lt=current_time
         )
 
         return queryset.order_by('adm_agen_turn_fech', 'adm_agen_turn_hora_inic')
@@ -1925,6 +1932,9 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         """
         GET /admin-agenda-turnos/buscar-agenda/?tipo_especialidad=<ESPECIALIDAD>&fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
         """
+        id_eni_user = getattr(request.user, 'id', None)
+        id_eni_user = 2
+
         tipo_espe = request.query_params.get('tipo_especialidad', None)
         fecha_inic = request.query_params.get('fecha_inicio', None)
         fecha_fin = request.query_params.get('fecha_fin', None)
@@ -1932,44 +1942,143 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         today = now.date()
         current_time = now.time()
         four_months_later = today + timedelta(days=120)
-        # Filtro base: fechas entre hoy y 4 meses adelante
-        queryset = admin_agenda_turnos.objects.filter(
-            adm_agen_turn_esta_cita=1,
-            adm_agen_turn_fech__gte=today,
-            adm_agen_turn_fech__lte=four_months_later
-        )
-        # Filtro por especialidad
-        if tipo_espe:
-            queryset = queryset.filter(adm_agen_turn_tipo_espe=tipo_espe)
-        # Filtro por fecha de inicio
-        if fecha_inic:
-            queryset = queryset.filter(adm_agen_turn_fech__gte=fecha_inic)
-        # Filtro por fecha de fin
-        if fecha_fin:
-            queryset = queryset.filter(adm_agen_turn_fech__lte=fecha_fin)
-        # Filtro adicional: si es hoy, solo horas futuras
-        queryset = queryset.exclude(
-            adm_agen_turn_fech=today,
-            adm_agen_turn_hora_inic__lt=current_time
-        )
-        # Solo los campos requeridos
-        data = queryset.values(
-            'id',
-            'adm_agen_turn_fech',
-            'adm_agen_turn_hora_inic',
-            'adm_agen_turn_hora_fin',
-            'adm_agen_turn_unid_salu',
-            'adm_agen_turn_tipo_espe',
-            'adm_agen_turn_prof_cita',
-            'adm_agen_turn_dura_cita',
-            'adm_agen_turn_esta_cita',
-        ).order_by('adm_agen_turn_fech', 'adm_agen_turn_hora_inic')
+        # Primera búsqueda en eniUser
+        try:
+            user_data = eniUser.objects.get(
+                id=id_eni_user)
+            # Asumiendo que hay una relación con unidades_salud
+            unidades_salud = user_data.unidades_salud.all()
+            unidades_data = [{
+                "id": unidad.id, "uni_unid_prin": unidad.uni_unid_prin, "uni_unic": unidad.uni_unic, "uni_unid": unidad.uni_unid
+            }
+                for unidad in unidades_salud] if unidades_salud else []
+            data = {
+                "id_eniUser": user_data.id,
+                "unidades_data": unidades_data,
+            }
+            unidad_str = f"{unidades_salud[0].uni_unic} - {unidades_salud[0].uni_unid}" if unidades_salud else ""
 
-        data_list = list(data)
-        if not data_list:
-            return Response({"message": "No se encontraron turnos disponibles para los filtros seleccionados."})
+            unidad_salud = unidad_str.strip()
+            # Filtro base: fechas entre hoy y 4 meses adelante
+            queryset = admin_agenda_turnos.objects.filter(
+                adm_agen_turn_unid_salu=unidad_salud,
+                adm_agen_turn_esta_cita__in=[1, 2],
+                adm_agen_turn_fech__gte=today,
+                adm_agen_turn_fech__lte=four_months_later
+            )
+            # Filtro por especialidad
+            if tipo_espe:
+                queryset = queryset.filter(adm_agen_turn_tipo_espe=tipo_espe)
+            # Filtro por fecha de inicio
+            if fecha_inic:
+                queryset = queryset.filter(adm_agen_turn_fech__gte=fecha_inic)
+            # Filtro por fecha de fin
+            if fecha_fin:
+                queryset = queryset.filter(adm_agen_turn_fech__lte=fecha_fin)
+            # Filtro adicional: si es hoy, solo horas futuras
+            queryset = queryset.exclude(
+                adm_agen_turn_fech=today,
+                adm_agen_turn_hora_inic__lt=current_time
+            )
+            # Solo los campos requeridos
+            data = queryset.values(
+                'id',
+                'adm_agen_turn_fech',
+                'adm_agen_turn_hora_inic',
+                'adm_agen_turn_hora_fin',
+                'adm_agen_turn_unid_salu',
+                'adm_agen_turn_tipo_espe',
+                'adm_agen_turn_prof_cita',
+                'adm_agen_turn_dura_cita',
+                'adm_agen_turn_esta_cita',
+                'adm_agen_turn_rese_unic_salu',
+            ).order_by('adm_agen_turn_fech', 'adm_agen_turn_hora_inic')
 
-        return Response(data_list)
+            data_list = list(data)
+            if not data_list:
+                return Response({"message": "No se encontraron turnos disponibles para los filtros seleccionados."})
+
+            # return Response(data_list)
+            return Response({"message": "Listado de turnos disponibles", "data": data_list}, status=status.HTTP_200_OK)
+        except eniUser.DoesNotExist:
+            return Response({"error": "No se encontro las unidades de salud del usuario!"}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'], url_path='pacientes-agendados')
+    def get_pacientes_agendados(self, request):
+        """
+        GET /admin-agenda-turnos/pacientes-agendados/?tipo_especialidad=<ESPECIALIDAD>&fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
+        """
+        id_eni_user = getattr(request.user, 'id', None)
+        id_eni_user = 2
+
+        tipo_espe = request.query_params.get('tipo_especialidad', None)
+        fecha_inic = request.query_params.get('fecha_inicio', None)
+        fecha_fin = request.query_params.get('fecha_fin', None)
+        now = datetime.now()
+        today = now.date()
+        current_time = now.time()
+        four_months_later = today + timedelta(days=120)
+        # Primera búsqueda en eniUser
+        try:
+            user_data = eniUser.objects.get(
+                id=id_eni_user)
+            # Asumiendo que hay una relación con unidades_salud
+            unidades_salud = user_data.unidades_salud.all()
+            unidades_data = [{
+                "id": unidad.id, "uni_unid_prin": unidad.uni_unid_prin, "uni_unic": unidad.uni_unic, "uni_unid": unidad.uni_unid
+            }
+                for unidad in unidades_salud] if unidades_salud else []
+            data = {
+                "id_eniUser": user_data.id,
+                "unidades_data": unidades_data,
+            }
+            unidad_str = f"{unidades_salud[0].uni_unic} - {unidades_salud[0].uni_unid}" if unidades_salud else ""
+
+            unidad_salud = unidad_str.strip()
+            # Filtro base: fechas entre hoy y 4 meses adelante
+            queryset = admin_agenda_turnos.objects.filter(
+                adm_agen_turn_unid_salu=unidad_salud,
+                adm_agen_turn_esta_cita__in=[3],
+                adm_agen_turn_fech__gte=today,
+                adm_agen_turn_fech__lte=four_months_later
+            )
+            # Filtro por especialidad
+            if tipo_espe:
+                queryset = queryset.filter(adm_agen_turn_tipo_espe=tipo_espe)
+            # Filtro por fecha de inicio
+            if fecha_inic:
+                queryset = queryset.filter(adm_agen_turn_fech__gte=fecha_inic)
+            # Filtro por fecha de fin
+            if fecha_fin:
+                queryset = queryset.filter(adm_agen_turn_fech__lte=fecha_fin)
+            # Filtro adicional: si es hoy, solo horas futuras
+            queryset = queryset.exclude(
+                adm_agen_turn_fech=today,
+                adm_agen_turn_hora_inic__lt=current_time
+            )
+            # Solo los campos requeridos
+            data = queryset.values(
+                'id',
+                'adm_agen_turn_fech',
+                'adm_agen_turn_hora_inic',
+                'adm_agen_turn_hora_fin',
+                'adm_agen_turn_unid_salu',
+                'adm_agen_turn_tipo_espe',
+                'adm_agen_turn_prof_cita',
+                'adm_agen_turn_dura_cita',
+                'adm_agen_turn_esta_cita',
+                'adm_agen_turn_nume_iden_paci',
+                'adm_agen_turn_apel_nomb_paci',
+            ).order_by('adm_agen_turn_fech', 'adm_agen_turn_hora_inic')
+
+            data_list = list(data)
+            if not data_list:
+                return Response({"message": "No se encontraron agendados disponibles para los filtros seleccionados."})
+
+            # return Response(data_list)
+            return Response({"message": "Se genero el reporte de agendados exitosamente.", "data": data_list}, status=status.HTTP_200_OK)
+        except eniUser.DoesNotExist:
+            return Response({"error": "No se encontro las unidades de salud del usuario!"}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['get'], url_path='agenda-paciente')
     def get_agenda_paciente(self, request):
@@ -2011,6 +2120,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
             for item in data:
                 mapped_data = {
                     "adm_agen_turn_fech": item.get("adm_agen_turn_fech"),
+                    "adm_agen_turn_unid_salu": item.get("adm_agen_turn_unid_salu"),
                     "adm_agen_turn_tipo_espe": item.get("adm_agen_turn_tipo_espe"),
                     "adm_agen_turn_prof_cita": item.get("adm_agen_turn_eniUser"),
                     "adm_agen_turn_dura_cita": int(item.get("adm_agen_turn_dura_min")),
@@ -2021,6 +2131,30 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
                     "id_prof_cita": int(item.get("adm_agen_turn_prof_cita")),
                     "eniUser": id_eni_user
                 }
+
+                try:
+                    now = timezone.localtime()
+                    today = now.date()
+                    current_time = now.time()
+
+                    turno_fecha = datetime.strptime(
+                        mapped_data["adm_agen_turn_fech"], "%Y-%m-%d"
+                    ).date()
+                    turno_hora_inic = datetime.strptime(
+                        mapped_data["adm_agen_turn_hora_inic"], "%H:%M"
+                    ).time()
+                except (TypeError, ValueError):
+                    return Response(
+                        {"message": "Fecha u hora de inicio inválidas."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                if turno_fecha < today or (turno_fecha == today and turno_hora_inic < current_time):
+                    return Response(
+                        {"message": "No se permiten turnos en fechas u horas ya pasadas."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
                 existe = admin_agenda_turnos.objects.filter(
                     adm_agen_turn_fech=mapped_data["adm_agen_turn_fech"],
                     adm_agen_turn_tipo_espe=mapped_data["adm_agen_turn_tipo_espe"],
@@ -2054,6 +2188,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
             # Si recibes un solo objeto, comportamiento original
             mapped_data = {
                 "adm_agen_turn_fech": data.get("adm_agen_turn_fech"),
+                "adm_agen_turn_unid_salu": data.get("adm_agen_turn_unid_salu"),
                 "adm_agen_turn_tipo_espe": data.get("adm_agen_turn_tipo_espe"),
                 "adm_agen_turn_prof_cita": data.get("adm_agen_turn_eniUser"),
                 "adm_agen_turn_dura_cita": int(data.get("adm_agen_turn_dura_min")),
@@ -2126,6 +2261,22 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
             # Manejo de error si no existe el turno
             return Response({"error": "Turno no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
+        try:
+            now = timezone.localtime()
+            today = now.date()
+            current_time = now.time()
+            print(f"Fecha actual: {today}, Hora actual: {current_time}")
+
+            turno_fecha = adm_agen_turn_fech
+            turno_hora_inic = adm_agen_turn_hora_inic
+            print(
+                f"Fecha del turno: {turno_fecha}, Hora de inicio del turno: {turno_hora_inic}")
+        except (TypeError, ValueError):
+            return Response({"message": "Fecha u hora de inicio inválidas."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if turno_fecha < today or (turno_fecha == today and turno_hora_inic < current_time):
+            return Response({"message": f"No se permiten turnos en fechas u horas ya pasadas. {today} - {current_time.strftime('%H:%M:%S')}"}, status=status.HTTP_400_BAD_REQUEST)
+
         adm_agen_turn_tipo_iden_paci = data.get('age_turn_paci_tipo_iden')
         adm_agen_turn_nume_iden_paci = data.get('age_turn_paci_nume_iden')
         adm_agen_turn_apel_nomb_paci = data.get('age_turn_paci_apel_nomb')
@@ -2195,7 +2346,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         #         fail_silently=False,
         #     )
 
-        return Response({"message": "El usuario se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"message": "El usuario se agendo exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['put'], url_path='update-turno')
     def update_turno(self, request, pk=None, *args, **kwargs):
@@ -2209,15 +2360,60 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         except admin_agenda_turnos.DoesNotExist:
             return Response({"error": "Registro de turno no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
 
-        data['adm_agen_turn_tipo_iden_paci'] = ""
-        data['adm_agen_turn_nume_iden_paci'] = ""
-        data['adm_agen_turn_apel_nomb_paci'] = ""
-        data['adm_agen_turn_tele_paci'] = ""
-        data['adm_agen_turn_corr_paci'] = ""
-        data['adm_agen_turn_dire_paci'] = ""
-        data['adm_agen_turn_unid_salu_resp_segu_aten_paci'] = ""
-        data['adm_agen_turn_obse_paci'] = ""
-        data['adm_agen_turn_esta_cita'] = 1
+        adm_agen_turn_fech = data.get('adm_agen_turn_fech_moda')
+        adm_agen_turn_tipo_espe = data.get('adm_agen_turn_tipo_espe_moda')
+        adm_agen_turn_prof_cita = data.get('adm_agen_turn_prof_cita_moda')
+        adm_agen_turn_hora_inic = data.get('adm_agen_turn_hora_inic_moda')
+        adm_agen_turn_hora_fin = data.get('adm_agen_turn_hora_fin_moda')
+        adm_agen_turn_dura_cita = data.get('adm_agen_turn_dura_min_moda')
+        adm_agen_turn_esta_cita = data.get('adm_agen_turn_esta_cita_moda')
+        adm_agen_turn_rese_unic_salu = data.get(
+            'adm_agen_turn_rese_unid_salu_moda')
+
+        try:
+            now = timezone.localtime()
+            today = now.date()
+            current_time = now.time()
+
+            turno_fecha = adm_agen_turn_fech
+            turno_hora_inic = adm_agen_turn_hora_inic
+        except (TypeError, ValueError):
+            return Response({"message": "Fecha u hora de inicio inválidas."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if turno_fecha < today or (turno_fecha == today and turno_hora_inic < current_time):
+            return Response({"message": "No se permiten turnos en fechas u horas ya pasadas."}, status=status.HTTP_400_BAD_REQUEST)
+
+        campos_llenos = all([
+            adm_agen_turn_fech,
+            adm_agen_turn_tipo_espe,
+            adm_agen_turn_prof_cita,
+            adm_agen_turn_hora_inic,
+            adm_agen_turn_hora_fin,
+            adm_agen_turn_dura_cita,
+            adm_agen_turn_esta_cita
+        ])
+        rese_unic_ok = adm_agen_turn_esta_cita == 2 and adm_agen_turn_rese_unic_salu != ""
+
+        if campos_llenos:
+            data['adm_agen_turn_fech'] = adm_agen_turn_fech
+            data['adm_agen_turn_tipo_espe'] = adm_agen_turn_tipo_espe
+            data['adm_agen_turn_prof_cita'] = adm_agen_turn_prof_cita
+            data['adm_agen_turn_hora_inic'] = adm_agen_turn_hora_inic
+            data['adm_agen_turn_hora_fin'] = adm_agen_turn_hora_fin
+            data['adm_agen_turn_dura_cita'] = adm_agen_turn_dura_cita
+            data['adm_agen_turn_esta_cita'] = adm_agen_turn_esta_cita
+            if rese_unic_ok:
+                data['adm_agen_turn_rese_unic_salu'] = adm_agen_turn_rese_unic_salu
+        else:
+            data['adm_agen_turn_tipo_iden_paci'] = ""
+            data['adm_agen_turn_nume_iden_paci'] = ""
+            data['adm_agen_turn_apel_nomb_paci'] = ""
+            data['adm_agen_turn_tele_paci'] = ""
+            data['adm_agen_turn_corr_paci'] = ""
+            data['adm_agen_turn_dire_paci'] = ""
+            data['adm_agen_turn_unid_salu_resp_segu_aten_paci'] = ""
+            data['adm_agen_turn_obse_paci'] = ""
+            data['adm_agen_turn_esta_cita'] = 1
 
         serializer = self.get_serializer(id_turno, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -2228,7 +2424,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='reporte-turno-pdf')
     def reporte_turno_pdf(self, request, pk=None):
         """
-        GET /admin-agenda-turnos/buscar-agenda/<id_turno>/reporte-turno-pdf/
+        GET /admin-agenda-turnos/<id_turno>/reporte-turno-pdf/
         """
         try:
             turno = admin_agenda_turnos.objects.get(pk=pk)
