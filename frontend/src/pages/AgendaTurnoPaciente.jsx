@@ -6,9 +6,11 @@ import {
   buscarTurnosAgendados,
   actualizarTurnoAgendado,
   actualizarAgenda,
+  actualizarEstadoTurno,
   pdfTurnoAgendaPaciente,
   listarAgendaPaciente,
   buscarPacientesAgendados,
+  descargarAgendaPacienteCsv,
 } from "../api/conexion.api.js";
 import allListAdmision from "../api/all.list.admision.json";
 import allListAgenda from "../api/all.list.agenda.json";
@@ -33,8 +35,13 @@ import {
 import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
 import Loader from "../components/Loader.jsx";
 import { toast } from "react-hot-toast";
-import { BsCalendar3, BsCalendarCheckFill } from "react-icons/bs";
-import { id, tr } from "date-fns/locale";
+import {
+  BsCalendar3,
+  BsCalendarCheckFill,
+  BsPersonCheck,
+  BsPersonFillX,
+} from "react-icons/bs";
+import { da, id, tr } from "date-fns/locale";
 import {
   format,
   parse,
@@ -733,25 +740,71 @@ export default function AgendaTurnoPaciente() {
     actualizarEstadoBtnRegistrar(nextFormData, variableData);
   };
 
-  const handleConfirmarTurnoSeleccionado = async () => {
-    let id_turno;
-    id_turno = variableData.age_turn_paci_agen_paci;
-    if (id_turno == "") {
-      toast.error("Seleccione un turno a confirmar.", {
+  const handleAtendidoTurnoSeleccionado = async (id, fechTurno) => {
+    if (!id || !fechTurno) {
+      toast.error("Seleccione el turno a atender.", {
         position: "bottom-right",
       });
       return;
     }
+    if (isLoading) return;
+    setIsLoading(true);
+    setError("");
+    setSuccessMessage("");
+    try {
+      const datos = {
+        fecha_turno: fechTurno,
+        estado_turno: 1,
+      };
+      let response;
+      response = await actualizarEstadoTurno(id, datos);
+      const message = response?.message || "Turno marcado como atendido.";
+      setSuccessMessage(message);
+      setTimeout(() => setSuccessMessage(""), 10000);
+      toast.success(message, { position: "bottom-right" });
+      //await handleListarTurnos();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      setSuccessMessage("");
+      toast.error(errorMessage, { position: "bottom-right" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCancelarTurnoSeleccionado = async () => {
-    let id_turno;
-    id_turno = variableData.age_turn_paci_agen_paci;
-    if (id_turno == "") {
-      toast.error("Seleccione un turno a cancelar.", {
+  const handleInasistenciaTurnoSeleccionado = async (id, fechTurno) => {
+    if (!id || !fechTurno) {
+      toast.error("Seleccione un turno a marcar como inasistente.", {
         position: "bottom-right",
       });
       return;
+    }
+    if (isLoading) return;
+    setIsLoading(true);
+    setError("");
+    setSuccessMessage("");
+    try {
+      const datos = {
+        fecha_turno: fechTurno,
+        estado_turno: 2,
+      };
+      let response;
+      response = await actualizarEstadoTurno(id, datos);
+      const message = response?.message || "Turno marcado como inasistente.";
+      setSuccessMessage(message);
+      setTimeout(() => setSuccessMessage(""), 10000);
+      toast.success(message, { position: "bottom-right" });
+      //await handleListarTurnos();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      setSuccessMessage("");
+      toast.error(errorMessage, { position: "bottom-right" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -847,6 +900,46 @@ export default function AgendaTurnoPaciente() {
       ...prev,
       age_turn_paci_edit_agen_paci: false,
     }));
+  };
+
+  const handleDescargarReporte = async () => {
+    let tipoEspeRepo;
+    tipoEspeRepo = reporteData.age_turn_paci_repo_tipo_espe;
+    if (!fechaRepoInicio || !fechaRepoFin || !tipoEspeRepo) {
+      const mensaje =
+        "Se tiene que tener una fecha de inicio y fin válida, y un tipo de especialidad seleccionado para generar el reporte.";
+      setError(mensaje);
+      setTimeout(() => setError(""), 10000);
+      setSuccessMessage("");
+      toast.error(mensaje, { position: "bottom-right" });
+      return;
+    }
+    try {
+      const { blob, filename } = await descargarAgendaPacienteCsv(
+        tipoEspeRepo,
+        fechaRepoInicio,
+        fechaRepoFin,
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setSuccessMessage("Descarga de archivo CSV exitosa");
+      setTimeout(() => setSuccessMessage(""), 10000);
+      setError("");
+      toast.success("Descarga de archivo CSV exitosa", {
+        position: "bottom-right",
+      });
+      limpiarFormularioReporte();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      setTimeout(() => setError(""), 10000);
+      setSuccessMessage("");
+      toast.error(errorMessage, { position: "bottom-right" });
+    }
   };
 
   useEffect(() => {
@@ -963,6 +1056,7 @@ export default function AgendaTurnoPaciente() {
             )
             .join("\n");
         }
+        if (data.detail) return data.detail;
         if (data.message) return data.message;
         if (data.error) return data.error;
         const firstKey = Object.keys(data)[0];
@@ -1025,11 +1119,12 @@ export default function AgendaTurnoPaciente() {
     td: "px-1 py-2 text-sm text-gray-600 border-x border-gray-200 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]",
     actionButton:
       "p-1 text-blue-700 hover:text-blue-800 hover:bg-blue-100 rounded focus:outline-none focus:shadow-outline cursor-pointer",
-    deleteButton: "p-1 text-red-700 hover:text-red-800 hover:bg-red-50 rounded",
+    deleteButton:
+      "p-1 text-red-700 hover:text-red-800 hover:bg-red-50 rounded focus:outline-none focus:shadow-outline cursor-pointer",
     trHover: "hover:bg-gray-50 transition-colors duration-150",
   };
 
-  const unidadSaludLabels = unidadSaludList.map((u) => u.label);
+  const unidadSaludLabels = new Set(unidadSaludList.map((u) => u.label));
   const tabs = [
     { label: "Datos para Agenda", key: "agenda" },
     { label: "Datos para Reporte", key: "reporte" },
@@ -1632,7 +1727,7 @@ export default function AgendaTurnoPaciente() {
                       const isReservado =
                         registro.adm_agen_turn_esta_cita === 2;
                       const esUnidadUsuario =
-                        unidadSaludLabels.includes(unidadSaludTurno);
+                        unidadSaludLabels.has(unidadSaludTurno);
                       return (
                         <tr
                           key={registro.id}
@@ -2004,21 +2099,21 @@ export default function AgendaTurnoPaciente() {
               <div className="md:col-span-2 flex justify-center mt-1">
                 <button
                   type="button"
-                  id="btnRegistrar"
-                  name="btnRegistrar"
-                  onClick={handleGuardarTurno}
-                  className={`${botonEstado.btnRegistrar ? buttonStyleDesactivado : buttonStyleGuardar}`}
-                  disabled={botonEstado.btnRegistrar}
+                  id="btn_descargar_reporte"
+                  name="btn_descargar_reporte"
+                  onClick={handleDescargarReporte}
+                  className={`${botonEstado.btn_descargar_reporte ? buttonStyleDesactivado : buttonStyleGuardar}`}
+                  disabled={botonEstado.btn_descargar_reporte}
                 >
-                  Guardar Turno
+                  Descargar Turno
                 </button>
                 <button
-                  id="btn_limpiar_formulario"
-                  name="btn_limpiar_formulario"
+                  id="btn_limpiar_reporte"
+                  name="btn_limpiar_reporte"
                   type="button"
-                  className={`${botonEstado.btn_limpiar_formulario ? buttonStyleDesactivado : buttonStyleCancelar}`}
-                  onClick={limpiarFormulario}
-                  disabled={botonEstado.btn_limpiar_formulario}
+                  className={`${botonEstado.btn_limpiar_reporte ? buttonStyleDesactivado : buttonStyleCancelar}`}
+                  onClick={limpiarFormularioReporte}
+                  disabled={botonEstado.btn_limpiar_reporte}
                 >
                   Limpiar
                 </button>
@@ -2056,38 +2151,36 @@ export default function AgendaTurnoPaciente() {
                           className={`${tableStyles.trHover} odd:bg-white even:bg-gray-50`}
                         >
                           <td className={`${tableStyles.td} align-top`}>
-                            <button
-                              className={
-                                tableStyles.actionButton +
-                                " w-full flex flex-col items-start"
-                              }
-                              onClick={() =>
-                                handleConfirmarTurnoSeleccionado(registro.id)
-                              }
-                              type="button"
-                              aria-label="Seleccionar turno"
-                              title="Seleccionar turno"
-                            >
-                              <span>
-                                <BsCalendar3 className="inline" />
-                              </span>
-                            </button>
-                            <button
-                              className={
-                                tableStyles.actionButton +
-                                " w-full flex flex-col items-start"
-                              }
-                              onClick={() =>
-                                handleCancelarTurnoSeleccionado(registro.id)
-                              }
-                              type="button"
-                              aria-label="Seleccionar turno"
-                              title="Seleccionar turno"
-                            >
-                              <span>
-                                <BsCalendar3 className="inline" />
-                              </span>
-                            </button>
+                            <div className="flex gap-1">
+                              <button
+                                className={tableStyles.actionButton + " flex-1"}
+                                onClick={() =>
+                                  handleAtendidoTurnoSeleccionado(
+                                    registro.id,
+                                    registro.adm_agen_turn_fech,
+                                  )
+                                }
+                                type="button"
+                                aria-label="Marcar como atendido"
+                                title="Marcar como atendido"
+                              >
+                                <BsPersonCheck className="inline" />
+                              </button>
+                              <button
+                                className={tableStyles.deleteButton + " flex-1"}
+                                onClick={() =>
+                                  handleInasistenciaTurnoSeleccionado(
+                                    registro.id,
+                                    registro.adm_agen_turn_fech,
+                                  )
+                                }
+                                type="button"
+                                aria-label="Marcar como inasistente"
+                                title="Marcar como inasistente"
+                              >
+                                <BsPersonFillX className="inline" />
+                              </button>
+                            </div>
                           </td>
                           <td
                             className={`${tableStyles.td} align-top`}

@@ -10,25 +10,12 @@
         }
     ],
     "adm_agen_turn_esta_cita": [
-        {
-            "value": 1,
-            "label": "01 DISPONIBLE"
-        },
-        {
-            "value": 2,
-            "label": "02 RESERVADO/A"
-        },
-        {
-            "value": 3,
-            "label": "03 AGENDADO/A"
-        },
-        {
-            "value": 4,
-            "label": "04 CANCELADO"
-        },
-        {
-            "value": 5,
-            "label": "05 ELIMINADO"
-        }
+        { "value": 1, "label": "01 DISPONIBLE" },
+        { "value": 2, "label": "02 RESERVADO/A" },
+        { "value": 3, "label": "03 AGENDADO/A" },
+        { "value": 4, "label": "04 ATENDIDO/A" },
+        { "value": 5, "label": "05 INASISTENCIA" },        
+        { "value": 6, "label": "06 ELIMINADO" },
+        { "value": 7, "label": "07 ELIMINADO" }
     ]
 }

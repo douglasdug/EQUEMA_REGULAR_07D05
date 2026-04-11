@@ -859,6 +859,22 @@ export const actualizarAgenda = async (id, datos) => {
   }
 };
 
+export const actualizarEstadoTurno = async (id, datos) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/admin-agenda-turnos/${id}/update-turno-atendido-inasistencia/`,
+      datos,
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error actualizando agenda:",
+      error.response ? error.response.data : error.message,
+    );
+    throw error;
+  }
+};
+
 export const pdfTurnoAgendaPaciente = async (id) => {
   try {
     const response = await axios.get(
@@ -936,6 +952,69 @@ export const listarAgendaPaciente = async (tipo_iden, nume_iden) => {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching turnos agendados paciente:",
+        error.response ? error.response.data : error.message,
+      );
+    }
+    throw error;
+  }
+};
+
+export const descargarAgendaPacienteCsv = async (
+  tipo_especialidad,
+  fech_inicio,
+  fech_fin,
+) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/admin-agenda-turnos/reporte-agenda-pacientes-csv/`,
+      {
+        params: { tipo_especialidad, fech_inicio, fech_fin },
+        responseType: "blob",
+        validateStatus: () => true,
+      },
+    );
+
+    const contentType = response.headers["content-type"] || "";
+
+    if (!response.status || response.status >= 400) {
+      let data = null;
+
+      if (
+        contentType.includes("application/json") &&
+        response.data instanceof Blob
+      ) {
+        const text = await response.data.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { message: text };
+        }
+      } else if (response.data instanceof Blob) {
+        const text = await response.data.text();
+        data = { message: text };
+      } else {
+        data = response.data;
+      }
+
+      const message =
+        data?.message ||
+        data?.detail ||
+        data?.error ||
+        "Error al generar el reporte.";
+
+      throw new Error(message);
+    }
+
+    const cd = response.headers["content-disposition"] || "";
+    const match = cd.match(/filename="?([^"]+)"?/i);
+    const filename =
+      match?.[1] || `reporte_atenciones_${fech_inicio}_${fech_fin}.csv`;
+
+    return { blob: response.data, filename };
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching agenda CSV:",
         error.response ? error.response.data : error.message,
       );
     }

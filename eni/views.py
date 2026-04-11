@@ -30,6 +30,7 @@ import unicodedata
 import re
 import os
 import io
+import json
 from io import BytesIO
 import logging
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
@@ -2421,6 +2422,50 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
 
         return Response({"message": "El turno se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['put'], url_path='update-turno-atendido-inasistencia')
+    def update_turno_atendido_inasistencia(self, request, pk=None, *args, **kwargs):
+        data = request.data.copy()
+        id_turno_age = pk
+        if not id_turno_age:
+            return Response({"error": "El parámetro 'id_turno' es requerido para actualizar el registro!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            id_turno = admin_agenda_turnos.objects.get(id=id_turno_age)
+        except admin_agenda_turnos.DoesNotExist:
+            return Response({"error": "Registro de turno no encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+
+        adm_agen_turn_fech = data.get('fecha_turno')
+        estado_turno = data.get('estado_turno')
+
+        try:
+            now = timezone.localtime()
+            today = now.date()
+            formato_fecha_turno = datetime.strptime(
+                adm_agen_turn_fech, "%Y-%m-%d").date()
+            turno_fecha = formato_fecha_turno
+        except (TypeError, ValueError):
+            return Response({"message": "Fecha u hora de inicio inválidas."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if (today != turno_fecha):
+            return Response({"message": f"Los turnos atendidos o inasistentes solo se permiten el día de la cita {turno_fecha}."}, status=status.HTTP_400_BAD_REQUEST)
+        campos_llenos = all([
+            adm_agen_turn_fech,
+            estado_turno
+        ])
+
+        if campos_llenos:
+            if estado_turno == 1:
+                data['adm_agen_turn_fech'] = turno_fecha
+                data['adm_agen_turn_esta_cita'] = 4
+            elif estado_turno == 2:
+                data['adm_agen_turn_fech'] = turno_fecha
+                data['adm_agen_turn_esta_cita'] = 5
+        serializer = self.get_serializer(id_turno, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({"message": "El turno se actualizó exitosamente!", "data": serializer.data}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['get'], url_path='reporte-turno-pdf')
     def reporte_turno_pdf(self, request, pk=None):
         """
@@ -2562,6 +2607,161 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
             margen + 5, y, "Agradecemos su puntualidad y colaboración.")
         c.showPage()
         c.save()
+        return response
+
+    @action(detail=False, methods=['get'], url_path='reporte-agenda-pacientes-csv')
+    def reporte_agenda_pacientes_csv(self, request):
+        """
+        GET /admin-agenda-turnos/reporte-agenda-pacientes-csv/?tipo_especialidad=<especialidad>&fech_inicio=YYYY-MM-DD&fech_fin=YYYY-MM-DD        
+        """
+        id_eni_user = getattr(request.user, 'id', None)
+        id_eni_user = 2
+        tipo_especialidad = request.query_params.get("tipo_especialidad")
+        fecha_min_str = request.query_params.get("fech_inicio")
+        fecha_max_str = request.query_params.get("fech_fin")
+
+        faltantes = []
+        if not fecha_min_str or not fecha_max_str:
+            faltantes.append('fech_inicio/fech_fin')
+        if not tipo_especialidad:
+            faltantes.append('tipo_especialidad')
+        if faltantes:
+            return Response(
+                {"error": f"Faltan parámetros requeridos: {', '.join(faltantes)}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user_data = eniUser.objects.get(
+                id=id_eni_user)
+            # Asumiendo que hay una relación con unidades_salud
+            unidades_salud = user_data.unidades_salud.all()
+            unidad_str = f"{unidades_salud[0].uni_unic} - {unidades_salud[0].uni_unid}" if unidades_salud else ""
+
+            unidad_salud = unidad_str.strip()
+        except eniUser.DoesNotExist:
+            return Response({"error": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            start_date = datetime.strptime(fecha_min_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(fecha_max_str, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                {"error": "Formato de fecha inválido. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if start_date > end_date:
+            return Response(
+                {"error": "Fecha de inicio no puede ser mayor que fecha de fin."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if (end_date - start_date).days > 31:
+            return Response(
+                {"error": "Solo puede descargar un rango máximo de un mes (31 días)."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            data_path = os.path.join(os.path.dirname(
+                __file__), 'data', 'all.list.datos.json')
+            with open(data_path, 'r', encoding='utf-8') as f:
+                data_json = json.load(f)
+                ESTADOS_CITA = {str(list(d.keys())[0]): list(d.values())[
+                    0] for d in data_json.get('estados_citas', [])}
+                UNIDAD_SALUD = {str(list(d.keys())[0]): list(d.values())[
+                    0] for d in data_json.get('unidad_salud', [])}
+        except Exception as e:
+            return Response(
+                {"error": f"Error cargando catálogos: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        FIELDS = [
+            "adm_agen_turn_fech", "adm_agen_turn_unid_salu", "adm_agen_turn_tipo_espe", "adm_agen_turn_prof_cita",
+            "adm_agen_turn_dura_cita", "adm_agen_turn_hora_inic", "adm_agen_turn_hora_fin", "adm_agen_turn_tipo_iden_paci",
+            "adm_agen_turn_nume_iden_paci", "adm_agen_turn_apel_nomb_paci", "adm_agen_turn_tele_paci",
+            "adm_agen_turn_corr_paci", "adm_agen_turn_dire_paci", "adm_agen_turn_unid_salu_resp_segu_aten_paci",
+            "adm_agen_turn_obse_paci", "adm_agen_turn_esta_cita", "adm_agen_turn_rese_unic_salu", "eniUser"
+        ]
+        HEADERS = [
+            "FECHA DE TURNO", "NOMBRE DEL ESTABLECIMIENTO DE SALUD", "TIPO DE ESPECIALIDAD", "PROFESIONAL DE LA CITA",
+            "DURACIÓN DE LA CITA (MINUTOS)", "HORA DE INICIO", "HORA DE FIN", "TIPO DE DOCUMENTO", "NUMERO DE DOCUMENTO",
+            "APELLIDOS Y NOMBRES", "TELEFONO", "CORREO ELECTRÓNICO", "DIRECCIÓN",
+            "UNIDAD DE SALUD RESPONSABLE SEGUIMIENTO ATENCIÓN PACIENTE", "OBSERVACIONES PARA EL PACIENTE",
+            "ESTADO DE LA CITA", "UNIDAD DE SALUD DE RESERVA PARA LA CITA", "ADMISIONISTA"
+        ]
+
+        fecha_field_name = "adm_agen_turn_fech"
+        try:
+            field = admin_agenda_turnos._meta.get_field(fecha_field_name)
+            if field.get_internal_type() == "DateTimeField":
+                tz = timezone.get_current_timezone()
+                start_filter = timezone.make_aware(
+                    datetime.combine(start_date, time.min), tz)
+                end_filter = timezone.make_aware(
+                    datetime.combine(end_date, time.max), tz)
+            else:
+                start_filter = start_date
+                end_filter = end_date
+        except Exception:
+            start_filter = start_date
+            end_filter = end_date
+
+        base_qs = (
+            admin_agenda_turnos.objects
+            .filter(**{f"{fecha_field_name}__range": (start_filter, end_filter)},
+                    adm_agen_turn_unid_salu=unidad_salud,
+                    adm_agen_turn_tipo_espe=tipo_especialidad,
+                    adm_agen_turn_esta_cita__in=[3])
+            .order_by(fecha_field_name)
+        )
+
+        if not base_qs.exists():
+            return Response(
+                {"error": "No se puede generar el reporte porque no existen datos para los filtros seleccionados."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        class Echo:
+            def write(self, value):
+                return value
+
+        def serialize_value(val):
+            if val is None:
+                return ""
+            if isinstance(val, (datetime, date, time)):
+                return val.isoformat()
+            return val
+
+        def row_iter():
+            writer = csv.writer(Echo(), delimiter=';')
+            yield "\ufeff"
+            yield writer.writerow(HEADERS)
+            for row in base_qs.values(*FIELDS).iterator(chunk_size=5000):
+                fila = []
+                for field in FIELDS:
+                    val = row.get(field)
+                    if field == "adm_agen_turn_esta_cita":
+                        val = ESTADOS_CITA.get(str(val), val)
+                    elif field == "adm_agen_turn_rese_unic_salu":
+                        val = UNIDAD_SALUD.get(str(val), val)
+                    elif field == "eniUser":
+                        try:
+                            user = eniUser.objects.get(pk=val)
+                            val = f"{user.username} - {user.last_name} {user.first_name}"
+                        except eniUser.DoesNotExist:
+                            val = ""
+                    else:
+                        val = serialize_value(val)
+                    fila.append(val)
+                yield writer.writerow(fila)
+
+        filename = f'reporte_agenda_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.csv'
+        response = StreamingHttpResponse(
+            row_iter(), content_type="text/csv; charset=utf-8"
+        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{filename}'
+        response["X-Accel-Buffering"] = "no"
         return response
 
 
