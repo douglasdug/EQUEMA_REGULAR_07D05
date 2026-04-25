@@ -66,7 +66,29 @@ export const validarDato = (
   } else if (type === "number") {
     formattedValue = value.replace(/[^0-9]/g, "");
   } else if (type === "date") {
-    formattedValue = !isNaN(new Date(value).getTime());
+    // Formato esperado: YYYY-MM-DD
+    const isFormat = /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const dateValue = new Date(value);
+    const minDate = new Date("1900-01-01");
+    const maxDate = new Date(); // Fecha actual del sistema
+
+    let isValidDate = false;
+    if (isFormat && !Number.isNaN(dateValue.getTime())) {
+      // Compara solo la parte de fecha (ignora hora)
+      isValidDate = dateValue >= minDate && dateValue <= maxDate;
+    }
+
+    formattedValue = isValidDate ? value : "";
+    if (!isValidDate && value) {
+      setError({
+        type: "validacion",
+        message: "La fecha debe estar entre 01/01/1900 y hoy",
+      });
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: true }));
+    } else {
+      setError("");
+      setBotonEstado((prev) => ({ ...prev, btnRegistrar: false }));
+    }
   } else if (type === "password") {
     formattedValue = value.replace(/\s/g, "");
   } else if (type === "email") {

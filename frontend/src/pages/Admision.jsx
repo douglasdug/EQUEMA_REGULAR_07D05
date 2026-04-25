@@ -2002,8 +2002,7 @@ const Admision = ({
                       onChange={handleChange}
                       placeholder="Fecha es requerida"
                       required
-                      className={`${inputStyle}
-                      ${
+                      className={`${inputStyle} ${
                         isFieldInvalid(
                           "adm_dato_naci_fech_naci",
                           requiredFields,
@@ -2012,12 +2011,7 @@ const Admision = ({
                         )
                           ? "border-2 border-red-500"
                           : ""
-                      }
-                       ${
-                         variableEstado["adm_dato_naci_fech_naci"]
-                           ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                           : "bg-white text-gray-700 cursor-pointer"
-                       }`}
+                      } ${variableEstado["adm_dato_naci_fech_naci"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                       disabled={variableEstado["adm_dato_naci_fech_naci"]}
                     />
                     <label id="edad_paciente" style={{ marginLeft: "10px" }}>

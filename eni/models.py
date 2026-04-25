@@ -247,6 +247,8 @@ class admin_agenda_turnos(models.Model):
     adm_agen_turn_obse_paci = models.CharField(max_length=400, blank=True)
     adm_agen_turn_esta_cita = models.IntegerField(blank=True, null=True)
     adm_agen_turn_rese_unic_salu = models.CharField(max_length=8, blank=True)
+    adm_agen_turn_cons_obse_paci = models.CharField(max_length=500, blank=True)
+    adm_agen_turn_cons_link_paci = models.URLField(max_length=500, blank=True)
     id_admi_paci = models.IntegerField(
         blank=True, null=True, help_text='ID de paciente registrado en admision de datos')
     id_prof_cita = models.IntegerField(

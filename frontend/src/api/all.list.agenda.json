@@ -16,6 +16,6 @@
         { "value": 4, "label": "04 ATENDIDO/A" },
         { "value": 5, "label": "05 INASISTENCIA" },        
         { "value": 6, "label": "06 ELIMINADO" },
-        { "value": 7, "label": "07 ELIMINADO" }
+        { "value": 7, "label": "07 CANCELADO" }
     ]
 }

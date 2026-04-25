@@ -917,6 +917,7 @@ export const buscarTurnosAgendados = async (
 
 export const buscarPacientesAgendados = async (
   tipo_especialidad,
+  tipo_cita,
   fecha_inicio,
   fecha_fin,
 ) => {
@@ -924,7 +925,7 @@ export const buscarPacientesAgendados = async (
     const response = await axios.get(
       `${API_URL}/admin-agenda-turnos/pacientes-agendados/`,
       {
-        params: { tipo_especialidad, fecha_inicio, fecha_fin },
+        params: { tipo_especialidad, tipo_cita, fecha_inicio, fecha_fin },
       },
     );
     return response.data;
@@ -932,6 +933,38 @@ export const buscarPacientesAgendados = async (
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error fetching pacientes agendados:",
+        error.response ? error.response.data : error.message,
+      );
+    }
+    throw error;
+  }
+};
+
+export const buscarResultadoConsultaPaciente = async (
+  tipo_iden,
+  nume_iden,
+  apel_nomb_paci,
+  fecha_inicio,
+  fecha_fin,
+) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/admin-agenda-turnos/consulta-paciente/`,
+      {
+        params: {
+          tipo_iden,
+          nume_iden,
+          apel_nomb_paci,
+          fecha_inicio,
+          fecha_fin,
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching resultado consulta paciente:",
         error.response ? error.response.data : error.message,
       );
     }

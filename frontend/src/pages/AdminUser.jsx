@@ -326,7 +326,7 @@ const AdminUser = () => {
     if (isLoading) return;
 
     const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${formData.username}\nNombres: ${formData.last_name} ${formData.first_name}`
+      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${formData.username}\nNombres: ${formData.last_name} ${formData.first_name}`,
     );
     if (!confirmDelete) return;
 
@@ -600,7 +600,7 @@ const AdminUser = () => {
                       "fun_tipo_iden",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -656,22 +656,7 @@ const AdminUser = () => {
                     onChange={handleChange}
                     placeholder="Información es requerida"
                     required
-                    className={`${inputStyle}
-                                ${
-                                  isFieldInvalid(
-                                    "username",
-                                    requiredFields,
-                                    formData,
-                                    isFieldVisible
-                                  )
-                                    ? "border-2 border-red-500"
-                                    : ""
-                                }
-                                 ${
-                                   variableEstado["username"]
-                                     ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                                     : "bg-white text-gray-700 cursor-pointer"
-                                 }`}
+                    className={`${inputStyle} ${isFieldInvalid("username", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["username"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                     disabled={variableEstado["username"]}
                   />
                   <button
@@ -705,22 +690,7 @@ const AdminUser = () => {
                   onChange={handleChange}
                   placeholder="Información es requerida"
                   required
-                  className={`${inputStyle}
-                                ${
-                                  isFieldInvalid(
-                                    "last_name",
-                                    requiredFields,
-                                    formData,
-                                    isFieldVisible
-                                  )
-                                    ? "border-2 border-red-500"
-                                    : ""
-                                }
-                                ${
-                                  variableEstado["last_name"]
-                                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                                    : "bg-white text-gray-700 cursor-pointer"
-                                }`}
+                  className={`${inputStyle} ${isFieldInvalid("last_name", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["last_name"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                   disabled={variableEstado["last_name"]}
                 />
               </div>
@@ -739,22 +709,7 @@ const AdminUser = () => {
                   onChange={handleChange}
                   placeholder="Información es requerida"
                   required
-                  className={`${inputStyle}
-                                ${
-                                  isFieldInvalid(
-                                    "first_name",
-                                    requiredFields,
-                                    formData,
-                                    isFieldVisible
-                                  )
-                                    ? "border-2 border-red-500"
-                                    : ""
-                                }
-                                ${
-                                  variableEstado["first_name"]
-                                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                                    : "bg-white text-gray-700 cursor-pointer"
-                                }`}
+                  className={`${inputStyle} ${isFieldInvalid("first_name", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["first_name"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                   disabled={variableEstado["first_name"]}
                 />
               </div>
@@ -778,7 +733,7 @@ const AdminUser = () => {
                       "fun_sex",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -800,22 +755,7 @@ const AdminUser = () => {
                   onChange={handleChange}
                   placeholder="ejemplo@gmacil.com"
                   required
-                  className={`${inputStyle}
-                                ${
-                                  isFieldInvalid(
-                                    "email",
-                                    requiredFields,
-                                    formData,
-                                    isFieldVisible
-                                  )
-                                    ? "border-2 border-red-500"
-                                    : ""
-                                }
-                                ${
-                                  variableEstado["email"]
-                                    ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                                    : "bg-white text-gray-700 cursor-pointer"
-                                }`}
+                  className={`${inputStyle} ${isFieldInvalid("email", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["email"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                   disabled={variableEstado["email"]}
                 />
               </div>
@@ -839,7 +779,7 @@ const AdminUser = () => {
                       "fun_titu",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -867,7 +807,7 @@ const AdminUser = () => {
                       "uni_unic",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -905,7 +845,7 @@ const AdminUser = () => {
                         "fun_admi_rol",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -932,7 +872,7 @@ const AdminUser = () => {
                         "fun_esta",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
