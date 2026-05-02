@@ -74,14 +74,7 @@ function App() {
                 <Route path="/register-user/" element={<RegisterUser />} />
                 <Route path="/aviso-user/" element={<AvisoUser />} />
                 <Route path="/contacto/" element={<Contacto />} />
-                <Route
-                  path="/agenda-turno-paciente/"
-                  element={<AgendaTurnoPaciente />}
-                />
-                <Route
-                  path="/admin-agenda-turno/"
-                  element={<AdminAgendaTurno />}
-                />
+
                 <Route path="/medico/" element={<CertificadoMedico />} />
 
                 {/* Rutas protegidas por rol */}
@@ -89,10 +82,10 @@ function App() {
                   element={
                     <RequireRole
                       allowed={[
-                        ROLES.ADMIN,
-                        ROLES.REPORTE,
-                        ROLES.MEDICO,
-                        ROLES.REPORTE_Y_ADMISION,
+                        ROLES.ADMINISTRADOR,
+                        ROLES.REPORTES,
+                        ROLES.ATENCION_FORM_008,
+                        ROLES.REPORTES_Y_ADMISION,
                       ]}
                     />
                   }
@@ -102,20 +95,57 @@ function App() {
                     element={<ReporteAtenciones />}
                   />
                 </Route>
-                <Route element={<RequireRole allowed={[ROLES.ADMIN]} />}>
+                <Route
+                  element={<RequireRole allowed={[ROLES.ADMINISTRADOR]} />}
+                >
                   <Route path="/admin-user/" element={<AdminUser />} />
                 </Route>
                 <Route
                   element={
                     <RequireRole
-                      allowed={[ROLES.MEDICO, ROLES.REPORTE_Y_ADMISION]}
+                      allowed={[
+                        ROLES.ATENCION_FORM_008,
+                        ROLES.REPORTES_Y_ADMISION,
+                        ROLES.AGENDAR_TURNOS,
+                        ROLES.REPORTES_Y_ADMISION,
+                      ]}
                     />
                   }
                 >
                   <Route path="/admision/" element={<Admision />} />
+                </Route>
+                <Route
+                  element={
+                    <RequireRole
+                      allowed={[
+                        ROLES.ATENCION_FORM_008,
+                        ROLES.REPORTES_Y_ADMISION,
+                      ]}
+                    />
+                  }
+                >
                   <Route
                     path="/form-008-emergencia/"
                     element={<Form008Emergencia />}
+                  />
+                </Route>
+                <Route
+                  element={
+                    <RequireRole
+                      allowed={[
+                        ROLES.ADMINISTRAR_AGENDA_DE_TURNOS,
+                        ROLES.AGENDAR_TURNOS,
+                      ]}
+                    />
+                  }
+                >
+                  <Route
+                    path="/agenda-turno-paciente/"
+                    element={<AgendaTurnoPaciente />}
+                  />
+                  <Route
+                    path="/admin-agenda-turno/"
+                    element={<AdminAgendaTurno />}
                   />
                 </Route>
                 {/* fallback de no autorizado */}

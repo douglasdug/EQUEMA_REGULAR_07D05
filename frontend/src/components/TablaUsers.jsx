@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import { getAllEniUsers, deleteUser } from "../api/conexion.api.js";
+import allListRegisterUser from "../api/all.list.register.user.json";
 import { toast } from "react-hot-toast";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
@@ -19,15 +20,24 @@ const TablaUsers = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const ROLE_NAMES = [
-    "",
-    "ADMINISTRADOR",
-    "REPORTE",
-    "MEDICO",
-    "REPORTE Y ADMISION",
-  ];
-  const STATUS_NAMES = ["INACTIVO", "ACTIVO"];
+  const tipo_rol = useMemo(() => {
+    return Object.fromEntries(
+      (allListRegisterUser.fun_admi_rol || []).map((item) => [
+        String(item.value),
+        item.label ? item.label.slice(3) : "",
+      ]),
+    );
+  }, [allListRegisterUser.fun_admi_rol]);
+  const tipo_estado_usuario = useMemo(() => {
+    return Object.fromEntries(
+      (allListRegisterUser.fun_esta || []).map((item) => [
+        String(item.value),
+        item.label ? item.label.slice(3) : "",
+      ]),
+    );
+  }, [allListRegisterUser.fun_esta]);
   const TABLE_HEADERS = [
+    "Acciones",
     "Tipo de Identificacion",
     "Número de Identificación",
     "Apellido completo",
@@ -95,8 +105,8 @@ const TablaUsers = ({
         u.last_name,
         u.email,
         u.fun_titu,
-        ROLE_NAMES[u.fun_admi_rol],
-        STATUS_NAMES[u.fun_esta],
+        tipo_rol[u.fun_admi_rol],
+        tipo_estado_usuario[u.fun_esta],
       ]
         .filter(Boolean)
         .some((field) => field.toString().toLowerCase().includes(q));
@@ -178,7 +188,7 @@ const TablaUsers = ({
   };
 
   const getFunAdmiRol = (fun_admi_rol) =>
-    fun_admi_rol >= 1 && fun_admi_rol <= 4 ? fun_admi_rol : 0;
+    fun_admi_rol >= 1 && fun_admi_rol <= 6 ? fun_admi_rol : 0;
 
   const getFormData = (user, funAdmiRol) => ({
     id_eniUser: user.id || "",
@@ -231,7 +241,7 @@ const TablaUsers = ({
       "overflow-x-auto rounded-lg shadow max-w-full border-2 border-gray-300 sm:border my-4",
     table: "w-full table-auto border-collapse bg-white",
     thead: "bg-gray-50 border-b border-gray-300",
-    th: "px-1 py-1.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-x border-gray-200",
+    th: "px-1 py-1.5 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-x border-gray-200",
     tbody: "divide-y divide-gray-200",
     td: "px-3 py-2 text-sm text-gray-600 border-x border-gray-200",
     actionButton:
@@ -251,6 +261,10 @@ const TablaUsers = ({
         return "bg-emerald-50 text-emerald-700 ring-emerald-200";
       case 4:
         return "bg-amber-50 text-amber-700 ring-amber-200";
+      case 5:
+        return "bg-purple-50 text-purple-700 ring-purple-200";
+      case 6:
+        return "bg-pink-50 text-pink-700 ring-pink-200";
       default:
         return "bg-gray-100 text-gray-700 ring-gray-200";
     }
@@ -327,12 +341,6 @@ const TablaUsers = ({
         <table className={`${tableStyles.table} text-sm`}>
           <thead className={`${tableStyles.thead}`}>
             <tr>
-              <th
-                scope="col"
-                className={`${tableStyles.th} sticky top-0 z-10 bg-gray-50 w-24`}
-              >
-                Acciones
-              </th>
               {TABLE_HEADERS.map((header) => (
                 <th
                   key={header}
@@ -383,12 +391,12 @@ const TablaUsers = ({
                               registro[key],
                             )}`}
                           >
-                            {ROLE_NAMES[registro[key]] || ""}
+                            {tipo_rol[registro[key]] || ""}
                           </span>
                         );
                         break;
                       case "fun_esta": {
-                        const status = STATUS_NAMES[registro[key]] || "";
+                        const status = tipo_estado_usuario[registro[key]] || "";
                         const isInactive = Number(registro[key]) === 0;
                         cellContent = (
                           <span

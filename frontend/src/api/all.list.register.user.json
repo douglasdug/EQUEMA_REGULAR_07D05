@@ -63,9 +63,11 @@
   ],
   "fun_admi_rol": [
     { "value": 1, "label": "01 ADMINISTRADOR" },
-    { "value": 2, "label": "02 REPORTE" },
-    { "value": 3, "label": "03 MEDICO" },
-    { "value": 4, "label": "04 REPORTE Y ADMISION" }
+    { "value": 2, "label": "02 REPORTES" },
+    { "value": 3, "label": "03 ATENCION FORM 008" },
+    { "value": 4, "label": "04 REPORTES Y ADMISION" },
+    { "value": 5, "label": "05 ADMINISTRAR AGENDA DE TURNOS" },
+    { "value": 6, "label": "06 AGENDAR TURNOS" }
   ],
   "fun_esta": [
     { "value": 1, "label": "01 ACTIVO" },

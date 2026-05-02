@@ -27,7 +27,7 @@ export function Navigation() {
   const navLinks = [
     { to: "/", label: "Home", roles: ["public"] },
     { to: "/register-user/", label: "Registro", roles: ["public"] },
-    { to: "/admision/", label: "Admision", roles: [3, 4] },
+    { to: "/admision/", label: "Admision", roles: [3, 4, 5, 6] },
     { to: "/form-008-emergencia/", label: "Formulario-008", roles: [3] },
     {
       to: "/reporte-atenciones/",
@@ -35,23 +35,23 @@ export function Navigation() {
       roles: [1, 2, 3, 4],
     },
     { to: "/admin-user/", label: "Administrador", roles: [1] },
-    { to: "/contacto/", label: "Contacto", roles: ["public"] },
     {
       to: "/agenda-turno-paciente/",
       label: "Agenda Turno Paciente",
-      roles: ["public"],
+      roles: [5, 6],
     },
     {
       to: "/admin-agenda-turno/",
       label: "Admin Agenda Turno",
-      roles: ["public"],
+      roles: [5],
     },
+    { to: "/contacto/", label: "Contacto", roles: ["public"] },
   ];
 
   const canSee = (rolesArr) =>
     rolesArr?.includes("public") || (role && rolesArr?.includes(role));
   const filteredNavLinks = navLinks.filter(
-    (l) => !(isLoggedIn && l.to === "/register-user/") && canSee(l.roles)
+    (l) => !(isLoggedIn && l.to === "/register-user/") && canSee(l.roles),
   );
 
   const mainLinks = filteredNavLinks.filter((l) => l.group !== "esquema");

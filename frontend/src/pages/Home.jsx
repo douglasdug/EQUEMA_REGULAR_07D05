@@ -7,6 +7,9 @@ import {
   FaUsersCog,
   FaClipboardCheck,
   FaFirstAid,
+  FaRegCalendarAlt,
+  FaRegCalendarCheck,
+  FaUserMd,
 } from "react-icons/fa";
 import { AuthContext } from "../components/AuthContext.jsx";
 
@@ -39,7 +42,7 @@ const links = [
     path: "/form-008-emergencia/",
     titulo: "Form 008 Emergencia",
     desc: "Formulario de atenciones de emergencia.",
-    Icon: FaFirstAid,
+    Icon: FaUserMd,
     color: "from-rose-500 to-rose-600",
     roles: [3],
   },
@@ -50,6 +53,22 @@ const links = [
     Icon: FaFileAlt,
     color: "from-sky-500 to-sky-600",
     roles: [1, 2, 3],
+  },
+  {
+    path: "/agenda-turno-paciente/",
+    titulo: "Agenda de Turnos",
+    desc: "Gestionar y consultar turnos de pacientes.",
+    Icon: FaRegCalendarCheck,
+    color: "from-green-500 to-green-600",
+    roles: [5, 6],
+  },
+  {
+    path: "/admin-agenda-turno/",
+    titulo: "Crear y Administrar Turnos",
+    desc: "Crear y administrar turnos para pacientes.",
+    Icon: FaRegCalendarAlt,
+    color: "from-blue-500 to-blue-600",
+    roles: [5],
   },
   {
     path: "/contacto/",
@@ -71,7 +90,7 @@ const Home = () => {
     rolesArr?.includes("public") || (role && rolesArr?.includes(role));
 
   const visibleLinks = links.filter(
-    (l) => !(isLoggedIn && l.path === "/register-user/") && canSee(l.roles)
+    (l) => !(isLoggedIn && l.path === "/register-user/") && canSee(l.roles),
   );
 
   return (

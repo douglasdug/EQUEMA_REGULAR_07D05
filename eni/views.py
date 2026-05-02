@@ -545,7 +545,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         GET /eni-user/buscar-usuario-id-unidad-salud/
         """
         id_eni_user = getattr(request.user, 'id', None)
-        id_eni_user = 2
+        # id_eni_user = 2
         # Primera búsqueda en eniUser
         try:
             user_data = eniUser.objects.get(
@@ -1890,9 +1890,9 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
 class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = AdminAgendaTurnosRegistrationSerializer
     queryset = admin_agenda_turnos.objects.all()
-    permission_classes = [permissions.AllowAny]
-    # permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [1, 2, 3, 4]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
+    allowed_roles = [5, 6]
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
@@ -1931,12 +1931,11 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='buscar-agenda')
     def get_buscar_agenda(self, request):
         """
-        GET /admin-agenda-turnos/buscar-agenda/?tipo_especialidad=<ESPECIALIDAD>&fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
+        GET /admin-agenda-turnos/buscar-agenda/?tipo_especialidad=<ESPECIALIDAD>&unid_salu=<UNIDAD_DE_SALUD>&fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
         """
-        id_eni_user = getattr(request.user, 'id', None)
-        id_eni_user = 2
 
         tipo_espe = request.query_params.get('tipo_especialidad', None)
+        unid_salu = request.query_params.get('unid_salu', None)
         fecha_inic = request.query_params.get('fecha_inicio', None)
         fecha_fin = request.query_params.get('fecha_fin', None)
         now = datetime.now()
@@ -1945,24 +1944,8 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         four_months_later = today + timedelta(days=120)
         # Primera búsqueda en eniUser
         try:
-            user_data = eniUser.objects.get(
-                id=id_eni_user)
-            # Asumiendo que hay una relación con unidades_salud
-            unidades_salud = user_data.unidades_salud.all()
-            unidades_data = [{
-                "id": unidad.id, "uni_unid_prin": unidad.uni_unid_prin, "uni_unic": unidad.uni_unic, "uni_unid": unidad.uni_unid
-            }
-                for unidad in unidades_salud] if unidades_salud else []
-            data = {
-                "id_eniUser": user_data.id,
-                "unidades_data": unidades_data,
-            }
-            unidad_str = f"{unidades_salud[0].uni_unic} - {unidades_salud[0].uni_unid}" if unidades_salud else ""
-
-            unidad_salud = unidad_str.strip()
-            # Filtro base: fechas entre hoy y 4 meses adelante
             queryset = admin_agenda_turnos.objects.filter(
-                adm_agen_turn_unid_salu=unidad_salud,
+                adm_agen_turn_unid_salu=unid_salu,
                 adm_agen_turn_esta_cita__in=[1, 2],
                 adm_agen_turn_fech__gte=today,
                 adm_agen_turn_fech__lte=four_months_later
@@ -2010,7 +1993,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         GET /admin-agenda-turnos/pacientes-agendados/?tipo_especialidad=<ESPECIALIDAD>&tipo_cita=<TIPO_CITA>&fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
         """
         id_eni_user = getattr(request.user, 'id', None)
-        id_eni_user = 2
+        # id_eni_user = 2
 
         tipo_espe = request.query_params.get('tipo_especialidad', None)
         tipo_cita = int(request.query_params.get('tipo_cita', None))
@@ -2321,9 +2304,10 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         return Response({"message": "Turno eliminado correctamente."}, status=status.HTTP_204_NO_CONTENT)
 
     def mensaje_paciente(self, telefono, message):
-        account_sid = settings.TWILIO_ACCOUNT_SID
-        auth_token = settings.TWILIO_AUTH_TOKEN
-        from_whatsapp = settings.TWILIO_WHATSAPP_FROM
+        account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+        auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+        from_whatsapp = os.environ.get('TWILIO_WHATSAPP_FROM')
+
         client = Client(account_sid, auth_token)
         # Formatear el número: quitar 0 inicial y anteponer +593
         telefono = telefono.strip()
@@ -2365,12 +2349,9 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
             now = timezone.localtime()
             today = now.date()
             current_time = now.time()
-            print(f"Fecha actual: {today}, Hora actual: {current_time}")
 
             turno_fecha = adm_agen_turn_fech
             turno_hora_inic = adm_agen_turn_hora_inic
-            print(
-                f"Fecha del turno: {turno_fecha}, Hora de inicio del turno: {turno_hora_inic}")
         except (TypeError, ValueError):
             return Response({"message": "Fecha u hora de inicio inválidas."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2749,7 +2730,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         GET /admin-agenda-turnos/reporte-agenda-pacientes-csv/?tipo_especialidad=<especialidad>&fech_inicio=YYYY-MM-DD&fech_fin=YYYY-MM-DD        
         """
         id_eni_user = getattr(request.user, 'id', None)
-        id_eni_user = 2
+        # id_eni_user = 2
         tipo_especialidad = request.query_params.get("tipo_especialidad")
         fecha_min_str = request.query_params.get("fech_inicio")
         fecha_max_str = request.query_params.get("fech_fin")

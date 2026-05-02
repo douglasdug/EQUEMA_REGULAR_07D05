@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useContext } from "react";
 import PropTypes, { object } from "prop-types";
 import {
   buscarUsuarioIdUnidadSalud,
@@ -35,6 +35,8 @@ import {
 } from "../components/EstilosCustom.jsx";
 import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
 import Loader from "../components/Loader.jsx";
+import Admision from "./Admision.jsx";
+import { AuthContext } from "../components/AuthContext.jsx";
 import { toast } from "react-hot-toast";
 import {
   BsCalendar3,
@@ -83,6 +85,7 @@ const initialVariableState = {
   age_turn_paci_agen_paci: "",
   turno_historial_select: "",
   age_turn_paci_edit_agen_paci: "",
+  age_turn_paci_unid_salu: "",
 };
 
 const initialReporteState = {
@@ -222,6 +225,18 @@ export default function AgendaTurnoPaciente() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const { authData } = useContext(AuthContext);
+  const roleRaw = authData?.user?.fun_admi_rol ?? authData?.fun_admi_rol;
+  const role = roleRaw != null ? Number(roleRaw) : null;
+
+  const [showAdmisionModal, setShowAdmisionModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalText, setConfirmModalText] = useState("");
+  const [admisionData, setAdmisionData] = useState(null);
+  const [admisionInit, setAdmisionInit] = useState({
+    tipoIdenInicial: "",
+    numeIdenInicial: "",
+  });
   const [showBusquedaAvanzada, setShowBusquedaAvanzada] = useState(false);
   const [showBusquedaApellidosNombres, setShowBusquedaApellidosNombres] =
     useState(true);
@@ -461,6 +476,7 @@ export default function AgendaTurnoPaciente() {
     age_turn_paci_nume_iden: true,
     age_turn_paci_fech_inic_fin: true,
     age_turn_paci_tipo_espe: true,
+    age_turn_paci_unid_salu: true,
     age_turn_paci_apel_nomb: true,
     age_turn_paci_tele: true,
     age_turn_paci_corr_paci: true,
@@ -519,6 +535,7 @@ export default function AgendaTurnoPaciente() {
     "age_turn_paci_nume_iden",
     "age_turn_paci_tipo_espe",
     "age_turn_paci_fech_inic_fin",
+    "age_turn_paci_unid_salu",
     "age_turn_paci_corr_paci",
     "age_turn_paci_repo_fech",
     "age_turn_paci_repo_fech_inic_fin",
@@ -534,6 +551,7 @@ export default function AgendaTurnoPaciente() {
     age_turn_paci_nume_iden: "Número de identificación:",
     age_turn_paci_fech_inic_fin: "Rango de fechas para turnos:",
     age_turn_paci_tipo_espe: "Tipo de especialidad:",
+    age_turn_paci_unid_salu: "Unidad de salud:",
     age_turn_paci_apel_nomb: "Apellidos y nombres:",
     age_turn_paci_tele: "Celular:",
     age_turn_paci_corr_paci: "Correo electrónico:",
@@ -831,7 +849,7 @@ export default function AgendaTurnoPaciente() {
     return true;
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmitSearch = async (event) => {
     event.preventDefault();
     if (isLoading) return;
     let tipoIden, numeIden;
@@ -863,6 +881,22 @@ export default function AgendaTurnoPaciente() {
     try {
       let response, responseListPaci;
       response = await buscarUsuarioAdmision(tipoIden, numeIden);
+      if (!response)
+        throw new Error("No se pudo obtener una respuesta de la API.");
+      if (parseInt(response.data.adm_dato_paci_falt_dato) === 0) {
+        if (
+          response.message.toLowerCase().includes("usuario está registrado") ||
+          response.message.toLowerCase().includes("registrado en admision") ||
+          response.message.toLowerCase().includes("no se pudo obtener")
+        ) {
+          setConfirmModalText(
+            "¿El paciente le falta actualizar la información en el sistema?",
+          );
+          setAdmisionData(response.data);
+          setShowConfirmModal(true);
+        }
+      }
+
       responseListPaci = await listarAgendaPaciente(tipoIden, numeIden);
       const pacienteBase = mapAdmisionAPaciente(response?.data || {});
       const opcionesTurnos =
@@ -909,6 +943,7 @@ export default function AgendaTurnoPaciente() {
         "Paciente encontrado en admisión. No tiene turnos asociados en agenda.";
       setSuccessMessage(message);
       setTimeout(() => setSuccessMessage(""), 10000);
+      setError("");
       toast.success(message, { position: "bottom-right" });
       variableEstadoExito();
     } catch (error) {
@@ -916,6 +951,25 @@ export default function AgendaTurnoPaciente() {
       setError(errorMessage);
       setTimeout(() => setError(""), 10000);
       toast.error(errorMessage, { position: "bottom-right" });
+      if (
+        errorMessage.toLowerCase().includes("no se encontró") ||
+        errorMessage.toLowerCase().includes("no existe") ||
+        errorMessage.toLowerCase().includes("no se pudo obtener")
+      ) {
+        setConfirmModalText(
+          "¿El paciente tiene que ser admisionado al sistema?",
+        );
+        setAdmisionData({
+          id_admision_datos: null,
+          adm_dato_pers_apel_prim: "",
+          adm_dato_pers_apel_segu: "",
+          adm_dato_pers_nomb_prim: "",
+          adm_dato_pers_nomb_segu: "",
+          adm_dato_pers_sexo: "",
+          adm_dato_pers_corr_elec: "",
+        });
+        setShowConfirmModal(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -1036,6 +1090,7 @@ export default function AgendaTurnoPaciente() {
       age_turn_paci_nume_iden: true,
       age_turn_paci_fech_inic_fin: false,
       age_turn_paci_tipo_espe: false,
+      age_turn_paci_unid_salu: false,
       age_turn_paci_tele: false,
       age_turn_paci_corr_paci: false,
       age_turn_paci_obse_paci: false,
@@ -1292,16 +1347,17 @@ export default function AgendaTurnoPaciente() {
   };
 
   const handleListarTurnos = async () => {
-    let tipoEspe;
+    let tipoEspe, unidSalu;
     tipoEspe = variableData.age_turn_paci_tipo_espe;
+    unidSalu = variableData.age_turn_paci_unid_salu;
 
-    if (!fechaInicio || !fechaFin || !tipoEspe) {
+    if (!fechaInicio || !fechaFin || !tipoEspe || !unidSalu) {
       setError(
-        "Debe seleccionar la Fecha Inicio/Final y el Tipo de Especialidad.",
+        "Debe seleccionar la Fecha Inicio/Final, el Tipo de Especialidad y la Unidad de Salud.",
       );
       setTimeout(() => setError(""), 5000);
       toast.error(
-        "Debe seleccionar la Fecha Inicio/Final y el Tipo de Especialidad.",
+        "Debe seleccionar la Fecha Inicio/Final, el Tipo de Especialidad y la Unidad de Salud.",
         {
           position: "bottom-right",
         },
@@ -1724,6 +1780,11 @@ export default function AgendaTurnoPaciente() {
     { label: "Datos para Reporte", key: "reporte" },
     { label: "Datos para Consulta", key: "consulta" },
   ];
+  const allowedTabKeys =
+    role === 5
+      ? new Set(["agenda", "reporte", "consulta"])
+      : new Set(["agenda"]);
+  const visibleTabs = tabs.filter(({ key }) => allowedTabKeys.has(key));
 
   return (
     <div className="w-full h-auto flex items-stretch justify-stretch bg-gray-100">
@@ -1736,7 +1797,7 @@ export default function AgendaTurnoPaciente() {
           <span className="text-red-500">*</span> son obligatorios.
         </p>
         <nav className="w-full flex overflow-x-auto no-scrollbar space-x-2 border-b border-blue-200 mb-1 bg-white items-center justify-center px-1 py-1 relative">
-          {tabs.map(
+          {visibleTabs.map(
             (tab) =>
               tab.key && (
                 <button
@@ -1778,7 +1839,11 @@ export default function AgendaTurnoPaciente() {
         )}
         {activeTab === "agenda" && (
           <>
-            <form onSubmit={handleSubmit} autoComplete="on" className="w-full">
+            <form
+              onSubmit={handleSubmitSearch}
+              autoComplete="on"
+              className="w-full"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 <fieldset className="border border-blue-200 rounded p-2 mb-1 sm:col-span-2 md:col-span-2 lg:col-span-2">
                   <legend className="text-lg font-semibold text-blue-600 px-2">
@@ -1960,6 +2025,37 @@ export default function AgendaTurnoPaciente() {
                           </div>
                         )}
                       </div>
+                    </div>
+                    <div className={fieldClass}>
+                      <label
+                        className={labelClass}
+                        htmlFor="age_turn_paci_unid_salu"
+                      >
+                        {requiredFields.includes("age_turn_paci_unid_salu") && (
+                          <span className="text-red-500">* </span>
+                        )}
+                        {labelMap["age_turn_paci_unid_salu"]}
+                      </label>
+                      <CustomSelect
+                        id="age_turn_paci_unid_salu"
+                        name="age_turn_paci_unid_salu"
+                        value={variableData.age_turn_paci_unid_salu}
+                        onChange={handleChangeVariable}
+                        options={allListRegisterUser.uni_unic || []}
+                        placeholder="Seleccione la unidad de salud"
+                        disabled={variableEstado["age_turn_paci_unid_salu"]}
+                        variableEstado={variableEstado}
+                        className={
+                          isFieldInvalid(
+                            "age_turn_paci_unid_salu",
+                            requiredFields,
+                            variableData,
+                            isFieldVisible,
+                          )
+                            ? "border-2 border-red-500"
+                            : ""
+                        }
+                      />
                     </div>
                     <div className={fieldClass}>
                       <label
@@ -2261,7 +2357,7 @@ export default function AgendaTurnoPaciente() {
             </form>
             <EstadoMensajes error={error} successMessage={successMessage} />
             {showBusquedaAvanzada && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="fixed inset-0 flex items-center justify-center bg-white/30 backdrop-blur-sm z-50">
                 <div className="bg-white w-[95%] max-w-6xl max-h-[90vh] overflow-auto rounded shadow-lg p-4 relative">
                   <button
                     type="button"
@@ -2273,6 +2369,80 @@ export default function AgendaTurnoPaciente() {
                   <BuscarAdmisionados
                     onSelect={handleSeleccionarAdmisionado}
                     onClose={() => setShowBusquedaAvanzada(false)}
+                  />
+                </div>
+              </div>
+            )}
+            {showConfirmModal && (
+              <div className="fixed inset-0 flex items-center justify-center bg-white/30 backdrop-blur-sm z-50">
+                <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+                  <h3 className="text-lg font-bold mb-4 text-blue-700">
+                    {confirmModalText}
+                  </h3>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                      onClick={() => {
+                        setAdmisionInit({
+                          tipoIdenInicial: String(
+                            formData.age_turn_paci_tipo_iden || "",
+                          ).trim(),
+                          numeIdenInicial: String(
+                            formData.age_turn_paci_nume_iden || "",
+                          ).trim(),
+                        });
+                        setShowConfirmModal(false);
+                        setShowAdmisionModal(true);
+                      }}
+                    >
+                      Sí, registrar
+                    </button>
+                    <button
+                      className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
+                      onClick={() => setShowConfirmModal(false)}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {showAdmisionModal && admisionData && (
+              <div className="fixed inset-0 flex items-center justify-center bg-white/30 backdrop-blur-sm z-50">
+                <div className="relative w-full max-w-7xl mx-auto mt-8 rounded-lg shadow-lg overflow-y-auto max-h-screen">
+                  <button
+                    className="absolute top-4 right-4 text-red-500 font-bold text-2xl z-10"
+                    onClick={() => {
+                      setShowAdmisionModal(false);
+                      setAdmisionData(null);
+                    }}
+                  >
+                    Cerrar X
+                  </button>
+                  <Admision
+                    id_admision={admisionData.id_admision_datos}
+                    tipoIdenInicial={admisionInit.tipoIdenInicial}
+                    numeIdenInicial={admisionInit.numeIdenInicial}
+                    pers_apellidos={[
+                      admisionData.adm_dato_pers_apel_prim,
+                      admisionData.adm_dato_pers_apel_segu,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    pers_nombres={[
+                      admisionData.adm_dato_pers_nomb_prim,
+                      admisionData.adm_dato_pers_nomb_segu,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    pers_sexo={admisionData.adm_dato_pers_sexo}
+                    pers_correo={admisionData.adm_dato_pers_corr_elec}
+                    ejecutarAjustarAdmision={true}
+                    btnActualizar={admisionData.id_admision_datos !== null}
+                    onClose={() => {
+                      setShowAdmisionModal(false);
+                      setAdmisionData(null); // Limpia la información al terminar
+                    }}
                   />
                 </div>
               </div>
@@ -2524,7 +2694,7 @@ export default function AgendaTurnoPaciente() {
             </div>
           </>
         )}
-        {activeTab === "reporte" && (
+        {activeTab === "reporte" && role === 5 && (
           <>
             <form
               onSubmit={handleReporteSubmit}
@@ -3151,7 +3321,7 @@ export default function AgendaTurnoPaciente() {
             )}
           </>
         )}
-        {activeTab === "consulta" && (
+        {activeTab === "consulta" && role === 5 && (
           <div className="mt-2 space-y-1">
             <form
               onSubmit={handleResultadoConsultaSubmit}

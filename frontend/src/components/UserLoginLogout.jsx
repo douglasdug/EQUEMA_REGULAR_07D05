@@ -19,10 +19,10 @@ const UserLoginLogout = () => {
     } catch (error) {
       console.error(
         "Error al cerrar sesión:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
     }
-    window.location.replace("/login/");
+    globalThis.location.replace("/login/");
   };
 
   const handleLogin = () => {

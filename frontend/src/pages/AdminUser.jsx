@@ -325,7 +325,7 @@ const AdminUser = () => {
     e.preventDefault();
     if (isLoading) return;
 
-    const confirmDelete = window.confirm(
+    const confirmDelete = globalThis.confirm(
       `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${formData.username}\nNombres: ${formData.last_name} ${formData.first_name}`,
     );
     if (!confirmDelete) return;
@@ -557,7 +557,7 @@ const AdminUser = () => {
   const fieldClass = "mb-1 flex flex-col";
   const labelClass = "block text-gray-700 text-sm font-bold mb-1";
   const buttonTextRegistro = isEditing ? "Actualizar Registro" : "Registrar";
-  const buttonTextBuscar = isBuscar ? "Nuevo Registro" : "Buscar";
+  //const buttonTextBuscar = isBuscar ? "Nuevo Registro" : "Buscar";
 
   return (
     <div className="w-full h-auto flex items-stretch justify-stretch bg-gray-100">
