@@ -33,7 +33,9 @@ export const CustomSelect = ({
   // Para isMulti, value debe ser array de objetos; para simple, un objeto
   const selectedOption = isMulti
     ? value
-    : options.find((opt) => opt.value === value) || null;
+    : value && typeof value === "object"
+      ? value
+      : options.find((opt) => opt.value === value) || null;
 
   // Si es lista grande, mostrar solo el elemento seleccionado inicialmente
   let optionsToShow;
@@ -139,14 +141,14 @@ export const CustomSelect = ({
         value={selectedOption}
         onChange={(selected) => {
           if (isMulti) {
-            // selected es array de objetos
             onChange(selected || []);
           } else {
-            // selected es objeto o null
             onChange({
               target: {
                 name,
                 value: selected ? selected.value : "",
+                label: selected ? selected.label : "",
+                option: selected || null,
               },
             });
           }

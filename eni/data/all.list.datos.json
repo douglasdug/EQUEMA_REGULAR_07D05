@@ -4,9 +4,9 @@
         { "2": "RESERVADO/A" },
         { "3": "AGENDADO/A" },
         { "4": "ATENDIDO/A" },
-        { "5": "CANCELADO" },        
+        { "5": "INASISTENCIA" },        
         { "6": "ELIMINADO" },
-        { "7": "ELIMINADO" }
+        { "7": "CANCELADO" }
     ],
     "unidad_salud": [
         { "000541": "000541 SAN VICENTE" },
@@ -31,5 +31,10 @@
         { "002879": "002879 CENTRO DE SALUD DE HUAQUILLAS" },
         { "002900": "002900 CENTRO DE SALUD DE ARENILLAS" },
         { "050748": "050748 PUESTO DE VIGILANCIA HUAQUILLAS" }
+    ],
+    "tipo_servicio": [
+        { "1": "CONSULTA EXTERNA" },
+        { "2": "HOSPITALIZACION" },
+        { "3": "EMERGENCIA" }
     ]
 }

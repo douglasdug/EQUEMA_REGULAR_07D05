@@ -38,7 +38,7 @@ export function Navigation() {
     {
       to: "/agenda-turno-paciente/",
       label: "Agenda Turno Paciente",
-      roles: [5, 6],
+      roles: [3, 5, 6, 7],
     },
     {
       to: "/admin-agenda-turno/",
@@ -46,6 +46,8 @@ export function Navigation() {
       roles: [5],
     },
     { to: "/contacto/", label: "Contacto", roles: ["public"] },
+    // { to: "/medico/", label: "Certificado Médico", roles: ["public"] },
+    { to: "/dashboard/", label: "Dashboard", roles: ["public"] },
   ];
 
   const canSee = (rolesArr) =>

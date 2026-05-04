@@ -188,7 +188,7 @@ const TablaUsers = ({
   };
 
   const getFunAdmiRol = (fun_admi_rol) =>
-    fun_admi_rol >= 1 && fun_admi_rol <= 6 ? fun_admi_rol : 0;
+    fun_admi_rol >= 1 && fun_admi_rol <= 7 ? fun_admi_rol : 0;
 
   const getFormData = (user, funAdmiRol) => ({
     id_eniUser: user.id || "",
@@ -207,7 +207,7 @@ const TablaUsers = ({
           if (typeof item === "object" && item !== null) {
             return {
               value: item.uni_unic,
-              label: `${item.uni_unic} - ${item.uni_unid}`.trim(),
+              label: `${item.uni_unic} ${item.uni_unid}`.trim(),
             };
           } else {
             return {
@@ -422,7 +422,7 @@ const TablaUsers = ({
                                   .map((item, index) => {
                                     const value =
                                       typeof item === "object"
-                                        ? `${item.uni_unic} - ${item.uni_unid}`
+                                        ? `${item.uni_unic} ${item.uni_unid}`
                                         : item;
                                     return (
                                       <span

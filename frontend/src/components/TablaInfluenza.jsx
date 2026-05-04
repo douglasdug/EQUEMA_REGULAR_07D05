@@ -91,7 +91,7 @@ const TablaInfluenza = ({
       "NOVIEMBRE",
       "DICIEMBRE",
     ];
-    return months[parseInt(monthNumber, 10) - 1];
+    return months[Number.parseInt(monthNumber, 10) - 1];
   };
 
   useEffect(() => {
@@ -159,7 +159,7 @@ const TablaInfluenza = ({
 
   const confirmDelete = (user) => {
     return window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\nFecha: ${user.inf_fech}`
+      `¿Estás seguro de que deseas eliminar este registro?\nFecha: ${user.inf_fech}`,
     );
   };
 
@@ -199,7 +199,7 @@ const TablaInfluenza = ({
     if (user.inf_fech) {
       const [day, month, year] = user.inf_fech.split("/");
       if (day && month && year) {
-        const date = new Date(year, parseInt(month) - 1, day);
+        const date = new Date(year, Number.parseInt(month) - 1, day);
         if (!isNaN(date.getTime())) {
           formattedDate = date.toISOString().split("T")[0];
         }
@@ -430,7 +430,7 @@ const TablaInfluenza = ({
                             (key) =>
                               key !== "id" &&
                               key !== "inf_tota" &&
-                              key !== "eniUser"
+                              key !== "eniUser",
                           )
                           .map((key) => {
                             let cellContent = registro[key];

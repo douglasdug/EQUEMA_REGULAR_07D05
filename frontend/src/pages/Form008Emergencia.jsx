@@ -343,7 +343,7 @@ const Form008Emergencia = () => {
       if (!response)
         throw new Error("No se pudo obtener una respuesta de la API.");
 
-      if (parseInt(response.data.adm_dato_paci_falt_dato) === 0) {
+      if (Number.parseInt(response.data.adm_dato_paci_falt_dato) === 0) {
         if (
           response.message.toLowerCase().includes("usuario está registrado") ||
           response.message.toLowerCase().includes("registrado en admision") ||
@@ -528,7 +528,7 @@ const Form008Emergencia = () => {
 
       const unidadSaludListFormatted = unidades.map((u) => ({
         value: u.id?.toString(),
-        label: `${u.uni_unic} - ${u.uni_unid}`,
+        label: `${u.uni_unic} ${u.uni_unid}`,
       }));
 
       const principal = unidades.find((u) => u.uni_unid_prin === 1);
@@ -837,7 +837,7 @@ const Form008Emergencia = () => {
   };
 
   const isFieldVisible = (field) => {
-    //const edadNum = parseInt(edad);
+    //const edadNum = Number.parseInt(edad);
 
     // Reglas específicas por campo
     const reglas = {

@@ -172,12 +172,12 @@ const validarNoIdentificado = (username) => {
   }
 
   const letras = username.substring(0, 6);
-  const codigoProvincia = parseInt(username.substring(6, 8), 10);
-  const anio = parseInt(username.substring(8, 12), 10);
-  const mes = parseInt(username.substring(12, 14), 10);
-  const dia = parseInt(username.substring(14, 16), 10);
-  const ultimoDigito = parseInt(username.charAt(16), 10);
-  const digitoOnce = parseInt(username.charAt(10), 10);
+  const codigoProvincia = Number.parseInt(username.substring(6, 8), 10);
+  const anio = Number.parseInt(username.substring(8, 12), 10);
+  const mes = Number.parseInt(username.substring(12, 14), 10);
+  const dia = Number.parseInt(username.substring(14, 16), 10);
+  const ultimoDigito = Number.parseInt(username.charAt(16), 10);
+  const digitoOnce = Number.parseInt(username.charAt(10), 10);
 
   const letrasRegex = /^[A-Z]{6}$/;
   if (!letrasRegex.test(letras)) {
@@ -239,7 +239,7 @@ const validarCedula = (username) => {
     };
   }
 
-  const provincia = parseInt(username.substring(0, 2), 10);
+  const provincia = Number.parseInt(username.substring(0, 2), 10);
   if ((provincia < 1 || provincia > 24) && provincia !== 30) {
     return {
       valido: false,

@@ -67,10 +67,28 @@
     { "value": 3, "label": "03 ATENCION FORM 008" },
     { "value": 4, "label": "04 REPORTES Y ADMISION" },
     { "value": 5, "label": "05 ADMINISTRAR AGENDA DE TURNOS" },
-    { "value": 6, "label": "06 AGENDAR TURNOS" }
+    { "value": 6, "label": "06 AGENDAR TURNOS" },
+    { "value": 7, "label": "07 RESULTADOS DE TURNOS" }
   ],
   "fun_esta": [
     { "value": 1, "label": "01 ACTIVO" },
     { "value": 0, "label": "02 INACTIVO" }
+  ],
+  "listaTipoTitu": [
+    { "value": "BIOQUÍMICO MÉDICO/A", "label": "BQ." },
+    { "value": "DOCTOR/A", "label": "Dr./a" },
+    { "value": "DOCTOR/A - (RURAL)", "label": "Dr./a (Rural)" },
+    { "value": "ESPECIALISTA", "label": "Eps." },
+    { "value": "LICENCIADO EN ENFERMERÍA", "label": "Lic." },
+    { "value": "LICENCIADO EN ENFERMERÍA - (RURAL)", "label": "Lic. (Rural)" },
+    { "value": "MÉDICO GENERAL/A", "label": "Med./a" },
+    { "value": "MÉDICO GENERAL/A - (RURAL)", "label": "Med./a  (Rural)" },
+    { "value": "OBSTETRICIA", "label": "Obst." },
+    { "value": "OBSTETRICIA - (RURAL)", "label": "Obst.  (Rural)" },
+    { "value": "ODONTÓLOGO/A", "label": "Odont./a" },
+    { "value": "ODONTÓLOGO/A - (RURAL)", "label": "Odont./a  (Rural)" },
+    { "value": "PSICÓLOGO CLÍNICO/A", "label": "Psic./a" },
+    { "value": "PSICÓLOGO CLÍNICO/A - (RURAL)", "label": "Psic./a  (Rural)" },
+    { "value": "OTROS/A", "label": "Sr./a" }
   ]
 }

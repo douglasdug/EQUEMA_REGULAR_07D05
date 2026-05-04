@@ -214,7 +214,7 @@ const CreateTemprano = () => {
     if (isLoading) return;
 
     const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\nFecha: ${formData.tem_fech}`
+      `¿Estás seguro de que deseas eliminar este registro?\n\nFecha: ${formData.tem_fech}`,
     );
     if (!confirmDelete) return;
 
@@ -677,7 +677,7 @@ const CreateTemprano = () => {
         <TablaTemprano
           setIsIdTem={setIsIdTem}
           setFormData={setFormData}
-          storedUserId={parseInt(storedUserId)}
+          storedUserId={Number.parseInt(storedUserId)}
           fechaInput={fechaInput}
           setBotonEstado={setBotonEstado}
           setIsInputEstado={setIsInputEstado}

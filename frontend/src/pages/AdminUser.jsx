@@ -208,7 +208,7 @@ const AdminUser = () => {
             if (typeof item === "object" && item !== null) {
               return {
                 value: item.uni_unic,
-                label: `${item.uni_unic} - ${item.uni_unid}`.trim(),
+                label: `${item.uni_unic} ${item.uni_unid}`.trim(),
               };
             } else {
               return {

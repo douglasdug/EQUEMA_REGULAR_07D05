@@ -235,7 +235,7 @@ const RegisterUser = () => {
           first_name: formData.first_name,
           last_name: formData.last_name,
           fun_titu: formData.fun_titu,
-        })
+        }),
       );
       limpiarVariables();
       const timer = setTimeout(() => {
@@ -334,7 +334,7 @@ const RegisterUser = () => {
       return formData[field];
     });
     setPasswordsMatch(
-      formData.password1 === formData.password2 && formData.password1 !== ""
+      formData.password1 === formData.password2 && formData.password1 !== "",
     );
 
     setBotonEstado((prevState) => ({
@@ -444,7 +444,7 @@ const RegisterUser = () => {
                       "fun_tipo_iden",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -473,7 +473,7 @@ const RegisterUser = () => {
                                     "username",
                                     requiredFields,
                                     formData,
-                                    isFieldVisible
+                                    isFieldVisible,
                                   )
                                     ? "border-2 border-red-500"
                                     : ""
@@ -522,7 +522,7 @@ const RegisterUser = () => {
                                     "last_name",
                                     requiredFields,
                                     formData,
-                                    isFieldVisible
+                                    isFieldVisible,
                                   )
                                     ? "border-2 border-red-500"
                                     : ""
@@ -556,7 +556,7 @@ const RegisterUser = () => {
                                     "first_name",
                                     requiredFields,
                                     formData,
-                                    isFieldVisible
+                                    isFieldVisible,
                                   )
                                     ? "border-2 border-red-500"
                                     : ""
@@ -589,7 +589,7 @@ const RegisterUser = () => {
                       "fun_sex",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -616,7 +616,7 @@ const RegisterUser = () => {
                       "fun_titu",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -643,7 +643,7 @@ const RegisterUser = () => {
                       "uni_unic",
                       requiredFields,
                       formData,
-                      isFieldVisible
+                      isFieldVisible,
                     )
                       ? "border-2 border-red-500"
                       : ""
@@ -678,7 +678,7 @@ const RegisterUser = () => {
                         "password1",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""
@@ -723,7 +723,7 @@ const RegisterUser = () => {
                         "password2",
                         requiredFields,
                         formData,
-                        isFieldVisible
+                        isFieldVisible,
                       )
                         ? "border-2 border-red-500"
                         : ""

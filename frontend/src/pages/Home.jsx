@@ -60,7 +60,7 @@ const links = [
     desc: "Gestionar y consultar turnos de pacientes.",
     Icon: FaRegCalendarCheck,
     color: "from-green-500 to-green-600",
-    roles: [5, 6],
+    roles: [3, 5, 6, 7],
   },
   {
     path: "/admin-agenda-turno/",

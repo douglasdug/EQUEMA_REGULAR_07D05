@@ -17,5 +17,10 @@
         { "value": 5, "label": "05 INASISTENCIA" },        
         { "value": 6, "label": "06 ELIMINADO" },
         { "value": 7, "label": "07 CANCELADO" }
+    ],
+    "age_turn_paci_cons_tipo_serv": [
+        { "value": 1, "label": "01 CONSULTA EXTERNA" },
+        { "value": 2, "label": "02 HOSPITALIZACION" },
+        { "value": 3, "label": "03 EMERGENCIA" }
     ]
 }

@@ -893,6 +893,7 @@ export const pdfTurnoAgendaPaciente = async (id) => {
 
 export const buscarTurnosAgendados = async (
   tipo_especialidad,
+  unid_salu,
   fecha_inicio,
   fecha_fin,
 ) => {
@@ -900,7 +901,7 @@ export const buscarTurnosAgendados = async (
     const response = await axios.get(
       `${API_URL}/admin-agenda-turnos/buscar-agenda/`,
       {
-        params: { tipo_especialidad, fecha_inicio, fecha_fin },
+        params: { tipo_especialidad, unid_salu, fecha_inicio, fecha_fin },
       },
     );
     return response.data;
@@ -1064,6 +1065,24 @@ export const contactoSoporte = async (formData) => {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "Error contacting support:",
+        error.response ? error.response.data : error.message,
+      );
+    }
+    throw error;
+  }
+};
+
+//Funciones para el Dashboard
+export const getDashboardData = async (month, year) => {
+  try {
+    const response = await axios.get(`${API_URL}/dashboard/`, {
+      params: { month, year },
+    });
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching dashboard data:",
         error.response ? error.response.data : error.message,
       );
     }

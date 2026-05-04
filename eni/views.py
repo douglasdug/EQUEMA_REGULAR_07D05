@@ -53,6 +53,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader, PdfWriter
 from twilio.rest import Client
+import pandas as pd
 
 # Create your views here.
 
@@ -1892,7 +1893,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
     queryset = admin_agenda_turnos.objects.all()
     # permission_classes = [permissions.AllowAny]
     permission_classes = [IsAuthenticated, HasRole]
-    allowed_roles = [5, 6]
+    allowed_roles = [3, 5, 6, 7]
 
     def get_permissions(self):
         # Para el resto, usa los permisos definidos en la vista (IsAuthenticated + HasRole)
@@ -2033,7 +2034,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
                 "id_eniUser": user_data.id,
                 "unidades_data": unidades_data,
             }
-            unidad_str = f"{unidades_salud[0].uni_unic} - {unidades_salud[0].uni_unid}" if unidades_salud else ""
+            unidad_str = f"{unidades_salud[0].uni_unic} {unidades_salud[0].uni_unid}" if unidades_salud else ""
             unidad_salud = unidad_str.strip()
 
             if tipo_cita == 1:
@@ -2068,6 +2069,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
                 'adm_agen_turn_apel_nomb_paci',
                 'adm_agen_turn_cons_link_paci',
                 'adm_agen_turn_cons_obse_paci',
+                'adm_agen_turn_cons_tipo_serv',
             ).order_by('adm_agen_turn_fech', 'adm_agen_turn_hora_inic')
 
             data_list = list(data)
@@ -2177,6 +2179,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
                 'adm_agen_turn_esta_cita',
                 'adm_agen_turn_cons_link_paci',
                 'adm_agen_turn_cons_obse_paci',
+                'adm_agen_turn_cons_tipo_serv',
             ).order_by('-adm_agen_turn_fech', 'adm_agen_turn_hora_inic')
 
             data_list = list(data)
@@ -2546,6 +2549,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         estado_turno = int(data.get('estado_turno'))
         adm_agen_turn_cons_link_paci = data.get('link_consulta')
         adm_agen_turn_cons_obse_paci = data.get('obse_atencion')
+        adm_agen_turn_cons_tipo_serv = data.get('tipo_servicio')
         tipo_cita = int(data.get('tipo_cita'))
 
         try:
@@ -2570,11 +2574,13 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
                 data['adm_agen_turn_esta_cita'] = 4
                 data['adm_agen_turn_cons_link_paci'] = adm_agen_turn_cons_link_paci
                 data['adm_agen_turn_cons_obse_paci'] = adm_agen_turn_cons_obse_paci
+                data['adm_agen_turn_cons_tipo_serv'] = adm_agen_turn_cons_tipo_serv
             elif estado_turno == 2:
                 data['adm_agen_turn_fech'] = turno_fecha
                 data['adm_agen_turn_esta_cita'] = 5
                 data['adm_agen_turn_cons_link_paci'] = ""
                 data['adm_agen_turn_cons_obse_paci'] = ""
+                data['adm_agen_turn_cons_tipo_serv'] = ""
         serializer = self.get_serializer(id_turno, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
@@ -2751,7 +2757,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
                 id=id_eni_user)
             # Asumiendo que hay una relación con unidades_salud
             unidades_salud = user_data.unidades_salud.all()
-            unidad_str = f"{unidades_salud[0].uni_unic} - {unidades_salud[0].uni_unid}" if unidades_salud else ""
+            unidad_str = f"{unidades_salud[0].uni_unic} {unidades_salud[0].uni_unid}" if unidades_salud else ""
 
             unidad_salud = unidad_str.strip()
         except eniUser.DoesNotExist:
@@ -2785,6 +2791,8 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
                     0] for d in data_json.get('estados_citas', [])}
                 UNIDAD_SALUD = {str(list(d.keys())[0]): list(d.values())[
                     0] for d in data_json.get('unidad_salud', [])}
+                TIPO_SERVICIO = {str(list(d.keys())[0]): list(d.values())[
+                    0] for d in data_json.get('tipo_servicio', [])}
         except Exception as e:
             return Response(
                 {"error": f"Error cargando catálogos: {str(e)}"},
@@ -2796,14 +2804,14 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
             "adm_agen_turn_dura_cita", "adm_agen_turn_hora_inic", "adm_agen_turn_hora_fin", "adm_agen_turn_tipo_iden_paci",
             "adm_agen_turn_nume_iden_paci", "adm_agen_turn_apel_nomb_paci", "adm_agen_turn_tele_paci",
             "adm_agen_turn_corr_paci", "adm_agen_turn_dire_paci", "adm_agen_turn_unid_salu_resp_segu_aten_paci",
-            "adm_agen_turn_obse_paci", "adm_agen_turn_esta_cita", "adm_agen_turn_rese_unic_salu", "eniUser"
+            "adm_agen_turn_obse_paci", "adm_agen_turn_esta_cita", "adm_agen_turn_rese_unic_salu", "adm_agen_turn_cons_tipo_serv", "eniUser"
         ]
         HEADERS = [
             "FECHA DE TURNO", "NOMBRE DEL ESTABLECIMIENTO DE SALUD", "TIPO DE ESPECIALIDAD", "PROFESIONAL DE LA CITA",
             "DURACIÓN DE LA CITA (MINUTOS)", "HORA DE INICIO", "HORA DE FIN", "TIPO DE DOCUMENTO", "NUMERO DE DOCUMENTO",
             "APELLIDOS Y NOMBRES", "TELEFONO", "CORREO ELECTRÓNICO", "DIRECCIÓN",
             "UNIDAD DE SALUD RESPONSABLE SEGUIMIENTO ATENCIÓN PACIENTE", "OBSERVACIONES PARA EL PACIENTE",
-            "ESTADO DE LA CITA", "UNIDAD DE SALUD DE RESERVA PARA LA CITA", "ADMISIONISTA"
+            "ESTADO DE LA CITA", "UNIDAD DE SALUD DE RESERVA PARA LA CITA", "TIPO DE SERVICIO", "ADMISIONISTA"
         ]
 
         fecha_field_name = "adm_agen_turn_fech"
@@ -2827,7 +2835,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
             .filter(**{f"{fecha_field_name}__range": (start_filter, end_filter)},
                     adm_agen_turn_unid_salu=unidad_salud,
                     adm_agen_turn_tipo_espe=tipo_especialidad,
-                    adm_agen_turn_esta_cita__in=[3])
+                    adm_agen_turn_esta_cita__in=[3, 4, 5])
             .order_by(fecha_field_name)
         )
 
@@ -2860,6 +2868,8 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
                         val = ESTADOS_CITA.get(str(val), val)
                     elif field == "adm_agen_turn_rese_unic_salu":
                         val = UNIDAD_SALUD.get(str(val), val)
+                    elif field == "adm_agen_turn_cons_tipo_serv":
+                        val = TIPO_SERVICIO.get(str(val), val)
                     elif field == "eniUser":
                         try:
                             user = eniUser.objects.get(pk=val)
@@ -2961,6 +2971,18 @@ class ContactoAPIView(APIView):
             {"message": "Mensaje enviado correctamente. Pronto será contactado."},
             status=status.HTTP_201_CREATED
         )
+
+
+class DashboardAPIView(APIView):
+    def get(self, request):
+        can_descri = request.GET.get('can_descri')
+        uni_codigo = request.GET.get('uni_codigo')
+        df = pd.read_csv('eni/data/poblacion.csv', encoding='latin1')
+        if can_descri:
+            df = df[df['can_descri'] == can_descri]
+        if uni_codigo:
+            df = df[df['uni_codigo'] == uni_codigo]
+        return Response(df.to_dict(orient='records'))
 
 
 Error_Fecha_Registrada = "La fecha ya ha sido registrada desea Actualizar la información!."

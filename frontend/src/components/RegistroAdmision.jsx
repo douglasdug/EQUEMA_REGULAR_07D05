@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { listaSelectUser } from "./AllList.jsx";
 
 export function RegistroAdmision() {
   const [formData, setFormData] = useState({
@@ -128,7 +127,7 @@ export function RegistroAdmision() {
           return !isNaN(val.getTime());
         }
         return true;
-      })
+      }),
     );
   };
 
@@ -251,66 +250,36 @@ export function RegistroAdmision() {
             >
               {group.map((key) => {
                 let inputType;
-                if (listaSelectUser[key]) {
-                  return (
-                    <div className="mb-2" key={key}>
-                      <label
-                        className="block text-gray-700 text-sm font-bold mb-2"
-                        htmlFor={key}
-                      >
-                        {labelMap[key]}
-                        {requiredFields.includes(key) && (
-                          <span className="text-red-500"> *</span>
-                        )}
-                      </label>
-                      <select
-                        id={key}
-                        name={key}
-                        value={formData[key]}
-                        onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                      >
-                        <option value="">Seleccione una opción</option>
-                        {listaSelectUser[key].map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  );
+                if (key === "adm_dato_naci_fech_naci") {
+                  inputType = "date";
+                } else if (key === "adm_dato_pers_corr_elec") {
+                  inputType = "email";
                 } else {
-                  if (key === "adm_dato_naci_fech_naci") {
-                    inputType = "date";
-                  } else if (key === "adm_dato_pers_corr_elec") {
-                    inputType = "email";
-                  } else {
-                    inputType = "text";
-                  }
-                  return (
-                    <div className="mb-2" key={key}>
-                      <label
-                        className="block text-gray-700 text-sm font-bold mb-2"
-                        htmlFor={key}
-                      >
-                        {labelMap[key]}
-                        {requiredFields.includes(key) && (
-                          <span className="text-red-500"> *</span>
-                        )}
-                      </label>
-                      <input
-                        type={inputType}
-                        id={key}
-                        name={key}
-                        value={formData[key]}
-                        onChange={handleChange}
-                        placeholder="Información es requerida"
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        min="0"
-                      />
-                    </div>
-                  );
+                  inputType = "text";
                 }
+                return (
+                  <div className="mb-2" key={key}>
+                    <label
+                      className="block text-gray-700 text-sm font-bold mb-2"
+                      htmlFor={key}
+                    >
+                      {labelMap[key]}
+                      {requiredFields.includes(key) && (
+                        <span className="text-red-500"> *</span>
+                      )}
+                    </label>
+                    <input
+                      type={inputType}
+                      id={key}
+                      name={key}
+                      value={formData[key]}
+                      onChange={handleChange}
+                      placeholder="Información es requerida"
+                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      min="0"
+                    />
+                  </div>
+                );
               })}
             </div>
           ))}

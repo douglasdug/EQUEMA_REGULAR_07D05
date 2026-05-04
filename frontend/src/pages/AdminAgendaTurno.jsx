@@ -820,7 +820,7 @@ const AdminAgendaTurno = () => {
 
         const unidadSaludListFormatted = unidades.map((u) => ({
           value: u.id?.toString(),
-          label: `${u.uni_unic} - ${u.uni_unid}`,
+          label: `${u.uni_unic} ${u.uni_unid}`,
         }));
 
         setMedicosList(medicosListFormatted);

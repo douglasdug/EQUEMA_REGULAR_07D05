@@ -852,8 +852,8 @@ const Admision = ({
         if (
           !yyyy ||
           yyyy.length !== 4 ||
-          parseInt(yyyy) < 1895 ||
-          parseInt(yyyy) > new Date().getFullYear()
+          Number.parseInt(yyyy) < 1895 ||
+          Number.parseInt(yyyy) > new Date().getFullYear()
         ) {
           setError(
             "El año de la fecha de nacimiento debe tener 4 dígitos válidos.",
@@ -872,8 +872,8 @@ const Admision = ({
         if (
           !yyyy ||
           yyyy.length !== 4 ||
-          parseInt(yyyy) < 1900 ||
-          parseInt(yyyy) > new Date().getFullYear()
+          Number.parseInt(yyyy) < 1900 ||
+          Number.parseInt(yyyy) > new Date().getFullYear()
         ) {
           setError(
             "El año de la fecha de nacimiento debe tener 4 dígitos válidos.",
@@ -1068,7 +1068,7 @@ const Admision = ({
   const getOpcionesGrupoPrioritario = () => {
     const sexo = formData.adm_dato_pers_sexo;
     const opciones = allListAdmision.adm_dato_adic_grup_prio || [];
-    const edadNum = parseInt(edad);
+    const edadNum = Number.parseInt(edad);
 
     if (sexo !== "MUJER" || isNaN(edadNum) || edadNum < 10 || edadNum > 49) {
       return opciones.filter((opt) => opt.value !== "EMBARAZADAS");
@@ -1077,7 +1077,7 @@ const Admision = ({
   };
 
   const isFieldVisible = (field) => {
-    const edadNum = parseInt(edad);
+    const edadNum = Number.parseInt(edad);
 
     // Reglas específicas por campo
     const reglas = {
@@ -1495,7 +1495,7 @@ const Admision = ({
   // Validación de grupo prioritario embarazadas
   useEffect(() => {
     const sexo = formData.adm_dato_pers_sexo;
-    const edadNum = parseInt(edad);
+    const edadNum = Number.parseInt(edad);
     if (
       formData.adm_dato_adic_grup_prio === "EMBARAZADAS" &&
       (sexo !== "MUJER" || isNaN(edadNum) || edadNum < 10 || edadNum > 49)
@@ -1506,7 +1506,7 @@ const Admision = ({
 
   // Limpieza de datos de representante si es mayor de edad
   useEffect(() => {
-    const edadNum = parseInt(edad);
+    const edadNum = Number.parseInt(edad);
     if (!isNaN(edadNum) && edadNum >= 18) {
       setFormData((prev) => ({
         ...prev,
@@ -1741,7 +1741,7 @@ const Admision = ({
         <nav className="w-full flex overflow-x-auto no-scrollbar space-x-2 border-b border-blue-200 mb-1 bg-white items-center justify-center px-1 py-1 relative">
           {tabs.map((tab) =>
             tab.key === "representante" &&
-            !(edad !== null && parseInt(edad) < 18) ? null : (
+            !(edad !== null && Number.parseInt(edad) < 18) ? null : (
               <button
                 key={tab.key}
                 type="button"
@@ -2973,7 +2973,7 @@ const Admision = ({
           )}
           {/* DATOS DEL REPRESENTANTE */}
           {edad !== null &&
-            parseInt(edad) < 18 &&
+            Number.parseInt(edad) < 18 &&
             activeTab === "representante" && (
               <fieldset className="border border-blue-200 rounded p-2 mb-1">
                 <legend className="text-lg font-semibold text-blue-600 px-2">

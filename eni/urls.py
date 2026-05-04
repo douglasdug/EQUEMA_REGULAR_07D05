@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, NewPasswordResetAPIView, ChangePasswordTokenAPIView, FirmarPDFAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, Form008EmergenciaRegistrationAPIView, AdminAgendaTurnosRegistrationAPIView, ContactoAPIView, RegistroVacunadoRegistrationAPIView
+from .views import UserRegistrationAPIView, UserLoginAPIView, UserLogoutAPIView, UserInfoAPIView, NewPasswordResetAPIView, ChangePasswordTokenAPIView, FirmarPDFAPIView, EniUserRegistrationAPIView, UnidadSaludRegistrationAPIView, TempranoRegistrationAPIView, TardioRegistrationAPIView, DesperdicioRegistrationAPIView, InfluenzaRegistrationAPIView, ReporteENIRegistrationAPIView, AdmisionDatosRegistrationAPIView, Form008EmergenciaRegistrationAPIView, AdminAgendaTurnosRegistrationAPIView, ContactoAPIView, DashboardAPIView, RegistroVacunadoRegistrationAPIView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -41,5 +41,6 @@ urlpatterns = [
          ChangePasswordTokenAPIView.as_view(), name='new_password_reset'),
     path('v1/firmar-pdf/', FirmarPDFAPIView.as_view(), name='firmar-pdf'),
     path('v1/contacto/', ContactoAPIView.as_view(), name='contacto'),
+    path('v1/dashboard/', DashboardAPIView.as_view(), name='dashboard'),
     # path('v1/reporte/pdf/', reporteTempranoPDF, name='reporte-temprano-pdf'),
 ]

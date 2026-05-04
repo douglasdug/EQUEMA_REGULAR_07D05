@@ -232,7 +232,7 @@ const CreateDesperdicio = () => {
     if (isLoading) return;
 
     const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\nFecha: ${formData.des_fech}`
+      `¿Estás seguro de que deseas eliminar este registro?\n\nFecha: ${formData.des_fech}`,
     );
     if (!confirmDelete) return;
 
@@ -607,7 +607,7 @@ const CreateDesperdicio = () => {
         <TablaDesperdicio
           setIsIdDes={setIsIdDes}
           setFormData={setFormData}
-          storedUserId={parseInt(storedUserId)}
+          storedUserId={Number.parseInt(storedUserId)}
           fechaInput={fechaInput}
           setBotonEstado={setBotonEstado}
           setIsInputEstado={setIsInputEstado}

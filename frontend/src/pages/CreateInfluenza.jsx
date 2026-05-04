@@ -209,7 +209,7 @@ const CreateInfluenza = () => {
     if (isLoading) return;
 
     const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\nFecha: ${formData.inf_fech}`
+      `¿Estás seguro de que deseas eliminar este registro?\n\nFecha: ${formData.inf_fech}`,
     );
     if (!confirmDelete) return;
 
@@ -661,7 +661,7 @@ const CreateInfluenza = () => {
         <TablaInfluenza
           setIsIdInf={setIsIdInf}
           setFormData={setFormData}
-          storedUserId={parseInt(storedUserId)}
+          storedUserId={Number.parseInt(storedUserId)}
           fechaInput={fechaInput}
           setBotonEstado={setBotonEstado}
           setIsInputEstado={setIsInputEstado}

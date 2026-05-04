@@ -16,6 +16,7 @@ import ReporteAtenciones from "./pages/ReporteAtenciones.jsx";
 import Contacto from "./pages/Contacto.jsx";
 import CertificadoMedico from "./pages/CertificadoMedico.jsx";
 import AdminAgendaTurno from "./pages/AdminAgendaTurno.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 import RequireRole from "./routes/RequireRole.jsx";
 import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";
@@ -76,6 +77,7 @@ function App() {
                 <Route path="/contacto/" element={<Contacto />} />
 
                 <Route path="/medico/" element={<CertificadoMedico />} />
+                <Route path="/dashboard/" element={<Dashboard />} />
 
                 {/* Rutas protegidas por rol */}
                 <Route
@@ -133,8 +135,10 @@ function App() {
                   element={
                     <RequireRole
                       allowed={[
+                        ROLES.ATENCION_FORM_008,
                         ROLES.ADMINISTRAR_AGENDA_DE_TURNOS,
                         ROLES.AGENDAR_TURNOS,
+                        ROLES.RESULTADOS_DE_TURNOS,
                       ]}
                     />
                   }
@@ -143,6 +147,14 @@ function App() {
                     path="/agenda-turno-paciente/"
                     element={<AgendaTurnoPaciente />}
                   />
+                </Route>
+                <Route
+                  element={
+                    <RequireRole
+                      allowed={[ROLES.ADMINISTRAR_AGENDA_DE_TURNOS]}
+                    />
+                  }
+                >
                   <Route
                     path="/admin-agenda-turno/"
                     element={<AdminAgendaTurno />}

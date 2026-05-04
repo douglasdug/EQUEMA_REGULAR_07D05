@@ -306,7 +306,7 @@ const CreateTardio = () => {
     if (isLoading) return;
 
     const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\nFecha: ${formData.tar_fech}`
+      `¿Estás seguro de que deseas eliminar este registro?\n\nFecha: ${formData.tar_fech}`,
     );
     if (!confirmDelete) return;
 
@@ -950,7 +950,7 @@ const CreateTardio = () => {
         <TablaTardio
           setIsIdTar={setIsIdTar}
           setFormData={setFormData}
-          storedUserId={parseInt(storedUserId)}
+          storedUserId={Number.parseInt(storedUserId)}
           fechaInput={fechaInput}
           setBotonEstado={setBotonEstado}
           setIsInputEstado={setIsInputEstado}

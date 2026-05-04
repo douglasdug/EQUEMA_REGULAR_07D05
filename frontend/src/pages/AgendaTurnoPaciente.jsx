@@ -96,6 +96,7 @@ const initialReporteState = {
   age_turn_paci_cons_paci: "",
   age_turn_paci_cons_obse_paci: "",
   age_turn_paci_cons_link_paci: "",
+  age_turn_paci_cons_tipo_serv: "",
 };
 
 const initialConsultaState = {
@@ -119,12 +120,10 @@ const TABLE_HEADERS = [
 
 const TABLE_HEADERS_REPORTE = [
   "Accion",
-  "Turno - Fecha y Hora",
-  "Unidad de Salud",
-  "Tipo de Especialidad",
-  "Profesional de la Cita",
+  "Detalle de Turno",
   "Estado de la Cita",
   "Identificación del Paciente",
+  "Tipo de Servicio",
 ];
 
 const TABLE_HEADERS_RESULTADO_CONSULTA = [
@@ -133,6 +132,7 @@ const TABLE_HEADERS_RESULTADO_CONSULTA = [
   "Estado de la Cita",
   "Link de Consulta",
   "Observaciones de la Consulta",
+  "Tipo de Servicio",
 ];
 
 function textoSeguro(valor) {
@@ -251,6 +251,14 @@ export default function AgendaTurnoPaciente() {
       ]),
     );
   }, [allListAgenda.adm_agen_turn_esta_cita]);
+  const tipoServicioMap = useMemo(() => {
+    return Object.fromEntries(
+      (allListAgenda.age_turn_paci_cons_tipo_serv || []).map((item) => [
+        String(item.value),
+        item.label ? item.label.slice(3) : "",
+      ]),
+    );
+  }, [allListAgenda.age_turn_paci_cons_tipo_serv]);
   const [rangeInicio, setRangeInicio] = useState(new Date());
   const [rangeFin, setRangeFin] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
@@ -288,7 +296,14 @@ export default function AgendaTurnoPaciente() {
   const [showEditarListaTurnos, setShowEditarListaTurnos] = useState(false);
   const [editandoListaTurnos, setEditandoListaTurnos] = useState([]);
   const [unidadSaludList, setUnidadSaludList] = useState([]);
-  const [activeTab, setActiveTab] = useState("agenda");
+  const getInitialTab = (role) => {
+    if (role === 5) return "agenda";
+    if (role === 6) return "agenda";
+    if (role === 7 || role === 3) return "consulta";
+    return "agenda";
+  };
+  const [activeTab, setActiveTab] = useState(() => getInitialTab(role));
+
   const [pacientesAgendados, setPacientesAgendados] = useState([]);
   const [currentPageReporte, setCurrentPageReporte] = useState(1);
   const [searchTermReporte, setSearchTermReporte] = useState("");
@@ -384,6 +399,7 @@ export default function AgendaTurnoPaciente() {
         u.adm_agen_turn_apel_nomb_paci,
         u.adm_agen_turn_cons_link_paci,
         u.adm_agen_turn_cons_obse_paci,
+        u.adm_agen_turn_cons_tipo_serv,
       ]
         .filter(Boolean)
         .some((field) => field.toString().toLowerCase().includes(q));
@@ -430,6 +446,7 @@ export default function AgendaTurnoPaciente() {
         estadoTurnoMap[u.adm_agen_turn_esta_cita],
         u.adm_agen_turn_cons_link_paci,
         u.adm_agen_turn_cons_obse_paci,
+        u.adm_agen_turn_cons_tipo_serv,
       ]
         .filter(Boolean)
         .some((field) => field.toString().toLowerCase().includes(q));
@@ -491,6 +508,7 @@ export default function AgendaTurnoPaciente() {
     age_turn_paci_cons_paci: true,
     age_turn_paci_cons_obse_paci: true,
     age_turn_paci_cons_link_paci: true,
+    age_turn_paci_cons_tipo_serv: true,
     age_turn_paci_resu_cons_tipo_iden_paci: false,
     age_turn_paci_resu_cons_nume_iden_paci: true,
     age_turn_paci_resu_cons_apel_nomb_paci: true,
@@ -565,6 +583,7 @@ export default function AgendaTurnoPaciente() {
     age_turn_paci_cons_paci: "Nombres del paciente:",
     age_turn_paci_cons_obse_paci: "Observaciones de consulta:",
     age_turn_paci_cons_link_paci: "Link de consulta:",
+    age_turn_paci_cons_tipo_serv: "Tipo de servicio para consulta:",
     age_turn_paci_resu_cons_tipo_iden_paci:
       "Tipo de identificación del paciente:",
     age_turn_paci_resu_cons_nume_iden_paci:
@@ -634,6 +653,23 @@ export default function AgendaTurnoPaciente() {
 
   const handleChangeVariable = (event) => {
     const { name, value } = event.target;
+    if (name === "age_turn_paci_unid_salu") {
+      const unidadSaludObjetos = Object.entries(unidadesSalud).map(
+        ([value, label]) => ({ value, label }),
+      );
+      const unidadSeleccionada = unidadSaludObjetos.find(
+        (u) => u.value === value,
+      );
+
+      const nextVariableData = {
+        ...variableData,
+        [name]: unidadSeleccionada || { value, label: value },
+      };
+
+      setVariableData(nextVariableData);
+      actualizarEstadoBtnRegistrar(formData, nextVariableData);
+      return;
+    }
 
     const nextVariableData = {
       ...variableData,
@@ -671,6 +707,7 @@ export default function AgendaTurnoPaciente() {
         age_turn_paci_cons_paci: "",
         age_turn_paci_cons_obse_paci: "",
         age_turn_paci_cons_link_paci: "",
+        age_turn_paci_cons_tipo_serv: "",
       }));
       setVariableEstado((prev) => ({
         ...prev,
@@ -680,6 +717,7 @@ export default function AgendaTurnoPaciente() {
         age_turn_paci_cons_paci: true,
         age_turn_paci_cons_obse_paci: true,
         age_turn_paci_cons_link_paci: true,
+        age_turn_paci_cons_tipo_serv: true,
       }));
       setBotonEstado((prev) => ({
         ...prev,
@@ -883,7 +921,7 @@ export default function AgendaTurnoPaciente() {
       response = await buscarUsuarioAdmision(tipoIden, numeIden);
       if (!response)
         throw new Error("No se pudo obtener una respuesta de la API.");
-      if (parseInt(response.data.adm_dato_paci_falt_dato) === 0) {
+      if (Number.parseInt(response.data.adm_dato_paci_falt_dato) === 0) {
         if (
           response.message.toLowerCase().includes("usuario está registrado") ||
           response.message.toLowerCase().includes("registrado en admision") ||
@@ -1182,6 +1220,7 @@ export default function AgendaTurnoPaciente() {
     paciente,
     link,
     observaciones,
+    tipoServicio,
     estadoCita,
   ) => {
     if (!id || !fechaTurno || !paciente || !estadoCita) {
@@ -1190,6 +1229,7 @@ export default function AgendaTurnoPaciente() {
       });
       return;
     }
+
     setError("");
     setSuccessMessage("");
     setReporteData((prev) => ({
@@ -1199,6 +1239,7 @@ export default function AgendaTurnoPaciente() {
       age_turn_paci_cons_paci: paciente,
       age_turn_paci_cons_link_paci: link || "",
       age_turn_paci_cons_obse_paci: observaciones || "",
+      age_turn_paci_cons_tipo_serv: Number.parseInt(tipoServicio) || "",
       estado_cita: estadoCita,
     }));
     const message = `A seleccionado el turno del paciente ${paciente}.`;
@@ -1207,10 +1248,12 @@ export default function AgendaTurnoPaciente() {
       ...prev,
       age_turn_paci_cons_link_paci: false,
       age_turn_paci_cons_obse_paci: false,
+      age_turn_paci_cons_tipo_serv: false,
     }));
     setBotonEstado((prev) => ({
       ...prev,
       btn_guardar_consulta_paciente: false,
+      btn_limpiar_reporte: false,
     }));
     setTimeout(() => setSuccessMessage(""), 10000);
     toast.success(message, { position: "bottom-right" });
@@ -1239,6 +1282,10 @@ export default function AgendaTurnoPaciente() {
     }
     setTurnoAConfirmar({ id, fechaTurno, paciente });
     setShowConfirmInasistencia(true);
+    setBotonEstado((prev) => ({
+      ...prev,
+      btn_limpiar_reporte: false,
+    }));
   };
 
   const confirmarInasistencia = async () => {
@@ -1276,12 +1323,14 @@ export default function AgendaTurnoPaciente() {
   };
 
   const handleGuardarAtencionPaciente = async () => {
-    let id, fechaTurno, link, observaciones, tipoCita;
+    let id, fechaTurno, link, observaciones, tipoServicio, tipoCita;
     id = reporteData.id_turno;
     fechaTurno = reporteData.fecha_turno;
     link = reporteData.age_turn_paci_cons_link_paci;
     observaciones = reporteData.age_turn_paci_cons_obse_paci;
+    tipoServicio = reporteData.age_turn_paci_cons_tipo_serv;
     tipoCita = reporteData.rad_but_buscar_tipo_cita;
+
     if (!id || !fechaTurno) {
       toast.error(
         "Falta de información para guardar la atención del paciente.",
@@ -1300,6 +1349,7 @@ export default function AgendaTurnoPaciente() {
         fecha_turno: fechaTurno,
         link_consulta: link,
         obse_atencion: observaciones,
+        tipo_servicio: tipoServicio,
         estado_turno: 1,
         tipo_cita: tipoCita,
       };
@@ -1349,7 +1399,7 @@ export default function AgendaTurnoPaciente() {
   const handleListarTurnos = async () => {
     let tipoEspe, unidSalu;
     tipoEspe = variableData.age_turn_paci_tipo_espe;
-    unidSalu = variableData.age_turn_paci_unid_salu;
+    unidSalu = variableData.age_turn_paci_unid_salu.label || "";
 
     if (!fechaInicio || !fechaFin || !tipoEspe || !unidSalu) {
       setError(
@@ -1370,7 +1420,12 @@ export default function AgendaTurnoPaciente() {
 
     try {
       let response;
-      response = await buscarTurnosAgendados(tipoEspe, fechaInicio, fechaFin);
+      response = await buscarTurnosAgendados(
+        tipoEspe,
+        unidSalu,
+        fechaInicio,
+        fechaFin,
+      );
       const message = response?.message || "Listar turnos!";
       setSuccessMessage(message);
       setTimeout(() => setSuccessMessage(""), 10000);
@@ -1642,6 +1697,7 @@ export default function AgendaTurnoPaciente() {
         age_turn_paci_cons_paci: "",
         age_turn_paci_cons_obse_paci: "",
         age_turn_paci_cons_link_paci: "",
+        age_turn_paci_cons_tipo_serv: "",
       }));
     }
     setVariableEstado((prev) => ({
@@ -1651,14 +1707,25 @@ export default function AgendaTurnoPaciente() {
       age_turn_paci_repo_fech_inic_fin: true,
       age_turn_paci_cons_obse_paci: true,
       age_turn_paci_cons_link_paci: true,
+      age_turn_paci_cons_tipo_serv: true,
     }));
-    setBotonEstado((prev) => ({
-      ...prev,
-      btn_reporte_turnos: true,
-      btn_descargar_reporte: true,
-      btn_guardar_consulta_paciente: true,
-      btn_limpiar_reporte: true,
-    }));
+    if (borrarTabla) {
+      setBotonEstado((prev) => ({
+        ...prev,
+        btn_reporte_turnos: true,
+        btn_descargar_reporte: true,
+        btn_guardar_consulta_paciente: true,
+        btn_limpiar_reporte: true,
+      }));
+    } else {
+      setBotonEstado((prev) => ({
+        ...prev,
+        btn_reporte_turnos: true,
+        btn_descargar_reporte: true,
+        btn_guardar_consulta_paciente: true,
+        btn_limpiar_reporte: false,
+      }));
+    }
     if (borrarTabla) {
       setPacientesAgendados([]);
     }
@@ -1780,10 +1847,16 @@ export default function AgendaTurnoPaciente() {
     { label: "Datos para Reporte", key: "reporte" },
     { label: "Datos para Consulta", key: "consulta" },
   ];
-  const allowedTabKeys =
-    role === 5
-      ? new Set(["agenda", "reporte", "consulta"])
-      : new Set(["agenda"]);
+  let allowedTabKeys = new Set();
+
+  if (role === 5) {
+    allowedTabKeys = new Set(["agenda", "reporte", "consulta"]);
+  } else if (role === 6) {
+    allowedTabKeys = new Set(["agenda"]);
+  } else if (role === 7 || role === 3) {
+    allowedTabKeys = new Set(["consulta"]);
+  }
+
   const visibleTabs = tabs.filter(({ key }) => allowedTabKeys.has(key));
 
   return (
@@ -1837,7 +1910,7 @@ export default function AgendaTurnoPaciente() {
             closeButton={false}
           />
         )}
-        {activeTab === "agenda" && (
+        {activeTab === "agenda" && (role === 5 || role === 6) && (
           <>
             <form
               onSubmit={handleSubmitSearch}
@@ -2041,7 +2114,10 @@ export default function AgendaTurnoPaciente() {
                         name="age_turn_paci_unid_salu"
                         value={variableData.age_turn_paci_unid_salu}
                         onChange={handleChangeVariable}
-                        options={allListRegisterUser.uni_unic || []}
+                        options={(allListRegisterUser.uni_unic || []).filter(
+                          (opt) =>
+                            opt.value === "000591" || opt.value === "000592",
+                        )}
                         placeholder="Seleccione la unidad de salud"
                         disabled={variableEstado["age_turn_paci_unid_salu"]}
                         variableEstado={variableEstado}
@@ -2879,7 +2955,7 @@ export default function AgendaTurnoPaciente() {
                       </>
                     )}
                   </div>
-                  <div className="md:col-span-2 flex justify-items-start mt-1">
+                  <div className="md:col-span-2 flex flex-col justify-items-start mt-1">
                     <div className="flex items-center gap-2">
                       <button
                         type="submit"
@@ -2901,6 +2977,10 @@ export default function AgendaTurnoPaciente() {
                         Descargar Turnos
                       </button>
                     </div>
+                    <span className="text-xs text-gray-500">
+                      NOTA: El archivo que se descarga es de solo los pacientes
+                      agendados, atendidos y inasistentes.
+                    </span>
                   </div>
                 </div>
               </fieldset>
@@ -2950,6 +3030,37 @@ export default function AgendaTurnoPaciente() {
                       placeholder="Link de consulta"
                       className={`${inputStyle} ${isFieldInvalid("age_turn_paci_cons_link_paci", requiredFields, reporteData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["age_turn_paci_cons_link_paci"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                       disabled={variableEstado["age_turn_paci_cons_link_paci"]}
+                    />
+                  </div>
+                  <div className={fieldClass}>
+                    <label
+                      className={labelClass}
+                      htmlFor="age_turn_paci_cons_tipo_serv"
+                    >
+                      {requiredFields.includes(
+                        "age_turn_paci_cons_tipo_serv",
+                      ) && <span className="text-red-500">* </span>}
+                      {labelMap["age_turn_paci_cons_tipo_serv"]}
+                    </label>
+                    <CustomSelect
+                      id="age_turn_paci_cons_tipo_serv"
+                      name="age_turn_paci_cons_tipo_serv"
+                      value={reporteData.age_turn_paci_cons_tipo_serv}
+                      onChange={handleChangeReporte}
+                      options={allListAgenda.age_turn_paci_cons_tipo_serv || []}
+                      placeholder="Seleccione el tipo de servicio"
+                      disabled={variableEstado["age_turn_paci_cons_tipo_serv"]}
+                      variableEstado={variableEstado}
+                      className={
+                        isFieldInvalid(
+                          "age_turn_paci_cons_tipo_serv",
+                          requiredFields,
+                          reporteData,
+                          isFieldVisible,
+                        )
+                          ? "border-2 border-red-500"
+                          : ""
+                      }
                     />
                   </div>
                   <div
@@ -3038,7 +3149,7 @@ export default function AgendaTurnoPaciente() {
                         key={registro.id}
                         className={`${tableStyles.trHover} odd:bg-white even:bg-gray-50`}
                       >
-                        <td className={`${tableStyles.td} align-top`}>
+                        <td className={tableStyles.td}>
                           <div className="flex gap-1">
                             <button
                               className={tableStyles.actionButton + " flex-1"}
@@ -3049,6 +3160,7 @@ export default function AgendaTurnoPaciente() {
                                   `${registro.adm_agen_turn_nume_iden_paci} - ${registro.adm_agen_turn_apel_nomb_paci}`,
                                   registro.adm_agen_turn_cons_link_paci,
                                   registro.adm_agen_turn_cons_obse_paci,
+                                  registro.adm_agen_turn_cons_tipo_serv,
                                   registro.adm_agen_turn_esta_cita,
                                 )
                               }
@@ -3081,8 +3193,8 @@ export default function AgendaTurnoPaciente() {
                             </button>
                           </div>
                         </td>
-                        <td className={`${tableStyles.td} align-top`}>
-                          <span className="p-1 flex flex-col items-start text-black">
+                        <td className={`${tableStyles.td} flex flex-col`}>
+                          <span className="flex flex-col items-start text-black whitespace-pre-line">
                             {registro.adm_agen_turn_fech}
                             {" - "}
                             {registro.adm_agen_turn_hora_inic}
@@ -3091,6 +3203,9 @@ export default function AgendaTurnoPaciente() {
                             {" : "}
                             {registro.adm_agen_turn_dura_cita} min
                           </span>
+                          <span>{registro.adm_agen_turn_unid_salu}</span>
+                          <span>{registro.adm_agen_turn_tipo_espe}</span>
+                          <span>{registro.adm_agen_turn_prof_cita}</span>
                         </td>
                         {Object.keys(registro)
                           .filter(
@@ -3100,6 +3215,9 @@ export default function AgendaTurnoPaciente() {
                                 "adm_agen_turn_fech",
                                 "adm_agen_turn_hora_inic",
                                 "adm_agen_turn_hora_fin",
+                                "adm_agen_turn_unid_salu",
+                                "adm_agen_turn_tipo_espe",
+                                "adm_agen_turn_prof_cita",
                                 "adm_agen_turn_dura_cita",
                                 "adm_agen_turn_rese_unic_salu",
                                 "adm_agen_turn_apel_nomb_paci",
@@ -3109,6 +3227,7 @@ export default function AgendaTurnoPaciente() {
                           )
                           .map((key) => {
                             let cellContent;
+                            let tdClass = tableStyles.td;
                             switch (key) {
                               case "adm_agen_turn_unid_salu":
                                 cellContent = (
@@ -3119,6 +3238,7 @@ export default function AgendaTurnoPaciente() {
                                     {registro[key]}
                                   </span>
                                 );
+                                tdClass = tableStyles.td3;
                                 break;
                               case "adm_agen_turn_esta_cita": {
                                 const estado =
@@ -3162,6 +3282,28 @@ export default function AgendaTurnoPaciente() {
                                   </span>
                                 );
                                 break;
+                              case "adm_agen_turn_cons_tipo_serv": {
+                                const tipoServ =
+                                  tipoServicioMap[registro[key]] || "";
+                                let color =
+                                  "bg-gray-100 text-gray-700 ring-gray-400";
+                                if (tipoServ === "CONSULTA EXTERNA") {
+                                  color =
+                                    "bg-lime-100 text-black ring-lime-400";
+                                } else if (tipoServ === "EMERGENCIA") {
+                                  color = "bg-sky-100 text-black ring-sky-400";
+                                }
+                                cellContent = (
+                                  <div>
+                                    <span
+                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ring-1 ${color}`}
+                                    >
+                                      {tipoServ}
+                                    </span>
+                                  </div>
+                                );
+                                break;
+                              }
                               default:
                                 cellContent =
                                   typeof registro[key] === "object" ? (
@@ -3181,7 +3323,7 @@ export default function AgendaTurnoPaciente() {
                                   );
                             }
                             return (
-                              <td key={key} className={tableStyles.td}>
+                              <td key={key} className={tdClass}>
                                 {cellContent}
                               </td>
                             );
@@ -3321,516 +3463,549 @@ export default function AgendaTurnoPaciente() {
             )}
           </>
         )}
-        {activeTab === "consulta" && role === 5 && (
-          <div className="mt-2 space-y-1">
-            <form
-              onSubmit={handleResultadoConsultaSubmit}
-              autoComplete="on"
-              className="w-full"
-            >
-              <fieldset className="border border-blue-200 rounded p-2 mb-1">
-                <legend className="text-lg font-semibold text-blue-600 px-2">
-                  Resultados de la Consulta del Paciente
-                </legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  <div className="col-span-full flex flex-wrap items-center gap-2 mb-2 p-1 bg-blue-50 border border-blue-200 rounded-lg shadow-sm">
-                    <span className="flex items-center gap-2 text-blue-700 font-semibold text-base">
-                      <BsSearch className="inline" />
-                      Buscar por:
-                    </span>
-                    <label
-                      htmlFor="rad_but_buscar_tipo_iden"
-                      className="inline-flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-blue-100 transition"
-                    >
-                      <input
-                        type="radio"
-                        id="rad_but_buscar_tipo_iden"
-                        name="rad_but_buscar_tipo_apel_nomb"
-                        value="1"
-                        checked={showBusquedaApellidosNombres}
-                        onChange={handleChangeResultadoConsulta}
-                        className="form-radio text-blue-600 focus:ring-2 focus:ring-blue-400"
-                      />
-                      <span className="text-gray-800 font-medium">
-                        Tipo y Número de Identificación
+        {activeTab === "consulta" &&
+          (role === 3 || role === 5 || role === 7) && (
+            <div className="mt-2 space-y-1">
+              <form
+                onSubmit={handleResultadoConsultaSubmit}
+                autoComplete="on"
+                className="w-full"
+              >
+                <fieldset className="border border-blue-200 rounded p-2 mb-1">
+                  <legend className="text-lg font-semibold text-blue-600 px-2">
+                    Resultados de la Consulta del Paciente
+                  </legend>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    <div className="col-span-full flex flex-wrap items-center gap-2 mb-2 p-1 bg-blue-50 border border-blue-200 rounded-lg shadow-sm">
+                      <span className="flex items-center gap-2 text-blue-700 font-semibold text-base">
+                        <BsSearch className="inline" />
+                        Buscar por:
                       </span>
-                    </label>
-                    <label
-                      htmlFor="rad_but_buscar_apel_nomb"
-                      className="inline-flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-blue-100 transition"
-                    >
-                      <input
-                        type="radio"
-                        id="rad_but_buscar_apel_nomb"
-                        name="rad_but_buscar_tipo_apel_nomb"
-                        value="2"
-                        checked={!showBusquedaApellidosNombres}
-                        onChange={handleChangeResultadoConsulta}
-                        className="form-radio text-blue-600 focus:ring-2 focus:ring-blue-400"
-                      />
-                      <span className="text-gray-800 font-medium">
-                        Apellidos y Nombres
-                      </span>
-                    </label>
-                  </div>
-                  {showBusquedaApellidosNombres ? (
-                    <>
-                      <div className={fieldClass}>
-                        <label
-                          className={labelClass}
-                          htmlFor="age_turn_paci_resu_cons_tipo_iden_paci"
-                        >
-                          {requiredFields.includes(
-                            "age_turn_paci_resu_cons_tipo_iden_paci",
-                          ) && <span className="text-red-500">* </span>}
-                          {labelMap["age_turn_paci_resu_cons_tipo_iden_paci"]}
-                        </label>
-                        <CustomSelect
-                          id="age_turn_paci_resu_cons_tipo_iden_paci"
-                          name="age_turn_paci_resu_cons_tipo_iden_paci"
-                          value={
-                            consultaData.age_turn_paci_resu_cons_tipo_iden_paci
-                          }
+                      <label
+                        htmlFor="rad_but_buscar_tipo_iden"
+                        className="inline-flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-blue-100 transition"
+                      >
+                        <input
+                          type="radio"
+                          id="rad_but_buscar_tipo_iden"
+                          name="rad_but_buscar_tipo_apel_nomb"
+                          value="1"
+                          checked={showBusquedaApellidosNombres}
                           onChange={handleChangeResultadoConsulta}
-                          options={
-                            allListAdmision.adm_dato_pers_tipo_iden || []
-                          }
-                          placeholder="Seleccione el tipo de identificación del paciente"
-                          disabled={
-                            variableEstado[
-                              "age_turn_paci_resu_cons_tipo_iden_paci"
-                            ]
-                          }
-                          variableEstado={variableEstado}
-                          className={
-                            isFieldInvalid(
-                              "age_turn_paci_resu_cons_tipo_iden_paci",
-                              requiredFields,
-                              consultaData,
-                              isFieldVisible,
-                            )
-                              ? "border-2 border-red-500"
-                              : ""
-                          }
+                          className="form-radio text-blue-600 focus:ring-2 focus:ring-blue-400"
                         />
-                      </div>
+                        <span className="text-gray-800 font-medium">
+                          Tipo y Número de Identificación
+                        </span>
+                      </label>
+                      <label
+                        htmlFor="rad_but_buscar_apel_nomb"
+                        className="inline-flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-blue-100 transition"
+                      >
+                        <input
+                          type="radio"
+                          id="rad_but_buscar_apel_nomb"
+                          name="rad_but_buscar_tipo_apel_nomb"
+                          value="2"
+                          checked={!showBusquedaApellidosNombres}
+                          onChange={handleChangeResultadoConsulta}
+                          className="form-radio text-blue-600 focus:ring-2 focus:ring-blue-400"
+                        />
+                        <span className="text-gray-800 font-medium">
+                          Apellidos y Nombres
+                        </span>
+                      </label>
+                    </div>
+                    {showBusquedaApellidosNombres ? (
+                      <>
+                        <div className={fieldClass}>
+                          <label
+                            className={labelClass}
+                            htmlFor="age_turn_paci_resu_cons_tipo_iden_paci"
+                          >
+                            {requiredFields.includes(
+                              "age_turn_paci_resu_cons_tipo_iden_paci",
+                            ) && <span className="text-red-500">* </span>}
+                            {labelMap["age_turn_paci_resu_cons_tipo_iden_paci"]}
+                          </label>
+                          <CustomSelect
+                            id="age_turn_paci_resu_cons_tipo_iden_paci"
+                            name="age_turn_paci_resu_cons_tipo_iden_paci"
+                            value={
+                              consultaData.age_turn_paci_resu_cons_tipo_iden_paci
+                            }
+                            onChange={handleChangeResultadoConsulta}
+                            options={
+                              allListAdmision.adm_dato_pers_tipo_iden || []
+                            }
+                            placeholder="Seleccione el tipo de identificación del paciente"
+                            disabled={
+                              variableEstado[
+                                "age_turn_paci_resu_cons_tipo_iden_paci"
+                              ]
+                            }
+                            variableEstado={variableEstado}
+                            className={
+                              isFieldInvalid(
+                                "age_turn_paci_resu_cons_tipo_iden_paci",
+                                requiredFields,
+                                consultaData,
+                                isFieldVisible,
+                              )
+                                ? "border-2 border-red-500"
+                                : ""
+                            }
+                          />
+                        </div>
+                        <div className={fieldClass}>
+                          <label
+                            className={labelClass}
+                            htmlFor="age_turn_paci_resu_cons_nume_iden_paci"
+                          >
+                            {requiredFields.includes(
+                              "age_turn_paci_resu_cons_nume_iden_paci",
+                            ) && <span className="text-red-500">* </span>}
+                            {labelMap["age_turn_paci_resu_cons_nume_iden_paci"]}
+                          </label>
+                          <input
+                            type="text"
+                            id="age_turn_paci_resu_cons_nume_iden_paci"
+                            name="age_turn_paci_resu_cons_nume_iden_paci"
+                            value={
+                              consultaData[
+                                "age_turn_paci_resu_cons_nume_iden_paci"
+                              ]
+                            }
+                            onChange={handleChangeResultadoConsulta}
+                            placeholder="Nombres del paciente"
+                            className={`${inputStyle} ${isFieldInvalid("age_turn_paci_resu_cons_nume_iden_paci", requiredFields, consultaData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["age_turn_paci_resu_cons_nume_iden_paci"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                            disabled={
+                              variableEstado[
+                                "age_turn_paci_resu_cons_nume_iden_paci"
+                              ]
+                            }
+                          />
+                        </div>
+                      </>
+                    ) : (
                       <div className={fieldClass}>
                         <label
                           className={labelClass}
-                          htmlFor="age_turn_paci_resu_cons_nume_iden_paci"
+                          htmlFor="age_turn_paci_resu_cons_apel_nomb_paci"
                         >
                           {requiredFields.includes(
-                            "age_turn_paci_resu_cons_nume_iden_paci",
+                            "age_turn_paci_resu_cons_apel_nomb_paci",
                           ) && <span className="text-red-500">* </span>}
-                          {labelMap["age_turn_paci_resu_cons_nume_iden_paci"]}
+                          {labelMap["age_turn_paci_resu_cons_apel_nomb_paci"]}
                         </label>
                         <input
                           type="text"
-                          id="age_turn_paci_resu_cons_nume_iden_paci"
-                          name="age_turn_paci_resu_cons_nume_iden_paci"
+                          id="age_turn_paci_resu_cons_apel_nomb_paci"
+                          name="age_turn_paci_resu_cons_apel_nomb_paci"
                           value={
                             consultaData[
-                              "age_turn_paci_resu_cons_nume_iden_paci"
+                              "age_turn_paci_resu_cons_apel_nomb_paci"
                             ]
                           }
                           onChange={handleChangeResultadoConsulta}
                           placeholder="Nombres del paciente"
-                          className={`${inputStyle} ${isFieldInvalid("age_turn_paci_resu_cons_nume_iden_paci", requiredFields, consultaData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["age_turn_paci_resu_cons_nume_iden_paci"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                          className={`${inputStyle} ${isFieldInvalid("age_turn_paci_resu_cons_apel_nomb_paci", requiredFields, consultaData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["age_turn_paci_resu_cons_apel_nomb_paci"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
                           disabled={
                             variableEstado[
-                              "age_turn_paci_resu_cons_nume_iden_paci"
+                              "age_turn_paci_resu_cons_apel_nomb_paci"
                             ]
                           }
                         />
                       </div>
-                    </>
-                  ) : (
+                    )}
                     <div className={fieldClass}>
                       <label
                         className={labelClass}
-                        htmlFor="age_turn_paci_resu_cons_apel_nomb_paci"
+                        htmlFor="age_turn_paci_resu_cons_fech_inic_fin"
                       >
-                        {requiredFields.includes(
-                          "age_turn_paci_resu_cons_apel_nomb_paci",
-                        ) && <span className="text-red-500">* </span>}
-                        {labelMap["age_turn_paci_resu_cons_apel_nomb_paci"]}
+                        <span className="inline-flex items-center gap-1">
+                          <svg
+                            className="w-4 h-4 text-blue-500"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          {requiredFields.includes(
+                            "age_turn_paci_resu_cons_fech_inic_fin",
+                          ) && <span className="text-red-500">* </span>}
+                          {labelMap["age_turn_paci_resu_cons_fech_inic_fin"]}
+                        </span>
                       </label>
-                      <input
-                        type="text"
-                        id="age_turn_paci_resu_cons_apel_nomb_paci"
-                        name="age_turn_paci_resu_cons_apel_nomb_paci"
-                        value={
-                          consultaData["age_turn_paci_resu_cons_apel_nomb_paci"]
-                        }
-                        onChange={handleChangeResultadoConsulta}
-                        placeholder="Nombres del paciente"
-                        className={`${inputStyle} ${isFieldInvalid("age_turn_paci_resu_cons_apel_nomb_paci", requiredFields, consultaData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["age_turn_paci_resu_cons_apel_nomb_paci"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
-                        disabled={
-                          variableEstado[
-                            "age_turn_paci_resu_cons_apel_nomb_paci"
-                          ]
-                        }
-                      />
-                    </div>
-                  )}
-                  <div className={fieldClass}>
-                    <label
-                      className={labelClass}
-                      htmlFor="age_turn_paci_resu_cons_fech_inic_fin"
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        <svg
-                          className="w-4 h-4 text-blue-500"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                        {requiredFields.includes(
-                          "age_turn_paci_resu_cons_fech_inic_fin",
-                        ) && <span className="text-red-500">* </span>}
-                        {labelMap["age_turn_paci_resu_cons_fech_inic_fin"]}
-                      </span>
-                    </label>
-                    <div className="relative w-full rounded">
-                      <input
-                        id="age_turn_paci_resu_cons_fech_inic_fin"
-                        name="age_turn_paci_resu_cons_fech_inic_fin"
-                        type="text"
-                        readOnly
-                        value={
-                          rangeResuConsInicio && rangeResuConsFin
-                            ? `${format(rangeResuConsInicio, "yyyy-MM-dd")} - ${format(rangeResuConsFin, "yyyy-MM-dd")}`
-                            : "Selecciona el rango de fechas"
-                        }
-                        onClick={() => setShowResuConsCalendar(true)}
-                        className={`${inputStyle} ${isFieldInvalid("age_turn_paci_resu_cons_fech_inic_fin", requiredFields, consultaData, isFieldVisible) && !(rangeResuConsInicio && rangeResuConsFin) ? "border-2 border-red-500" : ""} ${variableEstado["age_turn_paci_resu_cons_fech_inic_fin"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
-                        disabled={
-                          variableEstado[
-                            "age_turn_paci_resu_cons_fech_inic_fin"
-                          ]
-                        }
-                      />
-                      {rangeResuConsInicio && rangeResuConsFin && (
-                        <button
-                          type="button"
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500"
-                          onClick={() => {
-                            setRangeResuConsInicio(null);
-                            setRangeResuConsFin(null);
-                          }}
-                          title="Limpiar fechas"
-                        >
-                          X
-                        </button>
-                      )}
-                      {showResuConsCalendar && (
-                        <div
-                          ref={calendarRefResuCons}
-                          className="absolute z-50 mt-2 left-0 bg-white border border-blue-200 rounded-lg shadow-lg"
-                        >
-                          <DateRange
-                            ranges={rangeResuCons}
-                            onChange={(ranges) => {
-                              onRangeResuConsChange(ranges);
-                              setShowResuConsCalendar(false);
+                      <div className="relative w-full rounded">
+                        <input
+                          id="age_turn_paci_resu_cons_fech_inic_fin"
+                          name="age_turn_paci_resu_cons_fech_inic_fin"
+                          type="text"
+                          readOnly
+                          value={
+                            rangeResuConsInicio && rangeResuConsFin
+                              ? `${format(rangeResuConsInicio, "yyyy-MM-dd")} - ${format(rangeResuConsFin, "yyyy-MM-dd")}`
+                              : "Selecciona el rango de fechas"
+                          }
+                          onClick={() => setShowResuConsCalendar(true)}
+                          className={`${inputStyle} ${isFieldInvalid("age_turn_paci_resu_cons_fech_inic_fin", requiredFields, consultaData, isFieldVisible) && !(rangeResuConsInicio && rangeResuConsFin) ? "border-2 border-red-500" : ""} ${variableEstado["age_turn_paci_resu_cons_fech_inic_fin"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                          disabled={
+                            variableEstado[
+                              "age_turn_paci_resu_cons_fech_inic_fin"
+                            ]
+                          }
+                        />
+                        {rangeResuConsInicio && rangeResuConsFin && (
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500"
+                            onClick={() => {
+                              setRangeResuConsInicio(null);
+                              setRangeResuConsFin(null);
                             }}
-                            moveRangeOnFirstSelection={false}
-                            direction="horizontal"
-                            locale={esES}
-                            className="w-full"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="md:col-span-1 flex justify-items-start mt-1">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="submit"
-                        id="btn_resultado_consulta"
-                        name="btn_resultado_consulta"
-                        className={`${botonEstado.btn_resultado_consulta ? buttonStyleDesactivado : buttonStyleOtro}`}
-                        disabled={botonEstado.btn_resultado_consulta}
-                      >
-                        Buscar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </fieldset>
-              <div className="md:col-span-2 flex justify-center mt-1">
-                <button
-                  id="btn_limpiar_resultado_consulta"
-                  name="btn_limpiar_resultado_consulta"
-                  type="button"
-                  className={`${botonEstado.btn_limpiar_resultado_consulta ? buttonStyleDesactivado : buttonStyleCancelar}`}
-                  onClick={limpiarFormularioResultadoConsulta}
-                  disabled={botonEstado.btn_limpiar_resultado_consulta}
-                >
-                  Limpiar Todo
-                </button>
-              </div>
-            </form>
-            <div className="flex flex-col gap-1 px-1 sm:px-1.5 md:px-3 lg:px-4 py-2">
-              <h3 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                Reporte de los resultados de la consulta del paciente
-              </h3>
-            </div>
-            <div className={`${tableStyles.container} bg-white/90`}>
-              <table className={`${tableStyles.table} text-sm`}>
-                <thead className={`${tableStyles.thead}`}>
-                  <tr>
-                    {TABLE_HEADERS_RESULTADO_CONSULTA.map((header) => (
-                      <th
-                        key={header}
-                        scope="col"
-                        className={`${tableStyles.th} sticky top-0 z-10 bg-gray-50`}
-                        title={header}
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className={`${tableStyles.tbody}`}>
-                  {currentRowsResultadoConsulta.map((registro) => {
-                    return (
-                      <tr
-                        key={registro.id}
-                        className={`${tableStyles.trHover} odd:bg-white even:bg-gray-50`}
-                      >
-                        <td className={tableStyles.td}>
-                          <div className="flex flex-col items-start text-black whitespace-pre-line">
-                            <span>
-                              {registro.adm_agen_turn_fech}
-                              {" - "}
-                              {registro.adm_agen_turn_hora_inic}
-                            </span>
-                            <span>{registro.adm_agen_turn_unid_salu}</span>
-                            <span>{registro.adm_agen_turn_tipo_espe}</span>
-                            <span>{registro.adm_agen_turn_prof_cita}</span>
+                            title="Limpiar fechas"
+                          >
+                            X
+                          </button>
+                        )}
+                        {showResuConsCalendar && (
+                          <div
+                            ref={calendarRefResuCons}
+                            className="absolute z-50 mt-2 left-0 bg-white border border-blue-200 rounded-lg shadow-lg"
+                          >
+                            <DateRange
+                              ranges={rangeResuCons}
+                              onChange={(ranges) => {
+                                onRangeResuConsChange(ranges);
+                                setShowResuConsCalendar(false);
+                              }}
+                              moveRangeOnFirstSelection={false}
+                              direction="horizontal"
+                              locale={esES}
+                              className="w-full"
+                            />
                           </div>
-                        </td>
-                        {Object.keys(registro)
-                          .filter(
-                            (key) =>
-                              ![
-                                "id",
-                                "adm_agen_turn_fech",
-                                "adm_agen_turn_hora_inic",
-                                "adm_agen_turn_unid_salu",
-                                "adm_agen_turn_tipo_espe",
-                                "adm_agen_turn_prof_cita",
-                                "adm_agen_turn_apel_nomb_paci",
-                              ].includes(key),
-                          )
-                          .map((key) => {
-                            let cellContent;
-                            let tdClass = tableStyles.td;
-                            switch (key) {
-                              case "adm_agen_turn_nume_iden_paci":
-                                cellContent = (
-                                  <span
-                                    className="p-1 flex flex-col truncate items-start text-black"
-                                    title={`${registro.adm_agen_turn_nume_iden_paci} - ${registro.adm_agen_turn_apel_nomb_paci}`}
-                                  >
-                                    {registro.adm_agen_turn_nume_iden_paci}
-                                    {" - "}
-                                    {registro.adm_agen_turn_apel_nomb_paci}
-                                  </span>
-                                );
-                                break;
-                              case "adm_agen_turn_esta_cita": {
-                                const estado =
-                                  estadoTurnoMap[registro[key]] || "";
-                                let color =
-                                  "bg-gray-100 text-gray-700 ring-gray-400";
-                                if (estado === "ATENDIDO/A") {
-                                  color =
-                                    "bg-green-100 text-black ring-green-400";
-                                } else if (estado === "INASISTENCIA") {
-                                  color = "bg-red-100 text-black ring-red-400";
+                        )}
+                      </div>
+                    </div>
+                    <div className="md:col-span-1 flex justify-items-start mt-1">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="submit"
+                          id="btn_resultado_consulta"
+                          name="btn_resultado_consulta"
+                          className={`${botonEstado.btn_resultado_consulta ? buttonStyleDesactivado : buttonStyleOtro}`}
+                          disabled={botonEstado.btn_resultado_consulta}
+                        >
+                          Buscar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </fieldset>
+                <div className="md:col-span-2 flex justify-center mt-1">
+                  <button
+                    id="btn_limpiar_resultado_consulta"
+                    name="btn_limpiar_resultado_consulta"
+                    type="button"
+                    className={`${botonEstado.btn_limpiar_resultado_consulta ? buttonStyleDesactivado : buttonStyleCancelar}`}
+                    onClick={limpiarFormularioResultadoConsulta}
+                    disabled={botonEstado.btn_limpiar_resultado_consulta}
+                  >
+                    Limpiar Todo
+                  </button>
+                </div>
+              </form>
+              <div className="flex flex-col gap-1 px-1 sm:px-1.5 md:px-3 lg:px-4 py-2">
+                <h3 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                  Reporte de los resultados de la consulta del paciente
+                </h3>
+              </div>
+              <div className={`${tableStyles.container} bg-white/90`}>
+                <table className={`${tableStyles.table} text-sm`}>
+                  <thead className={`${tableStyles.thead}`}>
+                    <tr>
+                      {TABLE_HEADERS_RESULTADO_CONSULTA.map((header) => (
+                        <th
+                          key={header}
+                          scope="col"
+                          className={`${tableStyles.th} sticky top-0 z-10 bg-gray-50`}
+                          title={header}
+                        >
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className={`${tableStyles.tbody}`}>
+                    {currentRowsResultadoConsulta.map((registro) => {
+                      return (
+                        <tr
+                          key={registro.id}
+                          className={`${tableStyles.trHover} odd:bg-white even:bg-gray-50`}
+                        >
+                          <td className={tableStyles.td}>
+                            <div className="flex flex-col items-start text-black whitespace-pre-line">
+                              <span>
+                                {registro.adm_agen_turn_fech}
+                                {" - "}
+                                {registro.adm_agen_turn_hora_inic}
+                              </span>
+                              <span>{registro.adm_agen_turn_unid_salu}</span>
+                              <span>{registro.adm_agen_turn_tipo_espe}</span>
+                              <span>{registro.adm_agen_turn_prof_cita}</span>
+                            </div>
+                          </td>
+                          {Object.keys(registro)
+                            .filter(
+                              (key) =>
+                                ![
+                                  "id",
+                                  "adm_agen_turn_fech",
+                                  "adm_agen_turn_hora_inic",
+                                  "adm_agen_turn_unid_salu",
+                                  "adm_agen_turn_tipo_espe",
+                                  "adm_agen_turn_prof_cita",
+                                  "adm_agen_turn_apel_nomb_paci",
+                                ].includes(key),
+                            )
+                            .map((key) => {
+                              let cellContent;
+                              let tdClass = tableStyles.td;
+                              switch (key) {
+                                case "adm_agen_turn_nume_iden_paci":
+                                  cellContent = (
+                                    <span
+                                      className="p-1 flex flex-col truncate items-start text-black"
+                                      title={`${registro.adm_agen_turn_nume_iden_paci} - ${registro.adm_agen_turn_apel_nomb_paci}`}
+                                    >
+                                      {registro.adm_agen_turn_nume_iden_paci}
+                                      {" - "}
+                                      {registro.adm_agen_turn_apel_nomb_paci}
+                                    </span>
+                                  );
+                                  break;
+                                case "adm_agen_turn_esta_cita": {
+                                  const estado =
+                                    estadoTurnoMap[registro[key]] || "";
+                                  let color =
+                                    "bg-gray-100 text-gray-700 ring-gray-400";
+                                  if (estado === "ATENDIDO/A") {
+                                    color =
+                                      "bg-green-100 text-black ring-green-400";
+                                  } else if (estado === "INASISTENCIA") {
+                                    color =
+                                      "bg-red-100 text-black ring-red-400";
+                                  }
+                                  cellContent = (
+                                    <div>
+                                      <span
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ring-1 ${color}`}
+                                      >
+                                        {estado}
+                                      </span>
+                                    </div>
+                                  );
+                                  break;
                                 }
-                                cellContent = (
-                                  <div>
-                                    <span
-                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ring-1 ${color}`}
+                                case "adm_agen_turn_cons_link_paci":
+                                  cellContent = (
+                                    <a
+                                      href={
+                                        registro.adm_agen_turn_cons_link_paci
+                                      }
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="break-all underline text-blue-700 hover:text-blue-900"
+                                      title={
+                                        registro.adm_agen_turn_cons_link_paci
+                                      }
                                     >
-                                      {estado}
-                                    </span>
-                                  </div>
-                                );
-                                break;
-                              }
-                              case "adm_agen_turn_cons_link_paci":
-                                cellContent = (
-                                  <a
-                                    href={registro.adm_agen_turn_cons_link_paci}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="break-all underline text-blue-700 hover:text-blue-900"
-                                    title={
-                                      registro.adm_agen_turn_cons_link_paci
-                                    }
-                                  >
-                                    {registro.adm_agen_turn_cons_link_paci}
-                                  </a>
-                                );
-                                tdClass = tableStyles.td2;
-                                break;
-                              case "adm_agen_turn_cons_obse_paci":
-                                cellContent = (
-                                  <span title={registro[key]}>
-                                    {registro[key]}
-                                  </span>
-                                );
-                                tdClass = tableStyles.td3;
-                                break;
-                              default:
-                                cellContent =
-                                  typeof registro[key] === "object" ? (
-                                    <span
-                                      className="truncate block text-gray-600"
-                                      title={JSON.stringify(registro[key])}
-                                    >
-                                      {JSON.stringify(registro[key])}
-                                    </span>
-                                  ) : (
-                                    <span
-                                      className="truncate block text-gray-700"
-                                      title={registro[key]}
-                                    >
+                                      {registro.adm_agen_turn_cons_link_paci}
+                                    </a>
+                                  );
+                                  tdClass = tableStyles.td2;
+                                  break;
+                                case "adm_agen_turn_cons_obse_paci":
+                                  cellContent = (
+                                    <span title={registro[key]}>
                                       {registro[key]}
                                     </span>
                                   );
-                            }
-                            return (
-                              <td key={key} className={tdClass}>
-                                {cellContent}
-                              </td>
-                            );
-                          })}
+                                  tdClass = tableStyles.td3;
+                                  break;
+                                case "adm_agen_turn_cons_tipo_serv": {
+                                  const tipoServ =
+                                    tipoServicioMap[registro[key]] || "";
+                                  let color =
+                                    "bg-gray-100 text-gray-700 ring-gray-400";
+                                  if (tipoServ === "CONSULTA EXTERNA") {
+                                    color =
+                                      "bg-lime-100 text-black ring-lime-400";
+                                  } else if (tipoServ === "EMERGENCIA") {
+                                    color =
+                                      "bg-sky-100 text-black ring-sky-400";
+                                  }
+                                  cellContent = (
+                                    <div>
+                                      <span
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ring-1 ${color}`}
+                                      >
+                                        {tipoServ}
+                                      </span>
+                                    </div>
+                                  );
+                                  break;
+                                }
+                                default:
+                                  cellContent =
+                                    typeof registro[key] === "object" ? (
+                                      <span
+                                        className="truncate block text-gray-600"
+                                        title={JSON.stringify(registro[key])}
+                                      >
+                                        {JSON.stringify(registro[key])}
+                                      </span>
+                                    ) : (
+                                      <span
+                                        className="truncate block text-gray-700"
+                                        title={registro[key]}
+                                      >
+                                        {registro[key]}
+                                      </span>
+                                    );
+                              }
+                              return (
+                                <td key={key} className={tdClass}>
+                                  {cellContent}
+                                </td>
+                              );
+                            })}
+                        </tr>
+                      );
+                    })}
+                    {currentRowsResultadoConsulta.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={TABLE_HEADERS_RESULTADO_CONSULTA.length}
+                          className="px-4 py-8 text-center text-sm text-gray-500"
+                        >
+                          {searchTerm
+                            ? "No hay resultados para la búsqueda."
+                            : "No hay registros."}
+                        </td>
                       </tr>
-                    );
-                  })}
-                  {currentRowsResultadoConsulta.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={TABLE_HEADERS_RESULTADO_CONSULTA.length}
-                        className="px-4 py-8 text-center text-sm text-gray-500"
-                      >
-                        {searchTerm
-                          ? "No hay resultados para la búsqueda."
-                          : "No hay registros."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-between sm:items-center mt-2 px-1">
-              <div className="text-xs sm:text-sm text-gray-700">
-                Mostrando{" "}
-                <span className="font-medium">
-                  {filteredResultadoConsulta.length === 0
-                    ? 0
-                    : indexOfFirstRowResultadoConsulta + 1}
-                </span>{" "}
-                –{" "}
-                <span className="font-medium">
-                  {Math.min(
-                    indexOfLastRowResultadoConsulta,
-                    filteredResultadoConsulta.length,
-                  )}
-                </span>{" "}
-                de{" "}
-                <span className="font-medium">
-                  {filteredResultadoConsulta.length}
-                </span>
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <label
-                    htmlFor="rowsPerPage"
-                    className="text-xs text-gray-700"
-                  >
-                    Filas:
-                  </label>
-                  <select
-                    id="rowsPerPage"
-                    value={rowsPerPageResultadoConsulta}
-                    onChange={(e) =>
-                      setRowsPerPageResultadoConsulta(Number(e.target.value))
-                    }
-                    className="px-2 py-1 bg-white text-gray-700 text-sm rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-300"
-                  >
-                    {[5, 10, 20, 50, 100].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-between sm:items-center mt-2 px-1">
+                <div className="text-xs sm:text-sm text-gray-700">
+                  Mostrando{" "}
+                  <span className="font-medium">
+                    {filteredResultadoConsulta.length === 0
+                      ? 0
+                      : indexOfFirstRowResultadoConsulta + 1}
+                  </span>{" "}
+                  –{" "}
+                  <span className="font-medium">
+                    {Math.min(
+                      indexOfLastRowResultadoConsulta,
+                      filteredResultadoConsulta.length,
+                    )}
+                  </span>{" "}
+                  de{" "}
+                  <span className="font-medium">
+                    {filteredResultadoConsulta.length}
+                  </span>
                 </div>
-                <button
-                  onClick={() => setCurrentPageResultadoConsulta(1)}
-                  disabled={currentPageResultadoConsulta === 1}
-                  className="px-2.5 py-1.5 bg-white text-gray-700 text-sm rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:pointer-events-none"
-                  title="Primera página"
-                >
-                  «
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentPageResultadoConsulta((prev) =>
-                      Math.max(prev - 1, 1),
-                    )
-                  }
-                  disabled={currentPageResultadoConsulta === 1}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:pointer-events-none"
-                >
-                  Anterior
-                </button>
-                <span className="text-sm text-gray-700 px-1">
-                  Página {currentPageResultadoConsulta} de{" "}
-                  {totalPagesResultadoConsulta}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPageResultadoConsulta((prev) =>
-                      Math.min(prev + 1, totalPagesResultadoConsulta),
-                    )
-                  }
-                  disabled={
-                    currentPageResultadoConsulta === totalPagesResultadoConsulta
-                  }
-                  className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:pointer-events-none"
-                >
-                  Siguiente
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentPageResultadoConsulta(totalPagesResultadoConsulta)
-                  }
-                  disabled={
-                    currentPageResultadoConsulta === totalPagesResultadoConsulta
-                  }
-                  className="px-2.5 py-1.5 bg-white text-gray-700 text-sm rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:pointer-events-none"
-                  title="Última página"
-                >
-                  »
-                </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <label
+                      htmlFor="rowsPerPage"
+                      className="text-xs text-gray-700"
+                    >
+                      Filas:
+                    </label>
+                    <select
+                      id="rowsPerPage"
+                      value={rowsPerPageResultadoConsulta}
+                      onChange={(e) =>
+                        setRowsPerPageResultadoConsulta(Number(e.target.value))
+                      }
+                      className="px-2 py-1 bg-white text-gray-700 text-sm rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-300"
+                    >
+                      {[5, 10, 20, 50, 100].map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => setCurrentPageResultadoConsulta(1)}
+                    disabled={currentPageResultadoConsulta === 1}
+                    className="px-2.5 py-1.5 bg-white text-gray-700 text-sm rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:pointer-events-none"
+                    title="Primera página"
+                  >
+                    «
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPageResultadoConsulta((prev) =>
+                        Math.max(prev - 1, 1),
+                      )
+                    }
+                    disabled={currentPageResultadoConsulta === 1}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-sm text-gray-700 px-1">
+                    Página {currentPageResultadoConsulta} de{" "}
+                    {totalPagesResultadoConsulta}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentPageResultadoConsulta((prev) =>
+                        Math.min(prev + 1, totalPagesResultadoConsulta),
+                      )
+                    }
+                    disabled={
+                      currentPageResultadoConsulta ===
+                      totalPagesResultadoConsulta
+                    }
+                    className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    Siguiente
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPageResultadoConsulta(
+                        totalPagesResultadoConsulta,
+                      )
+                    }
+                    disabled={
+                      currentPageResultadoConsulta ===
+                      totalPagesResultadoConsulta
+                    }
+                    className="px-2.5 py-1.5 bg-white text-gray-700 text-sm rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:pointer-events-none"
+                    title="Última página"
+                  >
+                    »
+                  </button>
+                </div>
               </div>
+              <EstadoMensajes error={error} successMessage={successMessage} />
             </div>
-            <EstadoMensajes error={error} successMessage={successMessage} />
-          </div>
-        )}
+          )}
       </div>
     </div>
   );

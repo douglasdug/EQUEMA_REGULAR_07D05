@@ -3,7 +3,7 @@ import { AuthContext } from "../components/AuthContext.jsx";
 import { buttonStylePrimario } from "./EstilosCustom.jsx";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../api/conexion.api.js";
-import { listaTipoTitu } from "../components/AllList.jsx";
+import allListRegisterUser from "../api/all.list.register.user.json";
 
 const UserLoginLogout = () => {
   const { authData, setAuthData } = useContext(AuthContext);
@@ -30,7 +30,9 @@ const UserLoginLogout = () => {
   };
 
   const getFunTituName = (fun_titu) => {
-    const item = listaTipoTitu.find((tipo) => tipo.value === fun_titu);
+    const item = allListRegisterUser.listaTipoTitu.find(
+      (tipo) => tipo.value === fun_titu,
+    );
     return item ? item.label : fun_titu; // Si no se encuentra, devuelve el valor original
   };
 

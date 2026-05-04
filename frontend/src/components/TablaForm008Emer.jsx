@@ -57,14 +57,14 @@ const TablaForm008Emer = ({
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const totalPages = useMemo(
     () => Math.ceil(eniUsers.length / rowsPerPage),
-    [eniUsers.length]
+    [eniUsers.length],
   );
   const currentRows = useMemo(
     () =>
       Array.isArray(eniUsers)
         ? eniUsers.slice(indexOfFirstRow, indexOfLastRow)
         : [],
-    [eniUsers, indexOfFirstRow, indexOfLastRow]
+    [eniUsers, indexOfFirstRow, indexOfLastRow],
   );
 
   const handleEdit = (id) => {
@@ -95,7 +95,7 @@ const TablaForm008Emer = ({
 
   const confirmDelete = (user) =>
     window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${user.username}\nNombres: ${user.last_name} ${user.first_name}`
+      `¿Estás seguro de que deseas eliminar este registro?\n\nIdentificación: ${user.username}\nNombres: ${user.last_name} ${user.first_name}`,
     );
 
   const deleteUserAndUpdateState = async (username, id) => {
@@ -135,9 +135,9 @@ const TablaForm008Emer = ({
           typeof item === "object" && item !== null
             ? {
                 value: item.id || item.uni_unic,
-                label: `${item.uni_unic} - ${item.uni_unid}`.trim(),
+                label: `${item.uni_unic} ${item.uni_unid}`.trim(),
               }
-            : { value: item, label: item }
+            : { value: item, label: item },
         )
       : [],
     fun_esta: user.fun_esta === 1 ? 1 : 0,
@@ -273,7 +273,7 @@ const TablaForm008Emer = ({
                     Acciones
                   </th>
                   {Object.keys(
-                    eniUsers[0] || { UNICODIGO: "", NOMBRE: "" } // fallback para encabezados si vacío
+                    eniUsers[0] || { UNICODIGO: "", NOMBRE: "" }, // fallback para encabezados si vacío
                   )
                     .filter((key) => !excludedKeys.has(key))
                     .map((key) => (
@@ -290,7 +290,7 @@ const TablaForm008Emer = ({
               <tbody className={tableStyles.tbody}>
                 {currentRows.map((registro) => {
                   const keys = Object.keys(registro).filter(
-                    (k) => !excludedKeys.has(k)
+                    (k) => !excludedKeys.has(k),
                   );
                   return (
                     <tr key={registro.id} className={tableStyles.trHover}>
@@ -436,7 +436,7 @@ const TablaForm008Emer = ({
                   >
                     {n}
                   </button>
-                )
+                ),
               )}
             </div>
           </div>
@@ -452,7 +452,7 @@ const TablaForm008Emer = ({
         )}
         {currentRows.map((registro) => {
           const keys = Object.keys(registro).filter(
-            (k) => !excludedKeys.has(k)
+            (k) => !excludedKeys.has(k),
           );
           const primary = keys.slice(0, 6);
           const isExpanded = expandedCards[registro.id];
@@ -595,7 +595,7 @@ const TablaForm008Emer = ({
                   >
                     {n}
                   </button>
-                )
+                ),
               )}
             </div>
             <p className="text-[11px] text-gray-500">

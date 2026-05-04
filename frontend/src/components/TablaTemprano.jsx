@@ -91,7 +91,7 @@ const TablaTemprano = ({
       "NOVIEMBRE",
       "DICIEMBRE",
     ];
-    return months[parseInt(monthNumber, 10) - 1];
+    return months[Number.parseInt(monthNumber, 10) - 1];
   };
 
   // useEffect(() => {
@@ -159,7 +159,7 @@ const TablaTemprano = ({
 
   const confirmDelete = (user) => {
     return window.confirm(
-      `¿Estás seguro de que deseas eliminar este registro?\nFecha: ${user.tem_fech}`
+      `¿Estás seguro de que deseas eliminar este registro?\nFecha: ${user.tem_fech}`,
     );
   };
 
@@ -199,7 +199,7 @@ const TablaTemprano = ({
     if (user.tem_fech) {
       const [day, month, year] = user.tem_fech.split("/");
       if (day && month && year) {
-        const date = new Date(year, parseInt(month) - 1, day);
+        const date = new Date(year, Number.parseInt(month) - 1, day);
         if (!isNaN(date.getTime())) {
           formattedDate = date.toISOString().split("T")[0];
         }
@@ -440,7 +440,7 @@ const TablaTemprano = ({
                             (key) =>
                               key !== "id" &&
                               key !== "tem_tota" &&
-                              key !== "eniUser"
+                              key !== "eniUser",
                           )
                           .map((key) => {
                             let cellContent = registro[key];
