@@ -1,382 +1,588 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { getDashboardData } from "../api/conexion.api.js";
+import {
+  Bar,
+  LabelList,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Circle,
+  Tooltip as LeafletTooltip,
+} from "react-leaflet";
+import L from "leaflet";
+import { getDashboardData } from "../api/conexion.api";
 
 const AGE_GROUPS = [
-  "0-4",
-  "5-9",
-  "10-14",
-  "15-19",
-  "20-24",
-  "25-29",
-  "30-34",
-  "35-39",
-  "40-44",
-  "45-49",
-  "50-54",
-  "55-59",
-  "60-64",
-  "65-69",
-  "70-74",
-  "75-79",
-  "80+",
+  "0_edad",
+  "1_A_4",
+  "5_A_9",
+  "10_A_14",
+  "15_A_19",
+  "20_A_24",
+  "25_A_29",
+  "30_A_34",
+  "35_A_39",
+  "40_A_44",
+  "45_A_49",
+  "50_A_54",
+  "55_A_59",
+  "60_A_64",
+  "65_A_69",
+  "70_A_74",
+  "75_A_79",
+  "80_A_MAS",
 ];
 
-const thStyle = {
-  textAlign: "left",
-  padding: 10,
-  borderBottom: "1px solid #e5e7eb",
-  background: "#f9fafb",
+const AGE_LABELS = {
+  "0_edad": "0",
+  "1_A_4": "1-4",
+  "5_A_9": "5-9",
+  "10_A_14": "10-14",
+  "15_A_19": "15-19",
+  "20_A_24": "20-24",
+  "25_A_29": "25-29",
+  "30_A_34": "30-34",
+  "35_A_39": "35-39",
+  "40_A_44": "40-44",
+  "45_A_49": "45-49",
+  "50_A_54": "50-54",
+  "55_A_59": "55-59",
+  "60_A_64": "60-64",
+  "65_A_69": "65-69",
+  "70_A_74": "70-74",
+  "75_A_79": "75-79",
+  "80_A_MAS": "80+",
 };
 
-const tdStyle = {
-  padding: 10,
-  borderBottom: "1px solid #f3f4f6",
-};
+const nf = new Intl.NumberFormat("es-EC");
 
 const normalizeText = (value) =>
   String(value ?? "")
     .trim()
     .toLowerCase();
 
-const parseAgeToGroup = (value) => {
-  if (value === null || value === undefined || value === "") return "Sin dato";
-  const text = String(value).trim();
-  if (AGE_GROUPS.includes(text)) return text;
+const normalizeSex = (value) => {
+  const text = normalizeText(value);
 
-  const numeric = Number(text);
-  if (Number.isFinite(numeric)) {
-    if (numeric >= 80) return "80+";
-    const start = Math.floor(numeric / 5) * 5;
-    return `${start}-${start + 4}`;
-  }
-
-  const match = text.match(/(\d+)/);
-  if (match) {
-    const numericMatch = Number(match[1]);
-    if (numericMatch >= 80) return "80+";
-    const start = Math.floor(numericMatch / 5) * 5;
-    return `${start}-${start + 4}`;
-  }
-
-  return text;
-};
-
-const parseSex = (row) => {
-  const raw = row.sexo ?? row.sex ?? row.genero ?? row.gender ?? row.sx ?? "";
-  const text = normalizeText(raw);
-  if (["m", "masculino", "male", "h", "hombre"].includes(text))
-    return "Masculino";
-  if (["f", "femenino", "female", "mujer"].includes(text)) return "Femenino";
+  if (["hombre", "masculino", "m", "h"].includes(text)) return "Hombre";
+  if (["mujer", "femenino", "f", "fem"].includes(text)) return "Mujer";
   return "Sin dato";
 };
 
-const getCount = (row) => {
-  const candidates = [
-    row.cantidad,
-    row.total,
-    row.count,
-    row.valor,
-    row.cant,
-    row.personas,
-    row.population,
-    row.poblacion,
-  ];
-  const found = candidates.find(
-    (value) => value !== undefined && value !== null && value !== "",
-  );
-  const num = Number(found);
-  return Number.isFinite(num) ? num : 1;
+const toNumber = (value) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
 };
 
-const Dashboard = () => {
+const createAgeAccumulator = () =>
+  AGE_GROUPS.reduce((accumulator, group) => {
+    accumulator[group] = 0;
+    return accumulator;
+  }, {});
+
+const sumAgeGroups = (row, accumulator) => {
+  AGE_GROUPS.forEach((group) => {
+    accumulator[group] += toNumber(row[group]);
+  });
+};
+
+export default function Dashboard() {
+  const [allData, setAllData] = useState([]);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filters, setFilters] = useState({ can_descri: "", uni_codigo: "" });
+  const [uniCodigo, setUniCodigo] = useState("");
+  const [canDescri, setCanDescri] = useState("");
 
   useEffect(() => {
     let mounted = true;
 
-    const loadData = async () => {
+    const loadInitialData = async () => {
       try {
         setLoading(true);
-        const response = await getDashboardData();
-        const items = Array.isArray(response)
-          ? response
-          : (response?.data ?? response?.result ?? []);
-        if (mounted) setData(Array.isArray(items) ? items : []);
-      } catch (err) {
-        if (mounted)
+        const res = await getDashboardData();
+        const items = Array.isArray(res) ? res : (res?.results ?? []);
+
+        if (!mounted) return;
+
+        setAllData(items);
+        setData(items);
+        setError("");
+      } catch {
+        if (mounted) {
           setError("No se pudo cargar la información del dashboard.");
+        }
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    loadData();
+    loadInitialData();
+
     return () => {
       mounted = false;
     };
   }, []);
 
-  const filteredData = useMemo(() => {
-    return data.filter((row) => {
-      const canDescri = normalizeText(row.can_descri);
-      const uniCodigo = normalizeText(row.uni_codigo);
-      const fCan = normalizeText(filters.can_descri);
-      const fUni = normalizeText(filters.uni_codigo);
-      return (
-        (!fCan || canDescri.includes(fCan)) &&
-        (!fUni || uniCodigo.includes(fUni))
-      );
-    });
-  }, [data, filters]);
+  useEffect(() => {
+    if (!allData.length) return;
 
-  const canOptions = useMemo(
-    () =>
-      [
-        ...new Set(
-          data
-            .map((row) => String(row.can_descri ?? "").trim())
-            .filter(Boolean),
-        ),
-      ].sort(),
-    [data],
-  );
-  const uniOptions = useMemo(
-    () =>
-      [
-        ...new Set(
-          data
-            .map((row) => String(row.uni_codigo ?? "").trim())
-            .filter(Boolean),
-        ),
-      ].sort(),
-    [data],
-  );
+    if (!uniCodigo && !canDescri) {
+      setData(allData);
+      setError("");
+      return;
+    }
 
-  const pyramid = useMemo(() => {
-    const map = AGE_GROUPS.reduce(
-      (acc, group) => {
-        acc[group] = { Masculino: 0, Femenino: 0, "Sin dato": 0 };
-        return acc;
-      },
-      { "Sin dato": { Masculino: 0, Femenino: 0, "Sin dato": 0 } },
-    );
-
-    filteredData.forEach((row) => {
-      const group = parseAgeToGroup(
-        row.edad ?? row.age ?? row.rango_edad ?? row.grp_edad ?? row.grupo_edad,
-      );
-      const sex = parseSex(row);
-      const count = getCount(row);
-      if (!map[group])
-        map[group] = { Masculino: 0, Femenino: 0, "Sin dato": 0 };
-      map[group][sex] = (map[group][sex] ?? 0) + count;
+    // Filtrado local (Instantáneo y sin errores de API)
+    const filtered = allData.filter((item) => {
+      const matchUni =
+        !uniCodigo || String(item.uni_codigo) === String(uniCodigo);
+      const matchCan =
+        !canDescri || String(item.can_descri) === String(canDescri);
+      return matchUni && matchCan;
     });
 
-    const rows = [...AGE_GROUPS, "Sin dato"].map((group) => ({
-      group,
-      male: map[group]?.Masculino ?? 0,
-      female: map[group]?.Femenino ?? 0,
+    setData(filtered);
+
+    if (filtered.length === 0) {
+      setError("No se encontraron datos para los filtros seleccionados.");
+    } else {
+      setError("");
+    }
+  }, [uniCodigo, canDescri, allData]);
+
+  const uniOptions = useMemo(() => {
+    return [
+      ...new Set(
+        allData
+          .map((item) => String(item.uni_codigo ?? "").trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => Number(a) - Number(b));
+  }, [allData]);
+
+  const canOptions = useMemo(() => {
+    return [
+      ...new Set(
+        allData
+          .map((item) => String(item.can_descri ?? "").trim())
+          .filter(Boolean),
+      ),
+    ].sort();
+  }, [allData]);
+
+  const pyramidData = useMemo(() => {
+    const maleTotals = createAgeAccumulator();
+    const femaleTotals = createAgeAccumulator();
+
+    data.forEach((row) => {
+      const sex = normalizeSex(row.sexo);
+
+      if (sex === "Hombre") {
+        sumAgeGroups(row, maleTotals);
+      } else if (sex === "Mujer") {
+        sumAgeGroups(row, femaleTotals);
+      }
+    });
+
+    return AGE_GROUPS.map((key) => ({
+      age: AGE_LABELS[key] || key,
+      Hombre: -maleTotals[key],
+      Mujer: femaleTotals[key],
     }));
+  }, [data]);
 
-    const maxValue = Math.max(
-      1,
-      ...rows.flatMap((row) => [row.male, row.female]),
+  const pyramidChartData = useMemo(() => {
+    return [...pyramidData].reverse();
+  }, [pyramidData]);
+
+  const totalHombres = useMemo(() => {
+    const maleTotals = createAgeAccumulator();
+
+    data.forEach((row) => {
+      if (normalizeSex(row.sexo) === "Hombre") {
+        sumAgeGroups(row, maleTotals);
+      }
+    });
+
+    return AGE_GROUPS.reduce((sum, key) => sum + maleTotals[key], 0);
+  }, [data]);
+
+  const totalMujeres = useMemo(() => {
+    const femaleTotals = createAgeAccumulator();
+
+    data.forEach((row) => {
+      if (normalizeSex(row.sexo) === "Mujer") {
+        sumAgeGroups(row, femaleTotals);
+      }
+    });
+
+    return AGE_GROUPS.reduce((sum, key) => sum + femaleTotals[key], 0);
+  }, [data]);
+
+  const cantonSummary = useMemo(() => {
+    const map = new Map();
+
+    data.forEach((row) => {
+      const canton = String(row.can_descri ?? "").trim();
+      if (!canton) return;
+
+      if (!map.has(canton)) {
+        map.set(canton, {
+          can_descri: canton,
+          hombres: 0,
+          mujeres: 0,
+        });
+      }
+
+      const current = map.get(canton);
+      const sex = normalizeSex(row.sexo);
+      const rowTotal = AGE_GROUPS.reduce(
+        (sum, group) => sum + toNumber(row[group]),
+        0,
+      );
+
+      if (sex === "Hombre") {
+        current.hombres += rowTotal;
+      } else if (sex === "Mujer") {
+        current.mujeres += rowTotal;
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.can_descri.localeCompare(b.can_descri),
     );
-    return { rows, maxValue };
-  }, [filteredData]);
+  }, [data]);
+
+  const visibleCantonSummary = useMemo(() => {
+    return cantonSummary;
+  }, [cantonSummary]);
+
+  const maxAbsValue = useMemo(() => {
+    const values = pyramidChartData.flatMap((row) => [
+      Math.abs(row.Hombre),
+      Math.abs(row.Mujer),
+    ]);
+    return values.length > 0 ? Math.max(...values) : 100;
+  }, [pyramidChartData]);
+
+  // Icono por defecto para Leaflet (opcional, para evitar warnings)
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl:
+      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  });
+
+  const unidadesConCoordenadas = useMemo(() => {
+    return data
+      .map((row) => {
+        // latitud puede venir como "-3.560063,-80.061547" o "lat,lng"
+        const latlng = String(row.latitud ?? "").split(",");
+        if (latlng.length !== 2) return null;
+        const lat = Number.parseFloat(latlng[0]);
+        const lng = Number.parseFloat(latlng[1]);
+        if (isNaN(lat) || isNaN(lng)) return null;
+        const total = AGE_GROUPS.reduce(
+          (sum, key) => sum + toNumber(row[key]),
+          0,
+        );
+        return {
+          uni_codigo: row.uni_codigo,
+          uni_nombre: row.uni_nombre,
+          can_descri: row.can_descri,
+          parr_descr: row.parr_descr,
+          lat,
+          lng,
+          total,
+        };
+      })
+      .filter(Boolean);
+  }, [data]);
+
+  // Centro del mapa (puedes ajustar a tu zona)
+  const center = unidadesConCoordenadas.length
+    ? [unidadesConCoordenadas[0].lat, unidadesConCoordenadas[0].lng]
+    : [-3.5, -80.1];
 
   return (
-    <div
-      style={{
-        padding: 24,
-        fontFamily: "Arial, sans-serif",
-        color: "#1f2937",
-        background: "#f8fafc",
-        minHeight: "100vh",
-      }}
-    >
-      <h1 style={{ marginBottom: 8 }}>Dashboard poblacional</h1>
-      <p style={{ marginTop: 0, color: "#6b7280" }}>
-        Filtros por can_descri y uni_codigo con pirámide poblacional.
-      </p>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 12,
-          marginBottom: 24,
-        }}
-      >
-        <label style={{ display: "grid", gap: 6 }}>
-          <span>can_descri</span>
-          <select
-            value={filters.can_descri}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, can_descri: e.target.value }))
-            }
-            style={{
-              padding: 10,
-              borderRadius: 8,
-              border: "1px solid #d1d5db",
-            }}
-          >
-            <option value="">Todos</option>
-            {canOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: "grid", gap: 6 }}>
-          <span>uni_codigo</span>
-          <select
-            value={filters.uni_codigo}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, uni_codigo: e.target.value }))
-            }
-            style={{
-              padding: 10,
-              borderRadius: 8,
-              border: "1px solid #d1d5db",
-            }}
-          >
-            <option value="">Todos</option>
-            {uniOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {loading && <div>Cargando datos...</div>}
-      {error && <div style={{ color: "#b91c1c" }}>{error}</div>}
-
-      {!loading && !error && (
-        <div style={{ display: "grid", gap: 24 }}>
-          <section
-            style={{
-              background: "#fff",
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              padding: 16,
-            }}
-          >
-            <h2 style={{ marginTop: 0 }}>Pirámide poblacional</h2>
-            <div style={{ display: "grid", gap: 8 }}>
-              {pyramid.rows.map((row) => {
-                const maleWidth = `${(row.male / pyramid.maxValue) * 100}%`;
-                const femaleWidth = `${(row.female / pyramid.maxValue) * 100}%`;
-                return (
-                  <div
-                    key={row.group}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "70px 1fr 70px 1fr",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ textAlign: "right", fontSize: 12 }}>
-                      {row.group}
-                    </div>
-                    <div
-                      style={{
-                        background: "#e5e7eb",
-                        height: 18,
-                        borderRadius: 999,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: maleWidth,
-                          height: "100%",
-                          background: "#2563eb",
-                          marginLeft: "auto",
-                        }}
-                      />
-                    </div>
-                    <div
-                      style={{
-                        background: "#e5e7eb",
-                        height: 18,
-                        borderRadius: 999,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: femaleWidth,
-                          height: "100%",
-                          background: "#db2777",
-                        }}
-                      />
-                    </div>
-                    <div style={{ fontSize: 12 }}>{row.female}</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div
-              style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 12 }}
+    <div className="min-h-screen bg-slate-50 p-6 font-sans text-slate-900">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-8">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-800">
+            Dashboard poblacional
+          </h2>
+        </header>
+        <p className="mt-0 text-gray-500">
+          Pirámide por sexo con filtros por cantón y unidad.
+        </p>
+        <div className="mb-8 grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-4">
+          <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <span className="text-xs uppercase tracking-wide text-slate-500">
+              uni_codigo
+            </span>
+            <select
+              value={uniCodigo}
+              onChange={(e) => setUniCodigo(e.target.value)}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
             >
-              <span>
-                <strong style={{ color: "#2563eb" }}>■</strong> Masculino
-              </span>
-              <span>
-                <strong style={{ color: "#db2777" }}>■</strong> Femenino
-              </span>
-            </div>
-          </section>
+              <option value="">Todas las uni_codigo</option>
+              {uniOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
 
-          <section
-            style={{
-              background: "#fff",
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              padding: 16,
-            }}
-          >
-            <h2 style={{ marginTop: 0 }}>Registros filtrados</h2>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={thStyle}>can_descri</th>
-                    <th style={thStyle}>uni_codigo</th>
-                    <th style={thStyle}>sexo</th>
-                    <th style={thStyle}>edad</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData.slice(0, 20).map((row, index) => (
-                    <tr key={index}>
-                      <td style={tdStyle}>{row.can_descri ?? "-"}</td>
-                      <td style={tdStyle}>{row.uni_codigo ?? "-"}</td>
-                      <td style={tdStyle}>
-                        {row.sexo ?? row.sex ?? row.genero ?? "-"}
-                      </td>
-                      <td style={tdStyle}>
-                        {row.edad ?? row.age ?? row.rango_edad ?? "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <span className="text-xs uppercase tracking-wide text-slate-500">
+              can_descri
+            </span>
+            <select
+              value={canDescri}
+              onChange={(e) => setCanDescri(e.target.value)}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
+            >
+              <option value="">Todas las can_descri</option>
+              {canOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-      )}
+        <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Hombres
+            </div>
+            <div className="mt-2 text-3xl font-bold text-blue-600">
+              {nf.format(totalHombres)}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-pink-100 bg-gradient-to-br from-pink-50 to-white p-5 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Mujeres
+            </div>
+            <div className="mt-2 text-3xl font-bold text-pink-600">
+              {nf.format(totalMujeres)}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 shadow-sm sm:col-span-2 xl:col-span-1">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Registros
+            </div>
+            <div className="mt-2 text-3xl font-bold text-slate-800">
+              {nf.format(data.length)}
+            </div>
+          </div>
+        </div>
+        {loading && (
+          <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+            Cargando...
+          </p>
+        )}
+        {error && (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 shadow-sm">
+            {error}
+          </p>
+        )}
+        {!loading && !error && (
+          <div className="grid gap-6">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <h3 className="text-lg font-semibold text-slate-800">
+                  Pirámide poblacional 07OT05
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Distribución por sexo y grupos de edad
+                </p>
+              </div>
+              <div className="h-[620px] w-full">
+                <ResponsiveContainer>
+                  <BarChart
+                    data={pyramidChartData}
+                    layout="vertical"
+                    stackOffset="sign"
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                    barCategoryGap={2}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      type="number"
+                      domain={[-maxAbsValue, maxAbsValue]}
+                      tickFormatter={(value) => nf.format(Math.abs(value))}
+                    />
+                    <YAxis type="category" dataKey="age" width={70} />
+                    <Tooltip
+                      formatter={(value, name) => [
+                        nf.format(Math.abs(Number(value) || 0)),
+                        name,
+                      ]}
+                    />
+                    <Legend />
+
+                    <Bar
+                      dataKey="Hombre"
+                      stackId="pyramid"
+                      fill="#2563eb"
+                      radius={[10, 0, 0, 10]}
+                    >
+                      <LabelList
+                        dataKey={(entry) => {
+                          const total = Math.abs(entry.Hombre);
+                          return total > 0 ? nf.format(total) : "";
+                        }}
+                        position="insideRight"
+                        offset={10}
+                        className="fill-white text-xs font-bold"
+                      />
+                    </Bar>
+                    <Bar
+                      dataKey="Mujer"
+                      stackId="pyramid"
+                      fill="#db2777"
+                      radius={[0, 10, 10, 0]}
+                    >
+                      <LabelList
+                        dataKey={(entry) => {
+                          const total = Math.abs(entry.Mujer);
+                          return total > 0 ? nf.format(total) : "";
+                        }}
+                        position="insideRight"
+                        offset={10}
+                        className="fill-white text-xs font-bold"
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <h3 className="text-lg font-semibold text-slate-800">
+                  Totales por cantón
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Resumen de hombres, mujeres y total
+                </p>
+              </div>
+              <div className="max-h-[500px] overflow-x-auto overflow-y-auto rounded-xl border border-slate-200">
+                <table className="min-w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="sticky top-0 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <th className="px-4 py-3">can_descri</th>
+                      <th className="px-4 py-3">Hombres</th>
+                      <th className="px-4 py-3">Mujeres</th>
+                      <th className="px-4 py-3">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleCantonSummary.length > 0 ? (
+                      visibleCantonSummary.map((row) => {
+                        const total = row.hombres + row.mujeres;
+
+                        return (
+                          <tr
+                            key={row.can_descri}
+                            className="border-t border-slate-100 odd:bg-white even:bg-slate-50/60 hover:bg-indigo-50/60"
+                          >
+                            <td className="px-4 py-3 font-medium text-slate-800">
+                              {row.can_descri}
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {nf.format(row.hombres)}
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {nf.format(row.mujeres)}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-slate-800">
+                              {nf.format(total)}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr className="border-t border-slate-100">
+                        <td className="px-4 py-4 text-slate-500" colSpan={4}>
+                          No hay datos para los filtros seleccionados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <h3 className="text-lg font-semibold text-slate-800">
+                  Ubicación de unidades
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Mapa interactivo de registros con coordenadas
+                </p>
+              </div>
+              <MapContainer
+                center={center}
+                zoom={10}
+                className="h-[400px] w-full overflow-hidden rounded-xl"
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {unidadesConCoordenadas.map((u, idx) => {
+                  // Ajusta el factor para que el radio sea visualmente adecuado
+                  const radio = Math.sqrt(u.total) * 5; // Puedes ajustar el multiplicador
+
+                  return (
+                    <React.Fragment key={u.uni_codigo + u.uni_nombre + idx}>
+                      <Circle
+                        center={[u.lat, u.lng]}
+                        radius={radio}
+                        pathOptions={{
+                          color: "#2563eb",
+                          fillColor: "#2563eb",
+                          fillOpacity: 0.25,
+                        }}
+                      />
+                      <Marker position={[u.lat, u.lng]}>
+                        <Popup>
+                          Unidad Salud: <strong>{u.uni_codigo}</strong>{" "}
+                          <strong>{u.uni_nombre}</strong>
+                          <br />
+                          Cantón: {u.can_descri}
+                          <br />
+                          Parroquia: {u.parr_descr}
+                          <br />
+                          Población total: {nf.format(u.total)}
+                        </Popup>
+                      </Marker>
+                    </React.Fragment>
+                  );
+                })}
+              </MapContainer>
+            </section>
+          </div>
+        )}
+      </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

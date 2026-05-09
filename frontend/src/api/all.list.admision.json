@@ -1,12 +1,12 @@
 {
   "adm_dato_pers_tipo_iden": [
     {
-      "value": "NO IDENTIFICADO",
-      "label": "01 NO IDENTIFICADO"
+      "value": "SIN DOCUMENTO DE IDENTIFICACIÓN",
+      "label": "01 SIN DOCUMENTO DE IDENTIFICACIÓN"
     },
     {
-      "value": "CÉDULA DE IDENTIDAD",
-      "label": "02 CÉDULA DE IDENTIDAD"
+      "value": "CEDULA DE IDENTIDAD O CIUDADANÍA",
+      "label": "02 CEDULA DE IDENTIDAD O CIUDADANÍA"
     },
     {
       "value": "PASAPORTE",
@@ -17,8 +17,8 @@
       "label": "04 VISA"
     },
     {
-      "value": "CARNÉT DE REFUGIADO",
-      "label": "05 CARNÉT DE REFUGIADO"
+      "value": "CARNET DE REFUGIADO",
+      "label": "05 CARNET DE REFUGIADO"
     }
   ],
   "adm_dato_pers_esta_civi": [
@@ -8847,8 +8847,8 @@
       "label": "01 INDÍGENA"
     },
     {
-      "value": "AFROECUATORIANO/AFRODESCENDIENTE",
-      "label": "02 AFROECUATORIANO/AFRODESCENDIENTE"
+      "value": "AFRO ECUATORIANO/A AFRO DESCENDIENTE",
+      "label": "02 AFRO ECUATORIANO/A AFRO DESCENDIENTE"
     },
     {
       "value": "NEGRO/A",
@@ -9284,29 +9284,7 @@
       "value": "NO",
       "label": "02 NO"
     }
-  ],
-  "adm_dato_repr_tipo_iden": [
-    {
-      "value": "NO IDENTIFICADO",
-      "label": "01 NO IDENTIFICADO"
-    },
-    {
-      "value": "CÉDULA DE IDENTIDAD",
-      "label": "02 CÉDULA DE IDENTIDAD"
-    },
-    {
-      "value": "PASAPORTE",
-      "label": "03 PASAPORTE"
-    },
-    {
-      "value": "VISA",
-      "label": "04 VISA"
-    },
-    {
-      "value": "CARNÉT DE REFUGIADO",
-      "label": "05 CARNÉT DE REFUGIADO"
-    }
-  ],
+  ],  
   "adm_dato_repr_pare": [
     {
       "value": "JEFE/A DEL NÚCLEO",

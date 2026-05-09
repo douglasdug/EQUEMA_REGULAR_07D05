@@ -1053,7 +1053,7 @@ const Admision = ({
 
   const getOpcionesNacionalidad = (tipoId) => {
     const opciones = allListAdmision.adm_dato_naci_naci || [];
-    if (["PASAPORTE", "VISA", "CARNÉT DE REFUGIADO"].includes(tipoId)) {
+    if (["PASAPORTE", "VISA", "CARNET DE REFUGIADO"].includes(tipoId)) {
       return opciones.filter((opt) => opt.value !== "ECUATORIANO/A");
     }
     return opciones;
@@ -1475,7 +1475,7 @@ const Admision = ({
   // Nacionalidad automática para cédula ecuatoriana
   useEffect(() => {
     if (
-      formData.adm_dato_pers_tipo_iden === "CÉDULA DE IDENTIDAD" &&
+      formData.adm_dato_pers_tipo_iden === "CEDULA DE IDENTIDAD O CIUDADANÍA" &&
       formData.adm_dato_pers_nume_iden &&
       botonEstado.btnBuscar === true
     ) {
@@ -1595,18 +1595,19 @@ const Admision = ({
     };
   }, [isDirty]);
 
-  const opcionesEtniaEcuatoriano = [
-    { value: "INDÍGENA", label: "01 INDÍGENA" },
-    {
-      value: "AFROECUATORIANO/AFRODESCENDIENTE",
-      label: "02 AFROECUATORIANO/AFRODESCENDIENTE",
-    },
-    { value: "NEGRO/A", label: "03 NEGRO/A" },
-    { value: "MULATO/A", label: "04 MULATO/A" },
-    { value: "MONTUBIO/A", label: "05 MONTUBIO/A" },
-    { value: "MESTIZO/A", label: "06 MESTIZO/A" },
-    { value: "BLANCO/A", label: "07 BLANCO/A" },
-  ];
+  const opcionesEtniaEcuatoriano = useMemo(() => {
+    return (allListAdmision.adm_dato_auto_auto_etni || [])
+      .filter(
+        (item) =>
+          item.value !== "OTRO/A" &&
+          !(item.label && item.label.startsWith("08")),
+      )
+      .map((item) => ({
+        value: String(item.value),
+        label: item.label ? item.label : "",
+      }));
+  }, [allListAdmision.adm_dato_auto_auto_etni]);
+
   const opcionesEtniaOtro = [{ value: "OTRO/A", label: "08 OTRO/A" }];
 
   const getOpcionesAutoEtnia = () => {
@@ -1614,16 +1615,17 @@ const Admision = ({
     const nacionalidad = formData.adm_dato_naci_naci;
 
     if (
-      tipoId === "CÉDULA DE IDENTIDAD" ||
-      (tipoId === "NO IDENTIFICADO" && nacionalidad === "ECUATORIANO/A")
+      tipoId === "CEDULA DE IDENTIDAD O CIUDADANÍA" ||
+      (tipoId === "SIN DOCUMENTO DE IDENTIFICACIÓN" &&
+        nacionalidad === "ECUATORIANO/A")
     ) {
       return opcionesEtniaEcuatoriano;
     }
     if (
-      (tipoId === "NO IDENTIFICADO" ||
+      (tipoId === "SIN DOCUMENTO DE IDENTIFICACIÓN" ||
         tipoId === "PASAPORTE" ||
         tipoId === "VISA" ||
-        tipoId === "CARNÉT DE REFUGIADO") &&
+        tipoId === "CARNET DE REFUGIADO") &&
       nacionalidad !== "ECUATORIANO/A"
     ) {
       return opcionesEtniaOtro;
@@ -2995,7 +2997,7 @@ const Admision = ({
                       name="adm_dato_repr_tipo_iden"
                       value={formData["adm_dato_repr_tipo_iden"]}
                       onChange={handleChange}
-                      options={allListAdmision.adm_dato_repr_tipo_iden}
+                      options={allListAdmision.adm_dato_pers_tipo_iden}
                       disabled={variableEstado["adm_dato_repr_tipo_iden"]}
                       variableEstado={variableEstado}
                       className={

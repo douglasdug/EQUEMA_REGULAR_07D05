@@ -117,14 +117,14 @@ function App() {
                   <Route path="/admision/" element={<Admision />} />
                 </Route>
                 <Route
-                  element={
-                    <RequireRole
-                      allowed={[
-                        ROLES.ATENCION_FORM_008,
-                        ROLES.REPORTES_Y_ADMISION,
-                      ]}
-                    />
-                  }
+                // element={
+                //   <RequireRole
+                //     allowed={[
+                //       ROLES.ATENCION_FORM_008,
+                //       ROLES.REPORTES_Y_ADMISION,
+                //     ]}
+                //   />
+                // }
                 >
                   <Route
                     path="/form-008-emergencia/"

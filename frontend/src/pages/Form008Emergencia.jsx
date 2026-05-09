@@ -10,6 +10,7 @@ import {
   updateUnidadSaludPrincipal,
 } from "../api/conexion.api.js";
 import allListForm008 from "../api/all.list.form008.json";
+import allListAdmision from "../api/all.list.admision.json";
 import {
   validarDato,
   validarNumeroIdentificacion,
@@ -1027,7 +1028,9 @@ const Form008Emergencia = () => {
         .trim();
 
     const esOpcionNoAplica = (op) =>
-      norm(op.label).includes("NO APLICA") || norm(op.value) === "NO APLICA";
+      norm(op.label).includes(
+        "NO APLICA (CUANDO EL CIE -10 ES DE PREVENCIÓN)",
+      ) || norm(op.value) === "NO APLICA (CUANDO EL CIE -10 ES DE PREVENCIÓN)";
 
     const esOpcionPresuntivo = (op) =>
       norm(op.label).startsWith("PRESUNTIVO") ||
@@ -1675,7 +1678,7 @@ const Form008Emergencia = () => {
                     name="for_008_busc_pers_tipo_iden"
                     value={formData["for_008_busc_pers_tipo_iden"]}
                     onChange={handleChange}
-                    options={allListForm008.for_008_busc_pers_tipo_iden}
+                    options={allListAdmision.adm_dato_pers_tipo_iden}
                     disabled={variableEstado["for_008_busc_pers_tipo_iden"]}
                     variableEstado={variableEstado}
                     className={

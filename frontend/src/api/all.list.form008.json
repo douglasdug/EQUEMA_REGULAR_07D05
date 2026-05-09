@@ -1,26 +1,4 @@
-{
-    "for_008_busc_pers_tipo_iden": [
-    {
-      "value": "NO IDENTIFICADO",
-      "label": "01 NO IDENTIFICADO"
-    },
-    {
-      "value": "CÉDULA DE IDENTIDAD",
-      "label": "02 CÉDULA DE IDENTIDAD"
-    },
-    {
-      "value": "PASAPORTE",
-      "label": "03 PASAPORTE"
-    },
-    {
-      "value": "VISA",
-      "label": "04 VISA"
-    },
-    {
-      "value": "CARNÉT DE REFUGIADO",
-      "label": "05 CARNÉT DE REFUGIADO"
-    }
-  ],
+{    
   "for_008_emer_espe_prof": [
     {
       "value": "MEDICO",
@@ -10028,7 +10006,7 @@
     { "value": "PRESUNTIVO", "label": "01 PRESUNTIVO" },
     { "value": "DEFINITIVO INICIAL", "label": "02 DEFINITIVO INICIAL" },
     { "value": "DEFINITIVO INICIAL CONFIRMADO POR LABORATORIO", "label": "03 DEFINITIVO INICIAL CONFIRMADO POR LABORATORIO" },
-    { "value": "NO APLICA", "label": "04 NO APLICA" }
+    { "value": "NO APLICA (CUANDO EL CIE -10 ES DE PREVENCIÓN)", "label": "04 NO APLICA (CUANDO EL CIE -10 ES DE PREVENCIÓN)" }
   ],
   "for_008_emer_cie_10_caus_exte_diag": [
     { "value": "V01 PEATON LESIONADO POR COLISION CON VEHICULO DE PEDAL", "label": "V01 PEATON LESIONADO POR COLISION CON VEHICULO DE PEDAL" },
@@ -13736,5 +13714,9 @@
     { "value": "ALTO", "label": "01 ALTO" },
     { "value": "MEDIO", "label": "02 MEDIO" },
     { "value": "BAJO", "label": "03 BAJO" }
-  ]
+  ],
+  "for_008_emer_caus_aten": [
+    { "value": "ATENCIÓN NORMAL", "label": "01 ATENCIÓN NORMAL" },
+    { "value": "ATENCIÓN POR MANIFESTACIONES (PARO-MOVILIZACIONES )", "label": "02 ATENCIÓN POR MANIFESTACIONES (PARO-MOVILIZACIONES )" }
+  ]    
 }

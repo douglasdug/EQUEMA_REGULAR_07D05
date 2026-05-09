@@ -1,16 +1,4 @@
-{
-    "fun_tipo_iden": [
-    { "value": "NO IDENTIFICADO", "label": "01 NO IDENTIFICADO" },
-    { "value": "CÉDULA DE IDENTIDAD", "label": "02 CÉDULA DE IDENTIDAD" },
-    { "value": "PASAPORTE", "label": "03 PASAPORTE" },
-    { "value": "VISA", "label": "04 VISA" },
-    { "value": "CARNÉT DE REFUGIADO", "label": "05 CARNÉT DE REFUGIADO" }
-  ],
-  "fun_sex": [
-    { "value": "HOMBRE", "label": "01 HOMBRE" },
-    { "value": "MUJER", "label": "02 MUJER" }, 
-    { "value": "INTERSEXUAL", "label": "03 INTERSEXUAL" }
-  ],
+{      
   "fun_titu": [
     { "value": "BIOQUÍMICO MÉDICO/A", "label": "01 BIOQUÍMICO MÉDICO/A" },
     { "value": "DOCTOR/A", "label": "02 DOCTOR/A" },

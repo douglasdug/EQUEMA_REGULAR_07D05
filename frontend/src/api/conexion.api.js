@@ -1073,10 +1073,13 @@ export const contactoSoporte = async (formData) => {
 };
 
 //Funciones para el Dashboard
-export const getDashboardData = async (month, year) => {
+export const getDashboardData = async (uniCodigo = "", canDescri = "") => {
   try {
     const response = await axios.get(`${API_URL}/dashboard/`, {
-      params: { month, year },
+      params: {
+        uni_codigo: uniCodigo || undefined,
+        can_descri: canDescri || undefined,
+      },
     });
     return response.data;
   } catch (error) {

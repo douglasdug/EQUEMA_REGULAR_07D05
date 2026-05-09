@@ -338,15 +338,15 @@ const validarCarnetRefugiado = (username) => {
 
 export const validarNumeroIdentificacion = (fun_tipo_iden, username) => {
   switch (fun_tipo_iden) {
-    case "NO IDENTIFICADO":
+    case "SIN DOCUMENTO DE IDENTIFICACIÓN":
       return validarNoIdentificado(username);
-    case "CÉDULA DE IDENTIDAD":
+    case "CEDULA DE IDENTIDAD O CIUDADANÍA":
       return validarCedula(username);
     case "PASAPORTE":
       return validarPasaporte(username);
     case "VISA":
       return validarVisa(username);
-    case "CARNÉT DE REFUGIADO":
+    case "CARNET DE REFUGIADO":
       return validarCarnetRefugiado(username);
     default:
       return { valido: false };

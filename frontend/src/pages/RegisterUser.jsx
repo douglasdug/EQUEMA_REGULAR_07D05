@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { registerUser, buscarUsuarioEni } from "../api/conexion.api.js";
 import allListRegisterUser from "../api/all.list.register.user.json";
+import allListAdmision from "../api/all.list.admision.json";
 import {
   validarDato,
   validarNumeroIdentificacion,
@@ -436,7 +437,7 @@ const RegisterUser = () => {
                   name="fun_tipo_iden"
                   value={formData["fun_tipo_iden"]}
                   onChange={handleChange}
-                  options={allListRegisterUser.fun_tipo_iden}
+                  options={allListAdmision.adm_dato_pers_tipo_iden}
                   disabled={variableEstado["fun_tipo_iden"]}
                   variableEstado={variableEstado}
                   className={
@@ -581,7 +582,7 @@ const RegisterUser = () => {
                   name="fun_sex"
                   value={formData["fun_sex"]}
                   onChange={handleChange}
-                  options={allListRegisterUser.fun_sex}
+                  options={allListAdmision.adm_dato_pers_sexo}
                   disabled={variableEstado["fun_sex"]}
                   variableEstado={variableEstado}
                   className={

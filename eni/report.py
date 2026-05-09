@@ -8,7 +8,7 @@ from reportlab.lib.units import mm
 from reportlab.graphics.shapes import Drawing, String
 from reportlab.lib.styles import ParagraphStyle
 
-from .models import temprano
+# from .models import temprano
 
 
 # Función genérica para crear texto dentro de una celda
@@ -80,8 +80,7 @@ def reporteTempranoPDF(request):
         nombre_mes_siguiente = meses_espanol.get(
             mes_actual+1, "MES DESCONOCIDO")
 
-        datos_temprano = temprano.objects.filter(
-            tem_fech__month=mes_actual, eniUser_id=user_id).order_by('tem_fech', 'tem_tota')
+        # datos_temprano = temprano.objects.filter( tem_fech__month=mes_actual, eniUser_id=user_id).order_by('tem_fech', 'tem_tota')
 
         # Función para crear y estilizar la primera tabla
         def crear_tabla1(data1, col_widths1, row_heights1):

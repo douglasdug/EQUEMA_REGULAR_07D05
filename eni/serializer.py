@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import eniUser, unidad_salud, temprano, tardio, desperdicio, influenza, reporte_eni, admision_datos, form_008_emergencia, admin_agenda_turnos, registro_vacunado
+from .models import eniUser, unidad_salud, admision_datos, form_008_emergencia, admin_agenda_turnos
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
@@ -122,51 +122,6 @@ class EniUserRegistrationSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class TempranoRegistrationSerializer(serializers.ModelSerializer):
-    tem_fech = serializers.DateField(
-        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
-
-    class Meta:
-        model = temprano
-        fields = '__all__'
-
-
-class TardioRegistrationSerializer(serializers.ModelSerializer):
-    tar_fech = serializers.DateField(
-        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
-
-    class Meta:
-        model = tardio
-        fields = '__all__'
-
-
-class DesperdicioRegistrationSerializer(serializers.ModelSerializer):
-    des_fech = serializers.DateField(
-        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
-
-    class Meta:
-        model = desperdicio
-        fields = '__all__'
-
-
-class InfluenzaRegistrationSerializer(serializers.ModelSerializer):
-    inf_fech = serializers.DateField(
-        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
-
-    class Meta:
-        model = influenza
-        fields = '__all__'
-
-
-class ReporteENIRegistrationSerializer(serializers.ModelSerializer):
-    rep_fech = serializers.DateField(
-        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
-
-    class Meta:
-        model = reporte_eni
-        fields = '__all__'
-
-
 class AdmisionDatosRegistrationSerializer(serializers.ModelSerializer):
     adm_dato_admi_fech_admi = serializers.DateTimeField(
         format=DATETIME_FORMAT, input_formats=[DATETIME_FORMAT, DATE_FORMAT, 'iso-8601'])
@@ -255,10 +210,55 @@ class AdminAgendaTurnosRegistrationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class RegistroVacunadoRegistrationSerializer(serializers.ModelSerializer):
-    vac_reg_ano_mes_dia_apli = serializers.DateField(
-        format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+# class TempranoRegistrationSerializer(serializers.ModelSerializer):
+#     tem_fech = serializers.DateField(
+#         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
 
-    class Meta:
-        model = registro_vacunado
-        fields = '__all__'
+#     class Meta:
+#         model = temprano
+#         fields = '__all__'
+
+
+# class TardioRegistrationSerializer(serializers.ModelSerializer):
+#     tar_fech = serializers.DateField(
+#         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+
+#     class Meta:
+#         model = tardio
+#         fields = '__all__'
+
+
+# class DesperdicioRegistrationSerializer(serializers.ModelSerializer):
+#     des_fech = serializers.DateField(
+#         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+
+#     class Meta:
+#         model = desperdicio
+#         fields = '__all__'
+
+
+# class InfluenzaRegistrationSerializer(serializers.ModelSerializer):
+#     inf_fech = serializers.DateField(
+#         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+
+#     class Meta:
+#         model = influenza
+#         fields = '__all__'
+
+
+# class ReporteENIRegistrationSerializer(serializers.ModelSerializer):
+#     rep_fech = serializers.DateField(
+#         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+
+#     class Meta:
+#         model = reporte_eni
+#         fields = '__all__'
+
+
+# class RegistroVacunadoRegistrationSerializer(serializers.ModelSerializer):
+#     vac_reg_ano_mes_dia_apli = serializers.DateField(
+#         format=DATE_FORMAT, input_formats=[DATE_FORMAT, 'iso-8601'])
+
+#     class Meta:
+#         model = registro_vacunado
+#         fields = '__all__'
