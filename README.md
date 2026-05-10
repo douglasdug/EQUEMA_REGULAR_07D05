@@ -18,8 +18,7 @@ Requisitos
 
 Instalación rápida
 ------------------
-1. Clonar el repositorio:
-	git clone https://github.com/douglasdug/EQUEMA_REGULAR_07D05.git
+1. Clonar el repositorio
 2. Entrar al directorio del proyecto y instalar dependencias:
 	cd EQUEMA_REGULAR_07D05
 	npm install
@@ -58,7 +57,7 @@ Revisar el archivo LICENSE en el repositorio para detalles.
 
 Contacto
 -------
-Repositorio: https://github.com/douglasdug/EQUEMA_REGULAR_07D05
+Repositorio: https://github.com/douglasdug
 
 Notas
 -----
