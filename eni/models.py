@@ -170,8 +170,12 @@ class form_008_emergencia(models.Model):
     for_008_emer_diag_caus_exte = models.CharField(max_length=260, blank=True)
     for_008_emer_hosp = models.CharField(max_length=10, blank=True)
     for_008_emer_hora_aten = models.TimeField(blank=True, null=True)
+    for_008_emer_fech_naci_paci = models.DateField(blank=True, null=True)
     for_008_emer_cond_alta = models.CharField(max_length=15, blank=True)
     for_008_emer_obse = models.CharField(max_length=500, blank=True)
+    for_008_emer_nomb_hosp_refe_hosp = models.CharField(
+        max_length=100, blank=True)
+    for_008_emer_caus_aten = models.CharField(max_length=60, blank=True)
     for_008_emer_fech_repor = models.DateTimeField(auto_now=True)
     for_008_emer_resp_aten_medi = models.CharField(max_length=80, blank=True)
     for_008_emer_apoy_aten_medi = models.CharField(max_length=80, blank=True)

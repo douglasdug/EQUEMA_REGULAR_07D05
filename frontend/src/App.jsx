@@ -17,6 +17,7 @@ import Contacto from "./pages/Contacto.jsx";
 import CertificadoMedico from "./pages/CertificadoMedico.jsx";
 import AdminAgendaTurno from "./pages/AdminAgendaTurno.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Mantenimiento from "./pages/Mantenimiento.jsx";
 import RequireRole from "./routes/RequireRole.jsx";
 import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";
@@ -55,6 +56,10 @@ function Footer() {
 }
 
 function App() {
+  const modoMantenimiento = import.meta.env.VITE_MANTENIMIENTO === "true";
+  if (modoMantenimiento) {
+    return <Mantenimiento />;
+  }
   return (
     <AuthProvider>
       <Navigation />
@@ -81,16 +86,16 @@ function App() {
 
                 {/* Rutas protegidas por rol */}
                 <Route
-                  element={
-                    <RequireRole
-                      allowed={[
-                        ROLES.ADMINISTRADOR,
-                        ROLES.REPORTES,
-                        ROLES.ATENCION_FORM_008,
-                        ROLES.REPORTES_Y_ADMISION,
-                      ]}
-                    />
-                  }
+                // element={
+                //   <RequireRole
+                //     allowed={[
+                //       ROLES.ADMINISTRADOR,
+                //       ROLES.REPORTES,
+                //       ROLES.ATENCION_FORM_008,
+                //       ROLES.REPORTES_Y_ADMISION,
+                //     ]}
+                //   />
+                // }
                 >
                   <Route
                     path="/reporte-atenciones/"

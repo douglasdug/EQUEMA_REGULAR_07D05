@@ -228,8 +228,12 @@ const TablaForm008Emer = ({
     for_008_emer_diag_caus_exte: "DIAGNOSTICO (CAUSA  EXTERNA)",
     for_008_emer_hosp: "HOSPITALIZACIÓN",
     for_008_emer_hora_aten: "HORA ATENCIÓN",
+    for_008_emer_fech_naci_paci: "FECHA DE NACIMIENTO DEL PACIENTE",
     for_008_emer_cond_alta: "CONDICIÓN DEL ALTA",
     for_008_emer_obse: "OBSERVACIÓN",
+    for_008_emer_nomb_hosp_refe_hosp:
+      "NOMBRE DEL HOSPITAL AL QUE FUE REFERIDO PARA LA HOSPITALIZACIÓN",
+    for_008_emer_caus_aten: "CAUSA DE LA ATENCIÓN",
     for_008_emer_fech_repor: "FECHA DE REPORTE",
     for_008_emer_resp_aten_medi: "RESPONSABLE DE LA ATENCION MEDICA",
     for_008_emer_apoy_aten_medi: "APOYO EN LA ATENCION MEDICA",
@@ -267,11 +271,11 @@ const TablaForm008Emer = ({
             <table className={tableStyles.table}>
               <thead className={tableStyles.thead}>
                 <tr>
-                  <th
+                  {/* <th
                     className={`${tableStyles.th} sticky left-0 z-20 bg-blue-600/95 backdrop-blur`}
                   >
                     Acciones
-                  </th>
+                  </th> */}
                   {Object.keys(
                     eniUsers[0] || { UNICODIGO: "", NOMBRE: "" }, // fallback para encabezados si vacío
                   )
@@ -294,7 +298,7 @@ const TablaForm008Emer = ({
                   );
                   return (
                     <tr key={registro.id} className={tableStyles.trHover}>
-                      <td className={tableStyles.actionCol}>
+                      {/* <td className={tableStyles.actionCol}>
                         <div className="flex items-center gap-1 justify-center">
                           <button
                             className={tableStyles.actionBtn}
@@ -303,8 +307,8 @@ const TablaForm008Emer = ({
                             title="Editar registro"
                           >
                             <FaEdit size={16} />
-                          </button>
-                          {/* <button
+                          </button> */}
+                      {/* <button
                             className={tableStyles.deleteBtn}
                             aria-label="Eliminar"
                             onClick={() => handleDelete(registro.id)}
@@ -312,8 +316,8 @@ const TablaForm008Emer = ({
                           >
                             <FaTrash size={16} />
                           </button> */}
-                        </div>
-                      </td>
+                      {/* </div>
+                      </td> */}
                       {keys.map((key) => {
                         let content;
                         if (key === "for_008_emer_fech_repor") {

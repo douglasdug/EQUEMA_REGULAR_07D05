@@ -1340,32 +1340,26 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
 
         HEADERS = [
             "INSTITUCIÓN DEL SISTEMA", "UNICODIGO", "NOMBRE DEL ESTABLECIMIENTO DE SALUD", "ZONA",
-            "PROVINCIA", "CANTON", "DISTRITO", "NIVEL", "FECHA DE ATENCIÓN",
-            "TIPO DE DOCUMENTO DE IDENTIFICACIÓN", "NÚMERO DE IDENTIFICACION", "PRIMER APELLIDO",
-            "SEGUNDO APELLIDO", "PRIMER NOMBRE", "SEGUNDO NOMBRE", "SEXO", "EDAD", "CONDICIÓN DE LA EDAD",
-            "NACIONALIDAD", "ETNIA", "GRUPO PRIORITARIO", "TIPO DE SEGURO",
-            "PROVINCIA DE RECIDENCIA", "CANTON DE RECIDENCIA", "PARROQUIA DE RECIDENCIA",
-            "ESPECIALIDAD DEL PROFESIONAL", "CIE-10 (PRINCIPAL)", "DIAGNÓSTICO 1 (PRINCIPAL)",
+            "PROVINCIA", "CANTON", "DISTRITO", "NIVEL", "FECHA DE ATENCIÓN (DD/MM/AAAA)", "HORA ATENCION (HH:MM)", "FECHA DE NACIMIENTO DEL PACIENTE (DD-MM-AAA)",
+            "TIPO DE DOCUMENTO DE IDENTIFICACIÓN", "NÚMERO DE IDENTIFICACION", "PRIMER APELLIDO", "SEGUNDO APELLIDO", "PRIMER NOMBRE",
+            "SEGUNDO NOMBRE", "SEXO", "EDAD", "CONDICIÓN DE LA EDAD", "NACIONALIDAD", "ETNIA", "GRUPO PRIORITARIO", "TIPO DE SEGURO",
+            "PROVINCIA DE RECIDENCIA", "CANTON DE RECIDENCIA", "PARROQUIA DE RECIDENCIA", "ESPECIALIDAD DEL PROFESIONAL", "CIE-10 (PRINCIPAL)", "DIAGNÓSTICO 1 (PRINCIPAL)",
             "CONDICIÓN DEL DIAGNÓSTICO", "CIE-10 (CAUSA EXTERNA)", "DIAGNOSTICO (CAUSA  EXTERNA)",
-            "HOSPITALIZACIÓN", "HORA ATENCIÓN", "CONDICIÓN DEL ALTA", "OBSERVACIÓN", "ATENCION FINALIZADA",
+            "CONDICIÓN DEL ALTA", "REQUIERE HOSPITALIZACIÓN", "NOMBRE DEL HOSPITAL AL QUE FUE REFERIDO PARA LA HOSPITALIZACIÓN", "CAUSA DE ATENCIÓN", "OBSERVACIÓN", "ATENCION FINALIZADA",
             "FECHA DE REPORTE", "MEDICO QUE ATENDIO", "MEDICO QUE AYUDO", "EDAD GESTACIONAL", "RIESGO OBSTÉTRICO",
             "UNIDAD SALUD CERCANA", "DIRECCIÓN DOMICILIARIA", "TELÉFONO DE PACIENTE"
         ]
 
         FIELDS = [
             "for_008_emer_inst_sist", "for_008_emer_unic", "for_008_emer_unid", "for_008_emer_zona",
-            "for_008_emer_prov", "for_008_emer_cant", "for_008_emer_dist", "for_008_emer_nive",
-            "for_008_emer_fech_aten", "for_008_emer_tipo_docu_iden", "for_008_emer_nume_iden",
-            "for_008_emer_prim_apel", "for_008_emer_segu_apel", "for_008_emer_prim_nomb",
-            "for_008_emer_segu_nomb", "for_008_emer_sexo", "for_008_emer_edad", "for_008_emer_cond_edad",
-            "for_008_emer_naci", "for_008_emer_etni", "for_008_emer_grup_prio", "for_008_emer_tipo_segu",
-            "for_008_emer_prov_resi", "for_008_emer_cant_resi", "for_008_emer_parr_resi",
-            "for_008_emer_espe_prof", "for_008_emer_cie_10_prin", "for_008_emer_diag_prin",
+            "for_008_emer_prov", "for_008_emer_cant", "for_008_emer_dist", "for_008_emer_nive", "for_008_emer_fech_aten", "for_008_emer_hora_aten", "for_008_emer_fech_naci_paci",
+            "for_008_emer_tipo_docu_iden", "for_008_emer_nume_iden", "for_008_emer_prim_apel", "for_008_emer_segu_apel", "for_008_emer_prim_nomb",
+            "for_008_emer_segu_nomb", "for_008_emer_sexo", "for_008_emer_edad", "for_008_emer_cond_edad", "for_008_emer_naci", "for_008_emer_etni", "for_008_emer_grup_prio", "for_008_emer_tipo_segu",
+            "for_008_emer_prov_resi", "for_008_emer_cant_resi", "for_008_emer_parr_resi", "for_008_emer_espe_prof", "for_008_emer_cie_10_prin", "for_008_emer_diag_prin",
             "for_008_emer_cond_diag", "for_008_emer_cie_10_caus_exte", "for_008_emer_diag_caus_exte",
-            "for_008_emer_hosp", "for_008_emer_hora_aten", "for_008_emer_cond_alta", "for_008_emer_obse", "for_008_emer_aten_fina",
-            "for_008_emer_fech_repor", "for_008_emer_resp_aten_medi", "for_008_emer_apoy_aten_medi",
-            "for_008_emer_edad_gest", "for_008_emer_ries_obst", "for_008_emer_unid_salu_resp_segu_aten",
-            "for_008_emer_dire_domi", "for_008_emer_tele_paci"
+            "for_008_emer_cond_alta", "for_008_emer_hosp", "for_008_emer_nomb_hosp_refe_hosp", "for_008_emer_caus_aten", "for_008_emer_obse", "for_008_emer_aten_fina",
+            "for_008_emer_fech_repor", "for_008_emer_resp_aten_medi", "for_008_emer_apoy_aten_medi", "for_008_emer_edad_gest", "for_008_emer_ries_obst",
+            "for_008_emer_unid_salu_resp_segu_aten", "for_008_emer_dire_domi", "for_008_emer_tele_paci"
         ]
 
         class Echo:
@@ -1799,6 +1793,12 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         cie10_prin_diag = data.get('for_008_emer_cie_10_prin_diag', [])
         cond_diag = data.get('for_008_emer_cond_diag', [])
         cie10_secu_diag = data.get('for_008_emer_cie_10_caus_exte_diag', [])
+
+        for_008_emer_nomb_hosp_refe_hosp = data.get(
+            'for_008_emer_nomb_hosp_refe_hosp', '')
+        for_008_emer_caus_aten = data.get('for_008_emer_caus_aten', '')
+        data['for_008_emer_nomb_hosp_refe_hosp'] = for_008_emer_nomb_hosp_refe_hosp
+        data['for_008_emer_caus_aten'] = for_008_emer_caus_aten
 
         if not (len(cie10_prin_diag) == len(cond_diag) == len(cie10_secu_diag)):
             return Response(

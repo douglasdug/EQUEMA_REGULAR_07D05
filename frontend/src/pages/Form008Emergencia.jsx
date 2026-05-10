@@ -37,6 +37,7 @@ const initialState = {
   for_008_emer_nomb_esta_salu: "",
   for_008_emer_fech_aten: "",
   for_008_emer_hora_aten: "",
+  for_008_emer_fech_naci_paci: "",
   for_008_emer_edad_cond: "",
   for_008_emer_apel_comp: "",
   for_008_emer_nomb_comp: "",
@@ -58,6 +59,8 @@ const initialState = {
   for_008_emer_hosp: "",
   for_008_emer_cond_alta: "",
   for_008_emer_obse: "",
+  for_008_emer_nomb_hosp_refe_hosp: "",
+  for_008_emer_caus_aten: "",
   for_008_emer_apoy_aten_medi: "",
   for_008_emer_edad_gest: "",
   for_008_emer_ries_obst: "",
@@ -186,6 +189,7 @@ const Form008Emergencia = () => {
     for_008_emer_nomb_esta_salu: true,
     for_008_emer_fech_aten: true,
     for_008_emer_hora_aten: true,
+    for_008_emer_fech_naci_paci: true,
     for_008_emer_edad_cond: true,
     for_008_emer_apel_comp: true,
     for_008_emer_nomb_comp: true,
@@ -207,6 +211,8 @@ const Form008Emergencia = () => {
     for_008_emer_hosp: true,
     for_008_emer_cond_alta: true,
     for_008_emer_obse: true,
+    for_008_emer_nomb_hosp_refe_hosp: true,
+    for_008_emer_caus_aten: true,
     for_008_emer_apoy_aten_medi: true,
     for_008_emer_edad_gest: true,
     for_008_emer_ries_obst: true,
@@ -243,6 +249,8 @@ const Form008Emergencia = () => {
     "for_008_emer_cie_10_caus_exte_diag",
     "for_008_emer_hosp",
     "for_008_emer_cond_alta",
+    "for_008_emer_nomb_hosp_refe_hosp",
+    "for_008_emer_caus_aten",
     // "for_008_emer_edad_gest",
     // "for_008_emer_ries_obst",
   ];
@@ -275,6 +283,9 @@ const Form008Emergencia = () => {
     for_008_emer_hosp: "HOSPITALIZACIÓN:",
     for_008_emer_cond_alta: "CONDICIÓN DEL ALTA:",
     for_008_emer_obse: "OBSERVACIÓN:",
+    for_008_emer_nomb_hosp_refe_hosp:
+      "NOMBRE DEL HOSPITAL AL QUE FUE REFERIDO PARA LA HOSPITALIZACIÓN:",
+    for_008_emer_caus_aten: "CAUSA DE LA ATENCIÓN:",
     for_008_emer_apoy_aten_medi: "APOYO EN LA ATENCION MEDICA:",
     for_008_emer_edad_gest: "EDAD GESTACIONAL:",
     for_008_emer_ries_obst: "RIESGO OBSTETRICO:",
@@ -452,6 +463,7 @@ const Form008Emergencia = () => {
       id_admision_datos: data?.id_admision_datos || data?.id || "",
       adm_dato_naci_fech_naci: data?.adm_dato_naci_fech_naci || "",
       for_008_emer_edad_cond: calcularEdad(data?.adm_dato_naci_fech_naci),
+      for_008_emer_fech_naci_paci: data?.adm_dato_naci_fech_naci || "",
 
       // Datos personales
       for_008_emer_apel_comp: apellidos,
@@ -586,6 +598,8 @@ const Form008Emergencia = () => {
       for_008_emer_hosp: false,
       for_008_emer_cond_alta: false,
       for_008_emer_obse: false,
+      for_008_emer_nomb_hosp_refe_hosp: false,
+      for_008_emer_caus_aten: false,
       for_008_emer_apoy_aten_medi: false,
       for_008_emer_edad_gest: false,
       for_008_emer_ries_obst: false,
@@ -2557,6 +2571,85 @@ const Form008Emergencia = () => {
                 />
               </fieldset>
             </div>
+          </fieldset>
+          <fieldset className="border border-blue-200 rounded p-2 mb-1">
+            <legend className="text-lg font-semibold text-blue-600 px-2">
+              Datos adicionales de la atencion.
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div
+                className={`${fieldClass} sm:col-span-2 md:col-span-2 lg:col-span-2`}
+              >
+                <label
+                  className={labelClass}
+                  htmlFor="for_008_emer_nomb_hosp_refe_hosp"
+                >
+                  {requiredFields.includes(
+                    "for_008_emer_nomb_hosp_refe_hosp",
+                  ) && <span className="text-red-500">* </span>}
+                  {labelMap["for_008_emer_nomb_hosp_refe_hosp"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_nomb_hosp_refe_hosp"
+                  name="for_008_emer_nomb_hosp_refe_hosp"
+                  value={formData["for_008_emer_nomb_hosp_refe_hosp"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_nomb_hosp_refe_hosp}
+                  disabled={variableEstado["for_008_emer_nomb_hosp_refe_hosp"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_nomb_hosp_refe_hosp",
+                      requiredFields,
+                      formData,
+                      isFieldVisible,
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                  isLargeList={false}
+                  placeholder="Escriba para buscar Unidad que fue referido..."
+                  minSearchLength={2}
+                  maxResults={100}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_caus_aten">
+                  {requiredFields.includes("for_008_emer_caus_aten") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_caus_aten"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_caus_aten"
+                  name="for_008_emer_caus_aten"
+                  value={formData["for_008_emer_caus_aten"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_caus_aten}
+                  disabled={variableEstado["for_008_emer_caus_aten"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_caus_aten",
+                      requiredFields,
+                      formData,
+                      isFieldVisible,
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                  isLargeList={false}
+                  placeholder="Escriba para buscar Causa de Atencion..."
+                  minSearchLength={2}
+                  maxResults={100}
+                />
+              </div>
+            </div>
+            <span className="text-xs text-gray-500">
+              Nota: Este campo debe completarse únicamente cuando el paciente
+              sea referido a otra unidad de salud y se prevea su hospitalización
+              en dicha unidad. En caso contrario, se deberá colocar “NO APLICA”.
+            </span>
           </fieldset>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
             <fieldset className="border border-blue-200 rounded p-2 mb-1">
