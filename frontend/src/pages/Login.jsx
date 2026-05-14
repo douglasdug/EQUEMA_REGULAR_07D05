@@ -147,9 +147,15 @@ export default function Login() {
     } catch (error) {
       formData.password = "";
       const errorMessage = getErrorMessage(error);
-      setError(errorMessage);
-      setTimeout(() => setError(""), 8000);
-      toast.error(errorMessage, { position: "bottom-right" });
+      let intentos = "";
+      if (error.response?.data?.attempts !== undefined) {
+        intentos = `Intentos fallidos: ${error.response.data.attempts} de ${error.response.data.max_attempts}`;
+      }
+      setError(`${errorMessage}${intentos ? " - " + intentos : ""}`);
+      setTimeout(() => setError(""), 15000);
+      toast.error(`${errorMessage}${intentos ? " - " + intentos : ""}`, {
+        position: "bottom-right",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -226,13 +232,14 @@ export default function Login() {
             closeButton={false}
           />
         )}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="on">
           <InputField
             htmlFor="username"
             label={labelMap["username"]}
             type="text"
             name="username"
             id="username"
+            autoComplete="username"
             value={formData.username}
             onChange={handleChange}
             placeholder="Cedula de Identidad"
@@ -276,7 +283,6 @@ export default function Login() {
                 ? "bg-gray-400 text-gray-100 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
-            onClick={handleSubmit}
             disabled={botonEstado.btnLogin}
           >
             {isLoading ? "Ingresando..." : "Login"}

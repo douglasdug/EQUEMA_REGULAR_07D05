@@ -141,7 +141,7 @@ axios.interceptors.response.use(
       } catch (e) {
         console.error("Error al refrescar el token:", e);
         clearAuthData();
-        window.location.href = "/login/";
+        globalThis.location.href = "/login/";
       }
     }
     return Promise.reject(error);

@@ -146,6 +146,8 @@ class form_008_emergencia(models.Model):
     for_008_emer_dist = models.CharField(max_length=10, blank=True)
     for_008_emer_nive = models.CharField(max_length=10, blank=True)
     for_008_emer_fech_aten = models.DateField(blank=True, null=True)
+    for_008_emer_hora_aten = models.TimeField(blank=True, null=True)
+    for_008_emer_fech_naci_paci = models.DateField(blank=True, null=True)
     for_008_emer_tipo_docu_iden = models.CharField(max_length=40, blank=True)
     for_008_emer_nume_iden = models.CharField(max_length=25, blank=True)
     for_008_emer_prim_apel = models.CharField(max_length=40, blank=True)
@@ -168,17 +170,15 @@ class form_008_emergencia(models.Model):
     for_008_emer_cond_diag = models.CharField(max_length=50, blank=True)
     for_008_emer_cie_10_caus_exte = models.CharField(max_length=10, blank=True)
     for_008_emer_diag_caus_exte = models.CharField(max_length=260, blank=True)
-    for_008_emer_hosp = models.CharField(max_length=10, blank=True)
-    for_008_emer_hora_aten = models.TimeField(blank=True, null=True)
-    for_008_emer_fech_naci_paci = models.DateField(blank=True, null=True)
     for_008_emer_cond_alta = models.CharField(max_length=15, blank=True)
-    for_008_emer_obse = models.CharField(max_length=500, blank=True)
+    for_008_emer_hosp = models.CharField(max_length=10, blank=True)
     for_008_emer_nomb_hosp_refe_hosp = models.CharField(
         max_length=100, blank=True)
     for_008_emer_caus_aten = models.CharField(max_length=60, blank=True)
-    for_008_emer_fech_repor = models.DateTimeField(auto_now=True)
     for_008_emer_resp_aten_medi = models.CharField(max_length=80, blank=True)
     for_008_emer_apoy_aten_medi = models.CharField(max_length=80, blank=True)
+    for_008_emer_obse = models.CharField(max_length=500, blank=True)
+    for_008_emer_fech_repor = models.DateTimeField(auto_now=True)
     for_008_emer_edad_gest = models.DecimalField(
         max_digits=4,
         decimal_places=1,

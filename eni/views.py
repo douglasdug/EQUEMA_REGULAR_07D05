@@ -78,15 +78,40 @@ class UserLoginAPIView(GenericAPIView):
     serializer_class = UserLoginSerializer
 
     def post(self, request, *args, **kwargs):
+        username = request.data.get('username', '').strip()
+        cache_key = f"login_attempts_{username}"
+        attempts = cache.get(cache_key, 0)
+
+        # Si supera el límite, bloquea el login
+        if attempts >= 5:
+            return Response(
+                {"error": "Demasiados intentos fallidos. Intenta de nuevo en 15 minutos."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        serializer = CustomUserSerializer(user)
-        token = RefreshToken.for_user(user)
-        data = serializer.data
-        data["tokens"] = {"refresh": str(
-            token), "access": str(token.access_token)}
-        return Response(data, status=status.HTTP_200_OK)
+        try:
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data['user']
+            # Si el login es exitoso, resetea el contador
+            cache.delete(cache_key)
+            serializer = CustomUserSerializer(user)
+            token = RefreshToken.for_user(user)
+            data = serializer.data
+            data["tokens"] = {"refresh": str(
+                token), "access": str(token.access_token)}
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception:
+            # Si falla, incrementa el contador y bloquea por 15 minutos
+            cache.set(cache_key, attempts + 1, timeout=900)  # 900s = 15min
+            return Response(
+                {
+                    "error": "Usuario o contraseña incorrectos.",
+                    "attempts": attempts + 1,
+                    "max_attempts": 5
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
 
 class UserLogoutAPIView(GenericAPIView):
@@ -545,8 +570,8 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         """
         GET /eni-user/buscar-usuario-id-unidad-salud/
         """
-        # id_eni_user = getattr(request.user, 'id', None)
-        id_eni_user = 2  # Solo para pruebas, luego se cambia por el id del usuario autenticado
+        id_eni_user = getattr(request.user, 'id', None)
+        # id_eni_user = 2  # Solo para pruebas, luego se cambia por el id del usuario autenticado
         # Primera búsqueda en eniUser
         try:
             user_data = eniUser.objects.get(
@@ -699,8 +724,8 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
 
     def update(self, request, pk=None, *args, **kwargs):
         data = request.data.copy()
-        # eni_user_id = pk
-        eni_user_id = 2  # Solo para pruebas, luego se cambia por el id del usuario autenticado
+        eni_user_id = pk
+        # eni_user_id = 2  # Solo para pruebas, luego se cambia por el id del usuario autenticado
         if not eni_user_id:
             return Response({"error": "El parámetro 'id' es requerido para actualizar el registro!"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1172,8 +1197,8 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         """
         GET /form-008-emergencia/listar-atenciones-form-008/        
         """
-        # id_eni_user = getattr(request.user, 'id', None)
-        id_eni_user = 2  # SOLO PARA PRUEBAS, QUITAR ESTA LÍNEA EN PRODUCCIÓN
+        id_eni_user = getattr(request.user, 'id', None)
+        # id_eni_user = 2  # SOLO PARA PRUEBAS, QUITAR ESTA LÍNEA EN PRODUCCIÓN
         try:
             if not id_eni_user:
                 return Response(
@@ -1253,9 +1278,8 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         """
         GET /form-008-emergencia/reporte-atenciones-csv/?for_008_emer_fech_aten_min=YYYY-MM-DD&for_008_emer_fech_aten_max=YYYY-MM-DD        
         """
-        # 1) Parámetros
-        # id_eni_user = getattr(request.user, 'id', None)
-        id_eni_user = 2  # SOLO PARA PRUEBAS, QUITAR ESTA LÍNEA EN PRODUCCIÓN
+        id_eni_user = getattr(request.user, 'id', None)
+        # id_eni_user = 2  # SOLO PARA PRUEBAS, QUITAR ESTA LÍNEA EN PRODUCCIÓN
         fecha_min_str = request.query_params.get("for_008_emer_fech_aten_min")
         fecha_max_str = request.query_params.get("for_008_emer_fech_aten_max")
         form_008_user_rol = getattr(request.user, 'fun_admi_rol', None)
@@ -1272,7 +1296,6 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 2) Validar user_rol y requerir id_eni_user solo si user_rol == 3
         if str(form_008_user_rol) not in ('1', '2', '4'):
             return Response(
                 {"detail": "user_rol inválido. Valores permitidos: 1 o 2."},
@@ -1284,7 +1307,6 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 3) Parsear y validar formato de fechas
         try:
             start_date = datetime.strptime(fecha_min_str, "%Y-%m-%d").date()
             end_date = datetime.strptime(fecha_max_str, "%Y-%m-%d").date()
@@ -1294,7 +1316,6 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 4) Validaciones de rango
         if start_date > end_date:
             return Response(
                 {"detail": "Fecha de inicio no puede ser mayor que fecha de fin."},
@@ -1306,7 +1327,6 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 5) Preparar filtros (Date vs DateTime con zona horaria)
         fecha_field_name = "for_008_emer_fech_aten"
         try:
             field = form_008_emergencia._meta.get_field(fecha_field_name)
@@ -1323,7 +1343,6 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             start_filter = start_date
             end_filter = end_date
 
-        # 6) Query según user_rol
         base_qs = (
             form_008_emergencia.objects
             .filter(**{f"{fecha_field_name}__range": (start_filter, end_filter)})
@@ -1737,8 +1756,8 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        # id_eni_user = getattr(request.user, 'id', None)
-        id_eni_user = 2  # SOLO PARA PRUEBAS, QUITAR ESTA LÍNEA EN PRODUCCIÓN
+        id_eni_user = getattr(request.user, 'id', None)
+        # id_eni_user = 2  # SOLO PARA PRUEBAS, QUITAR ESTA LÍNEA EN PRODUCCIÓN
         medic_apoll_id = data.get('for_008_emer_apoy_aten_medi', '')
         eni_user = self.get_eni_user(id_eni_user)
 
@@ -1769,15 +1788,21 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
         data['for_008_emer_nume_iden'] = nume_iden
 
         # Edad y condición
-        edad_cond_str = data.get('for_008_emer_edad_cond', '').strip()
-        parts = edad_cond_str.split(' ')
-        edad_numero = parts[0] if parts and parts[0] else ''
-        edad_cond = (parts[1].strip().upper() if len(parts) > 1 else '')
-        edad_cond = {'AÑO/S': 'AÑO/S', 'MES/ES': 'MES/ES',
-                     'DIA/S': 'DIA/S'}.get(edad_cond, edad_cond)
-        if edad_numero == '0':
-            edad_numero = '1'
-            edad_cond = 'HORA/S'
+        edad_cond_str = data.get('for_008_emer_edad_cond', '').strip().upper()
+        # Buscar el primer grupo de número + unidad (AÑO/S, MES/ES, DIA/S, HORA/S)
+        match = re.search(
+            r'(\d+)\s*(AÑO/S|MES/ES|DIA/S|HORA/S)', edad_cond_str)
+        if match:
+            edad_numero = match.group(1)
+            edad_cond = match.group(2)
+            edad_cond = {'AÑO/S': 'AÑO/S', 'MES/ES': 'MES/ES',
+                         'DIA/S': 'DIA/S', 'HORA/S': 'HORA/S'}.get(edad_cond, edad_cond)
+            if edad_numero == '0':
+                edad_numero = '1'
+                edad_cond = 'HORA/S'
+        else:
+            edad_numero = ''
+            edad_cond = ''
         data['for_008_emer_edad'] = edad_numero
         data['for_008_emer_cond_edad'] = edad_cond
 
@@ -1953,8 +1978,8 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
         """
         GET /admin-agenda-turnos/pacientes-agendados/?tipo_especialidad=<ESPECIALIDAD>&tipo_cita=<TIPO_CITA>&fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
         """
-        # id_eni_user = getattr(request.user, 'id', None)
-        id_eni_user = 2  # Solo para pruebas, luego se cambia por el id del usuario autenticado
+        id_eni_user = getattr(request.user, 'id', None)
+        # id_eni_user = 2  # Solo para pruebas, luego se cambia por el id del usuario autenticado
 
         tipo_espe = request.query_params.get('tipo_especialidad', None)
         tipo_cita = int(request.query_params.get('tipo_cita', None))

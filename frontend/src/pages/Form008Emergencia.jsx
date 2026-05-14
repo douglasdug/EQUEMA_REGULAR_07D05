@@ -28,6 +28,33 @@ import Loader from "../components/Loader.jsx";
 import TablaAtencionesForm008 from "../components/TablaAtencionesForm008.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import esES from "date-fns/locale/es";
+import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
+import {
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  addMinutes,
+  isBefore,
+  addDays,
+  isAfter,
+  set,
+} from "date-fns";
+import { toZonedTime, format as formatTz } from "date-fns-tz";
+
+const locales = { es: esES };
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+  getDay,
+  locales,
+});
+const timeZoneEC = "America/Guayaquil";
+const nowEC = toZonedTime(new Date(), timeZoneEC);
+const fechaActualEC = formatTz(nowEC, "yyyy-MM-dd", { timeZone: timeZoneEC });
+const horaActualEC = formatTz(nowEC, "HH:mm", { timeZone: timeZoneEC });
 
 const initialState = {
   id_eniUser: null,
@@ -92,10 +119,15 @@ function calcularEdad(fechaNacimientoStr) {
   }
 
   const partes = [];
-  if (años > 0) partes.push(`${años} AÑO`);
-  if (meses > 0) partes.push(`${meses} MES`);
-  if (dias > 0) partes.push(`${dias} DIA`);
-  if (partes.length === 0) partes.push("0 DIA");
+  if (años > 0) partes.push(`${años} AÑO/S`);
+  if (meses > 0) partes.push(`${meses} MES/ES`);
+  if (dias > 0) partes.push(`${dias} DIA/S`);
+  if (partes.length === 0) {
+    // Calcular diferencia en horas
+    const diffMs = hoy - fechaNacimiento;
+    const horas = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60)));
+    partes.push(`${horas} HORA/S`);
+  }
 
   return partes.join(" ");
 }
@@ -136,10 +168,15 @@ function calcularEdadConFechaReferencia(
   }
 
   const partes = [];
-  if (años > 0) partes.push(`${años} AÑO`);
-  if (meses > 0) partes.push(`${meses} MES`);
-  if (dias > 0) partes.push(`${dias} DIA`);
-  if (partes.length === 0) partes.push("0 DIA");
+  if (años > 0) partes.push(`${años} AÑO/S`);
+  if (meses > 0) partes.push(`${meses} MES/ES`);
+  if (dias > 0) partes.push(`${dias} DIA/S`);
+  if (partes.length === 0) {
+    // Calcular diferencia en horas
+    const diffMs = fechaReferencia - fechaNacimiento;
+    const horas = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60)));
+    partes.push(`${horas} HORA/S`);
+  }
 
   return partes.join(" ");
 }
@@ -157,14 +194,14 @@ const Form008Emergencia = () => {
   const [isBuscar, setIsBuscar] = useState(false);
   const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [edad, setEdad] = useState("");
-  function toISODateString(date) {
-    return date.toISOString().slice(0, 10);
+
+  function restarDias(fechaStr, dias) {
+    const fecha = new Date(fechaStr + "T00:00:00"); // Asegura formato ISO
+    fecha.setDate(fecha.getDate() - dias);
+    return fecha.toISOString().slice(0, 10);
   }
-  const fechaHoraSistema = new Date();
-  const fechaActual = toISODateString(fechaHoraSistema);
-  const fechaMinima = toISODateString(
-    new Date(fechaHoraSistema.getTime() - 7 * 24 * 60 * 60 * 1000),
-  ); // 7 días * 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
+  const fechaMinima = restarDias(fechaActualEC, 7);
+
   const [refreshTable, setRefreshTable] = useState(0);
   const [isIndicacionesFocused, setIsIndicacionesFocused] = useState(false);
   const [unidadSaludList, setUnidadSaludList] = useState([]);
@@ -316,7 +353,9 @@ const Form008Emergencia = () => {
     return "Error desconocido";
   };
 
-  const handleSearch = async () => {
+  const handleSearch = async (event) => {
+    event.preventDefault();
+    if (isLoading) return;
     let tipoId, numIden;
     tipoId = formData.for_008_busc_pers_tipo_iden;
     numIden = formData.for_008_busc_pers_nume_iden;
@@ -337,12 +376,9 @@ const Form008Emergencia = () => {
       return;
     }
 
-    if (!numIden) {
-      toast.error("Por favor, ingrese una identificación.", {
-        position: "bottom-right",
-      });
-      return;
-    }
+    setError("");
+    setSuccessMessage("");
+
     const resultado = validarNumeroIdentificacion(tipoId, numIden);
     if (!resultado.valido) {
       setError(resultado.mensaje);
@@ -351,6 +387,7 @@ const Form008Emergencia = () => {
       return;
     }
     try {
+      setIsLoading(true);
       const response = await buscarUsuarioAdmision(tipoId, numIden);
       if (!response)
         throw new Error("No se pudo obtener una respuesta de la API.");
@@ -402,6 +439,8 @@ const Form008Emergencia = () => {
         });
         setShowConfirmModal(true);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -425,19 +464,8 @@ const Form008Emergencia = () => {
       .join(" / ");
   }
 
-  // Helper: formatear HH:mm
-  function formatHora(date = new Date()) {
-    return `${date.getHours().toString().padStart(2, "0")}:${date
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}`;
-  }
-
   // Helper: mapear respuesta de admisión a los campos del formulario
   function mapAdmisionToFormData(data, now = new Date()) {
-    const horaActual = formatHora(now);
-    const fechaActual = now.toISOString().slice(0, 10);
-
     const apellidos = [
       data?.adm_dato_pers_apel_prim,
       data?.adm_dato_pers_apel_segu,
@@ -456,8 +484,8 @@ const Form008Emergencia = () => {
 
     return {
       // Fecha/hora de atención
-      for_008_emer_hora_aten: horaActual,
-      for_008_emer_fech_aten: fechaActual,
+      for_008_emer_hora_aten: horaActualEC,
+      for_008_emer_fech_aten: fechaActualEC,
 
       // Datos de identificación/adm
       id_admision_datos: data?.id_admision_datos || data?.id || "",
@@ -613,8 +641,10 @@ const Form008Emergencia = () => {
     const actualizarFechaNacimiento = (val, name) => {
       if (name === "for_008_emer_fech_aten") {
         // Validar la fecha
-        if (value < fechaMinima || value > fechaActual) {
-          setError(`La fecha debe estar entre ${fechaMinima} y ${fechaActual}`);
+        if (value < fechaMinima || value > fechaActualEC) {
+          setError(
+            `La fecha debe estar entre ${fechaMinima} y ${fechaActualEC}`,
+          );
           setTimeout(() => setError(""), 5000);
           return;
         }
@@ -875,11 +905,11 @@ const Form008Emergencia = () => {
     e.preventDefault();
     if (isLoading) return;
 
-    setIsLoading(true);
     setError("");
     setSuccessMessage("");
 
     try {
+      setIsLoading(true);
       let response;
       if (isEditing) {
         response = await updateForm008Emer(formData);
@@ -933,24 +963,14 @@ const Form008Emergencia = () => {
     setIsEditing(false);
   };
 
+  const isFechaAtencionInvalida =
+    formData["for_008_emer_fech_aten"] &&
+    (formData["for_008_emer_fech_aten"] < fechaMinima ||
+      formData["for_008_emer_fech_aten"] > fechaActualEC);
+
   useEffect(() => {
     checkFormValidity();
   }, [formData, error]);
-
-  useEffect(() => {
-    // Actualiza la hora cada 60s cuando el campo está habilitado
-    if (variableEstado.for_008_emer_hora_aten === false) {
-      const update = () =>
-        setFormData((prev) => ({
-          ...prev,
-          for_008_emer_hora_aten: formatHora(),
-        }));
-
-      update(); // sincroniza inmediatamente
-      const id = setInterval(update, 60000);
-      return () => clearInterval(id);
-    }
-  }, [variableEstado.for_008_emer_hora_aten]);
 
   const opcionesCIE10Permitidas = allListForm008.for_008_emer_cie_10_prin_diag;
   const opcionesCIE10PermitidasExterno =
@@ -1670,7 +1690,7 @@ const Form008Emergencia = () => {
             closeButton={false}
           />
         )}
-        <form onSubmit={handleSubmit} className="w-full">
+        <form onSubmit={handleSubmit} className="w-full" autoComplete="on">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             <fieldset className="border border-blue-200 rounded p-2 mb-1 sm:col-span-2 md:col-span-2 lg:col-span-2">
               <legend className="text-lg font-semibold text-blue-600 px-2">
@@ -1892,7 +1912,7 @@ const Form008Emergencia = () => {
                   placeholder="Información es requerida"
                   required
                   min={fechaMinima}
-                  max={fechaActual}
+                  max={fechaActualEC}
                   className={`${inputStyle} ${
                     isFieldInvalid(
                       "for_008_emer_fech_aten",
@@ -1909,6 +1929,15 @@ const Form008Emergencia = () => {
                   }`}
                   disabled={variableEstado["for_008_emer_fech_aten"]}
                 />
+                {formData["for_008_emer_fech_aten"] &&
+                  !(
+                    formData["for_008_emer_fech_aten"] >= fechaMinima &&
+                    formData["for_008_emer_fech_aten"] <= fechaActualEC
+                  ) && (
+                    <span className="text-red-600 text-xs font-semibold block mt-1">
+                      La fecha debe estar entre {fechaMinima} y {fechaActualEC}.
+                    </span>
+                  )}
                 <span className="ml-1 text-blue-800 text-sm font-semibold">
                   Solo hasta 7 dias antes de la fecha actual.
                 </span>
@@ -2645,10 +2674,11 @@ const Form008Emergencia = () => {
                 />
               </div>
             </div>
-            <span className="text-xs text-gray-500">
+            <span className="text-sm text-gray-700">
               Nota: Este campo debe completarse únicamente cuando el paciente
               sea referido a otra unidad de salud y se prevea su hospitalización
-              en dicha unidad. En caso contrario, se deberá colocar “NO APLICA”.
+              en dicha unidad. En caso contrario, se deberá colocar{" "}
+              <span className="font-semibold text-red-600">NO APLICA</span>.
             </span>
           </fieldset>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
