@@ -18,7 +18,8 @@ export default function Mantenimiento() {
           Estamos en mantenimiento
         </h1>
         <p className="text-base md:text-lg font-normal text-slate-700 bg-white/80 rounded-lg px-4 py-2 mx-auto max-w-xl shadow">
-          En este momento estamos realizando mejoras y ajustes en la plataforma.
+          En este momento estamos realizando mejoras y ajustes en la plataforma
+          SIRA.
           <br />
           Te pedimos disculpas por las molestias. Por favor, vuelve a intentarlo
           más tarde.
@@ -28,8 +29,8 @@ export default function Mantenimiento() {
             Tiempo estimado de mantenimiento: 3 hora
           </span>
           <br />
-          La página web no estará disponible el 10 de mayo de 2026, desde las
-          19:00 hasta las 22:00, debido a trabajos de mantenimiento.
+          La página web no estará disponible el 15 de mayo de 2026, desde las
+          00:00 hasta las 03:00, debido a trabajos de mantenimiento.
         </p>
       </div>
     </div>

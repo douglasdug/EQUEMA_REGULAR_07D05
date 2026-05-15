@@ -1,6 +1,6 @@
 import "./App.css";
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Navigation } from "./components/Navigation.jsx";
 import Home from "./pages/Home.jsx";
 import RegisterUser from "./pages/RegisterUser.jsx";
@@ -57,7 +57,14 @@ function Footer() {
 
 function App() {
   const modoMantenimiento = import.meta.env.VITE_MANTENIMIENTO === "true";
-  if (modoMantenimiento) {
+  const location = useLocation();
+  const rutasPermitidas = [
+    "/login/",
+    "/admision/",
+    "/form-008-emergencia/",
+    "/reporte-atenciones/",
+  ];
+  if (modoMantenimiento && !rutasPermitidas.includes(location.pathname)) {
     return <Mantenimiento />;
   }
   return (
