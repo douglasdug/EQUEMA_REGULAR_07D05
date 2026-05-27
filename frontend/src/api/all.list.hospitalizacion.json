@@ -1,0 +1,38 @@
+{
+    "hosp_admi_tipo_serv":[
+    {
+        "value": "HOSPITALIZACION",
+        "label": "01 HOSPITALIZACION"
+    },
+    {
+        "value": "EMERGENCIA",
+        "label": "02 EMERGENCIA"
+    }    
+    ],
+    "hosp_admi_espe":[
+    {
+        "value": "MEDICINA INTERNA",
+        "label": "27 MEDICINA INTERNA"
+    },
+    {
+        "value": "PEDIATRIA",
+        "label": "41 PEDIATRIA"
+    },
+    {
+        "value": "GINECOLOGIA",
+        "label": "54 GINECOLOGIA"
+    },
+    {
+        "value": "OBSTETRICIA",
+        "label": "04 OBSTETRICIA"
+    },
+    {
+        "value": "CIRUGIA GENERAL",
+        "label": "05 CIRUGIA GENERAL"
+    },
+    {
+        "value": "OTRO",
+        "label": "06 OTRO"
+    }
+    ]
+}

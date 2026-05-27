@@ -19,7 +19,11 @@ import {
   Tooltip as LeafletTooltip,
 } from "react-leaflet";
 import L from "leaflet";
-import { getDashboardData } from "../api/conexion.api";
+import {
+  getDashboardDataPoblacion,
+  getDashboardDataEmergenciaProduccionMes,
+  getDashboardDataEmergenciaProduccionCie10,
+} from "../api/conexion.api";
 
 const AGE_GROUPS = [
   "0_edad",
@@ -103,13 +107,58 @@ export default function Dashboard() {
   const [uniCodigo, setUniCodigo] = useState("");
   const [canDescri, setCanDescri] = useState("");
 
+  const [emergenciaMes, setEmergenciaMes] = useState([]);
+  const [loadingEmergenciaMes, setLoadingEmergenciaMes] = useState(true);
+  const [errorEmergenciaMes, setErrorEmergenciaMes] = useState("");
+  const MESES = [
+    "",
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+  const mesesUnicos = Array.from(
+    new Set(emergenciaMes.map((row) => row.mes)),
+  ).sort((a, b) => a - b);
+  const unidades = Array.from(
+    new Map(
+      emergenciaMes.map((row) => [row.unic, row.nomb_esta_salu]),
+    ).entries(),
+  );
+
+  const tablaPivote = unidades.map(([unic, nomb_esta_salu]) => {
+    const fila = { unic, nomb_esta_salu };
+    let total = 0;
+    mesesUnicos.forEach((mes) => {
+      const encontrado = emergenciaMes.find(
+        (r) => r.unic === unic && r.mes === mes,
+      );
+      fila[mes] = encontrado ? encontrado.total : 0;
+      total += fila[mes];
+    });
+    fila.total = total;
+    return fila;
+  });
+
+  const [emergenciaCie10, setEmergenciaCie10] = useState([]);
+  const [loadingEmergenciaCie10, setLoadingEmergenciaCie10] = useState(true);
+  const [errorEmergenciaCie10, setErrorEmergenciaCie10] = useState("");
+
   useEffect(() => {
     let mounted = true;
 
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const res = await getDashboardData();
+        const res = await getDashboardDataPoblacion();
         const items = Array.isArray(res) ? res : (res?.results ?? []);
 
         if (!mounted) return;
@@ -161,6 +210,35 @@ export default function Dashboard() {
       setError("");
     }
   }, [uniCodigo, canDescri, allData]);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoadingEmergenciaMes(true);
+    getDashboardDataEmergenciaProduccionMes()
+      .then((res) => {
+        if (!mounted) return;
+        setEmergenciaMes(Array.isArray(res) ? res : (res?.results ?? []));
+        setErrorEmergenciaMes("");
+      })
+      .catch(() => {
+        if (mounted)
+          setErrorEmergenciaMes("No se pudo cargar la producción mensual.");
+      })
+      .finally(() => {
+        if (mounted) setLoadingEmergenciaMes(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setLoadingEmergenciaCie10(true);
+    getDashboardDataEmergenciaProduccionCie10()
+      .then((res) => setEmergenciaCie10(res))
+      .catch(() => setErrorEmergenciaCie10("Error al cargar CIE-10"))
+      .finally(() => setLoadingEmergenciaCie10(false));
+  }, []);
 
   const uniOptions = useMemo(() => {
     return [
@@ -316,6 +394,68 @@ export default function Dashboard() {
   const center = unidadesConCoordenadas.length
     ? [unidadesConCoordenadas[0].lat, unidadesConCoordenadas[0].lng]
     : [-3.5, -80.1];
+
+  let emergenciaMesContent;
+  if (loadingEmergenciaMes) {
+    emergenciaMesContent = <p className="text-slate-500">Cargando...</p>;
+  } else if (errorEmergenciaMes) {
+    emergenciaMesContent = <p className="text-red-600">{errorEmergenciaMes}</p>;
+  } else {
+    emergenciaMesContent = (
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3">Código</th>
+              <th className="px-4 py-3">Establecimiento</th>
+              {mesesUnicos.map((mes) => (
+                <th key={mes} className="px-4 py-3">
+                  {MESES[mes]}
+                </th>
+              ))}
+              <th className="px-4 py-3">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tablaPivote.length > 0 ? (
+              tablaPivote.map((row, idx) => (
+                <tr
+                  key={row.unic + "-" + idx}
+                  className="border-t border-slate-100 odd:bg-white even:bg-slate-50/60"
+                >
+                  <td className="px-4 py-3">{row.unic}</td>
+                  <td className="px-4 py-3">{row.nomb_esta_salu}</td>
+                  {mesesUnicos.map((mes) => (
+                    <td
+                      key={mes}
+                      className="px-4 py-3 font-semibold text-slate-800"
+                    >
+                      {nf.format(row[mes])}
+                    </td>
+                  ))}
+                  <td className="px-4 py-3 font-bold text-indigo-700">
+                    {nf.format(row.total)}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={2 + mesesUnicos.length + 1}
+                  className="px-4 py-4 text-slate-500"
+                >
+                  No hay datos.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        <span className="mt-2 block text-left text-xs italic text-slate-700">
+          FUENTE: MATRIZ DE EMERGENCIA DE ENERO A ABRIL 2026
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 font-sans text-slate-900">
@@ -473,6 +613,9 @@ export default function Dashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+              <span className="mt-2 block text-left text-xs italic text-slate-700">
+                FUENTE: MATRIZ DE POBLACION INEC 2026
+              </span>
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
@@ -529,6 +672,9 @@ export default function Dashboard() {
                   </tbody>
                 </table>
               </div>
+              <span className="mt-2 block text-left text-xs italic text-slate-700">
+                FUENTE: MATRIZ DE POBLACION INEC 2026
+              </span>
             </section>
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -579,6 +725,82 @@ export default function Dashboard() {
                   );
                 })}
               </MapContainer>
+              <span className="mt-2 block text-left text-xs italic text-slate-700">
+                FUENTE: MATRIZ DE POBLACION INEC 2026
+              </span>
+            </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                Producción mensual por unidad y mes
+              </h3>
+              {emergenciaMesContent}
+            </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 mt-6">
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                Top 10 diagnósticos CIE-10
+              </h3>
+              {loadingEmergenciaCie10 && (
+                <p className="text-slate-500">Cargando...</p>
+              )}
+              {errorEmergenciaCie10 && (
+                <p className="text-red-600">{errorEmergenciaCie10}</p>
+              )}
+              {!loadingEmergenciaCie10 && !errorEmergenciaCie10 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <th className="px-4 py-3">#</th>
+                        <th className="px-4 py-3">CIE-10</th>
+                        <th className="px-4 py-3">Diagnóstico principal</th>
+                        <th className="px-4 py-3">Hombre</th>
+                        <th className="px-4 py-3">Mujer</th>
+                        <th className="px-4 py-3">Intersexual</th>
+                        <th className="px-4 py-3">Total</th>
+                        <th className="px-4 py-3">%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {emergenciaCie10.length > 0 ? (
+                        emergenciaCie10.map((row, idx) => (
+                          <tr
+                            key={row["CIE-10"] + "-" + idx}
+                            className="border-t border-slate-100 odd:bg-white even:bg-slate-50/60"
+                          >
+                            <td className="px-4 py-3">{row.N}</td>
+                            <td className="px-4 py-3">{row["CIE-10"]}</td>
+                            <td className="px-4 py-3">
+                              {row.DIAGNOSTICO_PRINCIPAL || row.diga_prin}
+                            </td>
+                            <td className="px-4 py-3">
+                              {nf.format(row.HOMBRE)}
+                            </td>
+                            <td className="px-4 py-3">
+                              {nf.format(row.MUJER)}
+                            </td>
+                            <td className="px-4 py-3">
+                              {nf.format(row.INTERSEXUAL)}
+                            </td>
+                            <td className="px-4 py-3 font-bold text-indigo-700">
+                              {nf.format(row.TOTAL)}
+                            </td>
+                            <td className="px-4 py-3">{row["%"]}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-4 text-slate-500">
+                            No hay datos.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                  <span className="mt-2 block text-left text-xs italic text-slate-700">
+                    FUENTE: MATRIZ DE EMERGENCIA DE ENERO A ABRIL 2026
+                  </span>
+                </div>
+              )}
             </section>
           </div>
         )}

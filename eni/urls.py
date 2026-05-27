@@ -19,6 +19,7 @@ router.register(r'form-008-emergencia',
                 Form008EmergenciaRegistrationAPIView, 'form-008-emergencia')
 router.register(r'admin-agenda-turnos',
                 AdminAgendaTurnosRegistrationAPIView, 'admin-agenda-turnos')
+router.register(r'dashboard', DashboardAPIView, basename='dashboard')
 
 urlpatterns = [
     path('v1/', include(router.urls)),
@@ -34,6 +35,5 @@ urlpatterns = [
          ChangePasswordTokenAPIView.as_view(), name='new_password_reset'),
     path('v1/firmar-pdf/', FirmarPDFAPIView.as_view(), name='firmar-pdf'),
     path('v1/contacto/', ContactoAPIView.as_view(), name='contacto'),
-    path('v1/dashboard/', DashboardAPIView.as_view(), name='dashboard'),
     # path('v1/reporte/pdf/', reporteTempranoPDF, name='reporte-temprano-pdf'),
 ]

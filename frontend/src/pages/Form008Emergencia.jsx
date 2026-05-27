@@ -612,7 +612,7 @@ const Form008Emergencia = () => {
       for_008_emer_naci: true,
       for_008_emer_etni: true,
       for_008_emer_grup_prio: true,
-      for_008_emer_tipo_segu: true,
+      for_008_emer_tipo_segu: false,
       for_008_emer_prov_resi: true,
       for_008_emer_cant_resi: true,
       for_008_emer_parr_resi: true,
@@ -2217,15 +2217,16 @@ const Form008Emergencia = () => {
                   )}
                   {labelMap["for_008_emer_tipo_segu"]}
                 </label>
-                <input
-                  type="text"
+                <CustomSelect
                   id="for_008_emer_tipo_segu"
                   name="for_008_emer_tipo_segu"
-                  value={formData["for_008_emer_tipo_segu"]}
+                  value={formData.for_008_emer_tipo_segu}
                   onChange={handleChange}
-                  placeholder="Información es requerida"
-                  required
-                  className={`${inputStyle} ${
+                  options={allListAdmision.adm_dato_adic_tipo_segu || []}
+                  placeholder="Seleccione el tipo de seguro"
+                  disabled={variableEstado["for_008_emer_tipo_segu"]}
+                  variableEstado={variableEstado}
+                  className={
                     isFieldInvalid(
                       "for_008_emer_tipo_segu",
                       requiredFields,
@@ -2234,13 +2235,20 @@ const Form008Emergencia = () => {
                     )
                       ? "border-2 border-red-500"
                       : ""
-                  } ${
-                    variableEstado["for_008_emer_tipo_segu"]
-                      ? "bg-gray-200 text-gray-700 cursor-no-drop"
-                      : "bg-white text-gray-700 cursor-pointer"
-                  }`}
-                  disabled={variableEstado["for_008_emer_tipo_segu"]}
+                  }
                 />
+                <span className="ml-1 text-gray-600 text-sm font-semibold">
+                  Consultar en el siguiente link para saber si el paciente es
+                  asegurado{" "}
+                  <a
+                    href="https://coberturasalud.msp.gob.ec/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    https://coberturasalud.msp.gob.ec/
+                  </a>
+                </span>
               </div>
               <div className={fieldClass}>
                 <label className={labelClass} htmlFor="for_008_emer_prov_resi">

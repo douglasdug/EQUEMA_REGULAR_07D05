@@ -1073,7 +1073,10 @@ export const contactoSoporte = async (formData) => {
 };
 
 //Funciones para el Dashboard
-export const getDashboardData = async (uniCodigo = "", canDescri = "") => {
+export const getDashboardDataPoblacion = async (
+  uniCodigo = "",
+  canDescri = "",
+) => {
   try {
     const response = await axios.get(`${API_URL}/dashboard/`, {
       params: {
@@ -1085,7 +1088,55 @@ export const getDashboardData = async (uniCodigo = "", canDescri = "") => {
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
-        "Error fetching dashboard data:",
+        "Error fetching dashboard data poblacion:",
+        error.response ? error.response.data : error.message,
+      );
+    }
+    throw error;
+  }
+};
+
+export const getDashboardDataEmergenciaProduccionMes = async (
+  uniCodigo = "",
+) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/dashboard/emergencia-produccion-mes/`,
+      {
+        params: {
+          uni_codigo: uniCodigo || undefined,
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching dashboard data emergencia produccion de mes:",
+        error.response ? error.response.data : error.message,
+      );
+    }
+    throw error;
+  }
+};
+
+export const getDashboardDataEmergenciaProduccionCie10 = async (
+  uniCodigo = "",
+) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/dashboard/emergencia-produccion-cie10/`,
+      {
+        params: {
+          uni_codigo: uniCodigo || undefined,
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "Error fetching dashboard data emergencia produccion de cie10:",
         error.response ? error.response.data : error.message,
       );
     }
