@@ -48,6 +48,7 @@ export function Navigation() {
     { to: "/contacto/", label: "Contacto", roles: ["public"] },
     // { to: "/medico/", label: "Certificado Médico", roles: ["public"] },
     { to: "/dashboard/", label: "Dashboard", roles: ["public"] },
+    { to: "/hospitalizacion/", label: "Hospitalización", roles: ["public"] },
   ];
 
   const canSee = (rolesArr) =>

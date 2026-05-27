@@ -45,7 +45,7 @@ import {
   BsPersonFillX,
   BsSearch,
 } from "react-icons/bs";
-import { da, el, id, tr } from "date-fns/locale";
+import { da, el, id, tr, se } from "date-fns/locale";
 import {
   format,
   parse,
@@ -60,7 +60,6 @@ import {
 import { toZonedTime, format as formatTz } from "date-fns-tz";
 import esES from "date-fns/locale/es";
 import { DateRange } from "react-date-range";
-import { se } from "date-fns/locale";
 
 const timeZoneEC = "America/Guayaquil";
 const nowEC = toZonedTime(new Date(), timeZoneEC);
@@ -889,10 +888,11 @@ export default function AgendaTurnoPaciente() {
 
   const handleSubmitSearch = async (event) => {
     event.preventDefault();
-    if (isLoading) return;
+
     let tipoIden, numeIden;
     tipoIden = formData.age_turn_paci_tipo_iden;
     numeIden = formData.age_turn_paci_nume_iden;
+    if (isLoading) return;
 
     if (!textoSeguro(tipoIden) || !textoSeguro(numeIden)) {
       const mensaje =

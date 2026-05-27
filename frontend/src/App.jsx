@@ -18,6 +18,7 @@ import CertificadoMedico from "./pages/CertificadoMedico.jsx";
 import AdminAgendaTurno from "./pages/AdminAgendaTurno.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Mantenimiento from "./pages/Mantenimiento.jsx";
+import Hospitalizacion from "./pages/Hospitalizacion.jsx";
 import RequireRole from "./routes/RequireRole.jsx";
 import { ROLES } from "./auth/roles.js";
 import { AuthProvider } from "./components/AuthContext.jsx";
@@ -56,17 +57,17 @@ function Footer() {
 }
 
 function App() {
-  const modoMantenimiento = import.meta.env.VITE_MANTENIMIENTO === "true";
-  const location = useLocation();
-  const rutasPermitidas = [
-    "/login/",
-    "/admision/",
-    "/form-008-emergencia/",
-    "/reporte-atenciones/",
-  ];
-  if (modoMantenimiento && !rutasPermitidas.includes(location.pathname)) {
-    return <Mantenimiento />;
-  }
+  // const modoMantenimiento = import.meta.env.VITE_MANTENIMIENTO === "true";
+  // const location = useLocation();
+  // const rutasPermitidas = [
+  //   "/login/",
+  //   "/admision/",
+  //   "/form-008-emergencia/",
+  //   "/reporte-atenciones/",
+  // ];
+  // if (modoMantenimiento && !rutasPermitidas.includes(location.pathname)) {
+  //   return <Mantenimiento />;
+  // }
   return (
     <AuthProvider>
       <Navigation />
@@ -90,6 +91,7 @@ function App() {
 
                 <Route path="/medico/" element={<CertificadoMedico />} />
                 <Route path="/dashboard/" element={<Dashboard />} />
+                <Route path="/hospitalizacion/" element={<Hospitalizacion />} />
 
                 {/* Rutas protegidas por rol */}
                 <Route
