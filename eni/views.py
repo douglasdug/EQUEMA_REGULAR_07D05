@@ -1195,7 +1195,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='listar-atenciones-form-008')
     def listar_atenciones_form_008(self, request):
         """
-        GET /form-008-emergencia/listar-atenciones-form-008/        
+        GET /form-008-emergencia/listar-atenciones-form-008/
         """
         id_eni_user = getattr(request.user, 'id', None)
         # id_eni_user = 2  # SOLO PARA PRUEBAS, QUITAR ESTA LÍNEA EN PRODUCCIÓN
@@ -1227,7 +1227,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='listar-atenciones-paciente')
     def listar_atenciones_paciente(self, request):
         """
-        GET /form-008-emergencia/listar-atenciones-paciente/?admision_datos=<id_admision_datos>&month=<month>&year=<year>        
+        GET /form-008-emergencia/listar-atenciones-paciente/?admision_datos=<id_admision_datos>&month=<month>&year=<year>
         """
         mes_form_008 = request.query_params.get("month")
         year_form_008 = request.query_params.get("year")
@@ -1276,7 +1276,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='reporte-atenciones-csv')
     def reporte_atenciones_csv(self, request):
         """
-        GET /form-008-emergencia/reporte-atenciones-csv/?for_008_emer_fech_aten_min=YYYY-MM-DD&for_008_emer_fech_aten_max=YYYY-MM-DD        
+        GET /form-008-emergencia/reporte-atenciones-csv/?for_008_emer_fech_aten_min=YYYY-MM-DD&for_008_emer_fech_aten_max=YYYY-MM-DD
         """
         id_eni_user = getattr(request.user, 'id', None)
         # id_eni_user = 2  # SOLO PARA PRUEBAS, QUITAR ESTA LÍNEA EN PRODUCCIÓN
@@ -1364,8 +1364,9 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             "SEGUNDO NOMBRE", "SEXO", "EDAD", "CONDICIÓN DE LA EDAD", "NACIONALIDAD", "ETNIA", "GRUPO PRIORITARIO", "TIPO DE SEGURO",
             "PROVINCIA DE RECIDENCIA", "CANTON DE RECIDENCIA", "PARROQUIA DE RECIDENCIA", "ESPECIALIDAD DEL PROFESIONAL", "CIE-10 (PRINCIPAL)", "DIAGNÓSTICO 1 (PRINCIPAL)",
             "CONDICIÓN DEL DIAGNÓSTICO", "CIE-10 (CAUSA EXTERNA)", "DIAGNOSTICO (CAUSA  EXTERNA)",
-            "CONDICIÓN DEL ALTA", "REQUIERE HOSPITALIZACIÓN", "NOMBRE DEL HOSPITAL AL QUE FUE REFERIDO PARA LA HOSPITALIZACIÓN", "CAUSA DE ATENCIÓN", "OBSERVACIÓN", "ATENCION FINALIZADA",
-            "FECHA DE REPORTE", "MEDICO QUE ATENDIO", "MEDICO QUE AYUDO", "EDAD GESTACIONAL", "RIESGO OBSTÉTRICO",
+            "CONDICIÓN DEL ALTA", "REQUIERE HOSPITALIZACIÓN", "NOMBRE DEL HOSPITAL AL QUE FUE REFERIDO PARA LA HOSPITALIZACIÓN", "CAUSA DE ATENCIÓN",
+            "NÚMERO DE IDENTIFICACIÓN DEL PROFESIONAL DE SALUD", "NOMBRES Y APELLIDOS DEL PROFESIONAL DE SALUD", "CI DEL PROFESIONAL DE SALUD DE APOYO", "NOMBRES Y APELLIDOS DEL PROFESIONAL DE SALUD DE APOYO",
+            "OBSERVACIÓN", "ATENCION FINALIZADA", "FECHA DE REPORTE", "EDAD GESTACIONAL", "RIESGO OBSTÉTRICO",
             "UNIDAD SALUD CERCANA", "DIRECCIÓN DOMICILIARIA", "TELÉFONO DE PACIENTE"
         ]
 
@@ -1376,10 +1377,20 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
             "for_008_emer_segu_nomb", "for_008_emer_sexo", "for_008_emer_edad", "for_008_emer_cond_edad", "for_008_emer_naci", "for_008_emer_etni", "for_008_emer_grup_prio", "for_008_emer_tipo_segu",
             "for_008_emer_prov_resi", "for_008_emer_cant_resi", "for_008_emer_parr_resi", "for_008_emer_espe_prof", "for_008_emer_cie_10_prin", "for_008_emer_diag_prin",
             "for_008_emer_cond_diag", "for_008_emer_cie_10_caus_exte", "for_008_emer_diag_caus_exte",
-            "for_008_emer_cond_alta", "for_008_emer_hosp", "for_008_emer_nomb_hosp_refe_hosp", "for_008_emer_caus_aten", "for_008_emer_obse", "for_008_emer_aten_fina",
-            "for_008_emer_fech_repor", "for_008_emer_resp_aten_medi", "for_008_emer_apoy_aten_medi", "for_008_emer_edad_gest", "for_008_emer_ries_obst",
+            "for_008_emer_cond_alta", "for_008_emer_hosp", "for_008_emer_nomb_hosp_refe_hosp", "for_008_emer_caus_aten",
+            "for_008_emer_resp_aten_medi", "for_008_emer_apoy_aten_medi",
+            "for_008_emer_obse", "for_008_emer_aten_fina", "for_008_emer_fech_repor", "for_008_emer_edad_gest", "for_008_emer_ries_obst",
             "for_008_emer_unid_salu_resp_segu_aten", "for_008_emer_dire_domi", "for_008_emer_tele_paci"
         ]
+
+        def separar_profesional(valor):
+            texto = (valor or "").strip()
+            if not texto:
+                return "", ""
+            partes = texto.split(" ", 1)
+            if len(partes) == 1:
+                return partes[0], ""
+            return partes[0], partes[1]
 
         class Echo:
             def write(self, value):
@@ -1394,13 +1405,31 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
 
         def row_iter():
             writer = csv.writer(Echo(), delimiter=';')
-            # BOM para Excel
             yield "\ufeff"
-            # Encabezados
             yield writer.writerow(HEADERS)
-            # Filas en streaming
+
             for row in base_qs.values(*FIELDS).iterator(chunk_size=5000):
-                yield writer.writerow([serialize_value(row.get(field)) for field in FIELDS])
+                resp_cedula, resp_nombre = separar_profesional(
+                    row.get("for_008_emer_resp_aten_medi")
+                )
+                apoy_cedula, apoy_nombre = separar_profesional(
+                    row.get("for_008_emer_apoy_aten_medi")
+                )
+
+                fila = []
+                for field in FIELDS:
+                    valor = row.get(field)
+
+                    if field in ("for_008_emer_segu_apel", "for_008_emer_segu_nomb"):
+                        fila.append(valor.strip() if valor else "NNN")
+                    elif field == "for_008_emer_resp_aten_medi":
+                        fila.extend([resp_cedula, resp_nombre])
+                    elif field == "for_008_emer_apoy_aten_medi":
+                        fila.extend([apoy_cedula, apoy_nombre])
+                    else:
+                        fila.append(serialize_value(valor))
+
+                yield writer.writerow(fila)
 
         filename = f'form008_emergencia_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.csv'
         response = StreamingHttpResponse(
@@ -1412,7 +1441,7 @@ class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='reporte-mensual')
     def reporte_mensual(self, request, *args, **kwargs):
         """
-        GET /form-008-emergencia/reporte-mensual/?form_008_year=YYYY        
+        GET /form-008-emergencia/reporte-mensual/?form_008_year=YYYY
         """
         # Año
         try:
@@ -2729,7 +2758,7 @@ class AdminAgendaTurnosRegistrationAPIView(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='reporte-agenda-pacientes-csv')
     def reporte_agenda_pacientes_csv(self, request):
         """
-        GET /admin-agenda-turnos/reporte-agenda-pacientes-csv/?tipo_especialidad=<especialidad>&fech_inicio=YYYY-MM-DD&fech_fin=YYYY-MM-DD        
+        GET /admin-agenda-turnos/reporte-agenda-pacientes-csv/?tipo_especialidad=<especialidad>&fech_inicio=YYYY-MM-DD&fech_fin=YYYY-MM-DD
         """
         id_eni_user = getattr(request.user, 'id', None)
         # id_eni_user = 2
@@ -3058,13 +3087,37 @@ class DashboardAPIView(viewsets.ViewSet):
         fech_aten = request.GET.get('fech_aten')
 
         df = pd.read_csv('eni/data/emergencia_07ot05_2026.csv',
-                         encoding='latin1', sep=';')
+                         encoding='latin1', sep=';', dtype={'unic': str})
 
-        # Filtros opcionales
+        df['unic'] = df['unic'].astype(str).str.zfill(6)
+
         if unic:
-            df = df[df['unic'] == unic]
+            df = df[df['unic'] == str(unic).zfill(6)]
+
+        # Convertir fecha y extraer mes
+        df['fech_aten'] = pd.to_datetime(
+            df['fech_aten'], dayfirst=True, errors='coerce')
+        df = df.dropna(subset=['fech_aten'])
+        df['mes'] = df['fech_aten'].dt.month
+
         if fech_aten:
-            df = df[df['fech_aten'] == fech_aten]
+            mes_buscado = int(fech_aten)
+            df = df[df['mes'] == mes_buscado]
+
+        meses_es = {
+            1: 'ENERO',
+            2: 'FEBRERO',
+            3: 'MARZO',
+            4: 'ABRIL',
+            5: 'MAYO',
+            6: 'JUNIO',
+            7: 'JULIO',
+            8: 'AGOSTO',
+            9: 'SEPTIEMBRE',
+            10: 'OCTUBRE',
+            11: 'NOVIEMBRE',
+            12: 'DICIEMBRE',
+        }
 
         # Normalizar sexo
         def norm_sexo(s):
@@ -3079,8 +3132,15 @@ class DashboardAPIView(viewsets.ViewSet):
 
         df['sexo'] = df['sexo'].apply(norm_sexo)
 
-        # Agrupar por cie_10_prin y sexo
-        pivot = pd.pivot_table(
+        # Si quieres filtrar por una fecha exacta, se mantiene ese filtro
+        if fech_aten:
+            fecha_busqueda = pd.to_datetime(
+                fech_aten, dayfirst=True, errors='coerce')
+            if pd.notna(fecha_busqueda):
+                df = df[df['fech_aten'].dt.date == fecha_busqueda.date()]
+
+        # Consolidado general top 10
+        pivot_total = pd.pivot_table(
             df,
             index=['cie_10_prin', 'diga_prin'],
             columns='sexo',
@@ -3089,31 +3149,23 @@ class DashboardAPIView(viewsets.ViewSet):
             fill_value=0
         )
 
-        # Asegurar columnas
         for col in ['HOMBRE', 'MUJER', 'INTERSEXUAL']:
-            if col not in pivot.columns:
-                pivot[col] = 0
+            if col not in pivot_total.columns:
+                pivot_total[col] = 0
 
-        # Calcular total por cie_10_prin
-        pivot['TOTAL'] = pivot['HOMBRE'] + \
-            pivot['MUJER'] + pivot['INTERSEXUAL']
+        pivot_total['TOTAL'] = pivot_total['HOMBRE'] + \
+            pivot_total['MUJER'] + pivot_total['INTERSEXUAL']
+        pivot_total = pivot_total.sort_values('TOTAL', ascending=False)
 
-        # Ordenar y tomar top 10
-        pivot = pivot.sort_values('TOTAL', ascending=False)
-        top10 = pivot.head(10).copy()
+        total_general = pivot_total['TOTAL'].sum()
+        top10 = pivot_total.head(10).copy()
+        otros = pivot_total.iloc[10:].sum()
 
-        # Calcular totales de los demás
-        otros = pivot.iloc[10:].sum()
-
-        # Calcular total general
-        total_general = pivot['TOTAL'].sum()
-
-        # Preparar resultado
-        resultado = []
+        consolidado_10 = []
         for idx, ((cie10, diga_prin), row) in enumerate(top10.iterrows(), 1):
             porcentaje = (row['TOTAL'] / total_general *
                           100) if total_general > 0 else 0
-            resultado.append({
+            consolidado_10.append({
                 'N': idx,
                 'CIE-10': cie10,
                 'DIAGNOSTICO_PRINCIPAL': diga_prin,
@@ -3124,11 +3176,9 @@ class DashboardAPIView(viewsets.ViewSet):
                 '%': f"{porcentaje:.1f}%"
             })
 
-        # Agregar fila de "OTROS DIAGNOSTICO"
-        if otros['TOTAL'] > 0:
-            porcentaje_otros = (
-                otros['TOTAL'] / total_general * 100) if total_general > 0 else 0
-            resultado.append({
+        if total_general > 0 and otros.get('TOTAL', 0) > 0:
+            porcentaje_otros = (otros['TOTAL'] / total_general) * 100
+            consolidado_10.append({
                 'N': '',
                 'CIE-10': 'OTROS DIAGNOSTICO',
                 'DIAGNOSTICO_PRINCIPAL': '',
@@ -3139,4 +3189,58 @@ class DashboardAPIView(viewsets.ViewSet):
                 '%': f"{porcentaje_otros:.1f}%"
             })
 
-        return Response(resultado)
+        # Tablas por mes
+        tablas_por_mes = []
+        for mes_num in sorted(df['mes'].dropna().unique()):
+            df_mes = df[df['mes'] == mes_num]
+
+            pivot_mes = pd.pivot_table(
+                df_mes,
+                index=['cie_10_prin', 'diga_prin'],
+                columns='sexo',
+                values='unic',
+                aggfunc='count',
+                fill_value=0
+            )
+
+            for col in ['HOMBRE', 'MUJER', 'INTERSEXUAL']:
+                if col not in pivot_mes.columns:
+                    pivot_mes[col] = 0
+
+            pivot_mes['TOTAL'] = pivot_mes['HOMBRE'] + \
+                pivot_mes['MUJER'] + pivot_mes['INTERSEXUAL']
+            pivot_mes = pivot_mes.sort_values('TOTAL', ascending=False)
+
+            total_mes = pivot_mes['TOTAL'].sum()
+            top10_mes = pivot_mes.head(10).copy()
+
+            resultados_mes = []
+            for idx, ((cie10, diga_prin), row) in enumerate(top10_mes.iterrows(), 1):
+                porcentaje = (row['TOTAL'] / total_mes *
+                              100) if total_mes > 0 else 0
+                resultados_mes.append({
+                    'N': idx,
+                    'CIE-10': cie10,
+                    'DIAGNOSTICO_PRINCIPAL': diga_prin,
+                    'HOMBRE': int(row['HOMBRE']),
+                    'INTERSEXUAL': int(row['INTERSEXUAL']),
+                    'MUJER': int(row['MUJER']),
+                    'TOTAL': int(row['TOTAL']),
+                    '%': f"{porcentaje:.1f}%"
+                })
+
+            tablas_por_mes.append({
+                'mes': int(mes_num),
+                'mes_nombre': meses_es.get(int(mes_num), ''),
+                'results': resultados_mes
+            })
+
+        return Response(
+            {
+                'unic': unic,
+                'fech_aten': fech_aten,
+                'tablas_por_mes': tablas_por_mes,
+                'consolidado_10': consolidado_10
+            },
+            status=status.HTTP_200_OK
+        )

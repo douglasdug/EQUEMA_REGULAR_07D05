@@ -148,9 +148,16 @@ export default function Dashboard() {
     return fila;
   });
 
-  const [emergenciaCie10, setEmergenciaCie10] = useState([]);
+  const [emergenciaCie10, setEmergenciaCie10] = useState({
+    unic: "",
+    fech_aten: null,
+    tablas_por_mes: [],
+    consolidado_10: [],
+  });
   const [loadingEmergenciaCie10, setLoadingEmergenciaCie10] = useState(true);
   const [errorEmergenciaCie10, setErrorEmergenciaCie10] = useState("");
+  const [filtroUni, setFiltroUni] = useState("");
+  const [mesFiltro, setMesFiltro] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -234,8 +241,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     setLoadingEmergenciaCie10(true);
-    getDashboardDataEmergenciaProduccionCie10()
-      .then((res) => setEmergenciaCie10(res))
+    getDashboardDataEmergenciaProduccionCie10(uniCodigo, mesFiltro)
+      .then((res) => {
+        setEmergenciaCie10(
+          res || {
+            unic: "",
+            fech_aten: null,
+            tablas_por_mes: [],
+            consolidado_10: [],
+          },
+        );
+      })
       .catch(() => setErrorEmergenciaCie10("Error al cargar CIE-10"))
       .finally(() => setLoadingEmergenciaCie10(false));
   }, []);
@@ -456,6 +472,17 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  const tablaCie10 = useMemo(() => {
+    if (!emergenciaCie10) return [];
+    if (mesFiltro) {
+      const tablaMes = emergenciaCie10.tablas_por_mes?.find(
+        (item) => item.mes === Number(mesFiltro),
+      );
+      return tablaMes?.results || [];
+    }
+    return emergenciaCie10.consolidado_10 || [];
+  }, [emergenciaCie10, mesFiltro]);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 font-sans text-slate-900">
@@ -688,7 +715,7 @@ export default function Dashboard() {
               <MapContainer
                 center={center}
                 zoom={10}
-                className="h-[400px] w-full overflow-hidden rounded-xl"
+                className="h-[400px] w-full overflow-hidden rounded-xl relative z-0"
               >
                 <TileLayer
                   attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
@@ -747,6 +774,29 @@ export default function Dashboard() {
               )}
               {!loadingEmergenciaCie10 && !errorEmergenciaCie10 && (
                 <div className="overflow-x-auto">
+                  <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <select
+                      value={filtroUni}
+                      onChange={(e) => setFiltroUni(e.target.value)}
+                    >
+                      <option value="">Todas las unidades</option>
+                      <option value="000591">000591</option>
+                      <option value="000592">000592</option>
+                    </select>
+
+                    <select
+                      value={mesFiltro}
+                      onChange={(e) => setMesFiltro(e.target.value)}
+                    >
+                      <option value="">Todos los meses</option>
+                      <option value="1">Enero</option>
+                      <option value="2">Febrero</option>
+                      <option value="3">Marzo</option>
+                      <option value="4">Abril</option>
+                      <option value="5">Mayo</option>
+                      <option value="6">Junio</option>
+                    </select>
+                  </div>
                   <table className="min-w-full border-collapse text-sm">
                     <thead>
                       <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -761,8 +811,8 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {emergenciaCie10.length > 0 ? (
-                        emergenciaCie10.map((row, idx) => (
+                      {tablaCie10.length > 0 ? (
+                        tablaCie10.map((row, idx) => (
                           <tr
                             key={row["CIE-10"] + "-" + idx}
                             className="border-t border-slate-100 odd:bg-white even:bg-slate-50/60"

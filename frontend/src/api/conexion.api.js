@@ -1122,13 +1122,15 @@ export const getDashboardDataEmergenciaProduccionMes = async (
 
 export const getDashboardDataEmergenciaProduccionCie10 = async (
   uniCodigo = "",
+  fechaAtencion = "",
 ) => {
   try {
     const response = await axios.get(
       `${API_URL}/dashboard/emergencia-produccion-cie10/`,
       {
         params: {
-          uni_codigo: uniCodigo || undefined,
+          unic: uniCodigo || undefined,
+          fech_aten: fechaAtencion || undefined,
         },
       },
     );
