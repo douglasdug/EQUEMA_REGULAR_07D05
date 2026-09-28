@@ -88,6 +88,7 @@ const initialState = {
   for_008_emer_obse: "",
   for_008_emer_nomb_hosp_refe_hosp: "",
   for_008_emer_caus_aten: "",
+  for_008_emer_tipo_tria: "",
   for_008_emer_apoy_aten_medi: "",
   for_008_emer_edad_gest: "",
   for_008_emer_ries_obst: "",
@@ -250,6 +251,7 @@ const Form008Emergencia = () => {
     for_008_emer_obse: true,
     for_008_emer_nomb_hosp_refe_hosp: true,
     for_008_emer_caus_aten: true,
+    for_008_emer_tipo_tria: true,
     for_008_emer_apoy_aten_medi: true,
     for_008_emer_edad_gest: true,
     for_008_emer_ries_obst: true,
@@ -288,6 +290,7 @@ const Form008Emergencia = () => {
     "for_008_emer_cond_alta",
     "for_008_emer_nomb_hosp_refe_hosp",
     "for_008_emer_caus_aten",
+    "for_008_emer_tipo_tria",
     // "for_008_emer_edad_gest",
     // "for_008_emer_ries_obst",
   ];
@@ -323,6 +326,7 @@ const Form008Emergencia = () => {
     for_008_emer_nomb_hosp_refe_hosp:
       "NOMBRE DEL HOSPITAL AL QUE FUE REFERIDO PARA LA HOSPITALIZACIÓN:",
     for_008_emer_caus_aten: "CAUSA DE LA ATENCIÓN:",
+    for_008_emer_tipo_tria: "TIPO DE TRIAJE:",
     for_008_emer_apoy_aten_medi: "APOYO EN LA ATENCION MEDICA:",
     for_008_emer_edad_gest: "EDAD GESTACIONAL:",
     for_008_emer_ries_obst: "RIESGO OBSTETRICO:",
@@ -628,6 +632,7 @@ const Form008Emergencia = () => {
       for_008_emer_obse: false,
       for_008_emer_nomb_hosp_refe_hosp: false,
       for_008_emer_caus_aten: false,
+      for_008_emer_tipo_tria: false,
       for_008_emer_apoy_aten_medi: false,
       for_008_emer_edad_gest: false,
       for_008_emer_ries_obst: false,
@@ -2668,6 +2673,37 @@ const Form008Emergencia = () => {
                   className={
                     isFieldInvalid(
                       "for_008_emer_caus_aten",
+                      requiredFields,
+                      formData,
+                      isFieldVisible,
+                    )
+                      ? "border-2 border-red-500"
+                      : ""
+                  }
+                  isLargeList={false}
+                  placeholder="Escriba para buscar Causa de Atencion..."
+                  minSearchLength={2}
+                  maxResults={100}
+                />
+              </div>
+              <div className={fieldClass}>
+                <label className={labelClass} htmlFor="for_008_emer_tipo_tria">
+                  {requiredFields.includes("for_008_emer_tipo_tria") && (
+                    <span className="text-red-500">* </span>
+                  )}
+                  {labelMap["for_008_emer_tipo_tria"]}
+                </label>
+                <CustomSelect
+                  id="for_008_emer_tipo_tria"
+                  name="for_008_emer_tipo_tria"
+                  value={formData["for_008_emer_tipo_tria"]}
+                  onChange={handleChange}
+                  options={allListForm008.for_008_emer_tipo_tria}
+                  disabled={variableEstado["for_008_emer_tipo_tria"]}
+                  variableEstado={variableEstado}
+                  className={
+                    isFieldInvalid(
+                      "for_008_emer_tipo_tria",
                       requiredFields,
                       formData,
                       isFieldVisible,

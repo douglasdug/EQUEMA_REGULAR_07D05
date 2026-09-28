@@ -192,6 +192,7 @@ class form_008_emergencia(models.Model):
     for_008_emer_dire_domi = models.CharField(max_length=460, blank=True)
     for_008_emer_tele_paci = models.CharField(max_length=30, blank=True)
     for_008_emer_aten_fina = models.IntegerField(blank=True, null=True)
+    for_008_emer_tipo_tria = models.CharField(max_length=40, blank=True)
     eniUser = models.ForeignKey(
         'eniUser', null=True,
         blank=True,

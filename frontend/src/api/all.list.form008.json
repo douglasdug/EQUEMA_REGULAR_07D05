@@ -13851,5 +13851,12 @@
   "for_008_emer_caus_aten": [
     { "value": "ATENCIÓN NORMAL", "label": "01 ATENCIÓN NORMAL" },
     { "value": "ATENCIÓN POR MANIFESTACIONES (PARO-MOVILIZACIONES )", "label": "02 ATENCIÓN POR MANIFESTACIONES (PARO-MOVILIZACIONES )" }
+  ],
+  "for_008_emer_tipo_tria": [
+    { "value": "NIVEL 1 (ROJO)", "label": "01 NIVEL 1 (ROJO)" },
+    { "value": "NIVEL 2 (NARANJA)", "label": "02 NIVEL 2 (NARANJA)" },
+    { "value": "NIVEL 3 (AMARILLO)", "label": "03 NIVEL 3 (AMARILLO)" },
+    { "value": "NIVEL 4 (VERDE)", "label": "04 NIVEL 4 (VERDE)" },
+    { "value": "NIVEL 5 (AZUL)", "label": "05 NIVEL 5 (AZUL)" }
   ]    
 }

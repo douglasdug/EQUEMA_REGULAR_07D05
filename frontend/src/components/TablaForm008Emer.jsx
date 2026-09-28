@@ -237,6 +237,7 @@ const TablaForm008Emer = ({
     for_008_emer_apoy_aten_medi: "APOYO EN LA ATENCION MEDICA",
     for_008_emer_obse: "OBSERVACIÓN",
     for_008_emer_fech_repor: "FECHA DE REPORTE",
+    for_008_emer_tipo_tria: "TIPO DE TRIAJE",
     for_008_emer_edad_gest: "EDAD GESTACIONAL",
     for_008_emer_ries_obst: "RIESGO OBSTETRICO",
     for_008_emer_indi_paci_fami: "INDICACIONES PARA EL PACIENTE O LA FAMILIA",

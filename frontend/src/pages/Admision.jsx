@@ -14,8 +14,6 @@ import {
   CustomSelect,
   inputStyle,
   isFieldInvalid,
-  buttonStylePrimario,
-  buttonStyleSecundario,
   buttonStyleGuardar,
   buttonStyleActualizar,
   buttonStyleEliminar,
@@ -1652,26 +1650,6 @@ const Admision = ({
     }
     return [];
   };
-
-  function getBtnBuscarClass({ base, disabled, isBuscar }) {
-    if (disabled)
-      return `${base} bg-gray-300 hover:bg-gray-400 cursor-not-allowed`;
-    if (isBuscar)
-      return `${base} bg-blue-700 hover:bg-blue-900 text-white cursor-pointer border-2 border-blue-900`;
-    return `${base} bg-green-600 hover:bg-green-700 text-white cursor-pointer border-2 border-green-800`;
-  }
-
-  const btnBuscarClass = getBtnBuscarClass({
-    base: buttonStylePrimario,
-    disabled: botonEstado.btnBuscar,
-    isBuscar,
-  });
-
-  const btnBuscarRepresentanteClass = getBtnBuscarClass({
-    base: buttonStylePrimario,
-    disabled: botonEstado.btnBuscarRepresentante,
-    isBuscarRepresentante,
-  });
 
   const handleSeleccionarAdmisionado = (registro) => {
     const tipo =
