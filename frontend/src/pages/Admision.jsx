@@ -16,6 +16,17 @@ import {
   isFieldInvalid,
   buttonStylePrimario,
   buttonStyleSecundario,
+  buttonStyleGuardar,
+  buttonStyleActualizar,
+  buttonStyleEliminar,
+  buttonStyleCancelar,
+  buttonStyleOtro,
+  buttonStyleBuscarAvanzado,
+  buttonStyleDesactivado,
+  buttonStyleDesactivadoPeq,
+  buttonStyleNuevoRegistro,
+  buttonStyleBuscar,
+  buttonStyleLimpiar,
 } from "../components/EstilosCustom.jsx";
 import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
 import Loader from "../components/Loader.jsx";
@@ -152,6 +163,14 @@ function generarNumeIden(nombres, apellidos, naci, fecha, noIdentProv) {
     generarCadenaApellidos(apellidos) +
     generarCadenaNacionalidad(naci, noIdentProv) +
     generarCadenaFecha(fecha)
+  );
+}
+
+function esTipoSinDocumentoIdentificacion(tipoIden) {
+  return (
+    tipoIden === "SIN DOCUMENTO DE IDENTIFICACIÓN" ||
+    tipoIden === "01 SIN DOCUMENTO DE IDENTIFICACIÓN" ||
+    tipoIden === "NO IDENTIFICADO"
   );
 }
 
@@ -778,7 +797,7 @@ const Admision = ({
 
     if (!value) {
       resetCampos();
-    } else if (value === "NO IDENTIFICADO") {
+    } else if (esTipoSinDocumentoIdentificacion(value)) {
       if (formData[numeIdenKey]) {
         isBuscarSetter(false);
         setBotonEstado((prev) => ({ ...prev, [btnBuscarKey]: !value }));
@@ -821,7 +840,7 @@ const Admision = ({
     const btnBuscarKey =
       tipo === "pers" ? "btnBuscar" : "btnBuscarRepresentante";
 
-    if (formData[tipoIdenKey] === "NO IDENTIFICADO") {
+    if (esTipoSinDocumentoIdentificacion(formData[tipoIdenKey])) {
       if (value) {
         isBuscarSetter(false);
         setBotonEstado((prev) => ({ ...prev, [btnBuscarKey]: false }));
@@ -1264,6 +1283,7 @@ const Admision = ({
     setEdadRepresentante("");
     setIsEditing(false);
     setActiveTab("personales");
+    setIsBuscar(false);
   };
 
   // Utilidad para actualizar opciones de selects dependientes
@@ -1323,7 +1343,7 @@ const Admision = ({
         campoDisabled &&
         btnBuscarDisabled &&
         tieneInfo &&
-        tipoIden === "NO IDENTIFICADO" &&
+        esTipoSinDocumentoIdentificacion(tipoIden) &&
         !isEditing
         //isBuscarRepresentante
       ) {
@@ -1847,13 +1867,9 @@ const Admision = ({
                           limpiarVariables();
                           setShowBusquedaAvanzada(true);
                         }}
-                        className={`ml-2 inline-flex items-center gap-1 px-2 py-[2px] text-[11px] rounded-full border
-                          ${
-                            showBusquedaAvanzada
-                              ? "bg-indigo-600 text-white border-indigo-700 shadow"
-                              : "bg-indigo-100 text-black border-indigo-400 hover:bg-indigo-300"
-                          } transition-colors`}
-                        title="Abrir búsqueda avanzada"
+                        className={`${botonEstado.btnBusquedaAvanzada ? buttonStyleDesactivadoPeq : buttonStyleBuscarAvanzado}`}
+                        disabled={botonEstado.btnBusquedaAvanzada}
+                        title="Busqueda avanzada de paciente"
                         aria-pressed={showBusquedaAvanzada}
                       >
                         <svg
@@ -1902,7 +1918,7 @@ const Admision = ({
                         type="button"
                         id="btnBuscar"
                         name="btnBuscar"
-                        className={btnBuscarClass}
+                        className={`${botonEstado.btnBuscar ? buttonStyleDesactivado : buttonStyleBuscar}`}
                         onClick={
                           isBuscar ? ajustarVariableEstadoFalso : handleSearch
                         }
@@ -2252,7 +2268,8 @@ const Admision = ({
                       }
                     />
                   </div>
-                  {formData.adm_dato_pers_tipo_iden === "NO IDENTIFICADO" &&
+                  {formData.adm_dato_pers_tipo_iden ===
+                    "SIN DOCUMENTO DE IDENTIFICACIÓN" &&
                     formData.adm_dato_naci_naci === "ECUATORIANO/A" && (
                       <div className={fieldClass}>
                         <label
@@ -3052,7 +3069,7 @@ const Admision = ({
                         type="button"
                         id="btnBuscarRepresentante"
                         name="btnBuscarRepresentante"
-                        className={btnBuscarRepresentanteClass}
+                        className={`${botonEstado.btnBuscarRepresentante ? buttonStyleDesactivado : buttonStyleBuscar}`}
                         onClick={
                           isBuscarRepresentante
                             ? ajustarVariableEstadoFalsoRepr
@@ -3066,11 +3083,7 @@ const Admision = ({
                         id="btnLimpiarRepresentante"
                         name="btnLimpiarRepresentante"
                         type="button"
-                        className={`${buttonStylePrimario} ${
-                          botonEstado.btnLimpiarRepresentante
-                            ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                            : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-                        }`}
+                        className={`${botonEstado.btnLimpiarRepresentante ? buttonStyleDesactivado : buttonStyleLimpiar}`}
                         onClick={() => limpiarEstadoRepr()}
                         disabled={botonEstado.btnLimpiarRepresentante}
                       >
@@ -3464,11 +3477,7 @@ const Admision = ({
               id="btnRegistrar"
               name="btnRegistrar"
               type="submit"
-              className={`${buttonStylePrimario} ${
-                botonEstado.btnRegistrar
-                  ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-              }`}
+              className={`${botonEstado.btnRegistrar ? buttonStyleDesactivado : buttonStyleGuardar}`}
               disabled={botonEstado.btnRegistrar}
               onClick={handleButtonClick}
             >
@@ -3479,11 +3488,7 @@ const Admision = ({
               type="button"
               id="btnLimpiar"
               name="btnLimpiar"
-              className={`${buttonStyleSecundario} ${
-                botonEstado.btnLimpiar
-                  ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-              }`}
+              className={`${botonEstado.btnLimpiar ? buttonStyleDesactivado : buttonStyleLimpiar}`}
               disabled={botonEstado.btnLimpiar}
               onClick={() => limpiarVariables()}
             >
@@ -3493,7 +3498,7 @@ const Admision = ({
               id="btnCancelar"
               name="btnCancelar"
               type="button"
-              className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+              className={`${botonEstado.btnCancelar ? buttonStyleDesactivado : buttonStyleCancelar}`}
               onClick={() => navigate("/")}
             >
               Cancelar

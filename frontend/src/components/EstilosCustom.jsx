@@ -349,6 +349,15 @@ export const buttonStyleDesactivado =
 export const buttonStyleDesactivadoPeq =
   "bg-gray-300 hover:bg-gray-400 whitespace-nowrap text-black ml-1 font-bold inline-flex items-center gap-1 px-2 py-[2px] text-[11px] rounded-full border rounded-md focus:outline-none focus:shadow-outline cursor-not-allowed";
 
+export const buttonStyleNuevoRegistro =
+  "ml-2 inline-flex items-center gap-1 px-2 py-[2px] text-[11px] rounded-full border bg-indigo-100 whitespace-nowrap text-black border-indigo-500 hover:bg-indigo-300 transition-colors focus:outline-none focus:shadow-outline cursor-pointer";
+
+export const buttonStyleBuscar =
+  "bg-green-500 hover:bg-green-700 whitespace-nowrap text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
+
+export const buttonStyleLimpiar =
+  "bg-cyan-500 hover:bg-cyan-700 whitespace-nowrap text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
+
 export function isFieldInvalid(
   field,
   requiredFields,

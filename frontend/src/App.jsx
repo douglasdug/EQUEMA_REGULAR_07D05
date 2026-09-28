@@ -122,8 +122,8 @@ function App() {
                       allowed={[
                         ROLES.ATENCION_FORM_008,
                         ROLES.REPORTES_Y_ADMISION,
+                        ROLES.ADMINISTRAR_AGENDA_DE_TURNOS,
                         ROLES.AGENDAR_TURNOS,
-                        ROLES.REPORTES_Y_ADMISION,
                       ]}
                     />
                   }
