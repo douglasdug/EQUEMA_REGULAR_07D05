@@ -1066,10 +1066,15 @@ const Form008Emergencia = () => {
         .toUpperCase()
         .trim();
 
-    const esOpcionNoAplica = (op) =>
-      norm(op.label).includes(
-        "NO APLICA (CUANDO EL CIE -10 ES DE PREVENCIÓN)",
-      ) || norm(op.value) === "NO APLICA (CUANDO EL CIE -10 ES DE PREVENCIÓN)";
+    const textoNoAplica = "NO APLICA (CUANDO EL CIE -10 ES DE PREVENCIÓN)";
+
+    const esOpcionNoAplica = (op) => {
+      const objetivo = norm(textoNoAplica);
+      const label = norm(op.label);
+      const value = norm(op.value);
+
+      return label.includes(objetivo) || value === objetivo;
+    };
 
     const esOpcionPresuntivo = (op) =>
       norm(op.label).startsWith("PRESUNTIVO") ||
@@ -1104,9 +1109,9 @@ const Form008Emergencia = () => {
     };
 
     // NUEVO (robusto): opciones de condición por índice
-    const getOpcionesCondicionPorIndex = (index) => {
+    const getOpcionesCondicionPorIndex = (index, data = formData) => {
       const listaBase = allListForm008.for_008_emer_cond_diag || [];
-      const diagValue = formData.for_008_emer_cie_10_prin_diag[index];
+      const diagValue = data.for_008_emer_cie_10_prin_diag[index];
 
       if (esDiagnosticoZ(diagValue)) {
         const soloNoAplica = listaBase.filter(esOpcionNoAplica);
@@ -1160,7 +1165,7 @@ const Form008Emergencia = () => {
             next.for_008_emer_cie_10_caus_exte_diag[index] = "";
           }
           // Validar/autoasignar condición según opciones filtradas
-          const opcionesCond = getOpcionesCondicionPorIndex(index);
+          const opcionesCond = getOpcionesCondicionPorIndex(index, next);
           const condActual = next.for_008_emer_cond_diag[index];
 
           const existeActual = opcionesCond.some(
