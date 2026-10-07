@@ -6,14 +6,6 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
   build: {
     sourcemap: mode === "development",
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ["react", "react-dom"],
-          api: ["./src/api/conexion.api.js"],
-        },
-      },
-    },
     chunkSizeWarningLimit: 1000, // Ajusta el límite a 1000 kB
   },
 }));

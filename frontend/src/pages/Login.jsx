@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 import { AuthContext } from "../components/AuthContext.jsx";
 import Loader from "../components/Loader.jsx";
 import { toast } from "react-hot-toast";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 const initialState = {
   username: "",
@@ -77,6 +78,7 @@ export default function Login() {
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
   const { setAuthData } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -124,14 +126,24 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLoading) return;
+    if (isLoading || !turnstileToken) {
+      if (!turnstileToken) {
+        toast.error("Complete la verificación de seguridad.", {
+          position: "bottom-right",
+        });
+      }
+      return;
+    }
 
     setIsLoading(true);
     setError("");
     setSuccessMessage("");
     try {
       let response;
-      response = await loginUser(formData);
+      response = await loginUser({
+        ...formData,
+        turnstile_token: turnstileToken,
+      });
       setAuthData({
         isLoggedIn: true,
         user: response, // Actualiza el contexto con los datos del usuario
@@ -178,6 +190,7 @@ export default function Login() {
 
   const limpiarVariables = () => {
     setFormData(initialState);
+    setTurnstileToken("");
     setSuccessMessage("");
     setError("");
     setBotonEstado(initialBotonEstado);
@@ -283,10 +296,42 @@ export default function Login() {
                 ? "bg-gray-400 text-gray-100 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
-            disabled={botonEstado.btnLogin}
+            disabled={botonEstado.btnLogin || isLoading || !turnstileToken}
           >
             {isLoading ? "Ingresando..." : "Login"}
           </button>
+          <div className="flex justify-center">
+            <Turnstile
+              siteKey={import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onExpire={() => {
+                setTurnstileToken("");
+                toast.error(
+                  "La verificación expiró. Recargue la página e inténtelo nuevamente.",
+                  { position: "bottom-right" },
+                );
+              }}
+              onError={() => {
+                setTurnstileToken("");
+                toast.error(
+                  "No se pudo completar la verificación. Recargue la página e inténtelo nuevamente.",
+                  { position: "bottom-right" },
+                );
+              }}
+              onTimeout={() => {
+                setTurnstileToken("");
+                toast.error(
+                  "La verificación tardó demasiado. Inténtelo nuevamente.",
+                );
+              }}
+              onUnsupported={() => {
+                setTurnstileToken("");
+                toast.error(
+                  "Su navegador no es compatible con esta verificación.",
+                );
+              }}
+            />
+          </div>
         </form>
         <div className="mt-4">
           <EstadoMensajes error={error} successMessage={successMessage} />

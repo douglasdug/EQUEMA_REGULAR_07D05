@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:20.19-alpine AS build
 WORKDIR /app
 
 # Copia solo package.json y lock para instalar dependencias primero

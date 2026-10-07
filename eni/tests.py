@@ -29,7 +29,8 @@ class UserLoginSerializerTest(TestCase):
         user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password='testpass')
+            password='testpass',
+            fun_esta=1,)
         data = {
             'username': 'testuser',
             'password': 'testpass',

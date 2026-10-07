@@ -639,7 +639,7 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                 serializer.is_valid(raise_exception=True)
                 user = serializer.save()
 
-                if fun_esta == 1 and email:
+                if str(fun_esta) == "1" and email:
                     send_mail(
                         subject='¡Tu usuario ha sido validado!',
                         message=(
@@ -739,25 +739,25 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        # username = data.get('username')
-        # first_name = data.get('first_name')
-        # last_name = data.get('last_name')
-        # fun_esta = data.get('fun_esta')
-        # email = data.get('email')
-        # if fun_esta == 1 and email:
-        #     send_mail(
-        #         subject='¡Tu usuario ha sido validado!',
-        #         message=(
-        #             f'Estimado {last_name} {first_name} con el usuario {username},\n\n'
-        #             'Te informamos que tu usuario ha sido validado por el administrador. '
-        #             'Ahora puedes ingresar al sistema "SIRA-07D05" con tu usuario y clave registrados.\n\n'
-        #             'Saludos cordiales,\nEl equipo de soporte.\n'
-        #             'Nota: Este correo es informativo, favor no responder a esta direccion de correo.'
-        #         ),
-        #         from_email=settings.DEFAULT_FROM_EMAIL,
-        #         recipient_list=[email],
-        #         fail_silently=False,
-        #     )
+        username = data.get('username')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        fun_esta = data.get('fun_esta')
+        email = data.get('email')
+        if str(fun_esta) == "1" and email:
+            send_mail(
+                subject='¡Tu usuario ha sido validado!',
+                message=(
+                    f'Estimado {last_name} {first_name} con el usuario {username},\n\n'
+                    'Te informamos que tu usuario ha sido validado por el administrador. '
+                    'Ahora puedes ingresar al sistema "SIRA-07D05" con tu usuario y clave registrados.\n\n'
+                    'Saludos cordiales,\nEl equipo de soporte.\n'
+                    'Nota: Este correo es informativo, favor no responder a esta direccion de correo.'
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
 
         # Actualizar unidades de salud
         uni_unic_list = data.get('uni_unic')
@@ -1168,8 +1168,8 @@ class AdmisionDatosRegistrationAPIView(viewsets.ModelViewSet):
 class Form008EmergenciaRegistrationAPIView(viewsets.ModelViewSet):
     serializer_class = Form008EmergenciaRegistrationSerializer
     queryset = form_008_emergencia.objects.all()
-    permission_classes = [permissions.AllowAny]
-    # permission_classes = [IsAuthenticated, HasRole]
+    # permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated, HasRole]
     allowed_roles = [1, 2, 3, 4]  # p.ej. 1=ADMINISTRADOR, 3=MEDICO
 
     def get_permissions(self):

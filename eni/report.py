@@ -1,4 +1,5 @@
-from django.http import HttpResponse
+from pypdf import PdfReader, PdfWriter
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -7,6 +8,159 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.graphics.shapes import Drawing, String
 from reportlab.lib.styles import ParagraphStyle
+from pathlib import Path
+from django.conf import settings
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from .models import admision_datos, form_008_emergencia
+
+# Definir la ruta de la plantilla PDF
+PLANTILLAS_PDF_DIR = (
+    Path(settings.BASE_DIR) / "eni" / "report_templates" / "pdf"
+)
+
+plantilla_path = PLANTILLAS_PDF_DIR / "FORM 008 EMERGENCIA 2021.pdf"
+
+
+def reporte_form_008_pdf(request, pk):
+    if request.method != 'GET':
+        return HttpResponse(status=405)
+
+    try:
+        formulario = form_008_emergencia.objects.get(pk=pk)
+    except form_008_emergencia.DoesNotExist:
+        return JsonResponse(
+            {
+                'detail': 'No se encontró el formulario 008 de emergencia.',
+                'resource': 'form_008_emergencia',
+                'id': pk,
+            },
+            status=404,
+        )
+
+    # admision_datos actualmente es un IntegerField,
+    # por eso se consulta manualmente por su ID.
+    admision = None
+
+    if formulario.admision_datos:
+        try:
+            admision = admision_datos.objects.get(
+                pk=formulario.admision_datos
+            )
+        except admision_datos.DoesNotExist:
+            return JsonResponse(
+                {
+                    'detail': 'No se encontró la admisión asociada al formulario 008.',
+                    'resource': 'admision_datos',
+                    'id': formulario.admision_datos,
+                    'formulario_id': formulario.pk,
+                },
+                status=404,
+            )
+
+    plantilla_path = (
+        Path(settings.BASE_DIR)
+        / 'eni'
+        / 'report_templates'
+        / 'pdf'
+        / 'FORM 008 EMERGENCIA 2021.pdf'
+    )
+
+    if not plantilla_path.is_file():
+        return JsonResponse(
+            {
+                'detail': 'No se encontró la plantilla PDF del formulario 008.',
+                'resource': 'plantilla_pdf',
+                'name': plantilla_path.name,
+            },
+            status=404,
+        )
+
+    fondo = PdfReader(str(plantilla_path))
+    plantilla_page = fondo.pages[0]
+
+    # Usar el mismo tamaño de la plantilla
+    page_width = float(plantilla_page.mediabox.width)
+    page_height = float(plantilla_page.mediabox.height)
+
+    contenido_buffer = BytesIO()
+    pdf = canvas.Canvas(
+        contenido_buffer,
+        pagesize=(page_width, page_height)
+    )
+
+    # Coordenadas de ejemplo.
+    # ReportLab usa el origen en la esquina inferior izquierda.
+    pdf.setFont('Helvetica', 9)
+
+    nombre_completo = formulario.get_nombre_completo()
+    pdf.drawString(120, 690, nombre_completo)
+    pdf.drawString(
+        120,
+        675,
+        formulario.for_008_emer_nume_iden or ''
+    )
+    pdf.drawString(
+        120,
+        660,
+        formulario.for_008_emer_sexo or ''
+    )
+
+    if formulario.for_008_emer_edad is not None:
+        pdf.drawString(
+            120,
+            645,
+            str(formulario.for_008_emer_edad)
+        )
+
+    if formulario.for_008_emer_fech_aten:
+        pdf.drawString(
+            120,
+            630,
+            formulario.for_008_emer_fech_aten.strftime('%d/%m/%Y')
+        )
+
+    # Datos provenientes de admision_datos
+    if admision:
+        pdf.drawString(
+            120,
+            600,
+            admision.adm_dato_resi_prov or ''
+        )
+        pdf.drawString(
+            120,
+            585,
+            admision.adm_dato_resi_cant or ''
+        )
+        pdf.drawString(
+            120,
+            570,
+            admision.adm_dato_resi_parr or ''
+        )
+
+    pdf.save()
+    contenido_buffer.seek(0)
+
+    contenido = PdfReader(contenido_buffer)
+    writer = PdfWriter()
+
+    plantilla_page.merge_page(contenido.pages[0])
+    writer.add_page(plantilla_page)
+
+    resultado = BytesIO()
+    writer.write(resultado)
+    resultado.seek(0)
+
+    response = HttpResponse(
+        resultado.getvalue(),
+        content_type='application/pdf'
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="form_008_{formulario.pk}.pdf"'
+    )
+
+    return response
+
 
 # from .models import temprano
 

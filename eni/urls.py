@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from rest_framework import routers
-from .report import reporteTempranoPDF
+from .report import reporte_form_008_pdf, reporteTempranoPDF
 
 # Api de vesiones
 router = routers.DefaultRouter()
@@ -35,5 +35,7 @@ urlpatterns = [
          ChangePasswordTokenAPIView.as_view(), name='new_password_reset'),
     path('v1/firmar-pdf/', FirmarPDFAPIView.as_view(), name='firmar-pdf'),
     path('v1/contacto/', ContactoAPIView.as_view(), name='contacto'),
+    path('v1/form-008-emergencia/<int:pk>/pdf/',
+         reporte_form_008_pdf, name='reporte-form-008-pdf'),
     # path('v1/reporte/pdf/', reporteTempranoPDF, name='reporte-temprano-pdf'),
 ]
