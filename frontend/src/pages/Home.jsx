@@ -14,14 +14,14 @@ import {
 import { AuthContext } from "../components/AuthContext.jsx";
 
 const links = [
-  {
-    path: "/register-user/",
-    titulo: "Registro de Usuario",
-    desc: "Crear nuevos usuarios en el sistema.",
-    Icon: FaUserPlus,
-    color: "from-indigo-500 to-indigo-600",
-    roles: ["public"],
-  },
+  // {
+  //   path: "/register-user/",
+  //   titulo: "Registro de Usuario",
+  //   desc: "Crear nuevos usuarios en el sistema.",
+  //   Icon: FaUserPlus,
+  //   color: "from-indigo-500 to-indigo-600",
+  //   roles: ["public"],
+  // },
   {
     path: "/admin-user/",
     titulo: "Administración Usuarios",
@@ -78,6 +78,14 @@ const links = [
     color: "from-emerald-500 to-emerald-600",
     roles: ["public"],
   },
+  {
+    path: "/dashboard/",
+    titulo: "Dashboard",
+    desc: "Consultar estadísticas del sistema.",
+    Icon: FaFileAlt,
+    color: "from-purple-500 to-purple-600",
+    roles: ["authenticated"],
+  },
 ];
 
 const Home = () => {
@@ -89,9 +97,7 @@ const Home = () => {
   const canSee = (rolesArr) =>
     rolesArr?.includes("public") || (role && rolesArr?.includes(role));
 
-  const visibleLinks = links.filter(
-    (l) => !(isLoggedIn && l.path === "/register-user/") && canSee(l.roles),
-  );
+  const visibleLinks = links.filter((l) => canSee(l.roles));
 
   return (
     <div className="w-full px-2 py-4 mx-auto max-w-7xl">

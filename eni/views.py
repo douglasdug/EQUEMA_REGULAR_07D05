@@ -639,14 +639,21 @@ class EniUserRegistrationAPIView(viewsets.ModelViewSet):
                 serializer.is_valid(raise_exception=True)
                 user = serializer.save()
 
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                reset_url = f"{settings.FRONTEND_URL}/{uid}/{token}"
+
                 if str(fun_esta) == "1" and email:
                     send_mail(
                         subject='¡Tu usuario ha sido validado!',
                         message=(
                             f'Estimado {last_name} {first_name} con el usuario {identificacion},\n\n'
-                            'Te informamos que tu usuario ha sido validado por el administrador. '
-                            'Ahora puedes ingresar al sistema "SIRA-07D05" con tu usuario y clave registrados.\n\n'
-                            'Saludos cordiales,\nEl equipo de soporte.\n'
+                            f'Te informamos que tu usuario fue creado exitosamente.\n'
+                            f'Ahora puedes ingresar al sistema "SIRA-07D05" con tu usuario y clave registrados.\n\n'
+                            f"Configure su clave ingresando al siguiente enlace:\n"
+                            f"{reset_url}\n\n"
+                            "Este enlace es válido por 30 minutos, luego de ese tiempo deberá solicitar en ¿Olvidaste tu contraseña?.\n\n"
+                            f'Saludos cordiales,\nEl equipo de soporte.\n'
                             'Nota: Este correo es informativo, favor no responder a esta direccion de correo.'
                         ),
                         from_email=settings.DEFAULT_FROM_EMAIL,

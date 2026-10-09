@@ -273,12 +273,12 @@ export default function Login() {
             isButtonIcon={true}
           />
           <div className="flex items-center justify-between text-sm">
-            <Link
+            {/* <Link
               to="/register-user/"
               className="text-blue-600 hover:underline font-medium"
             >
               ¿No tienes cuenta? Regístrate
-            </Link>
+            </Link> */}
             <Link
               to="/olvido-clave/"
               className="text-blue-600 hover:underline font-medium"

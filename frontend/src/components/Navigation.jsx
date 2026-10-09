@@ -26,7 +26,7 @@ export function Navigation() {
 
   const navLinks = [
     { to: "/", label: "Home", roles: ["public"] },
-    { to: "/register-user/", label: "Registro", roles: ["public"] },
+    // { to: "/register-user/", label: "Registro", roles: ["public"] },
     { to: "/admision/", label: "Admision", roles: [3, 4, 5, 6] },
     { to: "/form-008-emergencia/", label: "Formulario-008", roles: [3] },
     {
@@ -47,15 +47,15 @@ export function Navigation() {
     },
     { to: "/contacto/", label: "Contacto", roles: ["public"] },
     // { to: "/medico/", label: "Certificado Médico", roles: ["public"] },
-    { to: "/dashboard/", label: "Dashboard", roles: ["public"] },
+    { to: "/dashboard/", label: "Dashboard", roles: ["authenticated"] },
     // { to: "/hospitalizacion/", label: "Hospitalización", roles: ["public"] },
   ];
 
   const canSee = (rolesArr) =>
-    rolesArr?.includes("public") || (role && rolesArr?.includes(role));
-  const filteredNavLinks = navLinks.filter(
-    (l) => !(isLoggedIn && l.to === "/register-user/") && canSee(l.roles),
-  );
+    rolesArr?.includes("public") ||
+    (rolesArr?.includes("authenticated") && isLoggedIn) ||
+    (role && rolesArr?.includes(role));
+  const filteredNavLinks = navLinks.filter((l) => canSee(l.roles));
 
   const mainLinks = filteredNavLinks.filter((l) => l.group !== "esquema");
 

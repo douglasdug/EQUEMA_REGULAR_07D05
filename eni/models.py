@@ -66,11 +66,11 @@ class unidad_salud(models.Model):
     uni_dist = models.CharField(max_length=8, blank=True)
     uni_prov = models.CharField(max_length=20, blank=True)
     uni_cant = models.CharField(max_length=30, blank=True)
-    uni_parr = models.CharField(max_length=40, blank=True)
+    uni_parr = models.CharField(max_length=60, blank=True)
     uni_unic = models.CharField(max_length=8, blank=True)
-    uni_unid = models.CharField(max_length=40, blank=True)
-    uni_tipo = models.CharField(max_length=30, blank=True)
-    uni_nive = models.CharField(max_length=8, blank=True)
+    uni_unid = models.CharField(max_length=130, blank=True)
+    uni_tipo = models.CharField(max_length=60, blank=True)
+    uni_nive = models.CharField(max_length=30, blank=True)
     eniUser = models.ForeignKey(
         eniUser, null=True, blank=True, on_delete=models.CASCADE, related_name='unidades_salud'
     )

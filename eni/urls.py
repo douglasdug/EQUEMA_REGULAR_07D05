@@ -23,7 +23,7 @@ router.register(r'dashboard', DashboardAPIView, basename='dashboard')
 
 urlpatterns = [
     path('v1/', include(router.urls)),
-    path('v1/register/', UserRegistrationAPIView.as_view(), name='register-user'),
+    # path('v1/register/', UserRegistrationAPIView.as_view(), name='register-user'),
     path('v1/login/', UserLoginAPIView.as_view(), name='login-user'),
     path('v1/logout/', UserLogoutAPIView.as_view(), name='logout-user'),
     path('v1/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

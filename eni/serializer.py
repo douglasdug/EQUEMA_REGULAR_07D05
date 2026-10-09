@@ -80,8 +80,10 @@ class UnidadSaludRegistrationSerializer(serializers.ModelSerializer):
 
 
 class EniUserRegistrationSerializer(serializers.ModelSerializer):
-    password1 = serializers.CharField(write_only=True, required=False)
-    password2 = serializers.CharField(write_only=True, required=False)
+    password1 = serializers.CharField(
+        write_only=True, required=False, allow_blank=True)
+    password2 = serializers.CharField(
+        write_only=True, required=False, allow_blank=True)
     unidades_data = UnidadSaludRegistrationSerializer(
         source='unidades_salud', many=True, read_only=True)
 
@@ -105,9 +107,16 @@ class EniUserRegistrationSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        password = validated_data.pop("password1")
-        validated_data.pop("password2")
-        user = eniUser.objects.create_user(password=password, **validated_data)
+        validated_data.pop("password1", None)
+        validated_data.pop("password2", None)
+
+        user = eniUser.objects.create_user(
+            password=None,
+            **validated_data
+        )
+        user.set_unusable_password()
+        user.save(update_fields=["password"])
+
         return user
 
     def update(self, instance, validated_data):

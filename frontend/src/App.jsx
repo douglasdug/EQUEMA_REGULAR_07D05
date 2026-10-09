@@ -85,7 +85,7 @@ function App() {
                   path="/new-password/:uid/:token"
                   element={<NewPassword />}
                 />
-                <Route path="/register-user/" element={<RegisterUser />} />
+                {/* <Route path="/register-user/" element={<RegisterUser />} /> */}
                 <Route path="/aviso-user/" element={<AvisoUser />} />
                 <Route path="/contacto/" element={<Contacto />} />
 

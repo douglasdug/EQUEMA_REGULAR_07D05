@@ -457,15 +457,12 @@ const AdminUser = () => {
 
     // Solo requerir password en modo registro
     let passwordValid = true;
-    if (!isEditing) {
-      passwordValid = cumpleRequisitosPassword();
-    } else {
-      // En edición, solo validar si el usuario escribe algo en los campos
-      const { password1, password2 } = data;
-      if (password1 || password2) {
-        passwordValid = cumpleRequisitosPassword();
-        if (!password1 || !password2) passwordValid = false;
-      }
+    // En edición, solo validar si el usuario escribe algo en los campos
+    const { password1, password2 } = data;
+    if (password1 || password2) {
+      passwordValid =
+        Boolean(password1) && Boolean(password2) && cumpleRequisitosPassword();
+      if (!password1 || !password2) passwordValid = false;
     }
 
     const formValid = fieldsValid && passwordValid && !error;
@@ -487,7 +484,7 @@ const AdminUser = () => {
 
   useEffect(() => {
     checkFormValidity();
-  }, [formData]);
+  }, [formData, isEditing, error]);
 
   const handleSeleccionarAdmisionado = (registro) => {
     const tipo =
@@ -884,12 +881,11 @@ const AdminUser = () => {
             </fieldset>
             <fieldset className="border border-blue-200 rounded p-2 mb-1">
               <legend className="text-lg font-semibold text-blue-600 px-2">
-                Solo para registrar o Actualizar la Clave o Contraseña
+                Solo para Actualizar la Clave o Contraseña
               </legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
                 <div className={fieldClass}>
                   <label className={labelClass} htmlFor="password1">
-                    {!isEditing && <span className="text-red-500">* </span>}
                     {labelMap["password1"]}
                   </label>
                   <div className="relative flex items-center">
@@ -900,12 +896,7 @@ const AdminUser = () => {
                       value={formData["password1"]}
                       onChange={handleChange}
                       placeholder="Requiere la misma clave"
-                      className={`${inputStyle}
-                    ${
-                      !isEditing && !formData["password1"] // Solo en modo registro y si está vacío
-                        ? "border-2 border-red-500"
-                        : ""
-                    }
+                      className={`${inputStyle}                    
                     ${
                       variableEstado["password1"]
                         ? "bg-gray-200 text-gray-700 cursor-no-drop"
@@ -927,7 +918,6 @@ const AdminUser = () => {
                 </div>
                 <div className={fieldClass}>
                   <label className={labelClass} htmlFor="password2">
-                    {!isEditing && <span className="text-red-500">* </span>}
                     {labelMap["password2"]}
                   </label>
                   <div className="relative flex items-center">
@@ -938,12 +928,7 @@ const AdminUser = () => {
                       value={formData["password2"]}
                       onChange={handleChange}
                       placeholder="Requiere la misma clave"
-                      className={`${inputStyle}
-                    ${
-                      !isEditing && !formData["password2"] // Solo en modo registro y si está vacío
-                        ? "border-2 border-red-500"
-                        : ""
-                    }
+                      className={`${inputStyle}                    
                     ${
                       variableEstado["password2"]
                         ? "bg-gray-200 text-gray-700 cursor-no-drop"
