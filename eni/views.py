@@ -54,6 +54,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader, PdfWriter
 from twilio.rest import Client
 import pandas as pd
+import requests
 
 # Create your views here.
 
@@ -81,6 +82,7 @@ class UserLoginAPIView(GenericAPIView):
         username = request.data.get('username', '').strip()
         cache_key = f"login_attempts_{username}"
         attempts = cache.get(cache_key, 0)
+        turnstile_token = request.data.get("turnstile_token")
 
         # Si supera el límite, bloquea el login
         if attempts >= 5:
@@ -88,6 +90,41 @@ class UserLoginAPIView(GenericAPIView):
                 {"error": "Demasiados intentos fallidos. Intenta de nuevo en 15 minutos."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS
             )
+
+        if not turnstile_token:
+            return Response(
+                {"error": "Debe completar la verificación de seguridad."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            validation_response = requests.post(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                data={
+                    "secret": settings.TURNSTILE_SECRET_KEY,
+                    "response": turnstile_token,
+                    "remoteip": request.META.get("REMOTE_ADDR"),
+                },
+                timeout=10,
+            )
+            validation_result = validation_response.json()
+        except requests.RequestException:
+            return Response(
+                {"error": "No se pudo validar la verificación de seguridad."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        if not validation_result.get("success"):
+            logger.warning(
+                "Turnstile rechazado: %s",
+                validation_result.get("error-codes", []),
+            )
+            return Response(
+                {"error": "La verificación de seguridad no es válida."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        username = request.data.get("username", "").strip()
 
         serializer = self.get_serializer(data=request.data)
         try:
