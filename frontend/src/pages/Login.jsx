@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../api/conexion.api.js";
 import PropTypes from "prop-types";

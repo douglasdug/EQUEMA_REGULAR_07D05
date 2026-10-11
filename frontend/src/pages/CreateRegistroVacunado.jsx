@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 // import { registroVacunadoCreateApi } from "../api/conexion.api.js";
 //import { getDescargarCsvRegistroVacunado } from "../api/conexion.api.js";
 import { RegistroVacunadoList } from "../components/RegistroVacunadoList.jsx";

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Select from "react-select";
 import allListAdmision from "../api/all.list.admision.json";
 
@@ -50,7 +50,7 @@ export function AllList() {
           id="pais"
           onChange={handlePaisChange}
           value={allListAdmision.adm_dato_naci_pais.find(
-            (option) => option.value === selectedPais
+            (option) => option.value === selectedPais,
           )}
           options={allListAdmision.adm_dato_naci_pais}
         />

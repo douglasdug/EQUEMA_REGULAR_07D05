@@ -1,5 +1,4 @@
 import "./App.css";
-import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Navigation } from "./components/Navigation.jsx";
 import Home from "./pages/Home.jsx";

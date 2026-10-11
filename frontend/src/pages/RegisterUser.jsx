@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
+import { useState, useEffect } from "react";
 import { registerUser, buscarUsuarioEni } from "../api/conexion.api.js";
 import allListRegisterUser from "../api/all.list.register.user.json";
 import allListAdmision from "../api/all.list.admision.json";
@@ -317,7 +318,7 @@ const RegisterUser = () => {
         /[A-Z]/.test(password2) &&
         /[a-z]/.test(password2) &&
         /\d/.test(password2),
-      especial: /[*+\-]/.test(password1) && /[*+\-]/.test(password2),
+      especial: /[*+-]/.test(password1) && /[*+-]/.test(password2),
       iguales: password1 && password2 && password1 === password2,
     };
   };

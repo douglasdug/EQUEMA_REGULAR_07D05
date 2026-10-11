@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 // import {
 //   getTotalDesperdicio,
 //   registerReporteENI,
@@ -1220,7 +1220,7 @@ const CreateReporteENI = () => {
           row,
           input,
           fieldMappings[totalField],
-          totalField
+          totalField,
         );
       });
 
@@ -1255,7 +1255,7 @@ const CreateReporteENI = () => {
   const dataDesperdicioMes = (e) => {
     const selectedValue = e.target.value;
     const dataDesperdicioMes = meses.find(
-      (mes) => mes.des_fech === selectedValue
+      (mes) => mes.des_fech === selectedValue,
     );
     limpiarVariables();
 
@@ -1823,7 +1823,7 @@ const CreateReporteENI = () => {
 
     updatedRow01.rep_inf_egr_tot_dos_bcg = calculateTotalDos(
       dataDesperdicioMes,
-      updatedRow01
+      updatedRow01,
     );
     updatedRow01.rep_inf_sal_mes_bcg =
       updatedRow01.rep_inf_tot_dis_bcg - updatedRow01.rep_inf_egr_tot_dos_bcg;
@@ -1860,7 +1860,7 @@ const CreateReporteENI = () => {
           row,
           "",
           fieldMappings[totalField],
-          totalField
+          totalField,
         );
       });
       updateDependentFields(updatedData[row], prevData, row, "");

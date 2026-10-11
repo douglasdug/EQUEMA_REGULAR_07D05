@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { resetPasswordWithToken } from "../api/conexion.api.js"; // Debes crear esta función
 import PropTypes from "prop-types";
 import { useParams, useNavigate } from "react-router-dom";
@@ -219,15 +219,15 @@ const NewPassword = () => {
               <div className="mt-4">
                 {(() => {
                   const passed = passwordRules.filter((r) =>
-                    r.test(newPassword)
+                    r.test(newPassword),
                   ).length;
                   const percent = (passed / passwordRules.length) * 100 || 0;
                   const colors =
                     percent === 100
                       ? "from-green-400 via-emerald-400 to-green-500"
                       : percent >= 60
-                      ? "from-yellow-400 via-amber-400 to-orange-400"
-                      : "from-rose-400 via-red-400 to-pink-500";
+                        ? "from-yellow-400 via-amber-400 to-orange-400"
+                        : "from-rose-400 via-red-400 to-pink-500";
                   return (
                     <>
                       <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
@@ -244,8 +244,8 @@ const NewPassword = () => {
                           {percent === 100
                             ? "Fuerte"
                             : percent >= 60
-                            ? "Media"
-                            : "Débil"}
+                              ? "Media"
+                              : "Débil"}
                         </span>
                       </div>
                     </>

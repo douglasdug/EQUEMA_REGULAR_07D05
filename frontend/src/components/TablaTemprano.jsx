@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import PropTypes from "prop-types";
 import { FaEdit, FaTrash } from "react-icons/fa";
 //import { getMesTemprano, deleteTemprano } from "../api/conexion.api.js";

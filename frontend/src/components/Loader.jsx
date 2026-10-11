@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { createPortal } from "react-dom";
 
@@ -32,7 +32,7 @@ const Loader = ({
     (e) => {
       if (e.key === "Escape" && modal && onClose) onClose();
     },
-    [modal, onClose]
+    [modal, onClose],
   );
 
   // Bloquea scroll del body cuando el modal está abierto

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import PropTypes from "prop-types";
+import { useState } from "react";
 import { olvidoClave } from "../api/conexion.api.js";
 import ReCAPTCHA from "react-google-recaptcha";
 import { toast } from "react-hot-toast";
@@ -70,13 +71,13 @@ const OlvidoClave = () => {
         setEmailRecuperacion("");
         setSuccessMessage(
           response.message ||
-            "Si el usuario existe, se enviará un correo para restablecer la contraseña."
+            "Si el usuario existe, se enviará un correo para restablecer la contraseña.",
         );
         setTimeout(() => setSuccessMessage(""), 30000);
         toast.success(
           response.message ||
             "Si el usuario existe, se enviará un correo para restablecer la contraseña.",
-          { position: "bottom-right" }
+          { position: "bottom-right" },
         );
       }
       setUsername("");

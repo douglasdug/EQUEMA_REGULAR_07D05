@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useContext } from "react";
+import { useState, useRef, useEffect, useMemo, useContext } from "react";
 import PropTypes, { object } from "prop-types";
 import {
   buscarUsuarioIdUnidadSalud,

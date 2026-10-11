@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { buscarAtencionesForm008 } from "../api/conexion.api"; // Ajusta la ruta si es diferente
 import {
@@ -73,7 +73,7 @@ const TablaAtencionesForm008 = ({
     (e) => {
       if (e.key === "Escape") onClose?.();
     },
-    [onClose]
+    [onClose],
   );
 
   useEffect(() => {
@@ -98,7 +98,7 @@ const TablaAtencionesForm008 = ({
       const resp = await buscarAtencionesForm008(
         setIdAdmision,
         Number(mes),
-        Number(anio)
+        Number(anio),
       );
       let registros = [];
       if (Array.isArray(resp?.data)) {
@@ -138,7 +138,7 @@ const TablaAtencionesForm008 = ({
   const totalPaginas = Math.ceil(data.length / registrosPorPagina);
   const datosPaginados = data.slice(
     (pagina - 1) * registrosPorPagina,
-    pagina * registrosPorPagina
+    pagina * registrosPorPagina,
   );
 
   const EstadoMensajes = ({ error, successMessage }) => (
@@ -451,7 +451,7 @@ const TablaAtencionesForm008 = ({
                           </td>
                           {columnas
                             .filter(
-                              (col) => col.key !== "for_008_emer_aten_fina"
+                              (col) => col.key !== "for_008_emer_aten_fina",
                             )
                             .map((col) => {
                               let valor = row[col.key];

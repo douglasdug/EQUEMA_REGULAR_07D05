@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function Mantenimiento() {
   return (
     <div className="w-screen h-screen flex flex-col items-center justify-center bg-white font-sans p-0 m-0 overflow-hidden relative">

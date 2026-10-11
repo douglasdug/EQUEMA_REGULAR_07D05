@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import { getAllEniUsers, deleteUser } from "../api/conexion.api.js";
 import allListRegisterUser from "../api/all.list.register.user.json";
@@ -27,7 +27,8 @@ const TablaUsers = ({
         item.label ? item.label.slice(3) : "",
       ]),
     );
-  }, [allListRegisterUser.fun_admi_rol]);
+  }, []);
+
   const tipo_estado_usuario = useMemo(() => {
     return Object.fromEntries(
       (allListRegisterUser.fun_esta || []).map((item) => [
@@ -35,7 +36,7 @@ const TablaUsers = ({
         item.label ? item.label.slice(3) : "",
       ]),
     );
-  }, [allListRegisterUser.fun_esta]);
+  }, []);
   const TABLE_HEADERS = [
     "Acciones",
     "Tipo de Identificacion",
@@ -96,7 +97,9 @@ const TablaUsers = ({
   // Filtrado (case-insensitive) antes de paginar
   const filteredUsers = useMemo(() => {
     if (!searchTerm.trim()) return eniUsers;
+
     const q = searchTerm.toLowerCase();
+
     return eniUsers.filter((u) => {
       return [
         u.fun_tipo_iden,
@@ -111,7 +114,7 @@ const TablaUsers = ({
         .filter(Boolean)
         .some((field) => field.toString().toLowerCase().includes(q));
     });
-  }, [eniUsers, searchTerm]);
+  }, [eniUsers, searchTerm, tipo_rol, tipo_estado_usuario]);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(filteredUsers.length / rowsPerPage)),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { busquedaAvanzadaAdmisionados } from "../api/conexion.api.js";
 import {
   inputStyle,
@@ -67,7 +67,7 @@ function BuscarAdmisionados({
     try {
       const response = await busquedaAvanzadaAdmisionados(
         apellidosParam.trim(),
-        nombresParam.trim()
+        nombresParam.trim(),
       );
       // Se asume que response ya es el JSON mostrado; ajustar si la API responde distinto
       setFormData((prev) => ({
@@ -138,16 +138,16 @@ function BuscarAdmisionados({
 
   const totalPages = Math.max(
     1,
-    Math.ceil(resultadosFiltrados.length / PAGE_SIZE)
+    Math.ceil(resultadosFiltrados.length / PAGE_SIZE),
   );
 
   const paginated = useMemo(
     () =>
       resultadosFiltrados.slice(
         (page - 1) * PAGE_SIZE,
-        (page - 1) * PAGE_SIZE + PAGE_SIZE
+        (page - 1) * PAGE_SIZE + PAGE_SIZE,
       ),
-    [resultadosFiltrados, page]
+    [resultadosFiltrados, page],
   );
 
   const handleChange = (e) => {
@@ -183,7 +183,7 @@ function BuscarAdmisionados({
         }
       }
     },
-    [apellidos, nombres, inModal, onClose]
+    [apellidos, nombres, inModal, onClose],
   );
 
   useEffect(() => {
@@ -205,7 +205,7 @@ function BuscarAdmisionados({
             .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
             .join("|") +
           ")",
-        "gi"
+        "gi",
       );
       return text.split(regex).map((frag, i) =>
         regex.test(frag) ? (
@@ -214,7 +214,7 @@ function BuscarAdmisionados({
           </mark>
         ) : (
           <span key={i}>{frag}</span>
-        )
+        ),
       );
     } catch {
       return text;
@@ -234,7 +234,7 @@ function BuscarAdmisionados({
           </mark>
         ) : (
           <span key={i}>{frag}</span>
-        )
+        ),
       );
     } catch {
       return text;
@@ -536,7 +536,7 @@ function BuscarAdmisionados({
                           {highlightFiltro(
                             highlight(fullName).props
                               ? fullName // si highlight devuelve nodos complejos, aplicamos filtro a texto plano
-                              : fullName
+                              : fullName,
                           )}
                           {/* Si quieres combinar ambos resaltados simultáneamente podrías refactorizar */}
                         </Td>

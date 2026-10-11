@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Admision from "./Admision.jsx";
 import {
   listarUsuariosApoyoAtencion,
