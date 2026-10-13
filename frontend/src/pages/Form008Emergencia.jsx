@@ -21,6 +21,17 @@ import {
   isFieldInvalid,
   buttonStylePrimario,
   buttonStyleSecundario,
+  buttonStyleGuardar,
+  buttonStyleActualizar,
+  buttonStyleEliminar,
+  buttonStyleCancelar,
+  buttonStyleOtro,
+  buttonStyleBuscar,
+  buttonStyleBuscarAvanzado,
+  buttonStyleDesactivado,
+  buttonStyleDesactivadoPeq,
+  buttonStyleReportePeq,
+  buttonStyleLimpiar,
 } from "../components/EstilosCustom.jsx";
 import TablaForm008Emer from "../components/TablaForm008Emer.jsx";
 import BuscarAdmisionados from "../components/BuscarAdmisionados.jsx";
@@ -1756,12 +1767,7 @@ const Form008Emergencia = () => {
                         limpiarVariables();
                         setShowBusquedaAvanzada(true);
                       }}
-                      className={`ml-2 inline-flex items-center gap-1 px-2 py-[2px] text-[11px] rounded-full border
-                          ${
-                            showBusquedaAvanzada
-                              ? "bg-indigo-600 text-white border-indigo-700 shadow"
-                              : "bg-indigo-100 text-black border-indigo-400 hover:bg-indigo-300"
-                          } transition-colors`}
+                      className={`${botonEstado.btnBusquedaAvanzada ? buttonStyleDesactivadoPeq : buttonStyleBuscarAvanzado}`}
                       title="Abrir búsqueda avanzada"
                       aria-pressed={showBusquedaAvanzada}
                     >
@@ -1799,11 +1805,7 @@ const Form008Emergencia = () => {
                       type="button"
                       id="btnBuscar"
                       name="btnBuscar"
-                      className={`${buttonStylePrimario} ${
-                        botonEstado.btnBuscar
-                          ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                          : "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-                      }`}
+                      className={`${botonEstado.btnBuscar ? buttonStyleDesactivado : buttonStyleBuscar}`}
                       onClick={handleSearch}
                       disabled={botonEstado.btnBuscar}
                     >
@@ -1825,12 +1827,7 @@ const Form008Emergencia = () => {
                   id="btnReporteAtenciones"
                   name="btnReporteAtenciones"
                   type="button"
-                  className={`"ml-2 px-2 py-1 text-xs rounded shadow"
-                    ${
-                      !botonEstado.btnReporteAtenciones
-                        ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
-                        : "bg-gray-300 hover:bg-gray-400 text-black cursor-not-allowed"
-                    }`}
+                  className={`${botonEstado.btnReporteAtenciones ? buttonStyleDesactivadoPeq : buttonStyleReportePeq}`}
                   onClick={() => setShowTablaAtenciones(true)}
                   disabled={botonEstado.btnReporteAtenciones}
                 >
@@ -2878,11 +2875,7 @@ const Form008Emergencia = () => {
               type="submit"
               id="btnRegistrar"
               name="btnRegistrar"
-              className={`${buttonStylePrimario} ${
-                botonEstado.btnRegistrar
-                  ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-              }`}
+              className={`${botonEstado.btnRegistrar ? buttonStyleDesactivado : buttonStyleGuardar}`}
               disabled={botonEstado.btnRegistrar}
               onClick={handleButtonClick}
             >
@@ -2893,11 +2886,7 @@ const Form008Emergencia = () => {
               type="button"
               id="btnLimpiar"
               name="btnLimpiar"
-              className={`${buttonStyleSecundario} ${
-                botonEstado.btnLimpiar
-                  ? "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-700 text-white cursor-pointer"
-              }`}
+              className={`${botonEstado.btnLimpiar ? buttonStyleDesactivado : buttonStyleLimpiar}`}
               disabled={botonEstado.btnLimpiar}
               onClick={() => limpiarVariables()}
             >

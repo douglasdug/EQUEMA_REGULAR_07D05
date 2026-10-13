@@ -1,5 +1,5 @@
 {
-    "hosp_admi_tipo_serv":[
+    "hosp_admi_tipo_serv":[    
     {
         "value": "HOSPITALIZACION",
         "label": "01 HOSPITALIZACION"
@@ -11,28 +11,28 @@
     ],
     "hosp_admi_espe":[
     {
-        "value": "MEDICINA INTERNA",
+        "value": "01",
+        "label": "01 EMERGENCIA CAMAS DE OBSERVACION"
+    },
+    {
+        "value": "07",
+        "label": "07 CIRUGIA GENERAL"
+    },
+    {
+        "value": "27",
         "label": "27 MEDICINA INTERNA"
     },
     {
-        "value": "PEDIATRIA",
+        "value": "41",
         "label": "41 PEDIATRIA"
     },
     {
-        "value": "GINECOLOGIA",
+        "value": "54",
         "label": "54 GINECOLOGIA"
     },
     {
         "value": "OBSTETRICIA",
         "label": "04 OBSTETRICIA"
-    },
-    {
-        "value": "CIRUGIA GENERAL",
-        "label": "05 CIRUGIA GENERAL"
-    },
-    {
-        "value": "OTRO",
-        "label": "06 OTRO"
     }
     ]
 }

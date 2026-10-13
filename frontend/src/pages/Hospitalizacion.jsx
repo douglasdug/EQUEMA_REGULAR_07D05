@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   buscarUsuarioIdUnidadSalud,
   buscarUsuarioAdmision,
@@ -403,10 +403,113 @@ export default function Hospitalizacion() {
           />
         )}
         <form
-          onSubmit={handleSubmitTipoServicio}
+          onSubmit={handleSubmitSearch}
           autoComplete="on"
           className="w-full"
         >
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            <fieldset className="border border-blue-200 rounded p-2 mb-1 sm:col-span-2 md:col-span-2 lg:col-span-2">
+              <legend className="text-lg font-semibold text-blue-600 px-2">
+                Busqueda del Paciente
+              </legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
+                <div className={fieldClass}>
+                  <label
+                    className={labelClass}
+                    htmlFor="hosp_part_diar_paci_tipo_iden"
+                  >
+                    {requiredFields.includes(
+                      "hosp_part_diar_paci_tipo_iden",
+                    ) && <span className="text-red-500">* </span>}
+                    {labelMap["hosp_part_diar_paci_tipo_iden"]}
+                  </label>
+                  <CustomSelect
+                    id="hosp_part_diar_paci_tipo_iden"
+                    name="hosp_part_diar_paci_tipo_iden"
+                    value={formData["hosp_part_diar_paci_tipo_iden"]}
+                    onChange={handleChange}
+                    options={allListAdmision.adm_dato_pers_tipo_iden || []}
+                    placeholder="Seleccione el tipo de identificacion"
+                    disabled={variableEstado["hosp_part_diar_paci_tipo_iden"]}
+                    variableEstado={variableEstado}
+                    className={
+                      isFieldInvalid(
+                        "hosp_part_diar_paci_tipo_iden",
+                        requiredFields,
+                        formData,
+                        isFieldVisible,
+                      )
+                        ? "border-2 border-red-500"
+                        : ""
+                    }
+                  />
+                </div>
+                <div className={fieldClass}>
+                  <div className="flex items-center justify-between">
+                    <label
+                      className={labelClass}
+                      htmlFor="hosp_part_diar_paci_nume_iden"
+                    >
+                      {requiredFields.includes(
+                        "hosp_part_diar_paci_nume_iden",
+                      ) && <span className="text-red-500">* </span>}
+                      {labelMap["hosp_part_diar_paci_nume_iden"]}
+                    </label>
+                    <button
+                      id="btn_busqueda_avanzada"
+                      name="btn_busqueda_avanzada"
+                      type="button"
+                      onClick={() => {
+                        limpiarFormularioBusqAvan();
+                        setShowBusquedaAvanzada(true);
+                      }}
+                      className={`${botonEstado.btn_busqueda_avanzada ? buttonStyleDesactivadoPeq : buttonStyleBuscarAvanzado}`}
+                      disabled={botonEstado.btn_busqueda_avanzada}
+                      title="Buscar paciente que estan admisionados"
+                      aria-pressed={showBusquedaAvanzada}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-3.5 w-3.5"
+                        viewBox="0 0 18 18"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M12.9 14.32a8 8 0 111.414-1.414l3.387 3.386a1 1 0 01-1.414 1.415l-3.387-3.387zM14 8a6 6 0 11-12 0 6 6 0 0112 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Avanzada
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-0 mb-0">
+                    <input
+                      type="text"
+                      id="hosp_part_diar_paci_nume_iden"
+                      name="hosp_part_diar_paci_nume_iden"
+                      value={formData["hosp_part_diar_paci_nume_iden"]}
+                      onChange={handleChange}
+                      placeholder="Ingrese la identificacion del paciente"
+                      autoComplete="on"
+                      required
+                      className={`${inputStyle} ${isFieldInvalid("hosp_part_diar_paci_nume_iden", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["hosp_part_diar_paci_nume_iden"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
+                      disabled={variableEstado["hosp_part_diar_paci_nume_iden"]}
+                    />
+                    <button
+                      type="submit"
+                      id="btn_buscar_paciente"
+                      name="btn_buscar_paciente"
+                      className={`${botonEstado.btn_buscar_paciente ? buttonStyleDesactivado : buttonStyleOtro}`}
+                      disabled={botonEstado.btn_buscar_paciente}
+                    >
+                      Buscar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+          </div>
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
               Registro de Tipo de Servicio
@@ -518,117 +621,6 @@ export default function Hospitalizacion() {
               </div>
             </div>
           </fieldset>
-        </form>
-        <form
-          onSubmit={handleSubmitSearch}
-          autoComplete="on"
-          className="w-full"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            <fieldset className="border border-blue-200 rounded p-2 mb-1 sm:col-span-2 md:col-span-2 lg:col-span-2">
-              <legend className="text-lg font-semibold text-blue-600 px-2">
-                Busqueda del Paciente
-              </legend>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-2">
-                <div className={fieldClass}>
-                  <label
-                    className={labelClass}
-                    htmlFor="hosp_part_diar_paci_tipo_iden"
-                  >
-                    {requiredFields.includes(
-                      "hosp_part_diar_paci_tipo_iden",
-                    ) && <span className="text-red-500">* </span>}
-                    {labelMap["hosp_part_diar_paci_tipo_iden"]}
-                  </label>
-                  <CustomSelect
-                    id="hosp_part_diar_paci_tipo_iden"
-                    name="hosp_part_diar_paci_tipo_iden"
-                    value={formData["hosp_part_diar_paci_tipo_iden"]}
-                    onChange={handleChange}
-                    options={allListAdmision.adm_dato_pers_tipo_iden || []}
-                    placeholder="Seleccione el tipo de identificacion"
-                    disabled={variableEstado["hosp_part_diar_paci_tipo_iden"]}
-                    variableEstado={variableEstado}
-                    className={
-                      isFieldInvalid(
-                        "hosp_part_diar_paci_tipo_iden",
-                        requiredFields,
-                        formData,
-                        isFieldVisible,
-                      )
-                        ? "border-2 border-red-500"
-                        : ""
-                    }
-                  />
-                </div>
-                <div className={fieldClass}>
-                  <div className="flex items-center justify-between">
-                    <label
-                      className={labelClass}
-                      htmlFor="hosp_part_diar_paci_nume_iden"
-                    >
-                      {requiredFields.includes(
-                        "hosp_part_diar_paci_nume_iden",
-                      ) && <span className="text-red-500">* </span>}
-                      {labelMap["hosp_part_diar_paci_nume_iden"]}
-                    </label>
-                    <button
-                      id="btn_busqueda_avanzada"
-                      name="btn_busqueda_avanzada"
-                      type="button"
-                      onClick={() => {
-                        limpiarFormularioBusqAvan();
-                        setShowBusquedaAvanzada(true);
-                      }}
-                      className={`${botonEstado.btn_busqueda_avanzada ? buttonStyleDesactivadoPeq : buttonStyleBuscarAvanzado}`}
-                      disabled={botonEstado.btn_busqueda_avanzada}
-                      title="Buscar paciente que estan admisionados"
-                      aria-pressed={showBusquedaAvanzada}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-3.5 w-3.5"
-                        viewBox="0 0 18 18"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M12.9 14.32a8 8 0 111.414-1.414l3.387 3.386a1 1 0 01-1.414 1.415l-3.387-3.387zM14 8a6 6 0 11-12 0 6 6 0 0112 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Avanzada
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-0 mb-0">
-                    <input
-                      type="text"
-                      id="hosp_part_diar_paci_nume_iden"
-                      name="hosp_part_diar_paci_nume_iden"
-                      value={formData["hosp_part_diar_paci_nume_iden"]}
-                      onChange={handleChange}
-                      placeholder="Ingrese la identificacion del paciente"
-                      autoComplete="on"
-                      required
-                      className={`${inputStyle} ${isFieldInvalid("hosp_part_diar_paci_nume_iden", requiredFields, formData, isFieldVisible) ? "border-2 border-red-500" : ""} ${variableEstado["hosp_part_diar_paci_nume_iden"] ? "bg-gray-200 text-gray-700 cursor-no-drop" : "bg-white text-gray-700 cursor-pointer"}`}
-                      disabled={variableEstado["hosp_part_diar_paci_nume_iden"]}
-                    />
-                    <button
-                      type="submit"
-                      id="btn_buscar_paciente"
-                      name="btn_buscar_paciente"
-                      className={`${botonEstado.btn_buscar_paciente ? buttonStyleDesactivado : buttonStyleOtro}`}
-                      disabled={botonEstado.btn_buscar_paciente}
-                    >
-                      Buscar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </fieldset>
-          </div>
-        </form>
-        <form onSubmit={handleSubmit} autoComplete="on" className="w-full">
           <fieldset className="border border-blue-200 rounded p-2 mb-1">
             <legend className="text-lg font-semibold text-blue-600 px-2">
               Datos del Paciente

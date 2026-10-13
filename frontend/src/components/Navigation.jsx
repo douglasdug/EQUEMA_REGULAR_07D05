@@ -45,6 +45,7 @@ export function Navigation() {
       label: "Admin Agenda Turno",
       roles: [5],
     },
+    { to: "/hospitalizacion/", label: "Hospitalización", roles: ["public"] },
     { to: "/contacto/", label: "Contacto", roles: ["public"] },
     // { to: "/medico/", label: "Certificado Médico", roles: ["public"] },
     { to: "/dashboard/", label: "Dashboard", roles: ["authenticated"] },

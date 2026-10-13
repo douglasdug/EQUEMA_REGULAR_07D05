@@ -358,6 +358,9 @@ export const buttonStyleBuscar =
 export const buttonStyleLimpiar =
   "bg-cyan-500 hover:bg-cyan-700 whitespace-nowrap text-white ml-1 font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline cursor-pointer";
 
+export const buttonStyleReportePeq =
+  "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer ml-2 px-2 py-1 text-xs rounded shadow";
+
 export function isFieldInvalid(
   field,
   requiredFields,
