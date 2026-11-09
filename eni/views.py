@@ -294,6 +294,32 @@ class NewPasswordResetAPIView(APIView):
 
 
 class ChangePasswordTokenAPIView(APIView):
+    def get(self, request, uid, token):
+        try:
+            uid_decoded = urlsafe_base64_decode(uid).decode()
+            user = eniUser.objects.get(pk=uid_decoded)
+        except (
+            eniUser.DoesNotExist,
+            ValueError,
+            TypeError,
+            OverflowError,
+        ):
+            return Response(
+                {'error': 'El enlace es inválido.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not default_token_generator.check_token(user, token):
+            return Response(
+                {'error': 'El enlace ha expirado o no es válido.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {'message': 'Token válido.'},
+            status=status.HTTP_200_OK,
+        )
+
     """
     Cambia la contraseña de un usuario usando username y token válido.
     """

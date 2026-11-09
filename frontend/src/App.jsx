@@ -88,9 +88,9 @@ function App() {
                 <Route path="/aviso-user/" element={<AvisoUser />} />
                 <Route path="/contacto/" element={<Contacto />} />
 
-                <Route path="/medico/" element={<CertificadoMedico />} />
+                {/* <Route path="/medico/" element={<CertificadoMedico />} /> */}
                 <Route path="/dashboard/" element={<Dashboard />} />
-                <Route path="/hospitalizacion/" element={<Hospitalizacion />} />
+                {/* <Route path="/hospitalizacion/" element={<Hospitalizacion />} /> */}
 
                 {/* Rutas protegidas por rol */}
                 <Route
@@ -156,10 +156,7 @@ function App() {
                     />
                   }
                 >
-                  <Route
-                    path="/agenda-turno-paciente/"
-                    element={<AgendaTurnoPaciente />}
-                  />
+                  {/* <Route path="/agenda-turno-paciente/" element={<AgendaTurnoPaciente />} /> */}
                 </Route>
                 <Route
                   element={

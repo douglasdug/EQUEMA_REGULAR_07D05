@@ -392,6 +392,12 @@ export const resetPasswordWithToken = async ({ uid, token, password }) => {
   }
 };
 
+export const validatePasswordResetToken = async ({ uid, token }) => {
+  const response = await axios.get(`${API_URL}/new-password/${uid}/${token}/`);
+
+  return response.data;
+};
+
 export const buscarUsuarioIdUnidadSalud = async () => {
   try {
     const response = await axios.get(

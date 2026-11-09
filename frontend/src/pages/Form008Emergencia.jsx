@@ -19,8 +19,6 @@ import {
   CustomSelect,
   inputStyle,
   isFieldInvalid,
-  buttonStylePrimario,
-  buttonStyleSecundario,
   buttonStyleGuardar,
   buttonStyleActualizar,
   buttonStyleEliminar,

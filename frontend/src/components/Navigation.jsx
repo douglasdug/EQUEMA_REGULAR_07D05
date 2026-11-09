@@ -35,17 +35,17 @@ export function Navigation() {
       roles: [1, 2, 3, 4],
     },
     { to: "/admin-user/", label: "Administrador", roles: [1] },
-    {
-      to: "/agenda-turno-paciente/",
-      label: "Agenda Turno Paciente",
-      roles: [3, 5, 6, 7],
-    },
-    {
-      to: "/admin-agenda-turno/",
-      label: "Admin Agenda Turno",
-      roles: [5],
-    },
-    { to: "/hospitalizacion/", label: "Hospitalización", roles: ["public"] },
+    // {
+    //   to: "/agenda-turno-paciente/",
+    //   label: "Agenda Turno Paciente",
+    //   roles: [3, 5, 6, 7],
+    // },
+    // {
+    //   to: "/admin-agenda-turno/",
+    //   label: "Admin Agenda Turno",
+    //   roles: [5],
+    // },
+    // { to: "/hospitalizacion/", label: "Hospitalización", roles: ["public"] },
     { to: "/contacto/", label: "Contacto", roles: ["public"] },
     // { to: "/medico/", label: "Certificado Médico", roles: ["public"] },
     { to: "/dashboard/", label: "Dashboard", roles: ["authenticated"] },

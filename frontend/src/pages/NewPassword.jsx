@@ -1,7 +1,21 @@
-import { useState } from "react";
-import { resetPasswordWithToken } from "../api/conexion.api.js"; // Debes crear esta función
+import React, { useState } from "react";
+import {
+  resetPasswordWithToken,
+  validatePasswordResetToken,
+} from "../api/conexion.api.js";
+import {
+  inputStyle,
+  buttonStyleGuardar,
+  buttonStyleCancelar,
+  buttonStyleDesactivado,
+} from "../components/EstilosCustom.jsx";
 import PropTypes from "prop-types";
 import { useParams, useNavigate } from "react-router-dom";
+
+const initialState = {
+  newPassword: "",
+  confirmPassword: "",
+};
 
 const passwordRules = [
   {
@@ -30,18 +44,29 @@ const isPasswordValid = (pw) => passwordRules.every((rule) => rule.test(pw));
 
 const NewPassword = () => {
   const { uid, token } = useParams();
+  const [formData, setFormData] = useState(initialState);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   // Estado para mostrar/ocultar claves
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [tokenValid, setTokenValid] = useState(false);
+  const [validatingToken, setValidatingToken] = useState(true);
+
   const passwordsMatch =
     newPassword && confirmPassword && newPassword === confirmPassword;
+
+  const requiredFields = ["newPassword", "confirmPassword"];
+
+  const labelMap = {
+    newPassword: "Nueva Clave",
+    confirmPassword: "Confirmar Nueva Clave",
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,16 +89,16 @@ const NewPassword = () => {
       return;
     }
 
-    if (!token) {
+    if (!uid || !token || !tokenValid) {
       setMessage("El enlace es inválido o ha expirado.");
       return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
     try {
       await resetPasswordWithToken({ uid, token, password: newPassword });
       setMessage("¡Clave cambiada exitosamente!");
-      setTimeout(() => navigate("/login/"), 20000);
+      setTimeout(() => navigate("/login/"), 2000);
     } catch (error) {
       // Si hay respuesta del backend y tiene un mensaje de error, muéstralo
       if (error.response?.data?.error) {
@@ -82,7 +107,7 @@ const NewPassword = () => {
         setMessage(error.message || "Error al cambiar la clave.");
       }
     }
-    setLoading(false);
+    setIsLoading(false);
   };
 
   React.useEffect(() => {
@@ -94,8 +119,51 @@ const NewPassword = () => {
     }
   }, [message, navigate]);
 
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const validateToken = async () => {
+      if (!uid || !token) {
+        if (isMounted) {
+          setMessage("El enlace es inválido o ha expirado.");
+          setTokenValid(false);
+          setValidatingToken(false);
+        }
+        return;
+      }
+
+      try {
+        await validatePasswordResetToken({ uid, token });
+
+        if (isMounted) {
+          setTokenValid(true);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setTokenValid(false);
+          setMessage(
+            error.response?.data?.error ||
+              "El enlace es inválido o ha expirado.",
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setValidatingToken(false);
+        }
+      }
+    };
+
+    validateToken();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [uid, token]);
+
   const canSubmit =
-    !loading &&
+    !isLoading &&
+    !validatingToken &&
+    tokenValid &&
     newPassword &&
     confirmPassword &&
     passwordsMatch &&
@@ -171,104 +239,190 @@ const NewPassword = () => {
             </p>
           </div>
 
+          {!validatingToken && !tokenValid && (
+            <div className="mb-4 rounded-lg bg-red-100 p-3 text-center text-sm text-red-700">
+              El enlace es inválido o ha expirado. Solicita nuevamente la
+              recuperación de contraseña.
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* NUEVA CLAVE */}
-            <div>
-              <label
-                htmlFor="newPassword"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1"
-              >
-                Nueva Clave
-                {newPassword && (
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
-                      isPasswordValid(newPassword)
-                        ? "bg-green-100 text-green-600"
-                        : "bg-yellow-100 text-yellow-600"
-                    }`}
+            {!validatingToken && tokenValid && (
+              <>
+                {/* NUEVA CLAVE */}
+                <div>
+                  <label
+                    htmlFor="newPassword"
+                    className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1"
                   >
-                    {isPasswordValid(newPassword) ? "Lista" : "En progreso"}
-                  </span>
-                )}
-              </label>
-              <div className="relative group">
-                <input
-                  id="newPassword"
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Ingrese su nueva clave"
-                  autoComplete="new-password"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white/70 focus:bg-white outline-none focus:ring-4 focus:ring-sky-200 focus:border-sky-500 transition shadow-sm pr-12"
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => setShowNewPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
-                  aria-label={
-                    showNewPassword ? "Ocultar clave" : "Mostrar clave"
-                  }
-                >
-                  <EyeIcon open={showNewPassword} />
-                </button>
-              </div>
+                    {requiredFields.includes("newPassword") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["newPassword"]}
+                    {newPassword && (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          isPasswordValid(newPassword)
+                            ? "bg-green-100 text-green-600"
+                            : "bg-yellow-100 text-yellow-600"
+                        }`}
+                      >
+                        {isPasswordValid(newPassword) ? "Lista" : "En progreso"}
+                      </span>
+                    )}
+                  </label>
+                  <div className="relative group">
+                    <input
+                      id="newPassword"
+                      name="newPassword"
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Ingrese su nueva clave"
+                      autoComplete="new-password"
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white/70 focus:bg-white outline-none focus:ring-4 focus:ring-sky-200 focus:border-sky-500 transition shadow-sm pr-12"
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowNewPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      aria-label={
+                        showNewPassword ? "Ocultar clave" : "Mostrar clave"
+                      }
+                    >
+                      <EyeIcon open={showNewPassword} />
+                    </button>
+                  </div>
 
-              {/* Barra de progreso reglas */}
-              <div className="mt-4">
-                {(() => {
-                  const passed = passwordRules.filter((r) =>
-                    r.test(newPassword),
-                  ).length;
-                  const percent = (passed / passwordRules.length) * 100 || 0;
-                  const colors =
-                    percent === 100
-                      ? "from-green-400 via-emerald-400 to-green-500"
-                      : percent >= 60
-                        ? "from-yellow-400 via-amber-400 to-orange-400"
-                        : "from-rose-400 via-red-400 to-pink-500";
-                  return (
-                    <>
-                      <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                  {/* Barra de progreso reglas */}
+                  <div className="mt-4">
+                    {(() => {
+                      const passed = passwordRules.filter((r) =>
+                        r.test(newPassword),
+                      ).length;
+                      const percent =
+                        (passed / passwordRules.length) * 100 || 0;
+                      const colors =
+                        percent === 100
+                          ? "from-green-400 via-emerald-400 to-green-500"
+                          : percent >= 60
+                            ? "from-yellow-400 via-amber-400 to-orange-400"
+                            : "from-rose-400 via-red-400 to-pink-500";
+                      return (
+                        <>
+                          <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full bg-gradient-to-r ${colors} transition-all duration-500`}
+                              style={{ width: `${percent}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between mt-1 text-[11px] font-medium text-gray-500">
+                            <span>
+                              {passed} / {passwordRules.length} reglas
+                            </span>
+                            <span>
+                              {percent === 100
+                                ? "Fuerte"
+                                : percent >= 60
+                                  ? "Media"
+                                  : "Débil"}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Reglas */}
+                  <div className="mt-3 grid gap-2">
+                    {passwordRules.map((rule) => {
+                      const passed = rule.test(newPassword);
+                      return (
                         <div
-                          className={`h-full bg-gradient-to-r ${colors} transition-all duration-500`}
-                          style={{ width: `${percent}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between mt-1 text-[11px] font-medium text-gray-500">
-                        <span>
-                          {passed} / {passwordRules.length} reglas
-                        </span>
-                        <span>
-                          {percent === 100
-                            ? "Fuerte"
-                            : percent >= 60
-                              ? "Media"
-                              : "Débil"}
-                        </span>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
+                          key={rule.label}
+                          className={`flex items-center text-xs rounded-lg px-2 py-1.5 border ${
+                            passed
+                              ? "bg-green-50 border-green-200 text-green-600"
+                              : "bg-gray-50 border-gray-200 text-gray-600"
+                          } transition`}
+                        >
+                          <span
+                            className={`mr-2 inline-flex items-center justify-center w-5 h-5 rounded-full border-2 ${
+                              passed
+                                ? "border-green-500 bg-green-500 text-white"
+                                : "border-gray-300 text-transparent"
+                            }`}
+                          >
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          </span>
+                          {rule.label}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-              {/* Reglas */}
-              <div className="mt-3 grid gap-2">
-                {passwordRules.map((rule) => {
-                  const passed = rule.test(newPassword);
-                  return (
+                {/* CONFIRMAR CLAVE */}
+                <div>
+                  <label
+                    htmlFor="confirmPassword"
+                    className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {requiredFields.includes("confirmPassword") && (
+                      <span className="text-red-500">* </span>
+                    )}
+                    {labelMap["confirmPassword"]}
+                    {confirmPassword && null}
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirme su clave"
+                      autoComplete="new-password"
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white/70 focus:bg-white outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 transition shadow-sm pr-12"
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      aria-label={
+                        showConfirmPassword ? "Ocultar clave" : "Mostrar clave"
+                      }
+                    >
+                      <EyeIcon open={showConfirmPassword} />
+                    </button>
+                  </div>
+                  <div className="mt-3">
                     <div
-                      key={rule.label}
-                      className={`flex items-center text-xs rounded-lg px-2 py-1.5 border ${
-                        passed
+                      className={`flex items-center text-xs rounded-lg px-2 py-1.5 border transition ${
+                        passwordsMatch
                           ? "bg-green-50 border-green-200 text-green-600"
                           : "bg-gray-50 border-gray-200 text-gray-600"
-                      } transition`}
+                      }`}
                     >
                       <span
                         className={`mr-2 inline-flex items-center justify-center w-5 h-5 rounded-full border-2 ${
-                          passed
+                          passwordsMatch
                             ? "border-green-500 bg-green-500 text-white"
                             : "border-gray-300 text-transparent"
                         }`}
@@ -287,94 +441,30 @@ const NewPassword = () => {
                           />
                         </svg>
                       </span>
-                      {rule.label}
+                      Las claves coinciden
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* CONFIRMAR CLAVE */}
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1"
-              >
-                Confirmar Nueva Clave
-                {confirmPassword && null}
-              </label>
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirme su clave"
-                  autoComplete="new-password"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white/70 focus:bg-white outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 transition shadow-sm pr-12"
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => setShowConfirmPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
-                  aria-label={
-                    showConfirmPassword ? "Ocultar clave" : "Mostrar clave"
-                  }
-                >
-                  <EyeIcon open={showConfirmPassword} />
-                </button>
-              </div>
-              <div className="mt-3">
-                <div
-                  className={`flex items-center text-xs rounded-lg px-2 py-1.5 border transition ${
-                    passwordsMatch
-                      ? "bg-green-50 border-green-200 text-green-600"
-                      : "bg-gray-50 border-gray-200 text-gray-600"
-                  }`}
-                >
-                  <span
-                    className={`mr-2 inline-flex items-center justify-center w-5 h-5 rounded-full border-2 ${
-                      passwordsMatch
-                        ? "border-green-500 bg-green-500 text-white"
-                        : "border-gray-300 text-transparent"
-                    }`}
-                  >
-                    <svg
-                      className="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </span>
-                  Las claves coinciden
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
 
             {/* BOTONES */}
-            <div className="space-y-3">
+            <div className="flex justify-center mt-1">
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="w-full relative overflow-hidden rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 shadow-lg shadow-blue-300/40 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-blue-200 transition"
+                hidden={!tokenValid || validatingToken}
+                className={`${!canSubmit ? buttonStyleDesactivado : buttonStyleGuardar}`}
               >
                 <span className="relative z-10">
-                  {loading ? "Cambiando..." : "Cambiar Clave"}
+                  {isLoading ? "Cambiando..." : "Cambiar Clave"}
                 </span>
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-violet-500 via-indigo-500 to-sky-500 transition"></div>
               </button>
               <button
                 type="button"
-                className="w-full rounded-xl bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 transition shadow-sm focus:outline-none focus:ring-4 focus:ring-gray-200"
+                id="btnCancelar"
+                name="btnCancelar"
+                className={`${buttonStyleCancelar}`}
                 onClick={() => navigate("/login")}
               >
                 Cancelar
